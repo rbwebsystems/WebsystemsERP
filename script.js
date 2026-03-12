@@ -4434,25 +4434,54 @@ function initApp() {
   if (first) first.click();
 }
 
+function hideLoading() {
+  const loadingEl = byId("loadingOverlay");
+  if (loadingEl) loadingEl.classList.add("hidden");
+}
+
 async function init() {
   const loadingEl = byId("loadingOverlay");
   if (loadingEl) loadingEl.classList.remove("hidden");
   byId("loadingText").textContent = useFirestore() ? "Firestore bağlanır..." : "Yüklənir...";
 
-  initFirestore();
-  meta = await loadMetaAsync();
-  ensureMetaDefaults();
-  if (useFirestore()) saveMeta();
+  var loadingHidden = false;
+  var timeoutId = setTimeout(function () {
+    if (loadingHidden) return;
+    loadingHidden = true;
+    hideLoading();
+    toast("Yüklənmə vaxtı keçdi. Yeniləyin və ya interneti yoxlayın.", "err", 5000);
+    console.warn("Bakfon ERP: init timeout");
+  }, 12000);
 
-  if (meta.session) {
-    if (byId("loadingText")) byId("loadingText").textContent = "Məlumat yüklənir...";
-    db = await loadCompanyDBAsync();
-  } else {
-    db = defaultDB();
+  try {
+    initFirestore();
+    meta = await loadMetaAsync();
+    ensureMetaDefaults();
+    if (useFirestore()) saveMeta();
+
+    if (meta.session) {
+      if (byId("loadingText")) byId("loadingText").textContent = "Məlumat yüklənir...";
+      db = await loadCompanyDBAsync();
+    } else {
+      db = defaultDB();
+    }
+    subscribeRealtime();
+    if (!loadingHidden) {
+      loadingHidden = true;
+      clearTimeout(timeoutId);
+      hideLoading();
+      initApp();
+    }
+  } catch (e) {
+    if (!loadingHidden) {
+      loadingHidden = true;
+      clearTimeout(timeoutId);
+      hideLoading();
+      toast("Başlatma xətası: " + (e && e.message ? e.message : "Yeniləyin."), "err", 5000);
+      console.error("Bakfon ERP init xətası:", e);
+      initApp();
+    }
   }
-  subscribeRealtime();
-  if (loadingEl) loadingEl.classList.add("hidden");
-  initApp();
 }
 
 window.addEventListener("load", () => {
