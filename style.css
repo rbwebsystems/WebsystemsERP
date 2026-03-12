@@ -29,8 +29,8 @@ aside{
   width:260px;background:var(--sidebar-bg);border-right:1px solid var(--border-color);
   height:100vh;position:fixed;padding:30px 15px;
 }
-.logo{margin-bottom:18px;padding:0 0 12px;display:block;background:transparent;}
-.logo-img{width:100%;height:auto;max-height:80px;object-fit:contain;display:block;background:transparent;}
+.logo{margin-bottom:18px;padding:0;width:100%;height:140px;display:flex;align-items:center;justify-content:center;background:transparent;}
+.logo-img{max-width:100%;max-height:140px;width:auto;height:auto;object-fit:contain;display:block;background:transparent;}
 
 /* Top header bar (same style as sidebar) */
 .main-area{
@@ -276,7 +276,7 @@ select{
   padding:18px 18px 10px;
   box-shadow:0 30px 70px rgba(0,0,0,.18);
 }
-.login-logo{display:block;max-width:220px;height:auto;margin:0 auto 16px;background:transparent;}
+.login-logo{display:block;max-width:280px;max-height:100px;width:auto;height:auto;margin:0 auto 20px;background:transparent;}
 .login-card h2{font-size:1.25rem;margin-bottom:12px;}
 
 .search-container{position:relative;display:flex;align-items:center;}
