@@ -26,7 +26,7 @@ body.login-open{overflow:hidden;}
 body.login-open #appShell{display:none;}
 
 aside{
-  width:260px;background:#10b981;border-right:1px solid rgba(0,0,0,.08);
+  width:260px;background:#00C0A3;border-right:1px solid rgba(0,0,0,.08);
   height:100vh;position:fixed;padding:0;
   display:flex;flex-direction:column;overflow:hidden;
 }
@@ -46,7 +46,7 @@ aside nav{flex:1 1 0;min-height:0;overflow-y:auto;padding:14px 15px 30px 15px;pa
 .app-header{
   flex-shrink:0;
   height:56px;
-  background:#10b981;
+  background:#00C0A3;
   border-bottom:1px solid rgba(0,0,0,.08);
   display:flex;
   align-items:center;
