@@ -564,7 +564,10 @@ function sectionLabelAz(id) {
     trash: "Səbət",
     tools: "Alətlər",
     reports: "Hesabatlar",
+<<<<<<< HEAD
+=======
     test: "Test",
+>>>>>>> c75e9a163b9d6efa429afeeef272ef22452de6c9
     profile: "Profil",
   };
   return map[id] || id;

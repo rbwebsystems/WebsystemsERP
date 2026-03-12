@@ -29,7 +29,8 @@ aside{
   width:260px;background:var(--sidebar-bg);border-right:1px solid var(--border-color);
   height:100vh;position:fixed;padding:30px 15px;
 }
-.logo{font-size:1.3rem;font-weight:900;margin-bottom:18px;padding-left:15px;}
+.logo{font-size:1.3rem;font-weight:900;margin-bottom:18px;padding-left:15px;display:flex;align-items:center;gap:10px;}
+.logo-img{height:36px;width:auto;object-fit:contain;display:block;}
 
 /* Top header bar (same style as sidebar) */
 .main-area{
@@ -275,6 +276,7 @@ select{
   padding:18px 18px 10px;
   box-shadow:0 30px 70px rgba(0,0,0,.18);
 }
+.login-logo{display:block;max-width:160px;height:auto;margin:0 auto 14px;}
 .login-card h2{font-size:1.25rem;margin-bottom:12px;}
 
 .search-container{position:relative;display:flex;align-items:center;}
