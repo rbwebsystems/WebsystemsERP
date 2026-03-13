@@ -495,7 +495,7 @@ function ensureMetaDefaults() {
   }
   meta.users.forEach((u) => {
     if (u.role !== "developer" && (u.companyId == null || u.companyId === "")) {
-      u.companyId = meta.companies[0]?.id || null;
+      u.companyId = getCompanyIdFromUsername(u.username) || meta.companies[0]?.id || null;
     }
   });
   if (!meta.session || !meta.session.companyId) {
@@ -761,11 +761,24 @@ function login(e) {
     openModal(html);
     return;
   }
-  const companyId = window.__loginCompanyFromUrl || val("loginCompany");
-  if (!companyId) return alert("Şirkət linki tapılmadı. Keçid ünvanını yoxlayın (məs: ?company=ŞİRKƏT_ID).");
-  if (u.companyId != null && u.companyId !== "" && u.companyId !== companyId) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
-  if ((u.companyId == null || u.companyId === "") && meta.companies[0]?.id !== companyId) return alert("Bu şirkət üçün icazəniz yoxdur.");
-  doLoginWithCompany(companyId);
+  const norm = (s) => (s == null || s === "" ? "" : String(s).trim().toLowerCase());
+  const companyFromUsername = getCompanyIdFromUsername(username);
+  if (companyFromUsername) {
+    const c = meta.companies.find((x) => norm(x.id) === norm(companyFromUsername));
+    if (!c) return alert("İstifadəçi adındakı şirkət tapılmadı (format: şirkətadı_ad, məs: baktel_rustamb).");
+    if (u.companyId != null && u.companyId !== "" && norm(u.companyId) !== norm(companyFromUsername)) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
+    doLoginWithCompany(c.id);
+    return;
+  }
+  const companyIdFromUrl = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
+  if (!companyIdFromUrl) return alert("İstifadəçi adı şirkət_adı formatında olmalıdır (məs: baktel_rustamb) və ya keçid ünvanında ?company=ŞİRKƏT_ID göstərilməlidir.");
+  const urlCid = norm(companyIdFromUrl);
+  const userCid = norm(u.companyId);
+  if (userCid && urlCid && userCid !== urlCid) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
+  if (!userCid && meta.companies[0] && norm(meta.companies[0].id) !== urlCid) return alert("Bu şirkət üçün icazəniz yoxdur.");
+  const c = meta.companies.find((x) => norm(x.id) === urlCid);
+  if (!c) return alert("Şirkət tapılmadı.");
+  doLoginWithCompany(c.id);
 }
 
 function logout() {
@@ -3209,10 +3222,26 @@ function resetCompanyData() {
   }
 }
 
+function getCompanyIdFromUsername(username) {
+  if (!username || typeof username !== "string") return null;
+  const idx = username.indexOf("_");
+  if (idx <= 0) return null;
+  return username.slice(0, idx).trim().toLowerCase();
+}
+
+function userBelongsToCompany(u, cid) {
+  if (!cid) return false;
+  const norm = (s) => (s == null || s === "" ? "" : String(s).trim().toLowerCase());
+  if (u.role === "developer" && (u.companyId == null || u.companyId === "")) return false;
+  const prefixCid = getCompanyIdFromUsername(u.username);
+  if (prefixCid) return norm(prefixCid) === norm(cid);
+  return norm(u.companyId) === norm(cid);
+}
+
 function usersForCurrentCompany() {
   const cid = meta?.session?.companyId;
   if (!cid) return [];
-  return meta.users.filter((u) => u.companyId === cid);
+  return meta.users.filter((u) => userBelongsToCompany(u, cid));
 }
 
 function openUser(uidOrNull = null) {
@@ -3223,7 +3252,7 @@ function openUser(uidOrNull = null) {
       ? meta.users.find((x) => String(x.uid) === String(uidOrNull))
       : null;
   if (uidOrNull != null && uidOrNull !== "" && !u) return;
-  if (u && cid && u.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+  if (u && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   const editingUser = u || {
           uid: genId(meta.users, 1),
           fullName: "",
@@ -3283,7 +3312,7 @@ function openUser(uidOrNull = null) {
       <input type="hidden" id="u_uid" value="${escapeAttr(isNew ? "" : String(editingUser.uid))}">
       <div class="grid-3">
         <input id="u_full" class="span-3" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" required>
-        <input id="u_name" class="span-2" placeholder="İstifadəçi adı" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required>
+        <input id="u_name" class="span-2" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required>
         <select id="u_staff" class="span-3" title="Əməkdaş">
           <option value="">— Əməkdaş seçin —</option>
           ${(db.staff || []).map((s) => `<option value="${s.uid}" ${String(editingUser.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("")}
@@ -3342,16 +3371,19 @@ function saveUser(e) {
     .filter((x) => x.checked)
     .map((x) => x.value);
   if (!username || !pass) return;
-  const cid = meta?.session?.companyId;
+  const cid = (meta?.session?.companyId || "").trim().toLowerCase();
+  const prefix = getCompanyIdFromUsername(username);
   if (uidVal === "") {
+    if (!cid) return alert("Cari şirkət müəyyən deyil.");
+    if (!prefix || prefix !== cid) return alert("İstifadəçi adı şirkət adı ilə başlamalıdır: " + (meta?.session?.companyId || cid) + "_ (məs: " + (meta?.session?.companyId || cid) + "_rustamb).");
     if (meta.users.some((u) => u.username === username)) return alert("Bu istifadəçi adı var.");
     meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset }, createdAt: nowISODateTimeLocal() });
   } else {
     const idx = meta.users.findIndex((x) => String(x.uid) === String(uidVal));
     if (idx === -1) return;
     const keep = meta.users[idx];
-    if (cid && keep.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
-    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
+    if (cid && !userBelongsToCompany(keep, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
   }
   saveMeta();
   closeMdl();
@@ -3364,7 +3396,7 @@ function delUser(uid) {
   const u = idx >= 0 ? meta.users[idx] : null;
   if (!u) return;
   const cid = meta?.session?.companyId;
-  if (cid && u.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+  if (cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   if (u.username === "developer") return alert("Developer silinə bilməz.");
   if (u.role === "admin" && !isDeveloper()) return alert("Admin istifadəçisini yalnız developer silə bilər.");
   if (!confirm("İstifadəçi silinsin?")) return;
