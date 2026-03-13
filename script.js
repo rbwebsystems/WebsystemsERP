@@ -136,10 +136,15 @@ async function loadMetaAsync() {
   if (!ref) return loadMetaSync();
   try {
     const snap = await ref.get();
-    if (snap.exists) return { ...defaultMeta(), ...snap.data() };
+    if (snap.exists) {
+      const remote = { ...defaultMeta(), ...snap.data() };
+      // session (login) heç vaxt buluddan götürülmür; hər cihaz öz sessiyasını lokal saxlayır
+      return { ...remote, session: loadMetaSync().session || null };
+    }
     const local = loadMetaSync();
     if (local && (local.companies?.length || local.users?.length)) {
-      await ref.set(JSON.parse(JSON.stringify(local)));
+      const { session, ...rest } = local || {};
+      await ref.set(JSON.parse(JSON.stringify({ ...rest, session: null })));
       return local;
     }
   } catch (e) {
@@ -179,7 +184,6 @@ function subscribeRealtime() {
           const next = { ...defaultMeta(), ...snap.data() };
           meta.companies = next.companies || meta.companies;
           meta.users = next.users || meta.users;
-          if (next.session) meta.session = next.session;
           applyAccessUI();
         }
       },
@@ -445,7 +449,9 @@ function saveMeta() {
   if (useFirestore()) {
     const ref = getMetaRef();
     if (ref) {
-      const data = JSON.parse(JSON.stringify(meta));
+      // session (login) yalnız lokal saxlanılmalıdır; əks halda digər cihazlara yayılır
+      const { session, ...rest } = meta || {};
+      const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
       ref.set(data).catch((e) => console.warn("Firestore meta yazma xətası:", e));
     }
   } else {
@@ -2436,6 +2442,7 @@ function openCashOp() {
         <select id="cash_kind" class="span-3" onchange="toggleCashKind()">
           <option value="cust_pay">Müştəri ödənişi (Debitor)</option>
           <option value="supp_pay">Təchizatçı ödənişi (Kreditor)</option>
+          <option value="income">Mədaxil (digər)</option>
           <option value="expense">Xərc</option>
         </select>
 
@@ -2461,6 +2468,21 @@ function openCashOp() {
             <select id="cash_supplier_invoice" class="span-3">
               <option value="">Qaimə seç (istəyə bağlı)</option>
             </select>
+          </div>
+        </div>
+
+        <div id="cash_income_box" class="span-3" style="display:none;">
+          <div class="grid-3">
+            <select id="cash_income_from" class="span-3" onchange="toggleIncomeSourceBox()">
+              <option value="">Mənbə seç (istəyə bağlı)</option>
+              <option value="owner">Təsisçi / Sahibkar</option>
+              <option value="supplier">Təchizatçı</option>
+              <option value="other">Digər</option>
+            </select>
+            <select id="cash_income_supplier" class="span-3" style="display:none;">
+              ${suppOptions}
+            </select>
+            <input id="cash_income_source" class="span-3" placeholder="Mədaxil mənbəyi (məs: Təchizatçıdan qaytarma)">
           </div>
         </div>
 
@@ -2496,10 +2518,12 @@ function toggleCashKind() {
   const custBox = byId("cash_customer_box");
   const suppBox = byId("cash_supplier_box");
   const expBox = byId("cash_expense_box");
+  const incBox = byId("cash_income_box");
   if (!custBox || !expBox) return;
   if (kind === "expense") {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
+    if (incBox) incBox.style.display = "none";
     expBox.style.display = "";
     byId("cash_customer").required = false;
   } else {
@@ -2507,15 +2531,29 @@ function toggleCashKind() {
     if (kind === "supp_pay") {
       custBox.style.display = "none";
       if (suppBox) suppBox.style.display = "";
+      if (incBox) incBox.style.display = "none";
       byId("cash_customer").required = false;
       refreshSupplierInvoices();
+    } else if (kind === "income") {
+      custBox.style.display = "none";
+      if (suppBox) suppBox.style.display = "none";
+      if (incBox) incBox.style.display = "";
+      byId("cash_customer").required = false;
+      toggleIncomeSourceBox();
     } else {
       custBox.style.display = "";
       if (suppBox) suppBox.style.display = "none";
+      if (incBox) incBox.style.display = "none";
       byId("cash_customer").required = true;
       refreshCustomerInvoices();
     }
   }
+}
+
+function toggleIncomeSourceBox() {
+  const from = byId("cash_income_from")?.value || "";
+  const supSel = byId("cash_income_supplier");
+  if (supSel) supSel.style.display = from === "supplier" ? "" : "none";
 }
 
 function refreshCustomerInvoices() {
@@ -2591,6 +2629,31 @@ function saveCashOp(e) {
   const accId = Number(val("cash_acc") || 1);
 
   if (amount <= 0) return;
+
+  if (kind === "income") {
+    const from = val("cash_income_from");
+    const supp = val("cash_income_supplier");
+    const src = (val("cash_income_source") || "").trim();
+    const label =
+      from === "owner"
+        ? (src || "Təsisçi mədaxili")
+        : from === "supplier" && supp
+          ? `Təchizatçı mədaxil (${supp})`
+          : (src || "Mədaxil");
+    addCashOp({
+      type: "in",
+      date,
+      source: label,
+      amount,
+      note,
+      link: { kind: "income", from: from || "other", supp: from === "supplier" ? supp : "" },
+      accountId: accId,
+    });
+    logEvent("create", "cash", { type: "in", kind: "income", amount, from, supp });
+    saveDB();
+    closeMdl();
+    return;
+  }
 
   if (kind === "expense") {
     const bal = accountBalance(accId);
@@ -4602,6 +4665,7 @@ Object.assign(window, {
   saveCashOp,
   delCashOp,
   toggleCashKind,
+  toggleIncomeSourceBox,
   refreshSubcats,
   refreshCustomerInvoices,
   refreshSupplierInvoices,
