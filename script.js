@@ -89,7 +89,7 @@ async function loadMetaAsync() {
   if (!ref) return loadMetaSync();
   try {
     const snap = await ref.get();
-    if (snap.exists()) return { ...defaultMeta(), ...snap.data() };
+    if (snap.exists) return { ...defaultMeta(), ...snap.data() };
     const local = loadMetaSync();
     if (local && (local.companies?.length || local.users?.length)) {
       await ref.set(JSON.parse(JSON.stringify(local)));
@@ -108,7 +108,7 @@ async function loadCompanyDBAsync() {
   if (!ref) return loadCompanyDBSync();
   try {
     const snap = await ref.get();
-    if (snap.exists()) return { ...defaultDB(), ...snap.data() };
+    if (snap.exists) return { ...defaultDB(), ...snap.data() };
     const local = loadCompanyDBSync();
     const hasData = local.cust?.length || local.sales?.length || local.staff?.length || local.purch?.length;
     if (hasData) {
@@ -128,7 +128,7 @@ function subscribeRealtime() {
   if (metaRef) {
     firestoreUnsubMeta = metaRef.onSnapshot(
       (snap) => {
-        if (snap.exists()) {
+        if (snap.exists) {
           const next = { ...defaultMeta(), ...snap.data() };
           meta.companies = next.companies || meta.companies;
           meta.users = next.users || meta.users;
@@ -145,7 +145,7 @@ function subscribeRealtime() {
     if (companyRef) {
       firestoreUnsubCompany = companyRef.onSnapshot(
         (snap) => {
-          if (snap.exists()) {
+          if (snap.exists) {
             db = { ...defaultDB(), ...snap.data() };
             renderAll();
             if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
@@ -182,7 +182,7 @@ async function refreshFromCloud(silent) {
   }
   try {
     const snap = await ref.get();
-    if (!snap.exists()) {
+    if (!snap.exists) {
       if (!silent) toast("Buluda hələ məlumat yazılmayıb", "ok", 2000);
       return;
     }
