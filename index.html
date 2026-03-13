@@ -551,6 +551,11 @@
           <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">Export/Import yalnız cari şirkət datasına aiddir.</div></div>
         </div>
       </div>
+      <div class="card" style="margin-top:16px;">
+        <h3 class="card-title" style="margin:0 0 12px 0;font-size:1rem;">Baza import</h3>
+        <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;">Excel-də müştəri bazası (Ad, Soyad, FİN, Mobil və s.) hazırlayıb import etdikdə həmin müştərilər <strong>Müştərilər</strong> siyahısına düşər. Siyahıda cədvəl sütunları, ətraflı məlumat isə hər müştərinin <strong>Info</strong> pəncərəsində görünər.</p>
+        <button class="btn-main" type="button" onclick="openCustImport()"><i class="fas fa-file-import"></i> Müştəri bazası (Excel/CSV) import</button>
+      </div>
     </div>
 
     <div id="reports" class="section">
@@ -642,6 +647,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>

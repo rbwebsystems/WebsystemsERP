@@ -1235,6 +1235,161 @@ function saveCust(e, idx) {
   closeMdl();
 }
 
+// ----- Müştəri Excel/CSV import -----
+const CUST_IMPORT_HEADER_MAP = {
+  sur: ["soyad", "surname", "familiya"],
+  name: ["ad", "name", "adı"],
+  father: ["ata", "father", "ata adı", "ataadi"],
+  fin: ["fin", "fın", "vəsiqə"],
+  seriaNum: ["seriya", "seria", "şv", "seriya №", "seriya no"],
+  ph1: ["mobil", "telefon", "phone", "tel", "nomre", "nömrə", "mobil 1", "gsm"],
+  ph2: ["mobil 2", "telefon 2", "phone2"],
+  ph3: ["mobil 3", "telefon 3"],
+  work: ["iş", "ish", "work", "is yeri", "iş yeri"],
+  addr: ["ünvan", "unvan", "addr", "address", "adres"],
+  creditLimit: ["kredit limit", "limit", "credit"],
+};
+
+function normalizeHeader(h) {
+  return String(h || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function findCustImportColIndex(headers, field) {
+  const keys = [field, ...(CUST_IMPORT_HEADER_MAP[field] || [])];
+  const normalized = headers.map(normalizeHeader);
+  for (const k of keys) {
+    const idx = normalized.findIndex((h) => h === k || h.includes(k) || k.includes(h));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function parseCustImportFile(rawRows) {
+  if (!rawRows || rawRows.length < 2) return { headers: [], rows: [], colMap: null };
+  const headers = rawRows[0].map((c) => String(c ?? "").trim());
+  const colMap = {};
+  for (const field of ["sur", "name", "father", "fin", "seriaNum", "ph1", "ph2", "ph3", "work", "addr", "creditLimit"]) {
+    const idx = findCustImportColIndex(headers, field);
+    if (idx >= 0) colMap[field] = idx;
+  }
+  const rows = [];
+  for (let i = 1; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    if (!Array.isArray(row)) continue;
+    const cells = row.map((c) => String(c ?? "").trim());
+    const hasAny = cells.some((c) => c.length > 0);
+    if (!hasAny) continue;
+    rows.push(cells);
+  }
+  return { headers, rows, colMap };
+}
+
+function openCustImport() {
+  if (!userCanEdit()) return alert("İmport üçün redaktə icazəsi lazımdır.");
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv";
+  input.onchange = () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const isCsv = /\.csv$/i.test(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let rawRows = [];
+      try {
+        if (isCsv) {
+          const text = (e.target.result || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+          rawRows = text.split("\n").map((line) => {
+            const out = [];
+            let cur = "";
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+              const ch = line[i];
+              if (ch === '"') inQuotes = !inQuotes;
+              else if ((ch === "," || ch === ";") && !inQuotes) {
+                out.push(cur.trim());
+                cur = "";
+              } else cur += ch;
+            }
+            out.push(cur.trim());
+            return out;
+          });
+        } else {
+          if (typeof XLSX === "undefined") return alert("Excel oxuma üçün kitabxana yüklənməyib. Səhifəni yeniləyin.");
+          const wb = XLSX.read(e.target.result, { type: "array", raw: false });
+          const firstSheet = wb.SheetNames[0] ? wb.Sheets[wb.SheetNames[0]] : null;
+          if (!firstSheet) return alert("Excel faylında vərəq tapılmadı.");
+          rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+        }
+      } catch (err) {
+        return alert("Fayl oxuna bilmədi: " + (err.message || err));
+      }
+      const { headers, rows, colMap } = parseCustImportFile(rawRows);
+      if (rows.length === 0) return alert("Faylda mətn sətiri tapılmadı (birinci sətir başlıq sayılır).");
+      const needSur = (colMap.sur ?? -1) < 0;
+      const needName = (colMap.name ?? -1) < 0;
+      const needPh1 = (colMap.ph1 ?? -1) < 0;
+      const needFin = (colMap.fin ?? -1) < 0;
+      if (needSur || needName || needPh1 || needFin) {
+        const missing = [];
+        if (needSur) missing.push("Soyad");
+        if (needName) missing.push("Ad");
+        if (needPh1) missing.push("Mobil/Telefon");
+        if (needFin) missing.push("FİN");
+        return alert("Başlıq sətirində aşağıdakı sütunlardan biri tapılmadı: " + missing.join(", ") + ".\n\nMümkün başlıq adları: Soyad, Ad, Ata, FİN, Seriya, Mobil, Telefon, İş yeri, Ünvan, Kredit limit.");
+      }
+      const now = nowISODateTimeLocal();
+      const nextUid = genId(db.cust, 1);
+      let added = 0;
+      const finSet = new Set((db.cust || []).map((c) => String(c.fin || "").toLowerCase()));
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i];
+        const get = (field) => {
+          const idx = colMap[field];
+          return idx >= 0 && idx < cells.length ? cells[idx] : "";
+        };
+        const finVal = get("fin");
+        if (!finVal) continue;
+        const finKey = finVal.toLowerCase();
+        if (finSet.has(finKey)) continue;
+        finSet.add(finKey);
+        const sur = get("sur") || "";
+        const name = get("name") || "";
+        if (!sur.trim() && !name.trim()) continue;
+        db.cust.push({
+          uid: nextUid + added,
+          createdAt: now,
+          sur,
+          name,
+          father: get("father"),
+          fin: finVal.toUpperCase(),
+          seriaNum: (get("seriaNum") || "").toUpperCase(),
+          ph1: get("ph1") || "",
+          ph2: get("ph2"),
+          ph3: get("ph3"),
+          work: get("work"),
+          addr: get("addr"),
+          zam: "",
+          creditLimit: String(Math.max(0, n(get("creditLimit")) || 0)),
+        });
+        added++;
+      }
+      if (added > 0) {
+        logEvent("import", "cust", { count: added });
+        saveDB();
+        closeMdl();
+        renderAll();
+        toast(added + " müştəri əlavə edildi.", "ok", 2500);
+      } else {
+        toast("Əlavə edilən müştəri yoxdur (FİN təkrarlana bilər və ya məcburi sahələr boşdur).", "warn", 3000);
+      }
+    };
+    if (isCsv) reader.readAsText(file, "UTF-8");
+    else reader.readAsArrayBuffer(file);
+  };
+  input.click();
+}
+
 // ========= Suppliers =========
 function openSupp(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
