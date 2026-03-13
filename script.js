@@ -3608,6 +3608,109 @@ function printSale(idx) {
   w.print();
 }
 
+function saleTypeLabel(t) {
+  const map = { nagd: "Nəğd", post: "Post", kredit: "Kredit", kocurme: "Köçürmə" };
+  return map[String(t || "").toLowerCase()] || String(t || "-");
+}
+
+function buildMelumatHtml(q) {
+  if (!q) return "<p class=\"muted\">Axtarış sözü daxil edin.</p>";
+  const qq = q.trim().toLowerCase();
+  const blocks = [];
+  const shownKeys = new Set();
+
+  db.purch.forEach((p, pIdx) => {
+    const inv = p.invNo || invFallback("purch", p.uid);
+    const hay = `${inv} ${p.supp} ${p.name} ${p.imei1} ${p.imei2} ${p.seria} ${p.code}`.toLowerCase();
+    if (!hay.includes(qq)) return;
+    const key = itemKeyFromPurch(p);
+    if (shownKeys.has(key)) return;
+    shownKeys.add(key);
+
+    let saleHtml = "";
+    if (purchIsBulk(p)) {
+      const sales = (db.sales || []).filter((s) => !s.returnedAt && String(s.bulkPurchUid || "") === String(p.uid));
+      saleHtml = sales.length
+        ? sales.map((s) => `<div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(s.invNo || invFallback("sales", s.uid))} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)}</div></div>`).join("")
+        : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
+    } else {
+      const s = (db.sales || []).find((s) => !s.returnedAt && s.itemKey === key);
+      saleHtml = s
+        ? `<div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(s.invNo || invFallback("sales", s.uid))} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)}</div></div>`
+        : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
+    }
+
+    blocks.push(`
+      <div class="info-block melumat-block" style="margin-bottom:16px;">
+        <div class="info-row"><div class="info-label">Məhsul (marka/model)</div><div class="info-value">${escapeHtml(p.name || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(p.code || "-")}</div></div>
+        <div class="info-row"><div class="info-label">IMEI 1</div><div class="info-value">${escapeHtml(p.imei1 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(p.imei2 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(p.seria || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Alış</div><div class="info-value">${escapeHtml(inv)} • ${escapeHtml(p.supp || "-")} • ${fmtDT(p.date)}</div></div>
+        ${saleHtml}
+      </div>
+    `);
+  });
+
+  db.sales.forEach((s, sIdx) => {
+    const inv = s.invNo || invFallback("sales", s.uid);
+    const hay = `${inv} ${s.customerName} ${s.productName} ${s.imei1} ${s.imei2} ${s.seria} ${s.code}`.toLowerCase();
+    if (!hay.includes(qq)) return;
+    const key = s.itemKey || (s.bulkPurchUid ? `BULK:${s.bulkPurchUid}` : null);
+    if (key && shownKeys.has(key)) return;
+    const p = key ? (s.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid)) : db.purch.find((x) => itemKeyFromPurch(x) === key)) : null;
+    if (p) shownKeys.add(key || key);
+    const name = p ? (p.name || "-") : (s.productName || "-");
+    const code = p ? (p.code || "-") : (s.code || "-");
+    const imei1 = p ? (p.imei1 || "-") : (s.imei1 || "-");
+    const imei2 = p ? (p.imei2 || "-") : (s.imei2 || "-");
+    const seria = p ? (p.seria || "-") : (s.seria || "-");
+    const purchInv = p ? (p.invNo || invFallback("purch", p.uid)) : "-";
+    const supp = p ? (p.supp || "-") : "-";
+    const purchDate = p ? fmtDT(p.date) : "-";
+
+    blocks.push(`
+      <div class="info-block melumat-block" style="margin-bottom:16px;">
+        <div class="info-row"><div class="info-label">Məhsul (marka/model)</div><div class="info-value">${escapeHtml(name)}</div></div>
+        <div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(code)}</div></div>
+        <div class="info-row"><div class="info-label">IMEI 1</div><div class="info-value">${escapeHtml(imei1)}</div></div>
+        <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(imei2)}</div></div>
+        <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(seria)}</div></div>
+        <div class="info-row"><div class="info-label">Alış</div><div class="info-value">${escapeHtml(purchInv)} • ${escapeHtml(supp)} • ${purchDate}</div></div>
+        <div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(inv)} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)}</div></div>
+      </div>
+    `);
+    if (key) shownKeys.add(key);
+  });
+
+  db.cust.forEach((c) => {
+    const hay = `${pad4(c.uid)} ${c.sur} ${c.name} ${c.father} ${c.ph1} ${c.fin}`.toLowerCase();
+    if (!hay.includes(qq)) return;
+    blocks.push(`
+      <div class="info-block melumat-block" style="margin-bottom:16px;">
+        <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(c.sur || "")} ${escapeHtml(c.name || "")} (${pad4(c.uid)})</div></div>
+        <div class="info-row"><div class="info-label">Telefon</div><div class="info-value">${escapeHtml(c.ph1 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">FIN</div><div class="info-value">${escapeHtml(c.fin || "-")}</div></div>
+      </div>
+    `);
+  });
+
+  db.supp.forEach((s) => {
+    const hay = `${s.uid} ${s.co} ${s.mob} ${s.voen}`.toLowerCase();
+    if (!hay.includes(qq)) return;
+    blocks.push(`
+      <div class="info-block melumat-block" style="margin-bottom:16px;">
+        <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(s.co || "-")} (${escapeHtml(s.uid || "")})</div></div>
+        <div class="info-row"><div class="info-label">Mobil</div><div class="info-value">${escapeHtml(s.mob || "-")}</div></div>
+        <div class="info-row"><div class="info-label">VOEN</div><div class="info-value">${escapeHtml(s.voen || "-")}</div></div>
+      </div>
+    `);
+  });
+
+  return blocks.length ? blocks.join("") : "<p class=\"muted\">Nəticə tapılmadı.</p>";
+}
+
 function openGlobalSearch() {
   if (!meta?.session) return showLoginOverlay(true);
   openModal(`
@@ -3615,12 +3718,8 @@ function openGlobalSearch() {
     <div class="grid-3">
       <input id="gs_q" class="span-3" placeholder="IMEI / Seriya / Kod / Qaimə / Ad ..." oninput="runGlobalSearch()">
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Tip</th><th>Nəticə</th><th>Əməliyyat</th></tr></thead>
-        <tbody id="gs_res"><tr><td colspan="3">Axtar...</td></tr></tbody>
-      </table>
-    </div>
+    <h3 style="margin:20px 0 10px;font-size:1.1rem;">Məlumat</h3>
+    <div id="gs_melumat" class="melumat-content">Axtarış sözü daxil edin.</div>
     <div class="modal-footer">
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
@@ -3629,36 +3728,10 @@ function openGlobalSearch() {
 }
 
 function runGlobalSearch() {
-  const q = (byId("gs_q")?.value || "").trim().toLowerCase();
-  const body = byId("gs_res");
-  if (!body) return;
-  if (!q) {
-    body.innerHTML = `<tr><td colspan="3">Axtar...</td></tr>`;
-    return;
-  }
-  const rows = [];
-  const push = (type, text, btn) => rows.push(`<tr><td>${escapeHtml(type)}</td><td>${escapeHtml(text)}</td><td class="tbl-actions">${btn}</td></tr>`);
-
-  db.sales.forEach((s, idx) => {
-    const inv = s.invNo || invFallback("sales", s.uid);
-    const hay = `${inv} ${s.customerName} ${s.productName} ${s.imei1} ${s.imei2} ${s.seria} ${s.code}`.toLowerCase();
-    if (hay.includes(q)) push("Satış", `${inv} • ${s.customerName} • ${s.productName}`, `<button class="icon-btn info" onclick="openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>`);
-  });
-  db.purch.forEach((p, idx) => {
-    const inv = p.invNo || invFallback("purch", p.uid);
-    const hay = `${inv} ${p.supp} ${p.name} ${p.imei1} ${p.imei2} ${p.seria} ${p.code}`.toLowerCase();
-    if (hay.includes(q)) push("Alış", `${inv} • ${p.supp} • ${p.name}`, userCanEdit() ? `<button class="icon-btn edit" onclick="openPurch(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : `<span>-</span>`);
-  });
-  db.cust.forEach((c, idx) => {
-    const hay = `${pad4(c.uid)} ${c.sur} ${c.name} ${c.father} ${c.ph1} ${c.fin}`.toLowerCase();
-    if (hay.includes(q)) push("Müştəri", `${pad4(c.uid)} • ${c.sur} ${c.name}`, `<button class="icon-btn info" onclick="openCustInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>`);
-  });
-  db.supp.forEach((s, idx) => {
-    const hay = `${s.uid} ${s.co} ${s.mob} ${s.voen}`.toLowerCase();
-    if (hay.includes(q)) push("Təchizatçı", `${s.co} (${s.uid})`, `<button class="icon-btn info" onclick="openSuppInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>`);
-  });
-
-  body.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="3">Nəticə yoxdur</td></tr>`;
+  const q = (byId("gs_q")?.value || "").trim();
+  const melumatEl = byId("gs_melumat");
+  if (!melumatEl) return;
+  melumatEl.innerHTML = buildMelumatHtml(q);
 }
 
 function exportCompany() {
