@@ -4749,8 +4749,14 @@ function initApp() {
   }
   showLoginOverlay(false);
   renderAll();
-  const first = document.querySelector(".nav-link.active") || document.querySelector(".nav-link");
-  if (first) first.click();
+  const active = document.querySelector(".nav-link.active");
+  const activeSecId = active?.getAttribute("onclick")?.match(/showSec\('([^']+)'/)?.[1];
+  const firstVisible = Array.from(document.querySelectorAll(".nav-link")).find(
+    (el) => el.style.display !== "none" && !el.classList.contains("dev-toggle")
+  );
+  const firstSecId = firstVisible?.getAttribute("onclick")?.match(/showSec\('([^']+)'/)?.[1];
+  if (activeSecId && userCanSection(activeSecId)) return;
+  if (firstVisible && firstSecId && userCanSection(firstSecId)) firstVisible.click();
 }
 
 function hideLoading() {
