@@ -2375,6 +2375,57 @@ function addCashOp(op, opts = {}) {
   db.cash.push(data);
 }
 
+function openEditCashOp(uid) {
+  if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
+  if (i < 0) return;
+  const c = db.cash[i];
+  const kind = c.link?.kind || "";
+  const canEditAmount = kind === "expense" || kind === "income" || kind === "";
+  const accOptions = accountOptionsHtml(c.accountId || 1);
+  openModal(`
+    <h2>Əməliyyatı redaktə et</h2>
+    <form onsubmit="saveEditCashOp(event, ${c.uid})">
+      <div class="grid-3">
+        <label class="span-3">Tarix</label>
+        <input type="datetime-local" id="edit_cash_date" value="${(c.date || "").slice(0, 16)}" class="span-3" required>
+        <label class="span-3">Məbləğ (AZN)</label>
+        <input type="number" step="0.01" id="edit_cash_amount" class="span-3" value="${n(c.amount)}" ${canEditAmount ? "" : "readonly"} required>
+        ${!canEditAmount ? "<p class=\"span-3 muted small\">Bu əməliyyat növündə məbləğ dəyişdirilə bilməz.</p>" : ""}
+        <label class="span-3">Mənbə / Açıqlama</label>
+        <input type="text" id="edit_cash_source" class="span-3" value="${escapeHtml(c.source || "")}" required>
+        <label class="span-3">Hesab</label>
+        <select id="edit_cash_acc" class="span-3" required>${accOptions}</select>
+        <label class="span-3">Qeyd</label>
+        <input type="text" id="edit_cash_note" class="span-3" value="${escapeHtml(c.note || "")}" placeholder="İstəyə bağlı">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveEditCashOp(e, uid) {
+  e.preventDefault();
+  if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
+  if (i < 0) return;
+  const c = db.cash[i];
+  const kind = c.link?.kind || "";
+  const canEditAmount = kind === "expense" || kind === "income" || kind === "";
+  const date = byId("edit_cash_date")?.value || c.date;
+  const amount = canEditAmount ? Math.max(0, n(byId("edit_cash_amount")?.value)) : n(c.amount);
+  const source = (byId("edit_cash_source")?.value || "").trim() || c.source;
+  const note = (byId("edit_cash_note")?.value || "").trim();
+  const accountId = Number(byId("edit_cash_acc")?.value || c.accountId || 1);
+  if (amount <= 0 && canEditAmount) return alert("Məbləğ 0-dan böyük olmalıdır.");
+  db.cash[i] = { ...c, date, amount: String(amount), source, note, accountId };
+  saveDB();
+  closeMdl();
+}
+
 function delCashOp(uid) {
   if (!userCanDelete()) return alert("Sil icazəsi yoxdur.");
   const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
@@ -3954,6 +4005,7 @@ function renderAll() {
   byId("tblDebts").innerHTML = groupsPage
     .map((g, i) => {
       const payDisabled = g.rem <= 0.000001 ? "disabled" : "";
+      const firstSaleIdx = g.items && g.items[0] != null ? g.items[0].saleIdx : -1;
       return `
       <tr>
         <td>${i + 1}</td>
@@ -3964,6 +4016,7 @@ function renderAll() {
         <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
         <td class="tbl-actions">
           <button class="icon-btn info" onclick="openDebtorInfo('${escapeAttr(g.customerId)}')" title="Info"><i class="fas fa-circle-info"></i></button>
+          ${userCanEdit() && firstSaleIdx >= 0 ? `<button class="icon-btn edit" onclick="openSale(${firstSaleIdx})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
           <button class="btn-mini-pay" type="button" onclick="openDebtorPayment('${escapeAttr(g.customerId)}')" ${payDisabled}>Ödəniş et</button>
         </td>
       </tr>`;
@@ -4003,8 +4056,9 @@ function renderAll() {
   const filteredGroups = paginate(filteredGroupsAll, "cred", credPageSize, "credPageInfo");
 
   byId("tblCreditor").innerHTML = filteredGroups
-    .map(
-      (g, i) => `
+    .map((g, i) => {
+      const firstPurchIdx = g.purchases && g.purchases[0] ? db.purch.findIndex((p) => Number(p.uid) === Number(g.purchases[0].uid)) : -1;
+      return `
     <tr>
       <td>${i + 1}</td>
       <td>${escapeHtml(g.supp)}</td>
@@ -4014,9 +4068,10 @@ function renderAll() {
       <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
       <td class="tbl-actions">
         <button class="icon-btn info" onclick="openCreditorInfo(${credGroups.indexOf(g)})" title="Info"><i class="fas fa-circle-info"></i></button>
+        ${userCanEdit() && firstPurchIdx >= 0 ? `<button class="icon-btn edit" onclick="openPurch(${firstPurchIdx})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
       </td>
-    </tr>`
-    )
+    </tr>`;
+    })
     .join("");
   filterCreditor();
 
@@ -4045,6 +4100,7 @@ function renderAll() {
       <td class="${c.type === "in" ? "amt-in" : "amt-out"}">${c.type === "in" ? "+" : "-"}${money(c.amount)} AZN</td>
       <td>${escapeHtml(c.note || "")}</td>
       <td class="tbl-actions">
+        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openEditCashOp(${c.uid})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
         ${userCanDelete() ? `<button class="icon-btn delete" onclick="delCashOp(${c.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
     </tr>`
@@ -4092,8 +4148,7 @@ function renderAll() {
           <td>${active ? '<span class="pill paid">AKTİV</span>' : "-"}</td>
           <td class="tbl-actions">
             <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
-            <button class="icon-btn edit" onclick="openCompany(${i})" title="Edit"><i class="fas fa-pen"></i></button>
-            <button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>
+            ${isDeveloper() ? `<button class="icon-btn edit" onclick="openCompany(${i})" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
       })
@@ -4119,8 +4174,7 @@ function renderAll() {
           <td>${escapeHtml(u.role || "user")}</td>
           <td>${u.active ? "Aktiv" : "Deaktiv"}</td>
           <td class="tbl-actions">
-            <button class="icon-btn edit" onclick="openUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Edit"><i class="fas fa-pen"></i></button>
-            <button class="icon-btn delete" onclick="delUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Sil"><i class="fas fa-trash"></i></button>
+            ${(isDeveloper() || isAdmin()) ? `<button class="icon-btn edit" onclick="openUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
       })
@@ -4680,6 +4734,8 @@ Object.assign(window, {
   saveStaff,
   openCashOp,
   saveCashOp,
+  openEditCashOp,
+  saveEditCashOp,
   delCashOp,
   toggleCashKind,
   toggleIncomeSourceBox,
