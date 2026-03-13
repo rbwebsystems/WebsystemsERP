@@ -476,15 +476,16 @@ function ensureMetaDefaults() {
       fullName: "Developer",
       role: "developer",
       active: true,
+      companyId: null,
       perms: { sections: ["*"] },
       createdAt: nowISODateTimeLocal(),
     });
   } else {
-    // self-heal developer user so dev always sees everything
     const u = meta.users[devIdx];
     if (!u.uid) u.uid = 1;
     u.role = "developer";
     u.active = true;
+    u.companyId = null;
     if (!u.perms) u.perms = { sections: ["*"] };
     if (!Array.isArray(u.perms.sections) || u.perms.sections.length === 0) u.perms.sections = ["*"];
     if (!u.perms.sections.includes("*")) u.perms.sections.unshift("*");
@@ -492,6 +493,11 @@ function ensureMetaDefaults() {
     if (!u.fullName) u.fullName = "Developer";
     if (!u.createdAt) u.createdAt = nowISODateTimeLocal();
   }
+  meta.users.forEach((u) => {
+    if (u.role !== "developer" && (u.companyId == null || u.companyId === "")) {
+      u.companyId = meta.companies[0]?.id || null;
+    }
+  });
   if (!meta.session || !meta.session.companyId) {
     meta.session = null;
   }
@@ -757,6 +763,8 @@ function login(e) {
   }
   const companyId = window.__loginCompanyFromUrl || val("loginCompany");
   if (!companyId) return alert("Şirkət linki tapılmadı. Keçid ünvanını yoxlayın (məs: ?company=ŞİRKƏT_ID).");
+  if (u.companyId != null && u.companyId !== "" && u.companyId !== companyId) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
+  if ((u.companyId == null || u.companyId === "") && meta.companies[0]?.id !== companyId) return alert("Bu şirkət üçün icazəniz yoxdur.");
   doLoginWithCompany(companyId);
 }
 
@@ -3201,12 +3209,22 @@ function resetCompanyData() {
   }
 }
 
-function openUser(idx = null) {
+function usersForCurrentCompany() {
+  const cid = meta?.session?.companyId;
+  if (!cid) return [];
+  return meta.users.filter((u) => u.companyId === cid);
+}
+
+function openUser(uidOrNull = null) {
   if (!isDeveloper() && !isAdmin()) return alert("İcazə yoxdur.");
+  const cid = meta?.session?.companyId;
   const u =
-    idx !== null
-      ? meta.users[idx]
-      : {
+    uidOrNull !== null && uidOrNull !== undefined && uidOrNull !== ""
+      ? meta.users.find((x) => String(x.uid) === String(uidOrNull))
+      : null;
+  if (uidOrNull != null && uidOrNull !== "" && !u) return;
+  if (u && cid && u.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+  const editingUser = u || {
           uid: genId(meta.users, 1),
           fullName: "",
           username: "",
@@ -3214,6 +3232,7 @@ function openUser(idx = null) {
           pass: "",
           role: "user",
           active: true,
+          companyId: cid || null,
           perms: {
             sections: ["dash", "cust", "supp", "prod", "purch", "stock", "sales", "staff", "debts", "creditor", "cash", "accounts", "reports"],
             canEdit: false,
@@ -3225,14 +3244,14 @@ function openUser(idx = null) {
             canReset: false,
           },
         };
-  if (!u.perms) u.perms = { sections: [], canEdit: false, canDelete: false };
-  if (typeof u.perms.canEdit !== "boolean") u.perms.canEdit = false;
-  if (typeof u.perms.canDelete !== "boolean") u.perms.canDelete = false;
-  if (typeof u.perms.canPay !== "boolean") u.perms.canPay = false;
-  if (typeof u.perms.canRefund !== "boolean") u.perms.canRefund = false;
-  if (typeof u.perms.canExport !== "boolean") u.perms.canExport = false;
-  if (typeof u.perms.canImport !== "boolean") u.perms.canImport = false;
-  if (typeof u.perms.canReset !== "boolean") u.perms.canReset = false;
+  if (!editingUser.perms) editingUser.perms = { sections: [], canEdit: false, canDelete: false };
+  if (typeof editingUser.perms.canEdit !== "boolean") editingUser.perms.canEdit = false;
+  if (typeof editingUser.perms.canDelete !== "boolean") editingUser.perms.canDelete = false;
+  if (typeof editingUser.perms.canPay !== "boolean") editingUser.perms.canPay = false;
+  if (typeof editingUser.perms.canRefund !== "boolean") editingUser.perms.canRefund = false;
+  if (typeof editingUser.perms.canExport !== "boolean") editingUser.perms.canExport = false;
+  if (typeof editingUser.perms.canImport !== "boolean") editingUser.perms.canImport = false;
+  if (typeof editingUser.perms.canReset !== "boolean") editingUser.perms.canReset = false;
   const sections = [
     "dash",
     "cust",
@@ -3253,38 +3272,40 @@ function openUser(idx = null) {
   ];
   const checks = sections
     .map((s) => {
-      const on = (u.perms?.sections || []).includes("*") || (u.perms?.sections || []).includes(s);
+      const on = (editingUser.perms?.sections || []).includes("*") || (editingUser.perms?.sections || []).includes(s);
       return `<label class="chk"><input type="checkbox" class="permSec" value="${s}" ${on ? "checked" : ""}><span>${escapeHtml(sectionLabelAz(s))}</span></label>`;
     })
     .join("");
+  const isNew = uidOrNull == null || uidOrNull === "";
   openModal(`
-    <h2>${idx !== null ? "İstifadəçi redaktə" : "Yeni istifadəçi"}</h2>
-    <form onsubmit="saveUser(event, ${idx})">
+    <h2>${isNew ? "Yeni istifadəçi" : "İstifadəçi redaktə"}</h2>
+    <form onsubmit="saveUser(event)">
+      <input type="hidden" id="u_uid" value="${escapeAttr(isNew ? "" : String(editingUser.uid))}">
       <div class="grid-3">
-        <input id="u_full" class="span-3" placeholder="Ad Soyad" value="${escapeHtml(u.fullName || "")}" required>
-        <input id="u_name" class="span-2" placeholder="İstifadəçi adı" value="${escapeHtml(u.username || "")}" ${idx !== null ? "disabled" : ""} required>
+        <input id="u_full" class="span-3" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" required>
+        <input id="u_name" class="span-2" placeholder="İstifadəçi adı" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required>
         <select id="u_staff" class="span-3" title="Əməkdaş">
           <option value="">— Əməkdaş seçin —</option>
-          ${(db.staff || []).map((s) => `<option value="${s.uid}" ${String(u.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("")}
+          ${(db.staff || []).map((s) => `<option value="${s.uid}" ${String(editingUser.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("")}
         </select>
         <select id="u_role">
-          <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
-          <option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option>
-          <option value="developer" ${u.role === "developer" ? "selected" : ""}>developer</option>
+          <option value="user" ${editingUser.role === "user" ? "selected" : ""}>user</option>
+          <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>admin</option>
+          <option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>developer</option>
         </select>
-        <input id="u_pass" class="span-3" placeholder="Şifrə" type="password" value="${escapeHtml(u.pass || "")}" required>
-        <label class="chk span-3"><input type="checkbox" id="u_active" ${u.active ? "checked" : ""}><span>Aktiv</span></label>
+        <input id="u_pass" class="span-3" placeholder="Şifrə" type="password" value="${escapeHtml(editingUser.pass || "")}" required>
+        <label class="chk span-3"><input type="checkbox" id="u_active" ${editingUser.active ? "checked" : ""}><span>Aktiv</span></label>
         <div class="span-3 info-block">
           <div class="info-row">
             <div class="info-label">İcazələr</div>
             <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
-              <label class="chk"><input type="checkbox" id="u_can_edit" ${u.perms.canEdit ? "checked" : ""}><span>Redaktə edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_delete" ${u.perms.canDelete ? "checked" : ""}><span>Silə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_pay" ${u.perms.canPay ? "checked" : ""}><span>Ödəniş edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_ref" ${u.perms.canRefund ? "checked" : ""}><span>Qaytarma edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_exp" ${u.perms.canExport ? "checked" : ""}><span>Export edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_imp" ${u.perms.canImport ? "checked" : ""}><span>Import edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_reset" ${u.perms.canReset ? "checked" : ""}><span>Reset edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_edit" ${editingUser.perms.canEdit ? "checked" : ""}><span>Redaktə edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_delete" ${editingUser.perms.canDelete ? "checked" : ""}><span>Silə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_pay" ${editingUser.perms.canPay ? "checked" : ""}><span>Ödəniş edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_ref" ${editingUser.perms.canRefund ? "checked" : ""}><span>Qaytarma edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_exp" ${editingUser.perms.canExport ? "checked" : ""}><span>Export edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_imp" ${editingUser.perms.canImport ? "checked" : ""}><span>Import edə bilsin</span></label>
+              <label class="chk"><input type="checkbox" id="u_can_reset" ${editingUser.perms.canReset ? "checked" : ""}><span>Reset edə bilsin</span></label>
             </div>
           </div>
         </div>
@@ -3293,16 +3314,17 @@ function openUser(idx = null) {
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yarat"}</button>
+        <button class="btn-main" type="submit">${isNew ? "Yarat" : "Yenilə"}</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
   `);
 }
 
-function saveUser(e, idx) {
+function saveUser(e) {
   e.preventDefault();
   if (!isDeveloper() && !isAdmin()) return;
+  const uidVal = (val("u_uid") || "").trim();
   const fullName = val("u_full").trim();
   const username = val("u_name").trim();
   const staffUid = (val("u_staff") || "").trim();
@@ -3320,22 +3342,29 @@ function saveUser(e, idx) {
     .filter((x) => x.checked)
     .map((x) => x.value);
   if (!username || !pass) return;
-  if (idx === null) {
+  const cid = meta?.session?.companyId;
+  if (uidVal === "") {
     if (meta.users.some((u) => u.username === username)) return alert("Bu istifadəçi adı var.");
-    meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset }, createdAt: nowISODateTimeLocal() });
+    meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset }, createdAt: nowISODateTimeLocal() });
   } else {
+    const idx = meta.users.findIndex((x) => String(x.uid) === String(uidVal));
+    if (idx === -1) return;
     const keep = meta.users[idx];
-    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
+    if (cid && keep.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
   }
   saveMeta();
   closeMdl();
   renderAll();
 }
 
-function delUser(idx) {
+function delUser(uid) {
   if (!isDeveloper() && !isAdmin()) return alert("İcazə yoxdur.");
-  const u = meta.users[idx];
+  const idx = meta.users.findIndex((x) => String(x.uid) === String(uid));
+  const u = idx >= 0 ? meta.users[idx] : null;
   if (!u) return;
+  const cid = meta?.session?.companyId;
+  if (cid && u.companyId !== cid) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   if (u.username === "developer") return alert("Developer silinə bilməz.");
   if (u.role === "admin" && !isDeveloper()) return alert("Admin istifadəçisini yalnız developer silə bilər.");
   if (!confirm("İstifadəçi silinsin?")) return;
@@ -4174,16 +4203,18 @@ function renderAll() {
       .join("");
   }
 
-  // users (developer only)
+  // users (cari şirkətin istifadəçiləri)
   const userBody = byId("tblUsers");
   if (userBody) {
-    userBody.innerHTML = meta.users
+    const companyUsers = usersForCurrentCompany()
       .slice()
-      .sort((a, b) => String(a.username).localeCompare(String(b.username)))
+      .sort((a, b) => String(a.username).localeCompare(String(b.username)));
+    userBody.innerHTML = companyUsers
       .map((u, i) => {
         const me = Number(u.uid) === Number(meta?.session?.userUid);
         const staffUid = u.staffUid != null && u.staffUid !== "" ? String(u.staffUid) : null;
         const staffName = staffUid && db.staff ? (db.staff.find((s) => String(s.uid) === staffUid)?.name || "-") : "-";
+        const uidAttr = escapeAttr(String(u.uid));
         return `
         <tr>
           <td>${i + 1}</td>
@@ -4193,7 +4224,7 @@ function renderAll() {
           <td>${escapeHtml(u.role || "user")}</td>
           <td>${u.active ? "Aktiv" : "Deaktiv"}</td>
           <td class="tbl-actions">
-            ${(isDeveloper() || isAdmin()) ? `<button class="icon-btn edit" onclick="openUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delUser(${meta.users.findIndex((x) => x.uid === u.uid)})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            ${(isDeveloper() || isAdmin()) ? `<button class="icon-btn edit" onclick="openUser('${uidAttr}')" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
       })
