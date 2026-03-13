@@ -125,6 +125,15 @@ aside nav{flex:1 1 0;min-height:0;overflow-y:auto;padding:18px 15px 30px 15px;pa
   color:#fff;
   font-weight:600;
 }
+.hidden{display:none !important;}
+.realtime-indicator{
+  font-size:.75rem;
+  color:rgba(14,184,166,.95);
+  margin-right:8px;
+  padding:2px 8px;
+  border-radius:6px;
+  background:rgba(255,255,255,.12);
+}
 @media (max-width:640px){
   .last-saved{display:none;}
 }

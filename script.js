@@ -537,6 +537,17 @@ function applyAccessUI() {
     if (el.classList.contains("dev-only")) return; // handled above
     el.style.display = userCanSection(secId) ? "flex" : "none";
   });
+
+  // Realtime / Cloud sync indicator
+  const realtimeEl = byId("realtimeIndicator");
+  if (realtimeEl) {
+    if (useFirestore() && meta?.session?.companyId) {
+      realtimeEl.textContent = "Realtime";
+      realtimeEl.classList.remove("hidden");
+    } else {
+      realtimeEl.classList.add("hidden");
+    }
+  }
 }
 
 function toggleDevMenu() {
