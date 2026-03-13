@@ -31,6 +31,8 @@ const useFirestore = () => typeof FIREBASE_CONFIG !== "undefined" && FIREBASE_CO
 let firestoreUnsubMeta = null;
 let firestoreUnsubCompany = null;
 let firestoreInitialized = false;
+let firestoreAuthReady = false;
+let firestoreAuthPromise = null;
 
 function setLoading(text) {
   const el = byId("loadingText");
@@ -49,6 +51,51 @@ function initFirestore() {
   } catch (e) {
     console.warn("Firebase init xətası:", e);
   }
+}
+
+function ensureFirestoreAuth() {
+  if (!useFirestore() || !firestoreInitialized) return Promise.resolve(false);
+  if (firestoreAuthReady) return Promise.resolve(true);
+  if (firestoreAuthPromise) return firestoreAuthPromise;
+  if (!firebase.auth) {
+    console.warn("Firebase Auth yüklənməyib (firebase-auth-compat.js).");
+    return Promise.resolve(false);
+  }
+
+  firestoreAuthPromise = new Promise((resolve) => {
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      firestoreAuthReady = !!ok;
+      resolve(!!ok);
+    };
+
+    try {
+      firebase.auth().onAuthStateChanged(
+        (user) => {
+          if (user) return finish(true);
+          // anonymous sign-in
+          firebase
+            .auth()
+            .signInAnonymously()
+            .then(() => finish(true))
+            .catch((e) => {
+              console.warn("Anon auth xətası:", e);
+              finish(false);
+            });
+        },
+        (e) => {
+          console.warn("Auth state xətası:", e);
+          finish(false);
+        }
+      );
+    } catch (e) {
+      console.warn("Auth init xətası:", e);
+      finish(false);
+    }
+  });
+  return firestoreAuthPromise;
 }
 
 function getMetaRef() {
@@ -4646,6 +4693,7 @@ async function init() {
 
   try {
     initFirestore();
+    if (useFirestore()) await ensureFirestoreAuth();
     meta = await loadMetaAsync();
     ensureMetaDefaults();
     if (useFirestore()) saveMeta();
