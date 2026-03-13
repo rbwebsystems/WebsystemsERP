@@ -2731,6 +2731,118 @@ function openEditCashOp(uid) {
   `);
 }
 
+function syncCashOpAmountToLinked(c, oldAmount, newAmount) {
+  const kind = c.link?.kind || "";
+  const oldA = n(oldAmount);
+  const newA = n(newAmount);
+  if (Math.abs(oldA - newA) < 0.000001) return;
+
+  if (kind === "sale_payment") {
+    const s = db.sales.find((x) => Number(x.uid) === Number(c.link?.saleUid));
+    if (!s || !s.payments) return;
+    const pi = (s.payments || []).findIndex((p) => String(p.date).slice(0, 16) === String(c.date).slice(0, 16) && Math.abs(n(p.amount) - oldA) < 0.000001);
+    if (pi >= 0) {
+      s.payments[pi].amount = newA;
+      s.paidTotal = String(sumPayments(s.payments));
+    }
+    return;
+  }
+
+  if (kind === "creditor_invoice_payment") {
+    const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
+    if (!p) return;
+    const newPaid = Math.max(0, Math.min(n(p.amount), n(p.paidTotal) - oldA + newA));
+    p.paidTotal = String(newPaid);
+    return;
+  }
+
+  if (kind === "debtor_payment") {
+    const allocs = (c.meta?.allocations || []).slice();
+    const oldTotal = allocs.reduce((a, x) => a + n(x.amount), 0);
+    let diff = newA - oldTotal;
+    if (Math.abs(diff) < 0.000001) return;
+    const cashDate = String(c.date).slice(0, 16);
+
+    if (diff < 0) {
+      let toSubtract = -diff;
+      for (let idx = allocs.length - 1; idx >= 0 && toSubtract > 0.000001; idx--) {
+        const alloc = allocs[idx];
+        const amt = n(alloc.amount);
+        const sub = Math.min(amt, toSubtract);
+        const s = db.sales.find((x) => Number(x.uid) === Number(alloc.saleUid || alloc.salesUid));
+        if (s && s.payments) {
+          const pi = (s.payments || []).findIndex((p) => String(p.date).slice(0, 16) === cashDate && Math.abs(n(p.amount) - amt) < 0.000001);
+          if (pi >= 0) {
+            const newPayAmt = amt - sub;
+            if (newPayAmt < 0.000001) s.payments.splice(pi, 1);
+            else s.payments[pi].amount = newPayAmt;
+            s.paidTotal = String(sumPayments(s.payments));
+          }
+        }
+        alloc.amount = amt - sub;
+        if (alloc.amount < 0.000001) allocs.splice(idx, 1);
+        toSubtract -= sub;
+      }
+      c.meta = { ...c.meta, allocations: allocs.filter((a) => n(a.amount) > 0.000001) };
+    } else {
+      const first = allocs[0];
+      if (first) {
+        const s = db.sales.find((x) => Number(x.uid) === Number(first.saleUid || first.salesUid));
+        if (s) {
+          s.payments = s.payments || [];
+          const payEntry = s.payments.find((p) => String(p.date).slice(0, 16) === cashDate && Math.abs(n(p.amount) - n(first.amount)) < 0.000001);
+          if (payEntry) {
+            payEntry.amount = n(payEntry.amount) + diff;
+            first.amount = n(first.amount) + diff;
+          } else {
+            s.payments.push({ uid: genId(s.payments, 1), date: c.date, amount: diff, source: "cash_edit" });
+            first.amount = n(first.amount) + diff;
+          }
+          s.paidTotal = String(sumPayments(s.payments));
+        }
+        c.meta = { ...c.meta, allocations: allocs };
+      }
+    }
+    return;
+  }
+
+  if (kind === "creditor_payment") {
+    const allocs = (c.meta?.allocations || []).slice();
+    const oldTotal = allocs.reduce((a, x) => a + n(x.amount), 0);
+    let diff = newA - oldTotal;
+    if (Math.abs(diff) < 0.000001) return;
+
+    if (diff < 0) {
+      let toSubtract = -diff;
+      for (let idx = allocs.length - 1; idx >= 0 && toSubtract > 0.000001; idx--) {
+        const alloc = allocs[idx];
+        const amt = n(alloc.amount);
+        const sub = Math.min(amt, toSubtract);
+        const p = db.purch.find((x) => Number(x.uid) === Number(alloc.purchUid));
+        if (p) {
+          p.paidTotal = String(Math.max(0, n(p.paidTotal) - sub));
+        }
+        alloc.amount = amt - sub;
+        if (alloc.amount < 0.000001) allocs.splice(idx, 1);
+        toSubtract -= sub;
+      }
+      c.meta = { ...c.meta, allocations: allocs.filter((a) => n(a.amount) > 0.000001) };
+    } else {
+      const first = allocs[0];
+      if (first) {
+        const p = db.purch.find((x) => Number(x.uid) === Number(first.purchUid));
+        if (p) {
+          const cap = Math.max(0, n(p.amount) - n(p.paidTotal));
+          const add = Math.min(diff, cap);
+          p.paidTotal = String(n(p.paidTotal) + add);
+          first.amount = n(first.amount) + add;
+        }
+        c.meta = { ...c.meta, allocations: allocs };
+      }
+    }
+  }
+}
+
 function saveEditCashOp(e, uid) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
@@ -2740,14 +2852,30 @@ function saveEditCashOp(e, uid) {
   const kind = c.link?.kind || "";
   const canEditAmount = isDeveloper() || kind === "expense" || kind === "income" || kind === "";
   const date = byId("edit_cash_date")?.value || c.date;
-  const amount = canEditAmount ? Math.max(0, n(byId("edit_cash_amount")?.value)) : n(c.amount);
+  const newAmount = canEditAmount ? Math.max(0, n(byId("edit_cash_amount")?.value)) : n(c.amount);
+  const oldAmount = n(c.amount);
   const source = (byId("edit_cash_source")?.value || "").trim() || c.source;
   const note = (byId("edit_cash_note")?.value || "").trim();
   const accountId = Number(byId("edit_cash_acc")?.value || c.accountId || 1);
-  if (amount <= 0 && canEditAmount) return alert("Məbləğ 0-dan böyük olmalıdır.");
-  db.cash[i] = { ...c, date, amount: String(amount), source, note, accountId };
+  if (newAmount <= 0 && canEditAmount) return alert("Məbləğ 0-dan böyük olmalıdır.");
+
+  const isDebtorOrCreditor = kind === "debtor_payment" || kind === "sale_payment" || kind === "creditor_payment" || kind === "creditor_invoice_payment";
+  if (canEditAmount && isDebtorOrCreditor && newAmount < oldAmount - 0.000001) {
+    const msg = kind === "debtor_payment" || kind === "sale_payment"
+      ? "Məbləği azaltsanız müştərinin debitor qalığı artacaq (status qalıq/borclu ola bilər). Davam?"
+      : "Məbləği azaltsanız təchizatçının kreditor qalığı artacaq. Davam?";
+    if (!confirm(msg)) return;
+  }
+
+  const updated = { ...c, date, amount: String(newAmount), source, note, accountId };
+  if (isDebtorOrCreditor) {
+    syncCashOpAmountToLinked(c, oldAmount, newAmount);
+    if (c.meta) updated.meta = c.meta;
+  }
+  db.cash[i] = updated;
   saveDB();
   closeMdl();
+  renderAll();
 }
 
 function delCashOp(uid) {
