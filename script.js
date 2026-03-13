@@ -800,6 +800,10 @@ function logout() {
     clearInterval(realtimeAutoRefreshTimer);
     realtimeAutoRefreshTimer = null;
   }
+  if (headerClockInterval) {
+    clearInterval(headerClockInterval);
+    headerClockInterval = null;
+  }
   meta.session = null;
   saveMeta();
   closeMdl();
@@ -906,6 +910,28 @@ function genId(list, minStart = 1) {
   return Math.max(minStart, max + 1);
 }
 
+function getCurrentCompanyName() {
+  const cid = meta?.session?.companyId;
+  if (!cid) return "";
+  const c = meta.companies.find((x) => x.id === cid);
+  return c ? (c.name || c.id) : cid;
+}
+
+function refreshHeaderBar() {
+  const titleEl = byId("appHeaderTitle");
+  if (titleEl) titleEl.textContent = getCurrentCompanyName();
+  updateHeaderDateTime();
+}
+
+function updateHeaderDateTime() {
+  const el = byId("headerDateTime");
+  if (!el) return;
+  const d = new Date();
+  const dateStr = d.toLocaleDateString("az-AZ", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeStr = d.toLocaleTimeString("az-AZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  el.textContent = dateStr + "  " + timeStr;
+}
+
 function showSec(id, el) {
   if (meta?.session && !userCanSection(id)) {
     alert("Bu bölməyə icazə yoxdur.");
@@ -916,8 +942,7 @@ function showSec(id, el) {
   const sec = document.getElementById(id);
   if (sec) sec.classList.add("active");
   if (el) el.classList.add("active");
-  const titleEl = byId("appHeaderTitle");
-  if (titleEl) titleEl.textContent = sectionLabelAz(id);
+  refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
 }
 
@@ -3857,8 +3882,8 @@ function renderAll() {
   }
   showLoginOverlay(false);
   applyAccessUI();
-  const activeSec = document.querySelector(".section.active");
-  if (activeSec && byId("appHeaderTitle")) byId("appHeaderTitle").textContent = sectionLabelAz(activeSec.id);
+  refreshHeaderBar();
+  startHeaderClock();
   const sold = soldKeySet();
 
   // customers
@@ -4992,6 +5017,13 @@ window.addEventListener("load", () => {
   if (typeof FIREBASE_CONFIG === "undefined") window.FIREBASE_CONFIG = null;
   init();
 });
+
+var headerClockInterval = null;
+function startHeaderClock() {
+  if (headerClockInterval) return;
+  updateHeaderDateTime();
+  headerClockInterval = setInterval(updateHeaderDateTime, 1000);
+}
 
 var realtimeAutoRefreshTimer = null;
 function startRealtimeAutoRefresh() {
