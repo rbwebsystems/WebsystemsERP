@@ -168,22 +168,22 @@ function unsubscribeRealtime() {
   }
 }
 
-/** Buluddan (Firestore) cari şirkət məlumatını oxuyub ekranı yenilə. Digər cihazda edilən dəyişiklikləri gətirir. */
-async function refreshFromCloud() {
+/** Buluddan (Firestore) cari şirkət məlumatını oxuyub ekranı yenilə. silent=true olanda toast göstərilmir (avtomatik yeniləmə üçün). */
+async function refreshFromCloud(silent) {
   if (!useFirestore() || !meta?.session?.companyId) {
-    toast("Realtime aktiv deyil və ya şirkət seçilməyib", "err", 2500);
+    if (!silent) toast("Realtime aktiv deyil və ya şirkət seçilməyib", "err", 2500);
     return;
   }
   const cid = meta.session.companyId;
   const ref = getCompanyRef(cid);
   if (!ref) {
-    toast("Firestore bağlantısı yoxdur", "err", 2500);
+    if (!silent) toast("Firestore bağlantısı yoxdur", "err", 2500);
     return;
   }
   try {
     const snap = await ref.get();
     if (!snap.exists()) {
-      toast("Buluda hələ məlumat yazılmayıb", "ok", 2000);
+      if (!silent) toast("Buluda hələ məlumat yazılmayıb", "ok", 2000);
       return;
     }
     const raw = snap.data();
@@ -197,7 +197,7 @@ async function refreshFromCloud() {
     db = { ...defaultDB(), ...data };
     ensureAuditTrash();
     renderAll();
-    toast("Məlumat buluddan yeniləndi", "ok", 2000);
+    if (!silent) toast("Məlumat buluddan yeniləndi", "ok", 2000);
   } catch (e) {
     console.warn("Buluddan yeniləmə xətası:", e);
     const msg = (e && e.message) ? String(e.message) : "Yeniləmə xətası";
@@ -658,6 +658,7 @@ function login(e) {
       db = data;
       unsubscribeRealtime();
       subscribeRealtime();
+      startRealtimeAutoRefresh();
       showLoginOverlay(false);
       applyAccessUI();
       logEvent("login", "auth", { companyId: c.id });
@@ -676,6 +677,10 @@ function logout() {
   try {
     logEvent("logout", "auth", {});
   } catch {}
+  if (realtimeAutoRefreshTimer) {
+    clearInterval(realtimeAutoRefreshTimer);
+    realtimeAutoRefreshTimer = null;
+  }
   meta.session = null;
   saveMeta();
   closeMdl();
@@ -4652,6 +4657,7 @@ async function init() {
       db = defaultDB();
     }
     subscribeRealtime();
+    startRealtimeAutoRefresh();
     if (!loadingHidden) {
       loadingHidden = true;
       clearTimeout(timeoutId);
@@ -4675,10 +4681,21 @@ window.addEventListener("load", () => {
   init();
 });
 
+var realtimeAutoRefreshTimer = null;
+function startRealtimeAutoRefresh() {
+  if (realtimeAutoRefreshTimer) clearInterval(realtimeAutoRefreshTimer);
+  realtimeAutoRefreshTimer = null;
+  if (!useFirestore() || !meta?.session?.companyId) return;
+  realtimeAutoRefreshTimer = setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    refreshFromCloud(true);
+  }, 15000);
+}
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   if (!useFirestore() || !meta?.session?.companyId) return;
-  setTimeout(refreshFromCloud, 300);
+  setTimeout(() => refreshFromCloud(true), 300);
 });
 
 document.addEventListener("keydown", (e) => {
