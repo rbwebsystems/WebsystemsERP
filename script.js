@@ -2243,7 +2243,6 @@ function openSaleInfo(idx) {
   if (!s) return;
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId));
   const guarantor = cust?.zam ? db.cust.find((c) => String(c.uid) === String(cust.zam)) : null;
-  const key = (s.imei1 || s.imei2 || s.seria || "").trim();
   const rem = saleRemaining(s);
   const st = debtStatus(n(s.amount), rem);
 
@@ -2294,7 +2293,9 @@ function openSaleInfo(idx) {
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
       <div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(s.code || "-")}</div></div>
       <div class="info-row"><div class="info-label">Say</div><div class="info-value">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
-      <div class="info-row"><div class="info-label">IMEI/Seriya</div><div class="info-value">${escapeHtml(key || "-")}</div></div>
+      <div class="info-row"><div class="info-label">IMEI 1</div><div class="info-value">${escapeHtml(s.imei1 || "-")}</div></div>
+      <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(s.imei2 || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(s.seria || "-")}</div></div>
       <div class="info-row"><div class="info-label">Satış növü</div><div class="info-value">${escapeHtml(String(s.saleType).toUpperCase())}</div></div>
       <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(s.employeeName || "-")}</div></div>
       <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
@@ -3661,7 +3662,9 @@ function printSale(idx) {
     <div class="row"><div class="k">Məhsul</div><div class="v">${escapeHtml(s.productName)}</div></div>
     <div class="row"><div class="k">Kod</div><div class="v">${escapeHtml(s.code || "-")}</div></div>
     <div class="row"><div class="k">Say</div><div class="v">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
-    <div class="row"><div class="k">IMEI/Seriya</div><div class="v">${escapeHtml((s.imei1 || s.imei2 || s.seria || "-"))}</div></div>
+    <div class="row"><div class="k">IMEI 1</div><div class="v">${escapeHtml(s.imei1 || "-")}</div></div>
+    <div class="row"><div class="k">IMEI 2</div><div class="v">${escapeHtml(s.imei2 || "-")}</div></div>
+    <div class="row"><div class="k">Seriya №</div><div class="v">${escapeHtml(s.seria || "-")}</div></div>
     <div class="row"><div class="k">Məbləğ</div><div class="v">${money(s.amount)} ${escapeHtml(set.currency || "AZN")}</div></div>
     <div class="row"><div class="k">Ödənilən</div><div class="v">${money(s.paidTotal)} ${escapeHtml(set.currency || "AZN")}</div></div>
     <div class="row"><div class="k">Qalıq</div><div class="v">${money(saleRemaining(s))} ${escapeHtml(set.currency || "AZN")}</div></div>
