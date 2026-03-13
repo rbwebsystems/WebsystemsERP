@@ -3927,13 +3927,21 @@ function buildMelumatHtml(q) {
   });
 
   db.cust.forEach((c) => {
-    const hay = `${pad4(c.uid)} ${c.sur} ${c.name} ${c.father} ${c.ph1} ${c.fin}`.toLowerCase();
+    const hay = `${pad4(c.uid)} ${c.sur} ${c.name} ${c.father} ${c.ph1} ${c.ph2} ${c.ph3} ${c.fin} ${c.seriaNum} ${c.work} ${c.addr}`.toLowerCase();
     if (!hay.includes(qq)) return;
+    const guarantor = c.zam ? db.cust.find((x) => String(x.uid) === String(c.zam)) : null;
     blocks.push(`
       <div class="info-block melumat-block" style="margin-bottom:16px;">
-        <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(c.sur || "")} ${escapeHtml(c.name || "")} (${pad4(c.uid)})</div></div>
-        <div class="info-row"><div class="info-label">Telefon</div><div class="info-value">${escapeHtml(c.ph1 || "-")}</div></div>
-        <div class="info-row"><div class="info-label">FIN</div><div class="info-value">${escapeHtml(c.fin || "-")}</div></div>
+        <div class="info-row"><div class="info-label">ID</div><div class="info-value">${c.uid}</div></div>
+        <div class="info-row"><div class="info-label">Ad Soyad Ata</div><div class="info-value">${escapeHtml(`${c.sur || ""} ${c.name || ""} ${c.father || ""}`.trim()) || "-"}</div></div>
+        <div class="info-row"><div class="info-label">Mobil 1</div><div class="info-value">${escapeHtml(c.ph1 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Mobil 2</div><div class="info-value">${escapeHtml(c.ph2 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Mobil 3</div><div class="info-value">${escapeHtml(c.ph3 || "-")}</div></div>
+        <div class="info-row"><div class="info-label">İş yeri</div><div class="info-value">${escapeHtml(c.work || "-")}</div></div>
+        <div class="info-row"><div class="info-label">FİN</div><div class="info-value">${escapeHtml(c.fin || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(c.seriaNum || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Ünvan</div><div class="info-value">${escapeHtml(c.addr || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantor ? escapeHtml(`${guarantor.sur || ""} ${guarantor.name || ""} (${guarantor.uid})`) : "-"}</div></div>
       </div>
     `);
   });
