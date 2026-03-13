@@ -170,20 +170,38 @@ function unsubscribeRealtime() {
 
 /** Buluddan (Firestore) cari şirkət məlumatını oxuyub ekranı yenilə. Digər cihazda edilən dəyişiklikləri gətirir. */
 async function refreshFromCloud() {
-  if (!useFirestore() || !meta?.session?.companyId) return;
+  if (!useFirestore() || !meta?.session?.companyId) {
+    toast("Realtime aktiv deyil və ya şirkət seçilməyib", "err", 2500);
+    return;
+  }
   const cid = meta.session.companyId;
   const ref = getCompanyRef(cid);
-  if (!ref) return;
+  if (!ref) {
+    toast("Firestore bağlantısı yoxdur", "err", 2500);
+    return;
+  }
   try {
     const snap = await ref.get();
-    if (snap.exists()) {
-      db = { ...defaultDB(), ...snap.data() };
-      renderAll();
-      toast("Məlumat buluddan yeniləndi", "ok", 2000);
+    if (!snap.exists()) {
+      toast("Buluda hələ məlumat yazılmayıb", "ok", 2000);
+      return;
     }
+    const raw = snap.data();
+    let data = {};
+    try {
+      data = typeof raw === "object" && raw !== null ? JSON.parse(JSON.stringify(raw)) : {};
+    } catch (parseErr) {
+      console.warn("Məlumat parse xətası:", parseErr);
+      data = raw || {};
+    }
+    db = { ...defaultDB(), ...data };
+    ensureAuditTrash();
+    renderAll();
+    toast("Məlumat buluddan yeniləndi", "ok", 2000);
   } catch (e) {
     console.warn("Buluddan yeniləmə xətası:", e);
-    toast("Yeniləmə xətası", "err", 2000);
+    const msg = (e && e.message) ? String(e.message) : "Yeniləmə xətası";
+    toast(msg, "err", 4000);
   }
 }
 
