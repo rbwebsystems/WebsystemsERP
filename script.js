@@ -648,7 +648,7 @@ function applyAccessUI() {
     else el.style.display = dev ? "flex" : "none";
   });
   document.querySelectorAll(".admin-only").forEach((el) => {
-    el.style.display = admin && !dev ? "flex" : "none";
+    el.style.display = (admin || dev) ? "flex" : "none";
   });
 
   // Hide sections the user can't access (nav links)
@@ -3519,6 +3519,7 @@ function userBelongsToCompany(u, cid) {
 }
 
 function usersForCurrentCompany() {
+  if (isDeveloper()) return (meta.users || []).slice();
   const cid = meta?.session?.companyId;
   if (!cid) return [];
   return meta.users.filter((u) => userBelongsToCompany(u, cid));
@@ -3532,7 +3533,7 @@ function openUser(uidOrNull = null) {
       ? meta.users.find((x) => String(x.uid) === String(uidOrNull))
       : null;
   if (uidOrNull != null && uidOrNull !== "" && !u) return;
-  if (u && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+  if (!isDeveloper() && u && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   const editingUser = u || {
           uid: genId(meta.users, 1),
           fullName: "",
@@ -3662,7 +3663,7 @@ function saveUser(e) {
     const idx = meta.users.findIndex((x) => String(x.uid) === String(uidVal));
     if (idx === -1) return;
     const keep = meta.users[idx];
-    if (cid && !userBelongsToCompany(keep, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+    if (!isDeveloper() && cid && !userBelongsToCompany(keep, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
     meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
   }
   saveMeta();
@@ -3676,7 +3677,7 @@ function delUser(uid) {
   const u = idx >= 0 ? meta.users[idx] : null;
   if (!u) return;
   const cid = meta?.session?.companyId;
-  if (cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+  if (!isDeveloper() && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   if (u.username === "developer") return alert("Developer silinə bilməz.");
   if (u.role === "admin" && !isDeveloper()) return alert("Admin istifadəçisini yalnız developer silə bilər.");
   if (!confirm("İstifadəçi silinsin?")) return;
