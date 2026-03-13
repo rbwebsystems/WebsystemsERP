@@ -312,7 +312,23 @@ select{
   padding:24px;
   z-index:9999;
 }
+.login-overlay-bg{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+.login-bg-logo{
+  width:min(70vmin, 420px);
+  height:auto;
+  opacity:0.14;
+  object-fit:contain;
+}
 .login-card{
+  position:relative;
+  z-index:1;
   width:min(520px, 100%);
   background:#fff;
   border:1px solid var(--border-color);
