@@ -1282,15 +1282,47 @@ function saveProd(e, idx) {
 }
 
 // ========= Purchases =========
+function openPurchInfo(idx) {
+  const p = db.purch[idx];
+  if (!p) return;
+  const invNo = p.invNo || invFallback("purch", p.uid);
+  const staff = p.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(p.employeeId)) : null;
+  const staffName = staff ? staff.name : "-";
+  const payTypeLabel = { nagd: "Nəğd", kocurme: "Köçürmə", kredit: "Kredit" }[String(p.payType || "").toLowerCase()] || (p.payType || "-");
+  openModal(`
+    <h2>Alış – Məlumat</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Qaimə №</div><div class="info-value">${escapeHtml(invNo)}</div></div>
+      <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(p.date)}</div></div>
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(p.supp || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Məhsul (marka/model)</div><div class="info-value">${escapeHtml(p.name || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(p.code || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Say</div><div class="info-value">${purchIsBulk(p) ? String(Math.max(1, Math.floor(n(p.qty || 1)))) : "1"}</div></div>
+      <div class="info-row"><div class="info-label">IMEI 1</div><div class="info-value">${escapeHtml(p.imei1 || "-")}</div></div>
+      <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(p.imei2 || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(p.seria || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ (AZN)</div><div class="info-value">${money(p.amount)}</div></div>
+      <div class="info-row"><div class="info-label">Ödəniş növü</div><div class="info-value">${escapeHtml(payTypeLabel)}</div></div>
+      <div class="info-row"><div class="info-label">Ödənilən (AZN)</div><div class="info-value">${money(p.paidTotal)}</div></div>
+      <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(staffName)}</div></div>
+    </div>
+    <div class="modal-footer">
+      ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl();openPurch(${idx})">Redaktə</button>` : ""}
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
 function openPurch(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const p =
     idx !== null
       ? db.purch[idx]
-      : { date: nowISODateTimeLocal(), supp: "", name: "", code: "", qty: 1, imei1: "", imei2: "", seria: "", amount: "", paidTotal: "0", payType: "nagd" };
+      : { date: nowISODateTimeLocal(), supp: "", name: "", code: "", qty: 1, imei1: "", imei2: "", seria: "", amount: "", paidTotal: "0", payType: "nagd", employeeId: "" };
 
   const suppOptions = db.supp.map((s) => `<option value="${escapeAttr(s.co)}" ${p.supp === s.co ? "selected" : ""}>${escapeHtml(s.co)}</option>`).join("");
   const prodOptions = db.prod.map((x) => `<option value="${escapeAttr(x.name)}" ${p.name === x.name ? "selected" : ""}>${escapeHtml(x.name)}</option>`).join("");
+  const staffOptions = `<option value="">— Əməkdaş seçin —</option>` + (db.staff || []).map((s) => `<option value="${s.uid}" ${String(p.employeeId || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " – " + escapeHtml(s.role) : ""}</option>`).join("");
 
   openModal(`
     <h2>${idx !== null ? "Alış Redaktə" : "Yeni Alış"}</h2>
@@ -1301,6 +1333,7 @@ function openPurch(idx = null) {
           <option value="">Təchizatçı seç</option>
           ${suppOptions}
         </select>
+        <select id="f_p_staff" class="span-3">${staffOptions}</select>
 
         <select id="f_p_prod" class="span-3" required>
           <option value="">Məhsul seç</option>
@@ -1363,6 +1396,7 @@ function savePurch(e, idx) {
     });
     if (dup) return alert("Bu IMEI/Seriya artıq mövcuddur.");
   }
+  const employeeId = (val("f_p_staff") || "").trim() || undefined;
   const data = {
     uid: idx !== null ? db.purch[idx].uid : genId(db.purch, 1),
     invNo: idx !== null ? (db.purch[idx].invNo || invFallback("purch", db.purch[idx].uid)) : nextInvNo("purch"),
@@ -1377,6 +1411,7 @@ function savePurch(e, idx) {
     amount: String(Math.max(0, n(val("f_p_amount")))),
     payType: val("f_p_payType"),
     paidTotal: String(Math.max(0, n(val("f_p_paid")))),
+    employeeId,
   };
   if (idx !== null) db.purch[idx] = data;
   else db.purch.push(data);
@@ -4077,6 +4112,7 @@ function renderAll() {
     .map(({ p, idx }, i) => {
       const rem = purchRemaining(p);
       const actions = `
+        <button class="icon-btn info" onclick="openPurchInfo(${idx})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<button class="icon-btn edit" onclick="openPurch(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
         ${userCanDelete() ? `<button class="icon-btn delete" onclick="delItem('purch', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       `;
