@@ -2339,7 +2339,12 @@ function openCashOp() {
         </div>
 
         <div id="cash_customer_box" class="span-3">
-          <select id="cash_customer" class="span-3" required>${custOptions}</select>
+          <div class="grid-3">
+            <select id="cash_customer" class="span-3" onchange="refreshCustomerInvoices()" required>${custOptions}</select>
+            <select id="cash_customer_invoice" class="span-3">
+              <option value="">Qaimə seç (istəyə bağlı)</option>
+            </select>
+          </div>
         </div>
 
         <div id="cash_supplier_box" class="span-3" style="display:none;">
@@ -2400,8 +2405,26 @@ function toggleCashKind() {
       custBox.style.display = "";
       if (suppBox) suppBox.style.display = "none";
       byId("cash_customer").required = true;
+      refreshCustomerInvoices();
     }
   }
+}
+
+function refreshCustomerInvoices() {
+  const customerId = byId("cash_customer")?.value || "";
+  const sel = byId("cash_customer_invoice");
+  if (!sel) return;
+  const inv = db.sales
+    .filter((s) => String(s.customerId) === String(customerId))
+    .filter((s) => !s.returnedAt)
+    .filter((s) => saleRemaining(s) > 0.000001)
+    .sort((a, b) => (a.date > b.date ? 1 : -1))
+    .map((s) => {
+      const invNo = s.invNo || invFallback("sales", s.uid);
+      return `<option value="${s.uid}">Qaimə #${escapeHtml(invNo)} • ${escapeHtml(s.date)} • Qalıq ${money(saleRemaining(s))}</option>`;
+    })
+    .join("");
+  sel.innerHTML = `<option value="">Qaimə seç (istəyə bağlı)</option>` + inv;
 }
 
 function refreshSupplierInvoices() {
@@ -2546,6 +2569,35 @@ function saveCashOp(e) {
   const customerId = val("cash_customer");
   const cust = db.cust.find((c) => String(c.uid) === String(customerId));
   if (!cust) return;
+
+  const saleUid = val("cash_customer_invoice");
+  if (saleUid) {
+    const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
+    if (!s) return;
+    if (String(s.customerId) !== String(customerId)) return;
+    if (s.returnedAt) return alert("Bu qaimə qaytarılıb.");
+    s.payments = s.payments || [];
+    const rem = saleRemaining(s);
+    const a = Math.min(rem, amount);
+    if (a <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
+    addSalePaymentInternal(s, a, date, "cash_module_invoice");
+
+    addCashOp({
+      type: "in",
+      date,
+      source: `Müştəri ödənişi (${cust.sur} ${cust.name})`,
+      amount: a,
+      note: note || `Qaimə #${s.invNo || invFallback("sales", s.uid)}`,
+      link: { kind: "debtor_payment", customerId },
+      meta: { allocations: [{ saleUid: s.uid, amount: a }] },
+      accountId: accId,
+    });
+    logEvent("create", "cash", { type: "in", kind: "debtor_invoice_payment", amount: a, customerId, saleUid: s.uid });
+
+    saveDB();
+    closeMdl();
+    return;
+  }
 
   const applied = applyCustomerPaymentToDebts(customerId, amount, date, "cash_module");
   if (applied.applied <= 0.000001) {
@@ -4443,6 +4495,7 @@ Object.assign(window, {
   delCashOp,
   toggleCashKind,
   refreshSubcats,
+  refreshCustomerInvoices,
   refreshSupplierInvoices,
   addExpenseCategory,
   addExpenseSubcategory,
