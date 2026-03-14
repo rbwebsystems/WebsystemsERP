@@ -3867,9 +3867,11 @@ function toggleProfileMenu(ev) {
     return;
   }
   const rect = btn.getBoundingClientRect();
-  dd.style.left = rect.left + "px";
+  const minW = Math.max(rect.width, 200);
+  dd.style.minWidth = minW + "px";
+  dd.style.left = "";
+  dd.style.right = (window.innerWidth - rect.right) + "px";
   dd.style.top = (rect.bottom + 6) + "px";
-  dd.style.minWidth = Math.max(rect.width, 200) + "px";
   dd.classList.add("profile-dropdown-open");
   document.addEventListener("click", _profileMenuOutsideClick);
 }
