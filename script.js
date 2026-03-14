@@ -943,6 +943,7 @@ function genId(list, minStart = 1) {
 }
 
 const THEME_KEY = "bakfon_theme";
+const LOCALE_KEY = "bakfon_locale";
 function getTheme() {
   try {
     const t = (localStorage.getItem(THEME_KEY) || "light").toLowerCase();
@@ -961,6 +962,26 @@ function setTheme(mode) {
 function applyTheme() {
   const isDark = getTheme() === "dark";
   document.body.classList.toggle("theme-dark", isDark);
+}
+
+function getLocale() {
+  try {
+    const l = (localStorage.getItem(LOCALE_KEY) || "az").toLowerCase();
+    return l === "ru" || l === "en" ? l : "az";
+  } catch (e) {
+    return "az";
+  }
+}
+function setLocale(lang) {
+  const l = lang === "ru" || lang === "en" ? lang : "az";
+  try {
+    localStorage.setItem(LOCALE_KEY, l);
+  } catch (e) {}
+  applyLocale();
+}
+function applyLocale() {
+  const l = getLocale();
+  if (document.documentElement) document.documentElement.lang = l === "ru" ? "ru" : l === "en" ? "en" : "az";
 }
 
 function getCurrentCompanyName() {
@@ -3836,12 +3857,21 @@ function openProfile() {
   const c = meta.companies.find((x) => x.id === meta?.session?.companyId);
   if (!u) return;
   const theme = getTheme();
+  const locale = getLocale();
   openModal(`
     <h2>Profil</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Şirkət</div><div class="info-value">${escapeHtml(c?.name || "-")} (${escapeHtml(c?.id || "")})</div></div>
       <div class="info-row"><div class="info-label">İstifadəçi</div><div class="info-value">${escapeHtml(u.username)}</div></div>
       <div class="info-row"><div class="info-label">Rol</div><div class="info-value">${escapeHtml(u.role)}</div></div>
+      <div class="info-row">
+        <div class="info-label">Dil</div>
+        <div class="info-value" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="btn-main ${locale === "az" ? "" : "btn-theme-inactive"}" onclick="setLocale('az');closeMdl();" title="Azərbaycan">AZ</button>
+          <button type="button" class="btn-main ${locale === "en" ? "" : "btn-theme-inactive"}" onclick="setLocale('en');closeMdl();" title="English">EN</button>
+          <button type="button" class="btn-main ${locale === "ru" ? "" : "btn-theme-inactive"}" onclick="setLocale('ru');closeMdl();" title="Русский">RU</button>
+        </div>
+      </div>
       <div class="info-row">
         <div class="info-label">Tema</div>
         <div class="info-value" style="display:flex;gap:8px;align-items:center;">
@@ -5441,6 +5471,7 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   applyTheme();
+  applyLocale();
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
   const loadingEl = byId("loadingOverlay");
   if (loadingEl) loadingEl.classList.remove("hidden");
