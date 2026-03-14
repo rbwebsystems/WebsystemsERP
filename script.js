@@ -3830,12 +3830,57 @@ function renderProfile() {
   `;
 }
 
+function closeProfileMenu() {
+  const el = byId("profileDropdown");
+  if (el) el.classList.remove("profile-dropdown-open");
+  document.removeEventListener("click", _profileMenuOutsideClick);
+}
+function _profileMenuOutsideClick(e) {
+  const dd = byId("profileDropdown");
+  const btn = byId("profileMenuBtn");
+  if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) closeProfileMenu();
+}
+function toggleProfileMenu(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (!meta?.session) return showLoginOverlay(true);
+  const btn = byId("profileMenuBtn");
+  let dd = byId("profileDropdown");
+  if (!dd) {
+    dd = document.createElement("div");
+    dd.id = "profileDropdown";
+    dd.className = "profile-dropdown";
+    document.body.appendChild(dd);
+  }
+  const theme = getTheme();
+  dd.innerHTML = `
+    <button type="button" class="profile-dropdown-item" onclick="closeProfileMenu();openProfile();"><i class="fas fa-user"></i> Profil</button>
+    <button type="button" class="profile-dropdown-item" onclick="closeProfileMenu();openChangePassword();"><i class="fas fa-key"></i> Şifrəni dəyiş</button>
+    <div class="profile-dropdown-sep"></div>
+    <button type="button" class="profile-dropdown-item ${theme === "light" ? "profile-dropdown-item-active" : ""}" onclick="closeProfileMenu();setTheme('light');"><i class="fas fa-sun"></i> Açıq tema</button>
+    <button type="button" class="profile-dropdown-item ${theme === "dark" ? "profile-dropdown-item-active" : ""}" onclick="closeProfileMenu();setTheme('dark');"><i class="fas fa-moon"></i> Qaranlıq tema</button>
+    <div class="profile-dropdown-sep"></div>
+    <button type="button" class="profile-dropdown-item profile-dropdown-item-danger" onclick="closeProfileMenu();logout();"><i class="fas fa-right-from-bracket"></i> Çıxış</button>
+  `;
+  if (dd.classList.contains("profile-dropdown-open")) {
+    closeProfileMenu();
+    return;
+  }
+  const rect = btn.getBoundingClientRect();
+  dd.style.left = rect.left + "px";
+  dd.style.top = (rect.bottom + 6) + "px";
+  dd.style.minWidth = Math.max(rect.width, 200) + "px";
+  dd.classList.add("profile-dropdown-open");
+  document.addEventListener("click", _profileMenuOutsideClick);
+}
+
 function openProfile() {
   if (!meta?.session) return showLoginOverlay(true);
   const u = currentUser();
   const c = meta.companies.find((x) => x.id === meta?.session?.companyId);
   if (!u) return;
   const theme = getTheme();
+  closeProfileMenu();
   openModal(`
     <div class="profile-modal">
       <h2 class="profile-title">Profil</h2>
