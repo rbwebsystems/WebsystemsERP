@@ -661,11 +661,11 @@ function applyAccessUI() {
     el.style.display = userCanSection(secId) ? "flex" : "none";
   });
 
-  // Realtime / Cloud sync indicator (kliklə buluddan yenilə)
+  // Realtime / Cloud sync indicator (yalnız ikon, kliklə buluddan yenilə)
   const realtimeEl = byId("realtimeIndicator");
   if (realtimeEl) {
     if (useFirestore() && meta?.session?.companyId) {
-      realtimeEl.textContent = "Realtime";
+      realtimeEl.innerHTML = "<i class=\"fas fa-cloud\"></i>";
       realtimeEl.classList.remove("hidden");
       realtimeEl.title = "Realtime sinxron. Kliklə buluddan yenilə.";
       realtimeEl.style.cursor = "pointer";
