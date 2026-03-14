@@ -719,7 +719,7 @@ function showLoginOverlay(show) {
       const fromUrl = window.__loginCompanyFromUrl;
       if (fromUrl && meta.companies.some((c) => c.id === fromUrl)) sel.value = fromUrl;
     }
-    byId("loginHint").innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş (?company=ŞİRKƏT_ID)." : "Şirkəti yuxarıdan seçin və ya keçid ünvanında ?company=ŞİRKƏT_ID yazın.";
+    byId("loginHint").innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş." : "Keçid ünvanında ?company=ŞİRKƏT_ID olmalıdır.";
     setTimeout(() => byId("loginUser")?.focus(), 0);
   }
 }

@@ -468,28 +468,8 @@ select{
   z-index:9999;
   overflow:hidden;
 }
-/* Korporativ grid (incə xətt şəbəkəsi) */
-.login-overlay::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
-  background-size:28px 28px;
-  pointer-events:none;
-}
-/* Sağ üstdə böyük diaqonal zolaq – qeyri-adi korporativ vurğu */
-.login-overlay::after{
-  content:"";
-  position:absolute;
-  width:120%;
-  height:80%;
-  top:-30%;
-  right:-50%;
-  background:linear-gradient(135deg, transparent 48%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 55%, transparent 58%);
-  transform:rotate(-12deg);
-  pointer-events:none;
+body.theme-dark .login-overlay{
+  background:#111827;
 }
 .login-overlay .login-bg-blob{
   position:absolute;
@@ -513,8 +493,6 @@ select{
 }
 .login-logo{display:block;max-width:280px;max-height:100px;width:auto;height:auto;margin:0 auto 20px;background:transparent;}
 .login-card h2{font-size:1.25rem;margin-bottom:12px;}
-.login-company-wrap{margin-bottom:12px;}
-.login-company-wrap .login-label{display:block;font-size:0.9rem;color:var(--muted-color,#666);margin-bottom:4px;}
 
 .search-container{position:relative;display:flex;align-items:center;}
 .search-container input{
