@@ -551,9 +551,20 @@ function userCanOwnerIncome() {
 function userCanSection(sectionId) {
   const u = currentUser();
   if (!u || !u.active) return false;
+  if (!companyAllowsSection(sectionId) && !isDeveloper()) return false;
   if (u.role === "developer" || u.role === "admin") return true;
   const secs = u.perms?.sections || [];
   return secs.includes("*") || secs.includes(sectionId);
+}
+
+function companyAllowsSection(sectionId) {
+  const cid = meta?.session?.companyId;
+  if (!cid) return true;
+  const c = (meta.companies || []).find((x) => x.id === cid);
+  if (!c) return true;
+  const secs = c.sections;
+  if (!Array.isArray(secs) || secs.length === 0) return true;
+  return secs.includes(sectionId);
 }
 
 function userCanEdit() {
@@ -3545,13 +3556,46 @@ function saveCreditorInvoicePayment(e, purchUid) {
 // ========= Admin (Companies/Users/Profile) =========
 function openCompany(idx = null) {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
-  const c = idx !== null ? meta.companies[idx] : { id: "", name: "" };
+  const c = idx !== null ? meta.companies[idx] : { id: "", name: "", sections: [] };
+  const allSections = [
+    "dash",
+    "cust",
+    "supp",
+    "prod",
+    "purch",
+    "stock",
+    "sales",
+    "staff",
+    "debts",
+    "creditor",
+    "cash",
+    "accounts",
+    "audit",
+    "trash",
+    "tools",
+    "reports",
+  ];
+  const enabled = Array.isArray(c.sections) && c.sections.length > 0 ? c.sections : allSections;
+  const secChecks = allSections
+    .map((s) => {
+      const on = enabled.includes(s);
+      return `<label class="chk"><input type="checkbox" class="coSec" value="${s}" ${on ? "checked" : ""}><span>${escapeHtml(sectionLabelAz(s))}</span></label>`;
+    })
+    .join("");
   openModal(`
     <h2>${idx !== null ? "Şirkət redaktə" : "Yeni şirkət"}</h2>
     <form onsubmit="saveCompany(event, ${idx})">
       <div class="grid-3">
         <input id="co_name" class="span-2" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required>
         <input id="co_id" placeholder="Kod (unikal)" value="${escapeHtml(c.id || "")}" ${idx !== null ? "disabled" : ""} required>
+      </div>
+      <div class="info-block">
+        <div class="info-row">
+          <div class="info-label">Modullar</div>
+          <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
+            ${secChecks}
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yarat"}</button>
@@ -3566,12 +3610,15 @@ function saveCompany(e, idx) {
   if (!isDeveloper()) return;
   const name = val("co_name").trim();
   const id = (val("co_id") || "").trim().toLowerCase();
+  const sections = Array.from(document.querySelectorAll(".coSec"))
+    .filter((x) => x.checked)
+    .map((x) => x.value);
   if (!name || !id) return;
   if (idx === null) {
     if (meta.companies.some((c) => c.id === id)) return alert("Bu kodla şirkət var.");
-    meta.companies.push({ id, name });
+    meta.companies.push({ id, name, sections });
   } else {
-    meta.companies[idx].name = name;
+    meta.companies[idx] = { ...meta.companies[idx], name, sections };
   }
   saveMeta();
   closeMdl();
