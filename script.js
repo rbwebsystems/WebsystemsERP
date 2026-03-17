@@ -12,6 +12,7 @@ const defaultDB = () => ({
   staff: [],
   cash: [],
   cashCounts: [],
+  overdueNotes: [],
   accounts: [{ uid: 1, name: "Kassa", type: "cash" }],
   counters: { purchInv: 1, salesInv: 1 },
   expenseCats: [
@@ -930,6 +931,7 @@ function ensureAuditTrash() {
   if (!db.trash || !Array.isArray(db.trash)) db.trash = [];
   if (!db.settings) db.settings = defaultDB().settings;
   if (!db.cashCounts || !Array.isArray(db.cashCounts)) db.cashCounts = [];
+  if (!db.overdueNotes || !Array.isArray(db.overdueNotes)) db.overdueNotes = [];
 }
 
 function nextInvNo(kind) {
@@ -4893,6 +4895,110 @@ function openCashDiffAnalysis() {
   `);
 }
 
+function openOverdueInfo(customerId) {
+  ensureAuditTrash();
+  const cid = String(customerId || "");
+  const custName = (db.sales || []).find((s) => String(s.customerId) === cid)?.customerName || cid;
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const toDayStart = (iso) => {
+    const [y, m, d] = String(iso || "").slice(0, 10).split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d).getTime();
+  };
+  const todayT = toDayStart(todayISO);
+
+  const items = [];
+  (db.sales || [])
+    .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit" && String(s.customerId) === cid)
+    .forEach((s) => {
+      const inv = s.invNo || invFallback("sales", s.uid);
+      const sched = buildCreditSchedule(s);
+      for (const r of sched.rows) {
+        if (r.remaining <= 0.000001) continue;
+        const dueT = toDayStart(r.due);
+        if (dueT == null || todayT == null) continue;
+        const daysLate = Math.floor((todayT - dueT) / dayMs);
+        if (daysLate < 1) continue;
+        items.push({ inv, due: r.due, monthly: r.amount, remaining: r.remaining, daysLate, saleUid: s.uid });
+      }
+    });
+
+  items.sort((a, b) => (b.daysLate - a.daysLate) || String(a.due).localeCompare(String(b.due)));
+  const rowsHtml = items
+    .map(
+      (x, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${escapeHtml(x.inv)}</td>
+      <td>${escapeHtml(x.due)}</td>
+      <td>${money(x.monthly)} AZN</td>
+      <td>${money(x.remaining)} AZN</td>
+      <td>${x.daysLate}</td>
+    </tr>`
+    )
+    .join("");
+
+  const notes = (db.overdueNotes || [])
+    .filter((n0) => String(n0.customerId) === cid)
+    .slice()
+    .sort((a, b) => (a.ts > b.ts ? -1 : 1));
+
+  const notesHtml = notes
+    .map(
+      (n0) => `
+    <div class="info-block" style="margin:10px 0;">
+      <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(n0.ts)}</div></div>
+      <div class="info-row"><div class="info-label">Kim</div><div class="info-value">${escapeHtml(n0.user || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">${escapeHtml(n0.text || "")}</div></div>
+    </div>`
+    )
+    .join("");
+
+  openModal(`
+    <h2>Gecikmə detalları</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}</div></div>
+    </div>
+
+    <h3 style="margin:16px 0 10px;font-size:1.05rem;">Gecikən aylıqlar</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Qaimə</th><th>Ödəniş günü</th><th>Aylıq</th><th>Qalıq</th><th>Gecikmə (gün)</th></tr></thead>
+        <tbody>${rowsHtml || `<tr><td colspan="6">Gecikən aylıq yoxdur.</td></tr>`}</tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeyd əlavə et</h3>
+    <form onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}')">
+      <div class="grid-3">
+        <input id="ov_note" class="span-3" placeholder="Qeyd..." required>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+
+    <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeydlər</h3>
+    ${notesHtml || `<p class="muted">Qeyd yoxdur.</p>`}
+  `);
+}
+
+function saveOverdueNote(e, customerId) {
+  e.preventDefault();
+  ensureAuditTrash();
+  const cid = String(customerId || "");
+  const text = (byId("ov_note")?.value || "").trim();
+  if (!text) return;
+  const u = currentUser();
+  db.overdueNotes.push({ uid: genId(db.overdueNotes, 1), customerId: cid, text, ts: nowISODateTimeLocal(), user: u ? u.username : "-" });
+  logEvent("create", "overdue_note", { customerId: cid });
+  saveDB();
+  openOverdueInfo(cid);
+}
+
 function openReturnedSalesCreditReport() {
   ensureAuditTrash();
   const rows = (db.sales || [])
@@ -5411,7 +5517,7 @@ function renderAll() {
     };
     const todayT = toDayStart(todayISO);
 
-    const rows = [];
+    const byCust = new Map();
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
       .forEach((s) => {
@@ -5426,40 +5532,45 @@ function renderAll() {
           if (view === "overdue" && !isOverdue) continue;
           if (view === "today" && !isToday) continue;
           const inv = s.invNo || invFallback("sales", s.uid);
-          rows.push({
-            customer: s.customerName || "-",
-            inv,
-            saleDate: s.date,
-            due: r.due,
-            monthly: r.amount,
-            remaining: r.remaining,
-            daysLate: Math.max(0, daysLate),
-            saleIdx: db.sales.findIndex((x) => Number(x.uid) === Number(s.uid)),
-          });
+          const cid = String(s.customerId || "");
+          if (!byCust.has(cid)) {
+            byCust.set(cid, { customerId: cid, customer: s.customerName || "-", maxLate: 0, dueCount: 0, dueTotal: 0, nextDue: null, nextDueT: null });
+          }
+          const g = byCust.get(cid);
+          g.maxLate = Math.max(g.maxLate, Math.max(0, daysLate));
+          g.dueCount += 1;
+          g.dueTotal += Math.max(0, n(r.remaining));
+          if (g.nextDueT == null || dueT < g.nextDueT) {
+            g.nextDueT = dueT;
+            g.nextDue = r.due;
+          }
+          // keep a few sample invoices for display
+          if (!g.invs) g.invs = [];
+          if (g.invs.length < 3 && !g.invs.includes(inv)) g.invs.push(inv);
         }
       });
 
-    rows.sort((a, b) => String(a.due).localeCompare(String(b.due)));
+    const rows = Array.from(byCust.values());
+    rows.sort((a, b) => (b.maxLate - a.maxLate) || (b.dueTotal - a.dueTotal));
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
-          const late = x.daysLate;
+          const invText = (x.invs || []).join(", ");
           return `
           <tr>
             <td>${i + 1}</td>
             <td>${escapeHtml(x.customer)}</td>
-            <td>${escapeHtml(x.inv)}</td>
-            <td>${fmtDT(x.saleDate)}</td>
-            <td>${escapeHtml(x.due)}</td>
-            <td>${money(x.monthly)} AZN</td>
-            <td>${money(x.remaining)} AZN</td>
-            <td>${late}</td>
+            <td>${escapeHtml(invText || "-")}</td>
+            <td>${escapeHtml(x.nextDue || "-")}</td>
+            <td>${x.dueCount}</td>
+            <td>${money(x.dueTotal)} AZN</td>
+            <td>${x.maxLate}</td>
             <td class="tbl-actions">
-              <button class="icon-btn info" onclick="openSaleInfo(${x.saleIdx})" title="Info"><i class="fas fa-circle-info"></i></button>
+              <button class="btn-mini" type="button" onclick="openOverdueInfo('${escapeAttr(x.customerId)}')"><i class="fas fa-circle-info"></i> Info</button>
             </td>
           </tr>`;
         })
-        .join("") || `<tr><td colspan="9">Məlumat yoxdur</td></tr>`;
+        .join("") || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`;
   }
 
   // creditor (suppliers) + date filter + pagination
@@ -6244,6 +6355,8 @@ Object.assign(window, {
   openCashReconcile,
   saveCashReconcile,
   openCashDiffAnalysis,
+  openOverdueInfo,
+  saveOverdueNote,
   toggleCashKind,
   toggleIncomeSourceBox,
   refreshSubcats,
