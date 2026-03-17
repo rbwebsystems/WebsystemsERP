@@ -5787,6 +5787,77 @@ function refundedForSale(saleUid) {
     .reduce((a, c) => a + n(c.amount), 0);
 }
 
+function openReturnAdvancePay(saleUid) {
+  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  ensureAuditTrash();
+  ensureAccounts();
+  const s = (db.sales || []).find((x) => Number(x.uid) === Number(saleUid));
+  if (!s) return alert("Satış tapılmadı.");
+  if (!s.returnedAt) return alert("Bu satış qaytarılmayıb.");
+  const paid = Math.max(0, n(s.paidTotal));
+  const refunded = refundedForSale(s.uid);
+  const left = Math.max(0, paid - refunded);
+  if (left <= 0.000001) return alert("Qaytarılacaq avans yoxdur.");
+
+  const defAcc = Number(s.paymentAccountId || 1);
+  const accOptions = accountOptionsHtml(defAcc);
+  openModal(`
+    <h2>Qaytarma avansını qaytar</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Qaimə</div><div class="info-value">${escapeHtml(s.invNo || invFallback("sales", s.uid))}</div></div>
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Ödənən</div><div class="info-value">${money(paid)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Əvvəl qaytarılıb</div><div class="info-value">${money(refunded)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value"><strong>${money(left)} AZN</strong></div></div>
+    </div>
+    <form onsubmit="saveReturnAdvancePay(event, ${s.uid})">
+      <div class="grid-3">
+        <input type="datetime-local" id="ra_date" value="${nowISODateTimeLocal()}" required>
+        <input type="number" step="0.01" id="ra_amount" class="span-2" value="${escapeAttr(String(left))}" placeholder="Məbləğ (AZN)" required>
+        <select id="ra_acc" class="span-3" required>${accOptions}</select>
+        <input id="ra_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Qaytar</button>
+        <button class="btn-cancel" type="button" onclick="openReturnedSalesCreditReport()">Geri</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveReturnAdvancePay(e, saleUid) {
+  e.preventDefault();
+  if (!userCanPay()) return;
+  ensureAuditTrash();
+  const s = (db.sales || []).find((x) => Number(x.uid) === Number(saleUid));
+  if (!s) return alert("Satış tapılmadı.");
+  const paid = Math.max(0, n(s.paidTotal));
+  const refunded = refundedForSale(s.uid);
+  const left = Math.max(0, paid - refunded);
+  const date = val("ra_date");
+  const amount = Math.max(0, n(val("ra_amount")));
+  const accId = Number(val("ra_acc") || 1);
+  const note = val("ra_note");
+  if (amount <= 0.000001) return alert("Məbləğ 0-dan böyük olmalıdır.");
+  if (amount - left > 0.000001) return alert("Məbləğ qalıqdan böyük ola bilməz.");
+  const bal = accountBalance(accId);
+  if (bal + 0.000001 < amount) return alert("Hesab balansı kifayət etmir.");
+  addCashOp({
+    type: "out",
+    date,
+    source: `Qaytarma avansı (${s.customerName || "-"})`,
+    amount,
+    note: note || `Avans qaytarma #${s.uid}`,
+    link: { kind: "return_refund", saleUid: s.uid },
+    meta: { saleUid: s.uid, kind: "advance" },
+    accountId: accId,
+  });
+  logEvent("create", "cash", { type: "out", kind: "return_refund", saleUid: s.uid, amount });
+  saveDB();
+  openReturnedSalesCreditReport();
+}
+
 function totalReturnedSalesCreditLeft() {
   return (db.sales || [])
     .filter((s) => !!s.returnedAt)
@@ -6191,6 +6262,7 @@ function openReturnedSalesCreditReport() {
           <td>${money(x.paid)} AZN</td>
           <td>${money(x.refunded)} AZN</td>
           <td><strong>${money(x.creditLeft)} AZN</strong></td>
+          <td class="tbl-actions"><button class="btn-mini-pay" type="button" onclick="openReturnAdvancePay(${x.s.uid})">Qaytar</button></td>
         </tr>`;
     })
     .join("");
@@ -6204,10 +6276,10 @@ function openReturnedSalesCreditReport() {
     </p>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Qaimə</th><th>Qaytarma tarixi</th><th>Müştəri</th><th>Ödənən</th><th>Refund</th><th>Kassada qalan</th></tr></thead>
+        <thead><tr><th>#</th><th>Qaimə</th><th>Qaytarma tarixi</th><th>Müştəri</th><th>Ödənən</th><th>Qaytarılıb</th><th>Kassada qalan</th><th>Əməliyyat</th></tr></thead>
         <tbody>
-          ${body || `<tr><td colspan="7">Qaytarma avansı yoxdur.</td></tr>`}
-          ${body ? `<tr class="total-row"><td colspan="6"><strong>Cəmi</strong></td><td><strong>${money(totalLeft)} AZN</strong></td></tr>` : ""}
+          ${body || `<tr><td colspan="8">Qaytarma avansı yoxdur.</td></tr>`}
+          ${body ? `<tr class="total-row"><td colspan="6"><strong>Cəmi</strong></td><td><strong>${money(totalLeft)} AZN</strong></td><td></td></tr>` : ""}
         </tbody>
       </table>
     </div>
@@ -7632,6 +7704,8 @@ Object.assign(window, {
   exportCsvCurrent,
   recalcAll,
   openReturnedSalesCreditReport,
+  openReturnAdvancePay,
+  saveReturnAdvancePay,
   openQrTool,
   genQr,
   clearAudit,
