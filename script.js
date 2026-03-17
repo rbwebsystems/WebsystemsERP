@@ -1107,7 +1107,8 @@ function closeMdl() {
 function filterTable(id, q) {
   const query = (q || "").toLowerCase();
   document.querySelectorAll(`#${id} tr`).forEach((r) => {
-    r.style.display = r.innerText.toLowerCase().includes(query) ? "" : "none";
+    // textContent includes hidden text nodes; innerText does not.
+    r.style.display = (r.textContent || "").toLowerCase().includes(query) ? "" : "none";
   });
 }
 
@@ -4591,6 +4592,23 @@ function renderAll() {
         ${userCanDelete() ? `<button class="icon-btn delete" onclick="delItem('purch', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       `;
       const invNo = p.invNo || invFallback("purch", p.uid);
+      const searchText = [
+        p.uid,
+        invNo,
+        p.date,
+        p.supp,
+        p.name,
+        p.code,
+        p.qty,
+        p.imei1,
+        p.imei2,
+        p.seria,
+        p.amount,
+        p.paidTotal,
+        p.payType,
+      ]
+        .filter((x) => x != null && String(x).trim() !== "")
+        .join(" ");
       return `
       <tr>
         <td>${i + 1}</td>
@@ -4602,7 +4620,7 @@ function renderAll() {
         <td>${money(p.amount)} AZN</td>
         <td>${money(p.paidTotal)} AZN</td>
         <td>${money(rem)} AZN</td>
-        <td class="tbl-actions">${actions}</td>
+        <td class="tbl-actions">${actions}<span style="display:none">${escapeHtml(searchText)}</span></td>
       </tr>`;
     })
     .join("");
@@ -4647,6 +4665,33 @@ function renderAll() {
     .map(({ s, idx }, i) => {
       const rem = saleRemaining(s);
       const invNo = s.invNo || invFallback("sales", s.uid);
+      const p = s.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid)) : (s.itemKey ? db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey) : null);
+      const searchText = [
+        s.uid,
+        invNo,
+        s.date,
+        s.customerName,
+        s.customerId,
+        s.productName,
+        s.code,
+        s.qty,
+        s.saleType,
+        s.employeeName,
+        s.employeeId,
+        s.imei1,
+        s.imei2,
+        s.seria,
+        s.amount,
+        s.paidTotal,
+        // also include linked purchase identifiers so IMEI/Seriya search works even if not shown in table
+        p?.invNo,
+        p?.code,
+        p?.imei1,
+        p?.imei2,
+        p?.seria,
+      ]
+        .filter((x) => x != null && String(x).trim() !== "")
+        .join(" ");
       return `
       <tr>
         <td>${i + 1}</td>
@@ -4664,6 +4709,7 @@ function renderAll() {
           <button class="icon-btn info" onclick="openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
           ${userCanEdit() ? `<button class="icon-btn edit" onclick="openSale(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
           ${userCanDelete() ? `<button class="icon-btn delete" onclick="delItem('sales', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+          <span style="display:none">${escapeHtml(searchText)}</span>
         </td>
       </tr>`;
     })
