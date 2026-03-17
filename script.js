@@ -4395,6 +4395,16 @@ function refundedForSale(saleUid) {
     .reduce((a, c) => a + n(c.amount), 0);
 }
 
+function totalReturnedSalesCreditLeft() {
+  return (db.sales || [])
+    .filter((s) => !!s.returnedAt)
+    .reduce((a, s) => {
+      const paid = Math.max(0, n(s.paidTotal));
+      const refunded = refundedForSale(s.uid);
+      return a + Math.max(0, paid - refunded);
+    }, 0);
+}
+
 function openReturnedSalesCreditReport() {
   ensureAuditTrash();
   const rows = (db.sales || [])
@@ -4969,6 +4979,8 @@ function renderAll() {
   byId("cashIn").innerText = money(incomeF);
   byId("cashOut").innerText = money(expenseF);
   byId("cashBal").innerText = money(incomeF - expenseF);
+  const advEl = byId("cashAdv");
+  if (advEl) advEl.innerText = money(totalReturnedSalesCreditLeft());
 
   // accounts
   ensureAccounts();
