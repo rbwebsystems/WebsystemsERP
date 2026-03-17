@@ -5231,6 +5231,11 @@ function renderAll() {
       const statusText = isReturned ? "QAYTARILIB" : isSold ? "SATILIB" : "ANBARDA";
       const rowClass = isReturned ? "row-sold" : isSold ? "row-sold" : "row-stock";
       const badgeClass = isReturned ? "badge-sold" : isSold ? "badge-sold" : "badge-stock";
+      const qtyAll = Math.max(1, Math.floor(n(p.qty || 1)));
+      const unit = purchIsBulk(p) ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : (n(p.amount) / qtyAll)) : n(p.amount);
+      const priceHtml = purchIsBulk(p)
+        ? `${money(unit)} AZN <small class="muted">(cəmi ${money(p.amount)} AZN)</small>`
+        : `${money(p.amount)} AZN`;
       return `
       <tr class="${rowClass}">
         <td>${i + 1}</td>
@@ -5243,7 +5248,7 @@ function renderAll() {
         <td>${escapeHtml(p.imei1 || "")}</td>
         <td>${escapeHtml(p.imei2 || "")}</td>
         <td>${escapeHtml(p.seria || "")}</td>
-        <td>${money(p.amount)} AZN</td>
+        <td>${priceHtml}</td>
       </tr>`;
     })
     .join("");
