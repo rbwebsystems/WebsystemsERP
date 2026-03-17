@@ -363,9 +363,11 @@ function delAccount(idx) {
   if (a.uid === 1) return alert("Əsas Kassa silinə bilməz.");
   const used = db.cash.some((c) => Number(c.accountId) === Number(a.uid));
   if (used) return alert("Bu hesabda əməliyyat var, silmək olmaz.");
-  if (!confirm("Hesab silinsin?")) return;
-  db.accounts.splice(idx, 1);
-  saveDB();
+  appConfirm("Hesab silinsin?").then((ok) => {
+    if (!ok) return;
+    db.accounts.splice(idx, 1);
+    saveDB();
+  });
 }
 
 function companyDBKey(companyId) {
@@ -1310,6 +1312,55 @@ function closeMdl() {
   modal.style.display = "none";
 }
 
+function appAlert(msg, title = "Bildiriş") {
+  const text = msg == null ? "" : String(msg);
+  openModal(`
+    <h2>${escapeHtml(title)}</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+  return false;
+}
+
+function appConfirm(msg, title = "Təsdiq") {
+  const text = msg == null ? "" : String(msg);
+  return new Promise((resolve) => {
+    const yes = () => resolveAndClose(true);
+    const no = () => resolveAndClose(false);
+    const onKey = (e) => {
+      if (e.key === "Escape") no();
+      if (e.key === "Enter") yes();
+    };
+    const cleanup = () => document.removeEventListener("keydown", onKey);
+    const resolveAndClose = (v) => {
+      cleanup();
+      closeMdl();
+      resolve(v);
+    };
+    document.addEventListener("keydown", onKey);
+    openModal(`
+      <h2>${escapeHtml(title)}</h2>
+      <div class="info-block">
+        <div class="info-row"><div class="info-label">Sual</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(true)">Bəli</button>
+        <button class="btn-cancel" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(false)">Xeyr</button>
+      </div>
+    `);
+    window.__appConfirmResolve = resolveAndClose;
+  });
+}
+
+// Override built-in popup alerts in this app scope
+function alert(msg) {
+  return appAlert(msg);
+}
+
 // Search
 function filterTable(id, q) {
   const query = (q || "").toLowerCase();
@@ -1929,7 +1980,7 @@ function openPurch(idx = null) {
   upd();
 }
 
-function savePurch(e, idx) {
+async function savePurch(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
@@ -1954,7 +2005,7 @@ function savePurch(e, idx) {
       `Status: ${st}\n` +
       `Alış: ${inv} • ${found.supp || "-"} • ${String(found.date || "").slice(0, 16)}\n\n` +
       `Yenə də bu alışı əlavə edək?`;
-    return confirm(msg);
+    return false; // async confirm below
   };
 
   if (!isBulk) {
@@ -1963,16 +2014,44 @@ function savePurch(e, idx) {
     const seria = val("f_p_ser").trim();
     const findMatch = (pred) => (db.purch || []).find((p, pi) => !(idx !== null && pi === idx) && pred(p));
     const m1 = imei1 ? findMatch((p) => String(p.imei1 || "").trim() === imei1) : null;
-    if (m1 && !warnExisting(m1, "IMEI 1", imei1)) return;
+    if (m1) {
+      const inv = m1.invNo || invFallback("purch", m1.uid);
+      const st = m1.returnedAt ? "QAYTARILIB" : (purchRemainingQty(m1) <= 0.000001 ? "SATILIB" : "ANBARDA");
+      const msg =
+        `Diqqət: IMEI 1 artıq sistemdə olub.\nIMEI 1: ${imei1}\nStatus: ${st}\nAlış: ${inv} • ${m1.supp || "-"} • ${String(m1.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
+      const ok = await appConfirm(msg);
+      if (!ok) return;
+    }
     const m2 = !m1 && imei2 ? findMatch((p) => String(p.imei2 || "").trim() === imei2) : null;
-    if (m2 && !warnExisting(m2, "IMEI 2", imei2)) return;
+    if (m2) {
+      const inv = m2.invNo || invFallback("purch", m2.uid);
+      const st = m2.returnedAt ? "QAYTARILIB" : (purchRemainingQty(m2) <= 0.000001 ? "SATILIB" : "ANBARDA");
+      const msg =
+        `Diqqət: IMEI 2 artıq sistemdə olub.\nIMEI 2: ${imei2}\nStatus: ${st}\nAlış: ${inv} • ${m2.supp || "-"} • ${String(m2.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
+      const ok = await appConfirm(msg);
+      if (!ok) return;
+    }
     const m3 = !m1 && !m2 && seria ? findMatch((p) => String(p.seria || "").trim() === seria) : null;
-    if (m3 && !warnExisting(m3, "Seriya", seria)) return;
+    if (m3) {
+      const inv = m3.invNo || invFallback("purch", m3.uid);
+      const st = m3.returnedAt ? "QAYTARILIB" : (purchRemainingQty(m3) <= 0.000001 ? "SATILIB" : "ANBARDA");
+      const msg =
+        `Diqqət: Seriya artıq sistemdə olub.\nSeriya: ${seria}\nStatus: ${st}\nAlış: ${inv} • ${m3.supp || "-"} • ${String(m3.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
+      const ok = await appConfirm(msg);
+      if (!ok) return;
+    }
   } else {
     const codeNorm = String(code || "").trim();
     if (codeNorm) {
       const m = (db.purch || []).find((p, pi) => !(idx !== null && pi === idx) && String(p.code || "").trim() === codeNorm);
-      if (m && !warnExisting(m, "Kod", codeNorm)) return;
+      if (m) {
+        const inv = m.invNo || invFallback("purch", m.uid);
+        const st = m.returnedAt ? "QAYTARILIB" : (purchRemainingQty(m) <= 0.000001 ? "SATILIB" : "ANBARDA");
+        const msg =
+          `Diqqət: Kod artıq sistemdə olub.\nKod: ${codeNorm}\nStatus: ${st}\nAlış: ${inv} • ${m.supp || "-"} • ${String(m.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
+        const ok = await appConfirm(msg);
+        if (!ok) return;
+      }
     }
   }
   const employeeId = (val("f_p_staff") || "").trim() || undefined;
@@ -3595,7 +3674,7 @@ function syncCashOpAmountToLinked(c, oldAmount, newAmount) {
   }
 }
 
-function saveEditCashOp(e, uid) {
+async function saveEditCashOp(e, uid) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
@@ -3616,7 +3695,8 @@ function saveEditCashOp(e, uid) {
     const msg = kind === "debtor_payment" || kind === "sale_payment"
       ? "Məbləği azaltsanız müştərinin debitor qalığı artacaq (status qalıq/borclu ola bilər). Davam?"
       : "Məbləği azaltsanız təchizatçının kreditor qalığı artacaq. Davam?";
-    if (!confirm(msg)) return;
+    const ok = await appConfirm(msg);
+    if (!ok) return;
   }
 
   const updated = { ...c, date, amount: String(newAmount), source, note, accountId };
@@ -3635,7 +3715,8 @@ function delCashOp(uid) {
   const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
   if (i < 0) return;
   const c = db.cash[i];
-  if (!confirm("Kassa əməliyyatı silinsin?")) return;
+  appConfirm("Kassa əməliyyatı silinsin?").then((ok) => {
+    if (!ok) return;
   ensureAuditTrash();
   const u = currentUser();
   db.trash.push({ uid: genId(db.trash, 1), type: "cash", item: c, deletedAt: nowISODateTimeLocal(), deletedBy: u ? u.username : "-" });
@@ -3706,6 +3787,8 @@ function delCashOp(uid) {
 
   db.cash.splice(i, 1);
   saveDB();
+  renderAll();
+  });
 }
 
 function cashTotals() {
@@ -4479,33 +4562,39 @@ function delCompany(idx) {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   const c = meta.companies[idx];
   if (!c) return;
-  if (!confirm("Şirkət silinsin? (məlumatlar LocalStorage-da qalacaq)")) return;
-  meta.companies.splice(idx, 1);
-  if (meta.companies.length === 0) meta.companies.push({ id: "bakfon", name: "Bakfon" });
-  if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
-    meta.session.companyId = meta.companies[0].id;
-    if (useFirestore()) loadCompanyDBAsync().then((data) => { db = data; subscribeRealtime(); });
-    else db = loadCompanyDB();
-  }
-  saveMeta();
-  renderAll();
+  appConfirm("Şirkət silinsin? (məlumatlar LocalStorage-da qalacaq)").then((ok) => {
+    if (!ok) return;
+    meta.companies.splice(idx, 1);
+    if (meta.companies.length === 0) meta.companies.push({ id: "bakfon", name: "Bakfon" });
+    if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
+      meta.session.companyId = meta.companies[0].id;
+      if (useFirestore()) loadCompanyDBAsync().then((data) => { db = data; subscribeRealtime(); });
+      else db = loadCompanyDB();
+    }
+    saveMeta();
+    renderAll();
+  });
+  return;
 }
 
 function resetCompanyData() {
   if (!userCanReset()) return alert("Reset icazəsi yoxdur.");
   const cid = meta?.session?.companyId;
   if (!cid) return;
-  if (!confirm("Bu şirkətin bütün datası sıfırlansın?")) return;
-  const empty = defaultDB();
-  if (useFirestore()) {
-    const ref = getCompanyRef(cid);
-    if (ref) ref.set(empty).then(() => { db = empty; logEvent("reset", "company", { companyId: cid }); renderAll(); });
-  } else {
-    localStorage.setItem(companyDBKey(cid), JSON.stringify(empty));
-    db = loadCompanyDB();
-    logEvent("reset", "company", { companyId: cid });
-    renderAll();
-  }
+  appConfirm("Bu şirkətin bütün datası sıfırlansın?").then((ok) => {
+    if (!ok) return;
+    const empty = defaultDB();
+    if (useFirestore()) {
+      const ref = getCompanyRef(cid);
+      if (ref) ref.set(empty).then(() => { db = empty; logEvent("reset", "company", { companyId: cid }); renderAll(); });
+    } else {
+      localStorage.setItem(companyDBKey(cid), JSON.stringify(empty));
+      db = loadCompanyDB();
+      logEvent("reset", "company", { companyId: cid });
+      renderAll();
+    }
+  });
+  return;
 }
 
 function getCompanyIdFromUsername(username) {
@@ -4737,10 +4826,13 @@ function delUser(uid) {
   if (!isDeveloper() && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   if (u.username === "developer") return alert("Developer silinə bilməz.");
   if (u.role === "admin" && !isDeveloper()) return alert("Admin istifadəçisini yalnız developer silə bilər.");
-  if (!confirm("İstifadəçi silinsin?")) return;
-  meta.users.splice(idx, 1);
-  saveMeta();
-  renderAll();
+  appConfirm("İstifadəçi silinsin?").then((ok) => {
+    if (!ok) return;
+    meta.users.splice(idx, 1);
+    saveMeta();
+    renderAll();
+  });
+  return;
 }
 
 function renderProfile() {
@@ -5249,15 +5341,14 @@ function importCompany(ev) {
       if (!check.ok) {
         return alert(`Import dayandırıldı.\n\nXətalar:\n- ${check.errors.join("\n- ")}`);
       }
-      const ok = confirm(
-        "Bu import cari şirkətin bütün məlumatını yenisi ilə əvəz edəcək.\n\nDavam edək?"
-      );
-      if (!ok) return;
-
-      db = { ...defaultDB(), ...incoming };
-      saveDB();
-      logEvent("import", "company", { companyId: meta?.session?.companyId || "-" });
-      alert("Import olundu.");
+      appConfirm("Bu import cari şirkətin bütün məlumatını yenisi ilə əvəz edəcək.\n\nDavam edək?").then((ok) => {
+        if (!ok) return;
+        db = { ...defaultDB(), ...incoming };
+        saveDB();
+        logEvent("import", "company", { companyId: meta?.session?.companyId || "-" });
+        alert("Import olundu.");
+        renderAll();
+      });
     } catch {
       alert("JSON oxunmadı.");
     }
@@ -5838,16 +5929,24 @@ function exportCsvCurrent() {
 
 function clearAudit() {
   if (!userCanReset()) return alert("İcazə yoxdur.");
-  if (!confirm("Audit təmizlənsin?")) return;
-  db.audit = [];
-  saveDB();
+  appConfirm("Audit təmizlənsin?").then((ok) => {
+    if (!ok) return;
+    db.audit = [];
+    saveDB();
+    renderAll();
+  });
+  return;
 }
 
 function emptyTrash() {
   if (!userCanReset()) return alert("İcazə yoxdur.");
-  if (!confirm("Səbət tam boşaldılsın?")) return;
-  db.trash = [];
-  saveDB();
+  appConfirm("Səbət tam boşaldılsın?").then((ok) => {
+    if (!ok) return;
+    db.trash = [];
+    saveDB();
+    renderAll();
+  });
+  return;
 }
 
 function restoreTrash(uid) {
@@ -5889,10 +5988,14 @@ function deleteTrash(uid) {
   if (!userCanDelete()) return alert("Sil icazəsi yoxdur.");
   const i = db.trash.findIndex((t) => Number(t.uid) === Number(uid));
   if (i < 0) return;
-  if (!confirm("Səbətdən tam silinsin?")) return;
-  db.trash.splice(i, 1);
-  logEvent("delete", "trash", { uid });
-  saveDB();
+  appConfirm("Səbətdən tam silinsin?").then((ok) => {
+    if (!ok) return;
+    db.trash.splice(i, 1);
+    logEvent("delete", "trash", { uid });
+    saveDB();
+    renderAll();
+  });
+  return;
 }
 function openChangePassword() {
   const u = currentUser();
@@ -6970,8 +7073,9 @@ function renderAll() {
 }
 
 function delItem(type, i) {
-  if (!confirm("Silinsin?")) return;
   if (!userCanDelete()) return alert("Sil icazəsi yoxdur.");
+  appConfirm("Silinsin?").then((ok) => {
+    if (!ok) return;
   ensureAuditTrash();
   const u = currentUser();
   const deletedBy = u ? u.username : "-";
@@ -7046,6 +7150,8 @@ function delItem(type, i) {
     saveDB();
     return;
   }
+  });
+  return;
 }
 
 // Utilities
