@@ -1142,6 +1142,7 @@ function bulkSoldQty(purchUid) {
 }
 
 function purchRemainingQty(p) {
+  if (p && p.returnedAt) return 0;
   if (!purchIsBulk(p)) return soldKeySet().has(itemKeyFromPurch(p)) ? 0 : 1;
   const total = Math.max(0, Math.floor(n(p.qty || 0)));
   const sold = bulkSoldQty(p.uid);
@@ -1496,10 +1497,17 @@ function saveProd(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
+  const oldName = idx !== null ? String(db.prod[idx]?.name || "") : "";
+  const nextName = val("f_p_name");
+  if (idx !== null && oldName.trim() && String(nextName || "").trim() !== oldName.trim()) {
+    const usedInPurch = (db.purch || []).some((p) => String(p.name || "").trim() === oldName.trim());
+    const usedInSales = (db.sales || []).some((s) => String(s.productName || "").trim() === oldName.trim());
+    if (usedInPurch || usedInSales) return alert("Bu məhsul adı alış/satışda istifadə olunub. Adı dəyişmək olmaz.");
+  }
   const data = {
     uid: idx !== null ? db.prod[idx].uid : genId(db.prod, 1),
     createdAt: idx !== null ? (db.prod[idx].createdAt || db.prod[idx].date || nowISODateTimeLocal()) : nowISODateTimeLocal(),
-    name: val("f_p_name"),
+    name: nextName,
     cat: val("f_p_cat"),
     subCat: val("f_p_subcat"),
   };
@@ -1537,9 +1545,70 @@ function openPurchInfo(idx) {
     </div>
     <div class="modal-footer">
       ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl();openPurch(${idx})">Redaktə</button>` : ""}
+      ${!p.returnedAt && canDeletePurchase(p) ? `<button class="btn-cancel" type="button" onclick="openReturnPurch(${idx})">Qaytar</button>` : ""}
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
+}
+
+function openReturnPurch(idx) {
+  if (!userCanEdit()) return alert("İcazə yoxdur.");
+  const p = db.purch[idx];
+  if (!p) return;
+  if (p.returnedAt) return alert("Bu alış artıq qaytarılıb.");
+  if (!canDeletePurchase(p)) return alert("Bu alış satılıb (və ya say ilə satış edilib). Qaytarmaq olmaz.");
+  openModal(`
+    <h2>Alış qaytarma</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(p.supp || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(p.name || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value">${money(p.amount)} AZN</div></div>
+    </div>
+    <form onsubmit="saveReturnPurch(event, ${idx})">
+      <div class="grid-3">
+        <input type="datetime-local" id="pret_date" value="${nowISODateTimeLocal()}" required>
+        <input type="number" step="0.01" id="pret_refund" class="span-2" placeholder="Geri qaytarılan məbləğ (AZN) (0 ola bilər)">
+        <select id="pret_acc" class="span-3" required>${accountOptionsHtml(1)}</select>
+        <input id="pret_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Qaytar</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl();openPurchInfo(${idx})">Geri</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveReturnPurch(e, idx) {
+  e.preventDefault();
+  if (!userCanEdit()) return;
+  const p = db.purch[idx];
+  if (!p) return;
+  if (p.returnedAt) return alert("Bu alış artıq qaytarılıb.");
+  if (!canDeletePurchase(p)) return alert("Bu alış satılıb (və ya say ilə satış edilib). Qaytarmaq olmaz.");
+  const date = val("pret_date");
+  const refund = Math.max(0, n(val("pret_refund")));
+  const accId = Number(val("pret_acc") || 1);
+  const note = val("pret_note");
+  if (refund > 0.000001) {
+    addCashOp({
+      type: "in",
+      date,
+      source: `Alış qaytarma (${p.supp || "-"})`,
+      amount: refund,
+      note: note || `Alış qaytarma #${p.uid}`,
+      link: { kind: "purch_return_refund", purchUid: p.uid },
+      meta: { purchUid: p.uid },
+      accountId: accId,
+    });
+    logEvent("create", "cash", { type: "in", kind: "purch_return_refund", purchUid: p.uid, amount: refund });
+  }
+  p.returnedAt = date;
+  p.returnNote = note || "";
+  logEvent("return", "purch", { uid: p.uid, invNo: p.invNo || invFallback("purch", p.uid), refund });
+  saveDB();
+  closeMdl();
 }
 
 function openPurch(idx = null) {
@@ -4852,6 +4921,7 @@ function renderAll() {
   // purchases (latest first) + date filter + pagination
   const purchListAll = db.purch
     .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => !p.returnedAt)
     .filter(({ p }) => inDateRange(p.date, "purchFrom", "purchTo"))
     .sort((a, b) => String(a.p.date).localeCompare(String(b.p.date)) * -1);
 
@@ -5719,6 +5789,12 @@ function delItem(type, i) {
   if (type === "prod") {
     const p = db.prod[i];
     if (!p) return;
+    const nm = String(p.name || "").trim();
+    if (nm) {
+      const usedInPurch = (db.purch || []).some((x) => String(x.name || "").trim() === nm);
+      const usedInSales = (db.sales || []).some((x) => String(x.productName || "").trim() === nm);
+      if (usedInPurch || usedInSales) return alert("Bu məhsul adı alış/satışda istifadə olunub. Silmək olmaz.");
+    }
     db.trash.push({ uid: genId(db.trash, 1), type: "prod", item: p, deletedAt, deletedBy });
     logEvent("delete", "prod", { uid: p.uid });
     db.prod.splice(i, 1);
@@ -5848,6 +5924,8 @@ Object.assign(window, {
   deleteTrash,
   openReturnSale,
   saveReturnSale,
+  openReturnPurch,
+  saveReturnPurch,
   printSale,
   toggleDevMenu,
 });
