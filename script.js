@@ -527,6 +527,259 @@ function onStockCatChange() {
   renderAll();
 }
 
+function seedDevTestData() {
+  if (!isDeveloper()) return alert("İcazə yoxdur.");
+  if (!isTestCompany()) return alert("Bu funksiya yalnız test şirkətində aktivdir.");
+  appConfirm(
+    "DevTest test bazası yüklənsin?\n\nDiqqət: Cari şirkətin datası tam dəyişəcək (demo data ilə əvəz olunacaq).",
+    "Test baza"
+  ).then((ok) => {
+    if (!ok) return;
+    ensureAuditTrash();
+
+    const now = nowISODateTimeLocal();
+    const daysAgo = (nDays) => {
+      const d = new Date();
+      d.setDate(d.getDate() - nDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}T10:00`;
+    };
+
+    db = defaultDB();
+    ensureAuditTrash();
+    ensureAccounts();
+    ensureCounters();
+
+    // accounts
+    db.accounts = [
+      { uid: 1, name: "Kassa", type: "cash" },
+      { uid: 2, name: "Bank", type: "bank" },
+      { uid: 3, name: "POS", type: "pos" },
+    ];
+
+    // staff
+    db.staff = [
+      { uid: 1, createdAt: now, name: "Rüstəm Bayramov", role: "Menecer", phone: "0500000000", baseSalary: "800", commPct: "2" },
+      { uid: 2, createdAt: now, name: "Aysel Əliyeva", role: "Satış", phone: "0510000000", baseSalary: "600", commPct: "3" },
+      { uid: 3, createdAt: now, name: "Elvin Məmmədov", role: "Kassir", phone: "0700000000", baseSalary: "550", commPct: "0" },
+    ];
+
+    // suppliers
+    db.supp = [
+      { uid: 1000, createdAt: now, co: "Smart Distribyutor MMC", per: "Nihat", mob: "0551111111", voen: "1234567890" },
+      { uid: 1001, createdAt: now, co: "Telefon Center", per: "Kamran", mob: "0502222222", voen: "0987654321" },
+    ];
+
+    // products (with categories/subcategories)
+    db.prod = [
+      { uid: 1, createdAt: now, name: "iPhone 15 Pro Max 256", cat: "Telefon", subCat: "iPhone" },
+      { uid: 2, createdAt: now, name: "Samsung S24 Ultra 256", cat: "Telefon", subCat: "Samsung" },
+      { uid: 3, createdAt: now, name: "AirPods Pro 2", cat: "Aksesuar", subCat: "AirPods" },
+      { uid: 4, createdAt: now, name: "Adapter Type-C 20W", cat: "Aksesuar", subCat: "Adapter" },
+    ];
+
+    // customers
+    db.cust = [
+      { uid: 1, createdAt: now, sur: "Həsənov", name: "Rəşad", father: "Eldar", fin: "A1B2C3D", seriaNum: "AZE1234567", ph1: "0503333333", ph2: "", ph3: "", work: "Ofis", addr: "Bakı", zam: "" , creditLimit: "3000"},
+      { uid: 2, createdAt: now, sur: "Quliyeva", name: "Günay", father: "Ramil", fin: "Q9W8E7R", seriaNum: "AZE7654321", ph1: "0514444444", ph2: "", ph3: "", work: "Mağaza", addr: "Sumqayıt", zam: "", creditLimit: "1500" },
+      { uid: 3, createdAt: now, sur: "Əliyev", name: "Murad", father: "Namiq", fin: "M3N4B5V", seriaNum: "AA123456", ph1: "0705555555", ph2: "", ph3: "", work: "", addr: "Xırdalan", zam: "" , creditLimit: "0"},
+    ];
+
+    // purchases: 2 serial phones + 2 bulk lots
+    db.purch = [
+      {
+        uid: 1,
+        invNo: "AL-001",
+        date: daysAgo(25),
+        supp: db.supp[0].co,
+        name: db.prod[0].name,
+        code: "",
+        qty: 1,
+        imei1: "356111111111111",
+        imei2: "",
+        seria: "",
+        amount: "3200",
+        unitPrice: "",
+        payType: "nagd",
+        paidTotal: "1200",
+        employeeId: 1,
+        paymentAccountId: 2,
+      },
+      {
+        uid: 2,
+        invNo: "AL-002",
+        date: daysAgo(20),
+        supp: db.supp[1].co,
+        name: db.prod[1].name,
+        code: "",
+        qty: 1,
+        imei1: "356222222222222",
+        imei2: "",
+        seria: "",
+        amount: "2800",
+        unitPrice: "",
+        payType: "kocurme",
+        paidTotal: "2800",
+        employeeId: 1,
+        paymentAccountId: 2,
+      },
+      {
+        uid: 3,
+        invNo: "AL-003",
+        date: daysAgo(15),
+        supp: db.supp[0].co,
+        name: db.prod[3].name,
+        code: "ADP-20W",
+        qty: 20,
+        imei1: "",
+        imei2: "",
+        seria: "",
+        amount: String(20 * 9),
+        unitPrice: "9",
+        payType: "nagd",
+        paidTotal: String(20 * 9),
+        employeeId: 3,
+        paymentAccountId: 1,
+      },
+      {
+        uid: 4,
+        invNo: "AL-004",
+        date: daysAgo(8),
+        supp: db.supp[0].co,
+        name: db.prod[3].name,
+        code: "ADP-20W",
+        qty: 10,
+        imei1: "",
+        imei2: "",
+        seria: "",
+        amount: String(10 * 8.5),
+        unitPrice: "8.5",
+        payType: "nagd",
+        paidTotal: "0",
+        employeeId: 3,
+        paymentAccountId: 1,
+      },
+      {
+        uid: 5,
+        invNo: "AL-005",
+        date: daysAgo(6),
+        supp: db.supp[1].co,
+        name: db.prod[2].name,
+        code: "APP2",
+        qty: 8,
+        imei1: "",
+        imei2: "",
+        seria: "",
+        amount: String(8 * 140),
+        unitPrice: "140",
+        payType: "kredit",
+        paidTotal: String(4 * 140),
+        employeeId: 1,
+        paymentAccountId: 2,
+      },
+    ];
+
+    // sales: one cash sale, one credit sale, one bulk FIFO-like sale
+    db.sales = [
+      {
+        uid: 1,
+        invNo: "ST-001",
+        date: daysAgo(18),
+        saleType: "nagd",
+        customerId: 3,
+        customerName: "Əliyev Murad Namiq",
+        employeeId: 2,
+        employeeName: "Aysel Əliyeva",
+        productName: db.purch[1].name,
+        code: "",
+        qty: 1,
+        bulkPurchUid: null,
+        bulkAllocations: null,
+        imei1: db.purch[1].imei1,
+        imei2: "",
+        seria: "",
+        amount: "3300",
+        unitPrice: "",
+        itemKey: itemKeyFromPurch(db.purch[1]),
+        payments: [{ uid: 1, date: daysAgo(18), amount: 3300, source: "sale_info" }],
+        paidTotal: "3300",
+        credit: null,
+        paymentAccountId: 1,
+        lastPayAmount: 3300,
+      },
+      {
+        uid: 2,
+        invNo: "ST-002",
+        date: daysAgo(10),
+        saleType: "kredit",
+        customerId: 1,
+        customerName: "Həsənov Rəşad Eldar",
+        employeeId: 2,
+        employeeName: "Aysel Əliyeva",
+        productName: db.purch[0].name,
+        code: "",
+        qty: 1,
+        bulkPurchUid: null,
+        bulkAllocations: null,
+        imei1: db.purch[0].imei1,
+        imei2: "",
+        seria: "",
+        amount: "3800",
+        unitPrice: "",
+        itemKey: itemKeyFromPurch(db.purch[0]),
+        payments: [{ uid: 1, date: daysAgo(10), amount: 800, source: "down" }],
+        paidTotal: "800",
+        credit: { termMonths: 6, downPayment: 800, monthlyPayment: (3800 - 800) / 6 },
+        paymentAccountId: 1,
+        lastPayAmount: 800,
+      },
+      {
+        uid: 3,
+        invNo: "ST-003",
+        date: daysAgo(3),
+        saleType: "nagd",
+        customerId: 2,
+        customerName: "Quliyeva Günay Ramil",
+        employeeId: 3,
+        employeeName: "Elvin Məmmədov",
+        productName: db.prod[3].name,
+        code: "ADP-20W",
+        qty: 7,
+        bulkPurchUid: null,
+        bulkAllocations: [{ purchUid: 3, qty: 7 }],
+        imei1: "",
+        imei2: "",
+        seria: "",
+        amount: String(7 * 15),
+        unitPrice: "15",
+        itemKey: "FIFO:ADP-20W",
+        payments: [{ uid: 1, date: daysAgo(3), amount: 105, source: "sale_info" }],
+        paidTotal: "105",
+        credit: null,
+        paymentAccountId: 1,
+        lastPayAmount: 105,
+      },
+    ];
+
+    // cash ops to reflect payments (simple)
+    db.cash = [
+      { uid: 1, type: "in", date: daysAgo(18), source: "Satış ödənişi (test)", amount: "3300", note: "ST-001", link: { kind: "sale", saleUid: 1 }, meta: { customerId: 3 }, accountId: 1 },
+      { uid: 2, type: "in", date: daysAgo(10), source: "Debitor ödəniş (test)", amount: "800", note: "ST-002 down", link: { kind: "sale", saleUid: 2 }, meta: { customerId: 1, payKind: "down" }, accountId: 1 },
+      { uid: 3, type: "in", date: daysAgo(3), source: "Satış ödənişi (test)", amount: "105", note: "ST-003", link: { kind: "sale", saleUid: 3 }, meta: { customerId: 2 }, accountId: 1 },
+      { uid: 4, type: "out", date: daysAgo(15), source: "Alış ödənişi (test)", amount: String(20 * 9), note: "AL-003", link: { kind: "purch_payment", purchUid: 3 }, meta: { purchUid: 3 }, accountId: 1 },
+    ];
+
+    // counters
+    db.counters = { purchInv: 6, salesInv: 4 };
+
+    logEvent("reset", "company", { companyId: meta?.session?.companyId || "devtest", seeded: true });
+    saveDB();
+    toast("Test baza yükləndi", "ok", 2000);
+  });
+}
+
 function loadMeta() {
   try {
     const raw = localStorage.getItem(META_KEY);
@@ -633,7 +886,7 @@ function isAdmin() {
  */
 function isTestCompany() {
   const cid = (meta?.session?.companyId || "").toLowerCase();
-  return cid === "test";
+  return cid === "test" || cid === "devtest";
 }
 
 /** Yalnız admin və developer təsisçi/sahibkar mədaxili edə bilər; adi userlər bu seçimi görməz. */
@@ -7324,6 +7577,7 @@ Object.assign(window, {
   openOverdueInfo,
   saveOverdueNote,
   onStockCatChange,
+  seedDevTestData,
   toggleCashKind,
   toggleIncomeSourceBox,
   refreshSubcats,
