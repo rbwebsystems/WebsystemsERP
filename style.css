@@ -383,7 +383,8 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
   bottom:7px;
   width:3px;
   border-radius:99px;
-  background:var(--accent);
+  background:rgba(255,255,255,.95);
+  box-shadow:0 0 10px rgba(255,255,255,.35);
   pointer-events:none;
 }
 .nav-link i{opacity:.92;width:18px;min-width:18px;text-align:center;}
