@@ -2985,6 +2985,11 @@ function cashTotals() {
   return { income, expense, balance: income - expense, kassa };
 }
 
+function totalAccountsBalance() {
+  ensureAccounts();
+  return (db.accounts || []).reduce((a, acc) => a + accountBalance(acc.uid), 0);
+}
+
 function openCashOp() {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const custOptions = `<option value="">Müştəri seç</option>` + db.cust.map((c) => `<option value="${c.uid}">${escapeHtml(c.sur)} ${escapeHtml(c.name)} (${c.uid})</option>`).join("");
@@ -5575,7 +5580,7 @@ function renderAll() {
   byId("st-stock").innerText = String(stockCount);
   byId("st-debts").innerText = money(debtorSum);
   byId("st-creditor").innerText = money(creditorSum);
-  byId("st-cash").innerText = money(totalsAll.balance);
+  byId("st-cash").innerText = money(totalAccountsBalance());
 
   // Dashboard charts: son 6 ay satış
   const monthNamesAz = ["Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"];
