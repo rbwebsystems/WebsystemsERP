@@ -90,6 +90,8 @@ body{background:var(--bg-main);color:var(--text-main);display:flex;}
 body.login-open{overflow:hidden;}
 #appShell{width:100%;display:flex;}
 body.login-open #appShell{display:none;}
+body.offline-block{overflow:hidden;}
+body.offline-block #appShell{display:none;}
 
 aside{
   width:260px;background:var(--sidebar-solid);border-right:1px solid rgba(0,0,0,.08);

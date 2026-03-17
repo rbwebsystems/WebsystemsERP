@@ -1044,6 +1044,22 @@ function applyTheme() {
   applySkin();
 }
 
+function isOnline() {
+  try {
+    return navigator.onLine !== false;
+  } catch {
+    return true;
+  }
+}
+
+function showOfflineBlock(show) {
+  const ov = byId("loadingOverlay");
+  const txt = byId("loadingText");
+  document.body.classList.toggle("offline-block", !!show);
+  if (ov) ov.classList.toggle("hidden", !show);
+  if (txt && show) txt.textContent = "İnternet yoxdur. Sistem offline işləmək üçün nəzərdə tutulmayıb.";
+}
+
 function getCurrentCompanyName() {
   const cid = meta?.session?.companyId;
   if (!cid) return "";
@@ -6544,6 +6560,14 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   applyTheme();
+  // Offline mode is NOT allowed (avoid local-only operations / desync).
+  if (!isOnline()) {
+    showOfflineBlock(true);
+    window.addEventListener("online", () => location.reload());
+    return;
+  }
+  window.addEventListener("offline", () => showOfflineBlock(true));
+  window.addEventListener("online", () => location.reload());
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
   const loadingEl = byId("loadingOverlay");
   if (loadingEl) loadingEl.classList.remove("hidden");
@@ -6586,7 +6610,8 @@ async function init() {
       hideLoading();
       toast("Başlatma xətası: " + (e && e.message ? e.message : "Yeniləyin."), "err", 5000);
       console.error("Bakfon ERP init xətası:", e);
-      initApp();
+      // If something fails (including network), do not fall back to offline usage.
+      showOfflineBlock(true);
     }
   }
 }
