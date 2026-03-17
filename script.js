@@ -4123,12 +4123,16 @@ function buildMelumatHtml(q) {
         ? sales.map((s) => {
             const saleStaffName = s.employeeName || getStaffName(s.employeeId);
             const inv = s.invNo || invFallback("sales", s.uid);
+            const rem = saleRemaining(s);
+            const st = debtStatus(n(s.amount), rem);
             return `
               <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
               <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
               <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
               <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
               <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
+              <div class="info-row"><div class="info-label">Ödəniş statusu</div><div class="info-value">${escapeHtml(debtLabel(st))}</div></div>
+              ${rem > 0.000001 ? `<div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>` : ""}
               <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
             `;
           }).join("")
@@ -4139,12 +4143,16 @@ function buildMelumatHtml(q) {
       saleHtml = s
         ? (() => {
             const inv = s.invNo || invFallback("sales", s.uid);
+            const rem = saleRemaining(s);
+            const st = debtStatus(n(s.amount), rem);
             return `
               <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
               <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
               <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
               <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
               <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
+              <div class="info-row"><div class="info-label">Ödəniş statusu</div><div class="info-value">${escapeHtml(debtLabel(st))}</div></div>
+              ${rem > 0.000001 ? `<div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>` : ""}
               <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
             `;
           })()
@@ -4185,6 +4193,8 @@ function buildMelumatHtml(q) {
     const purchDate = p ? fmtDT(p.date) : "-";
     const purchStaffName = p ? getStaffName(p.employeeId) : "-";
     const saleStaffName = s.employeeName || getStaffName(s.employeeId);
+    const rem = saleRemaining(s);
+    const st = debtStatus(n(s.amount), rem);
 
     blocks.push(`
       <div class="info-block melumat-block" style="margin-bottom:16px;">
@@ -4201,6 +4211,8 @@ function buildMelumatHtml(q) {
         <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
         <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
         <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN${Math.max(1, Math.floor(n(s.qty || 1))) > 1 ? ` • 1 ədəd: ${money(unitSale)} AZN` : ""}</div></div>
+        <div class="info-row"><div class="info-label">Ödəniş statusu</div><div class="info-value">${escapeHtml(debtLabel(st))}</div></div>
+        ${rem > 0.000001 ? `<div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>` : ""}
         <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
       </div>
     `);
