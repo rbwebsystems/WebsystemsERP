@@ -1677,6 +1677,7 @@ function savePurch(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
+  const prevPaid = idx !== null ? n(db.purch[idx]?.paidTotal) : 0;
   const isBulk = !!byId("f_p_bulk")?.checked;
   const qty = isBulk ? Math.max(1, Math.floor(n(val("f_p_qty")))) : 1;
   const code = isBulk ? val("f_p_code").trim() : "";
@@ -1714,6 +1715,41 @@ function savePurch(e, idx) {
   if (idx !== null) db.purch[idx] = data;
   else db.purch.push(data);
   logEvent(isNew ? "create" : "update", "purch", { uid: data.uid, invNo: data.invNo });
+
+  // If user entered "paid" in purchase form, reflect it in cash as an outflow.
+  // (Default account is cash=1; detailed account selection can be handled from Cash module.)
+  const nextPaid = n(data.paidTotal);
+  const deltaPaid = nextPaid - prevPaid;
+  if (Math.abs(deltaPaid) > 0.000001) {
+    const date = data.date || nowISODateTimeLocal();
+    if (deltaPaid > 0) {
+      addCashOp({
+        type: "out",
+        date,
+        source: `Təchizatçı ödənişi (${data.supp || "-"})`,
+        amount: deltaPaid,
+        note: `Alış #${data.uid} (${escapeHtml(data.invNo || invFallback("purch", data.uid))})`,
+        link: { kind: "purch_payment", purchUid: data.uid },
+        meta: { purchUid: data.uid },
+        accountId: 1,
+      });
+      logEvent("create", "cash", { type: "out", kind: "purch_payment", purchUid: data.uid, amount: deltaPaid });
+    } else {
+      // paid reduced -> treat as returned cash from supplier back to cash
+      addCashOp({
+        type: "in",
+        date,
+        source: `Təchizatçı qaytarma (${data.supp || "-"})`,
+        amount: Math.abs(deltaPaid),
+        note: `Alış ödəniş düzəlişi #${data.uid} (${escapeHtml(data.invNo || invFallback("purch", data.uid))})`,
+        link: { kind: "purch_payment_adj", purchUid: data.uid },
+        meta: { purchUid: data.uid },
+        accountId: 1,
+      });
+      logEvent("create", "cash", { type: "in", kind: "purch_payment_adj", purchUid: data.uid, amount: Math.abs(deltaPaid) });
+    }
+  }
+
   saveDB();
   closeMdl();
 }
@@ -3039,6 +3075,16 @@ function delCashOp(uid) {
       const pi = (s.payments || []).findIndex((p) => String(p.date) === String(c.date) && n(p.amount) === n(c.amount));
       if (pi >= 0) s.payments.splice(pi, 1);
       s.paidTotal = String(sumPayments(s.payments || []));
+    }
+  } else if (kind === "purch_payment" || kind === "purch_payment_adj") {
+    const purchUid = c.link?.purchUid;
+    const p = db.purch.find((x) => Number(x.uid) === Number(purchUid));
+    if (p) {
+      // Reverse the effect on purchase paidTotal.
+      // purch_payment: cash out increased paidTotal
+      // purch_payment_adj: cash in decreased paidTotal (we revert by increasing)
+      const sign = kind === "purch_payment" ? -1 : +1;
+      p.paidTotal = String(Math.max(0, n(p.paidTotal) + sign * n(c.amount)));
     }
   }
 
