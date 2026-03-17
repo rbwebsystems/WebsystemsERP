@@ -4122,14 +4122,32 @@ function buildMelumatHtml(q) {
       saleHtml = sales.length
         ? sales.map((s) => {
             const saleStaffName = s.employeeName || getStaffName(s.employeeId);
-            return `<div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(s.invNo || invFallback("sales", s.uid))} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)} • ${money(s.amount)} AZN • Satış edən: ${escapeHtml(saleStaffName)}</div></div>`;
+            const inv = s.invNo || invFallback("sales", s.uid);
+            return `
+              <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
+              <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
+              <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
+              <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
+              <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
+              <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
+            `;
           }).join("")
         : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
     } else {
       const s = (db.sales || []).find((s) => !s.returnedAt && s.itemKey === key);
       const saleStaffName = s ? (s.employeeName || getStaffName(s.employeeId)) : "-";
       saleHtml = s
-        ? `<div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(s.invNo || invFallback("sales", s.uid))} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)} • ${money(s.amount)} AZN • Satış edən: ${escapeHtml(saleStaffName)}</div></div>`
+        ? (() => {
+            const inv = s.invNo || invFallback("sales", s.uid);
+            return `
+              <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
+              <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
+              <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
+              <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
+              <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
+              <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
+            `;
+          })()
         : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
     }
 
@@ -4178,8 +4196,12 @@ function buildMelumatHtml(q) {
         <div class="info-row"><div class="info-label">Alış</div><div class="info-value">${escapeHtml(purchInv)} • ${escapeHtml(supp)} • ${purchDate}</div></div>
         ${p ? `<div class="info-row"><div class="info-label">Alış məbləğ</div><div class="info-value">${money(p.amount)} AZN${purchIsBulk(p) ? ` • 1 ədəd: ${money(n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))))} AZN` : ""}</div></div>` : ""}
         <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(purchStaffName)}</div></div>
-        <div class="info-row"><div class="info-label">Satış</div><div class="info-value">${escapeHtml(inv)} • ${escapeHtml(s.customerName || "-")} • ${fmtDT(s.date)} • ${saleTypeLabel(s.saleType)} • ${money(s.amount)} AZN${Math.max(1, Math.floor(n(s.qty || 1))) > 1 ? ` • 1 ədəd: ${money(unitSale)} AZN` : ""}</div></div>
-        <div class="info-row"><div class="info-label">Satış edən əməkdaş</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
+        <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
+        <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
+        <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
+        <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN${Math.max(1, Math.floor(n(s.qty || 1))) > 1 ? ` • 1 ədəd: ${money(unitSale)} AZN` : ""}</div></div>
+        <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
       </div>
     `);
     if (key) shownKeys.add(key);
