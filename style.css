@@ -329,8 +329,20 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
 
 main{flex:1;padding:40px;}
 .section{display:none;}
-.section.active{display:block;animation:fadeIn .25s;}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.section.active{display:block;}
+.section.anim-enter{animation:sectionEnter .38s cubic-bezier(.2,.8,.2,1) both;}
+.section.anim-enter .content-header{animation:sectionHeaderEnter .42s cubic-bezier(.2,.8,.2,1) both;}
+@keyframes sectionEnter{
+  from{opacity:0;transform:translateY(10px) scale(.995);filter:blur(6px);}
+  to{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+}
+@keyframes sectionHeaderEnter{
+  from{opacity:0;transform:translateY(-6px);filter:blur(4px);}
+  to{opacity:1;transform:translateY(0);filter:blur(0);}
+}
+@media (prefers-reduced-motion:reduce){
+  .section.anim-enter,.section.anim-enter .content-header{animation:none !important;}
+}
 
 
 .content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;}

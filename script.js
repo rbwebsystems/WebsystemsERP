@@ -1090,7 +1090,14 @@ function showSec(id, el) {
   document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
   document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
   const sec = document.getElementById(id);
-  if (sec) sec.classList.add("active");
+  if (sec) {
+    sec.classList.add("active");
+    // trigger enter animation every time
+    sec.classList.remove("anim-enter");
+    void sec.offsetWidth; // reflow
+    sec.classList.add("anim-enter");
+    setTimeout(() => sec.classList.remove("anim-enter"), 500);
+  }
   if (el) el.classList.add("active");
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
