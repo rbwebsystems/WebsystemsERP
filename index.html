@@ -55,6 +55,10 @@
         <button class="header-btn header-btn-icon" type="button" onclick="openGlobalSearch()" title="Axtarış (Ctrl+K)">
           <i class="fas fa-magnifying-glass"></i>
         </button>
+        <button class="header-btn header-btn-icon" type="button" onclick="openNotifications()" title="Bildirişlər">
+          <i class="fas fa-bell"></i>
+          <span id="notifBadge" class="notif-badge hidden">0</span>
+        </button>
         <button class="header-btn header-btn-icon" type="button" id="profileMenuBtn" onclick="toggleProfileMenu(event)" title="Profil">
           <i class="fas fa-user"></i>
         </button>
@@ -448,6 +452,7 @@
           </div>
           <button class="btn-cancel" type="button" onclick="openReturnedSalesCreditReport()"><i class="fas fa-receipt"></i> Qaytarma avansları</button>
           <button class="btn-cancel" type="button" onclick="openCashReconcile()"><i class="fas fa-scale-balanced"></i> Kassa sayımı</button>
+          <button class="btn-cancel" type="button" onclick="openDayClose()"><i class="fas fa-calendar-check"></i> Gün sonu</button>
           <button class="btn-cancel" type="button" onclick="openCashDiffAnalysis()"><i class="fas fa-circle-exclamation"></i> Artıq/Əskik</button>
           <button class="btn-main" type="button" onclick="openCashOp()"><i class="fas fa-plus"></i> Yeni əməliyyat</button>
         </div>

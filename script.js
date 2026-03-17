@@ -12,6 +12,7 @@ const defaultDB = () => ({
   staff: [],
   cash: [],
   cashCounts: [],
+  dayCloses: [],
   overdueNotes: [],
   accounts: [{ uid: 1, name: "Kassa", type: "cash" }],
   counters: { purchInv: 1, salesInv: 1 },
@@ -569,31 +570,51 @@ function companyAllowsSection(sectionId) {
   return secs.includes(sectionId);
 }
 
-function userCanEdit() {
+function userCanAction(action, sectionId = "*") {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const acts = u.perms?.actions || {};
+  const key = `${sectionId}.${action}`;
+  const anyKey = `*.${action}`;
+  if (Object.prototype.hasOwnProperty.call(acts, key)) return !!acts[key];
+  if (Object.prototype.hasOwnProperty.call(acts, anyKey)) return !!acts[anyKey];
+  return null; // fallback to legacy flags
+}
+
+function userCanEdit(sectionId = "*") {
+  const u = currentUser();
+  if (!u || !u.active) return false;
+  if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("edit", sectionId);
+  if (act !== null) return act;
   return !!u.perms?.canEdit;
 }
 
-function userCanDelete() {
+function userCanDelete(sectionId = "*") {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("delete", sectionId);
+  if (act !== null) return act;
   return !!u.perms?.canDelete;
 }
 
-function userCanPay() {
+function userCanPay(sectionId = "*") {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("pay", sectionId);
+  if (act !== null) return act;
   return !!u.perms?.canPay;
 }
 
-function userCanRefund() {
+function userCanRefund(sectionId = "*") {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("refund", sectionId);
+  if (act !== null) return act;
   return !!u.perms?.canRefund;
 }
 
@@ -601,6 +622,8 @@ function userCanExport() {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("export", "*");
+  if (act !== null) return act;
   return !!u.perms?.canExport;
 }
 
@@ -608,6 +631,8 @@ function userCanImport() {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("import", "*");
+  if (act !== null) return act;
   return !!u.perms?.canImport;
 }
 
@@ -615,6 +640,8 @@ function userCanReset() {
   const u = currentUser();
   if (!u || !u.active) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  const act = userCanAction("reset", "*");
+  if (act !== null) return act;
   return !!u.perms?.canReset;
 }
 
@@ -931,6 +958,7 @@ function ensureAuditTrash() {
   if (!db.trash || !Array.isArray(db.trash)) db.trash = [];
   if (!db.settings) db.settings = defaultDB().settings;
   if (!db.cashCounts || !Array.isArray(db.cashCounts)) db.cashCounts = [];
+  if (!db.dayCloses || !Array.isArray(db.dayCloses)) db.dayCloses = [];
   if (!db.overdueNotes || !Array.isArray(db.overdueNotes)) db.overdueNotes = [];
 }
 
@@ -1071,6 +1099,125 @@ function refreshHeaderBar() {
   const titleEl = byId("appHeaderTitle");
   if (titleEl) titleEl.textContent = getCurrentCompanyName();
   updateHeaderDateTime();
+  updateNotificationsIndicator();
+}
+
+function getNotifications() {
+  ensureAuditTrash();
+  const out = [];
+
+  // Negative account balances
+  for (const a of db.accounts || []) {
+    const bal = accountBalance(Number(a.uid));
+    if (bal < -0.000001) {
+      out.push({
+        kind: "neg",
+        title: "Mənfi balans",
+        text: `${a.name}: ${money(bal)} AZN`,
+      });
+    }
+  }
+
+  // Overdue credit installments (summary by customer)
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const toDayStart = (iso) => {
+    const [y, m, d] = String(iso || "").slice(0, 10).split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d).getTime();
+  };
+  const todayT = toDayStart(todayISO);
+  const byCust = new Map();
+  (db.sales || [])
+    .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
+    .forEach((s) => {
+      const sched = buildCreditSchedule(s);
+      for (const r of sched.rows) {
+        if (r.remaining <= 0.000001) continue;
+        const dueT = toDayStart(r.due);
+        if (dueT == null || todayT == null) continue;
+        const daysLate = Math.floor((todayT - dueT) / dayMs);
+        if (daysLate < 1) continue;
+        const cid = String(s.customerId || "");
+        if (!byCust.has(cid)) byCust.set(cid, { customerId: cid, customer: s.customerName || cid, dueTotal: 0, maxLate: 0 });
+        const g = byCust.get(cid);
+        g.dueTotal += Math.max(0, n(r.remaining));
+        g.maxLate = Math.max(g.maxLate, daysLate);
+      }
+    });
+  for (const g of byCust.values()) {
+    out.push({
+      kind: "overdue",
+      title: "Vaxtı keçmiş kredit",
+      text: `${g.customer}: ${money(g.dueTotal)} AZN • ${g.maxLate} gün`,
+      action: () => showSec("overdue", document.querySelector(`.nav-link[onclick*="showSec('overdue'"]`) || null),
+    });
+  }
+
+  // Low stock for bulk purchases (remaining qty <= threshold)
+  const thr = Math.max(1, Math.floor(n(db.settings?.lowStockThreshold || 3)));
+  const low = [];
+  (db.purch || [])
+    .filter((p) => !p.returnedAt)
+    .filter((p) => purchIsBulk(p))
+    .forEach((p) => {
+      const rem = purchRemainingQty(p);
+      if (rem <= thr) {
+        low.push({ name: p.name || "-", rem, code: p.code || "-" });
+      }
+    });
+  if (low.length) {
+    const top = low
+      .slice()
+      .sort((a, b) => a.rem - b.rem)
+      .slice(0, 5)
+      .map((x) => `${x.name} (${x.code}) • ${x.rem}`)
+      .join(", ");
+    out.push({
+      kind: "stock",
+      title: "Anbar azalıb",
+      text: `${low.length} məhsul • hədd ≤ ${thr}. Nümunə: ${top}`,
+      action: () => showSec("stock", document.querySelector(`.nav-link[onclick*="showSec('stock'"]`) || null),
+    });
+  }
+
+  return out;
+}
+
+function updateNotificationsIndicator() {
+  const badge = byId("notifBadge");
+  if (!badge) return;
+  if (!meta?.session) {
+    badge.classList.add("hidden");
+    return;
+  }
+  const n0 = getNotifications().length;
+  badge.textContent = String(n0);
+  badge.classList.toggle("hidden", n0 <= 0);
+}
+
+function openNotifications() {
+  if (!meta?.session) return showLoginOverlay(true);
+  const list = getNotifications();
+  const rows = list
+    .map((x) => {
+      const cls = x.kind === "neg" ? "pill err" : x.kind === "overdue" ? "pill warn" : "pill ok";
+      return `<div class="info-row" style="align-items:flex-start;">
+        <div class="info-label"><span class="${cls}">${escapeHtml(x.kind)}</span></div>
+        <div class="info-value"><strong>${escapeHtml(x.title)}</strong><div class="muted">${escapeHtml(x.text || "")}</div></div>
+      </div>`;
+    })
+    .join("");
+  openModal(`
+    <h2>Bildirişlər</h2>
+    <div class="info-block">
+      ${rows || `<div class="info-row"><div class="info-label">Status</div><div class="info-value">Bildiriş yoxdur</div></div>`}
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
 }
 
 function updateHeaderDateTime() {
@@ -1195,8 +1342,18 @@ function purchIsBulk(p) {
 function bulkSoldQty(purchUid) {
   return (db.sales || [])
     .filter((s) => !s.returnedAt)
-    .filter((s) => String(s.bulkPurchUid || "") === String(purchUid))
-    .reduce((a, b) => a + Math.max(0, n(b.qty || 0)), 0);
+    .reduce((a, s) => {
+      if (String(s.bulkPurchUid || "") === String(purchUid)) {
+        return a + Math.max(0, n(s.qty || 0));
+      }
+      const allocs = s.bulkAllocations || null;
+      if (Array.isArray(allocs) && allocs.length) {
+        for (const al of allocs) {
+          if (String(al.purchUid || "") === String(purchUid)) a += Math.max(0, n(al.qty || 0));
+        }
+      }
+      return a;
+    }, 0);
 }
 
 function purchRemainingQty(p) {
@@ -1895,7 +2052,7 @@ function togglePurchBulk() {
 
 function toggleSaleQty() {
   const sel = byId("f_s_item")?.value || "";
-  const isBulk = String(sel).startsWith("bulk:");
+  const isBulk = String(sel).startsWith("bulk:") || String(sel).startsWith("fifo:");
   const box = byId("saleQtyBox");
   const qtyEl = byId("f_s_qty");
   if (box) box.style.display = isBulk ? "" : "none";
@@ -1927,6 +2084,7 @@ function openCustInfo(idx) {
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openCust(${idx})">Redaktə</button>
+      <button class="btn-cancel" type="button" onclick="openCustStatement(${idx})">Hesab çıxarışı</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -1946,7 +2104,215 @@ function openSuppInfo(idx) {
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openSupp(${idx})">Redaktə</button>
+      <button class="btn-cancel" type="button" onclick="openSuppStatement(${idx})">Hesab çıxarışı</button>
       <button class="btn-cancel" type="button" onclick="openSupplierPaymentHistory(${idx})">Ödəniş tarixçəsi</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function openPrintWindow(title, html) {
+  const w = window.open("", "_blank");
+  if (!w) return alert("Print üçün popup bloklandı.");
+  const css = `
+    <style>
+      body{font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;margin:24px;color:#111827;}
+      h1{font-size:18px;margin:0 0 12px;}
+      .muted{color:#6b7280;}
+      .meta{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 16px;}
+      .meta div{font-size:12px;}
+      table{width:100%;border-collapse:collapse;margin-top:10px;}
+      th,td{border:1px solid #e5e7eb;padding:8px 10px;font-size:12px;vertical-align:top;}
+      th{background:#f9fafb;text-align:left;}
+      .right{text-align:right;}
+      .neg{color:#b91c1c;}
+      .pos{color:#047857;}
+      @media print{button{display:none !important;} body{margin:0;}}
+    </style>
+  `;
+  w.document.open();
+  w.document.write(`<html><head><title>${escapeHtml(title)}</title>${css}</head><body>${html}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 250);
+}
+
+function openCustStatement(idx) {
+  const c = db.cust[idx];
+  if (!c) return;
+  const cid = String(c.uid);
+  const from = (byId("custFrom")?.value || "").trim();
+  const to = (byId("custTo")?.value || "").trim();
+
+  const items = [];
+  (db.sales || [])
+    .filter((s) => String(s.customerId) === cid)
+    .forEach((s) => {
+      const inv = s.invNo || invFallback("sales", s.uid);
+      const dt = String(s.date || "");
+      const returned = !!s.returnedAt;
+      items.push({
+        date: dt,
+        kind: returned ? "Satış (qaytarılıb)" : "Satış",
+        ref: inv,
+        debit: returned ? 0 : n(s.amount),
+        credit: 0,
+        note: `${s.productName || "-"}${s.qty && n(s.qty) > 1 ? ` • SAY:${s.qty}` : ""}`,
+      });
+      (s.payments || []).forEach((p) => {
+        items.push({
+          date: String(p.date || dt),
+          kind: "Ödəniş",
+          ref: inv,
+          debit: 0,
+          credit: n(p.amount),
+          note: p.source ? String(p.source) : "",
+        });
+      });
+    });
+
+  const inRange = (d) => {
+    const dd = String(d || "").slice(0, 10);
+    if (from && dd < from) return false;
+    if (to && dd > to) return false;
+    return true;
+  };
+  const rows = items
+    .filter((x) => inRange(x.date))
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((x) => x)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  let bal = 0;
+  const tr = rows
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((x, i) => {
+      bal += n(x.debit) - n(x.credit);
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${fmtDT(x.date)}</td>
+          <td>${escapeHtml(x.kind)}</td>
+          <td>${escapeHtml(x.ref || "-")}</td>
+          <td>${escapeHtml(x.note || "")}</td>
+          <td class="right">${x.debit ? money(x.debit) : ""}</td>
+          <td class="right">${x.credit ? money(x.credit) : ""}</td>
+          <td class="right">${money(bal)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const title = `Müştəri hesab çıxarışı`;
+  const name = `${c.sur || ""} ${c.name || ""} ${c.father || ""}`.trim() || String(c.uid);
+  const head = `
+    <div class="statement-head">
+      <div class="info-block">
+        <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(name)} (${escapeHtml(String(c.uid))})</div></div>
+        <div class="info-row"><div class="info-label">Tarix aralığı</div><div class="info-value">${escapeHtml(from || "-")} — ${escapeHtml(to || "-")}</div></div>
+        <div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value"><strong>${money(bal)} AZN</strong></div></div>
+      </div>
+    </div>
+  `;
+  openModal(`
+    <h2>${title}</h2>
+    ${head}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Qaimə</th><th>Qeyd</th><th>Məbləğ</th><th>Ödəniş</th><th>Balans</th></tr></thead>
+        <tbody>${tr || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="openPrintWindow('${escapeAttr(title)}', document.querySelector('#modalContent')?.innerHTML || '')">Print</button>
+      <button class="btn-cancel" type="button" onclick="openCustInfo(${idx})">Geri</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function openSuppStatement(idx) {
+  const s = db.supp[idx];
+  if (!s) return;
+  const suppName = String(s.co || "");
+  const from = (byId("repFrom")?.value || "").trim();
+  const to = (byId("repTo")?.value || "").trim();
+
+  const items = [];
+  (db.purch || [])
+    .filter((p) => String(p.supp || "") === suppName)
+    .forEach((p) => {
+      const inv = p.invNo || invFallback("purch", p.uid);
+      const returned = !!p.returnedAt;
+      items.push({
+        date: String(p.date || ""),
+        kind: returned ? "Alış (qaytarılıb)" : "Alış",
+        ref: inv,
+        debit: returned ? 0 : n(p.amount),
+        credit: 0,
+        note: p.name || "-",
+      });
+    });
+  (db.cash || [])
+    .filter((c) => c.type === "out")
+    .filter((c) => c.link && (c.link.kind === "purch_payment" || c.link.kind === "creditor_payment" || c.link.kind === "creditor_invoice_payment"))
+    .filter((c) => String(c.link.supp || c.link?.supp || c.link?.suppName || c.link?.supplier || c.link?.supplierName || "") === suppName || String(c.link.supp || "") === suppName)
+    .forEach((c) => {
+      items.push({
+        date: String(c.date || ""),
+        kind: "Ödəniş",
+        ref: c.link?.purchUid ? (invFallback("purch", c.link.purchUid)) : "-",
+        debit: 0,
+        credit: n(c.amount),
+        note: c.note || "",
+      });
+    });
+
+  const inRange = (d) => {
+    const dd = String(d || "").slice(0, 10);
+    if (from && dd < from) return false;
+    if (to && dd > to) return false;
+    return true;
+  };
+
+  let bal = 0;
+  const tr = items
+    .filter((x) => inRange(x.date))
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((x, i) => {
+      bal += n(x.debit) - n(x.credit);
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${fmtDT(x.date)}</td>
+          <td>${escapeHtml(x.kind)}</td>
+          <td>${escapeHtml(x.ref || "-")}</td>
+          <td>${escapeHtml(x.note || "")}</td>
+          <td class="right">${x.debit ? money(x.debit) : ""}</td>
+          <td class="right">${x.credit ? money(x.credit) : ""}</td>
+          <td class="right">${money(bal)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const title = `Təchizatçı hesab çıxarışı`;
+  openModal(`
+    <h2>${title}</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(suppName)} (${escapeHtml(String(s.uid))})</div></div>
+      <div class="info-row"><div class="info-label">Tarix aralığı</div><div class="info-value">${escapeHtml(from || "-")} — ${escapeHtml(to || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value"><strong>${money(bal)} AZN</strong></div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Qaimə</th><th>Qeyd</th><th>Məbləğ</th><th>Ödəniş</th><th>Balans</th></tr></thead>
+        <tbody>${tr || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="openPrintWindow('${escapeAttr(title)}', document.querySelector('#modalContent')?.innerHTML || '')">Print</button>
+      <button class="btn-cancel" type="button" onclick="openSuppInfo(${idx})">Geri</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -2259,9 +2625,22 @@ function openSale(idx = null) {
     .filter((x) => {
       if (isEdit && current) {
         if (x.type === "bulk" && String(current.bulkPurchUid || "") === String(x.p.uid)) return true;
+        if (x.type === "bulk" && Array.isArray(current.bulkAllocations) && current.bulkAllocations.some((a) => String(a.purchUid) === String(x.p.uid))) return true;
         if (x.type === "serial" && current.itemKey === x.key) return true;
       }
       return x.rem > 0;
+    });
+
+  const fifoGroups = new Map();
+  stockItems
+    .filter((x) => x.type === "bulk")
+    .forEach((x) => {
+      const code = String(x.p.code || "").trim();
+      const name = String(x.p.name || "").trim();
+      const key = (code || name || "-").replace(/:/g, "_");
+      if (!fifoGroups.has(key)) fifoGroups.set(key, { key, code, name, rem: 0 });
+      const g = fifoGroups.get(key);
+      g.rem += Math.max(0, n(x.rem));
     });
 
   const custOptions =
@@ -2270,6 +2649,12 @@ function openSale(idx = null) {
   const staffOptions =
     `<option value="">Əməkdaş seç</option>` +
     db.staff.map((s) => `<option value="${s.uid}">${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("");
+
+  const fifoOptions = Array.from(fifoGroups.values())
+    .filter((g) => g.rem > 0)
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+    .map((g) => `<option value="fifo:${escapeAttr(g.key)}">AUTO FIFO | ${escapeHtml(g.name || "-")} | KOD:${escapeHtml(g.code || "-")} | QALIQ:${Math.floor(g.rem)}</option>`)
+    .join("");
 
   const itemOptions = stockItems.length
     ? stockItems
@@ -2303,7 +2688,10 @@ function openSale(idx = null) {
         <select id="f_s_customer" class="span-2" required>${custOptions}</select>
         <select id="f_s_staff" required>${staffOptions}</select>
 
-        <select id="f_s_item" class="span-3" ${stockItems.length ? "" : "disabled"} onchange="toggleSaleQty()" required>${itemOptions}</select>
+        <select id="f_s_item" class="span-3" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" required>
+          ${fifoOptions ? `<optgroup label="AUTO">${fifoOptions}</optgroup>` : ""}
+          <optgroup label="Anbar">${itemOptions}</optgroup>
+        </select>
 
         <div id="saleQtyBox" class="grid-3 span-3" style="display:none;">
           <input type="number" step="1" min="1" id="f_s_qty" class="span-3" placeholder="Say">
@@ -2346,7 +2734,7 @@ function openSale(idx = null) {
     byId("f_s_customer").value = String(current.customerId || "");
     byId("f_s_staff").value = String(current.employeeId || "");
     // if bulk, show unit price in input; else show total
-    if (current.bulkPurchUid) {
+    if (current.bulkPurchUid || (Array.isArray(current.bulkAllocations) && current.bulkAllocations.length)) {
       const q = Math.max(1, Math.floor(n(current.qty || 1)));
       const unit = current.unitPrice != null && current.unitPrice !== "" ? n(current.unitPrice) : (n(current.amount) / q);
       byId("f_s_amount").value = String(unit);
@@ -2356,6 +2744,10 @@ function openSale(idx = null) {
 
     if (current.bulkPurchUid) {
       byId("f_s_item").value = `bulk:${current.bulkPurchUid}`;
+      if (byId("f_s_qty")) byId("f_s_qty").value = String(current.qty || 1);
+    } else if (Array.isArray(current.bulkAllocations) && current.bulkAllocations.length) {
+      const token = String(current.code || current.productName || "-").trim().replace(/:/g, "_");
+      byId("f_s_item").value = `fifo:${token}`;
       if (byId("f_s_qty")) byId("f_s_qty").value = String(current.qty || 1);
     } else {
       const purch = db.purch.find((p) => itemKeyFromPurch(p) === current.itemKey);
@@ -2463,13 +2855,15 @@ function saveSale(e, idx) {
   const employeeId = val("f_s_staff");
   const sel = val("f_s_item");
   const [kind, purchUid] = String(sel || "").split(":");
-  const purch = db.purch.find((p) => String(p.uid) === String(purchUid));
-  if (!customerId || !employeeId || !purch) return;
+  const purch = kind === "fifo" ? null : db.purch.find((p) => String(p.uid) === String(purchUid));
+  if (!customerId || !employeeId) return;
+  if (kind !== "fifo" && !purch) return;
 
-  const key = itemKeyFromPurch(purch);
+  const key = kind === "fifo" ? `FIFO:${String(purchUid || "")}` : itemKeyFromPurch(purch);
   const sold = soldKeySet();
   let qty = 1;
   let bulkPurchUid = null;
+  let bulkAllocations = null;
   if (kind === "bulk") {
     bulkPurchUid = purch.uid;
     qty = Math.max(1, Math.floor(n(val("f_s_qty"))));
@@ -2478,6 +2872,32 @@ function saveSale(e, idx) {
       avail += Math.max(0, Math.floor(n(db.sales[idx].qty || 0)));
     }
     if (qty > avail) return alert("Anbarda kifayət qədər say yoxdur.");
+  } else if (kind === "fifo") {
+    qty = Math.max(1, Math.floor(n(val("f_s_qty"))));
+    const token = String(purchUid || "").replace(/:/g, "_");
+    const matches = (p) => {
+      if (!p || p.returnedAt) return false;
+      if (!purchIsBulk(p)) return false;
+      const code = String(p.code || "").trim().replace(/:/g, "_");
+      const name = String(p.name || "").trim().replace(/:/g, "_");
+      return (code && code === token) || (!code && name === token) || name === token;
+    };
+    const lots = (db.purch || [])
+      .filter(matches)
+      .slice()
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+    const totalAvail = lots.reduce((a, p) => a + purchRemainingQty(p), 0);
+    if (qty > totalAvail) return alert("Anbarda kifayət qədər say yoxdur.");
+    bulkAllocations = [];
+    let left = qty;
+    for (const p of lots) {
+      const rem = purchRemainingQty(p);
+      if (rem <= 0) continue;
+      const take = Math.min(left, rem);
+      if (take > 0) bulkAllocations.push({ purchUid: p.uid, qty: take });
+      left -= take;
+      if (left <= 0) break;
+    }
   } else {
     if (!isEdit && sold.has(key)) return alert("Bu mal artıq satılıb.");
     if (isEdit && db.sales[idx] && db.sales[idx].itemKey !== key && sold.has(key)) return alert("Bu mal artıq satılıb.");
@@ -2485,7 +2905,7 @@ function saveSale(e, idx) {
 
   const saleType = val("f_s_type");
   const unitOrTotal = Math.max(0, n(val("f_s_amount")));
-  const amount = kind === "bulk" ? (unitOrTotal * qty) : unitOrTotal;
+  const amount = (kind === "bulk" || kind === "fifo") ? (unitOrTotal * qty) : unitOrTotal;
   const payNow = !!byId("f_pay_now")?.checked;
   const payAccountId = payNow ? Number(val("f_pay_acc") || 1) : null;
   let paid = payNow ? Math.max(0, n(val("f_s_paid"))) : 0;
@@ -2494,6 +2914,12 @@ function saveSale(e, idx) {
   const cust = db.cust.find((c) => String(c.uid) === String(customerId));
   const staff = db.staff.find((s) => String(s.uid) === String(employeeId));
   if (!cust || !staff) return;
+
+  const samplePurch =
+    purch ||
+    (Array.isArray(bulkAllocations) && bulkAllocations.length
+      ? db.purch.find((p) => String(p.uid) === String(bulkAllocations[0].purchUid))
+      : null);
 
   // credit limit check (only for kredit)
   if (val("f_s_type") === "kredit") {
@@ -2504,8 +2930,8 @@ function saveSale(e, idx) {
         .filter((s) => String(s.saleType) === "kredit")
         .filter((s) => !s.returnedAt)
         .reduce((a, s) => a + saleRemaining(s), 0);
-      const qtyNow = kind === "bulk" ? Math.max(1, Math.floor(n(val("f_s_qty")))) : 1;
-      const formTotal = kind === "bulk" ? (Math.max(0, n(val("f_s_amount"))) * qtyNow) : Math.max(0, n(val("f_s_amount")));
+      const qtyNow = (kind === "bulk" || kind === "fifo") ? Math.max(1, Math.floor(n(val("f_s_qty")))) : 1;
+      const formTotal = (kind === "bulk" || kind === "fifo") ? (Math.max(0, n(val("f_s_amount"))) * qtyNow) : Math.max(0, n(val("f_s_amount")));
       const newDebt = Math.max(0, formTotal - Math.max(0, n(val("f_cr_down"))));
       const oldDebt = isEdit ? saleRemaining(db.sales[idx]) : 0;
       const will = existing - oldDebt + newDebt;
@@ -2524,15 +2950,16 @@ function saveSale(e, idx) {
     customerName: `${cust.sur} ${cust.name} ${cust.father}`.trim(),
     employeeId: staff.uid,
     employeeName: staff.name,
-    productName: purch.name,
-    code: purch.code || "",
+    productName: samplePurch ? (samplePurch.name || "") : "",
+    code: samplePurch ? (samplePurch.code || "") : "",
     qty,
     bulkPurchUid,
-    imei1: purch.imei1 || "",
-    imei2: purch.imei2 || "",
-    seria: purch.seria || "",
+    bulkAllocations,
+    imei1: samplePurch ? (samplePurch.imei1 || "") : "",
+    imei2: samplePurch ? (samplePurch.imei2 || "") : "",
+    seria: samplePurch ? (samplePurch.seria || "") : "",
     amount: String(amount),
-    unitPrice: kind === "bulk" ? String(unitOrTotal) : (isEdit ? db.sales[idx]?.unitPrice ?? "" : ""),
+    unitPrice: (kind === "bulk" || kind === "fifo") ? String(unitOrTotal) : (isEdit ? db.sales[idx]?.unitPrice ?? "" : ""),
     itemKey: key,
     payments: isEdit ? (db.sales[idx].payments || []) : [],
     paidTotal: "0",
@@ -2589,7 +3016,7 @@ function saveSale(e, idx) {
         date: base.date,
         source: `Satış ödənişi (${base.customerName})`,
         amount: amountAppliedToSaleLast(base) || paid,
-        note: purchIsBulk(purch)
+        note: (kind === "bulk" || kind === "fifo" || (samplePurch && purchIsBulk(samplePurch)))
           ? `${base.productName} (KOD:${base.code || "-"} • SAY:${base.qty})`
           : `${base.productName} (${base.imei1 || base.imei2 || base.seria || "-"})`,
         link: { kind: "sale_payment", saleUid: base.uid },
@@ -4130,6 +4557,7 @@ function openUser(uidOrNull = null) {
             canExport: false,
             canImport: false,
             canReset: false,
+            actions: {},
           },
         };
   if (!editingUser.perms) editingUser.perms = { sections: [], canEdit: false, canDelete: false };
@@ -4140,6 +4568,44 @@ function openUser(uidOrNull = null) {
   if (typeof editingUser.perms.canExport !== "boolean") editingUser.perms.canExport = false;
   if (typeof editingUser.perms.canImport !== "boolean") editingUser.perms.canImport = false;
   if (typeof editingUser.perms.canReset !== "boolean") editingUser.perms.canReset = false;
+  if (!editingUser.perms.actions || typeof editingUser.perms.actions !== "object") editingUser.perms.actions = {};
+
+  const actionMatrixSecs = ["cash", "sales", "purch", "prod", "accounts", "cust", "supp"];
+  const actionCols = [
+    { key: "edit", label: "Edit" },
+    { key: "delete", label: "Delete" },
+    { key: "pay", label: "Pay" },
+    { key: "refund", label: "Refund" },
+  ];
+  const actionMatrix = `
+    <table class="perm-matrix">
+      <thead>
+        <tr>
+          <th>Bölmə</th>
+          ${actionCols.map((c) => `<th>${c.label}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${actionMatrixSecs
+          .map((s) => {
+            return `
+              <tr>
+                <td>${escapeHtml(sectionLabelAz(s))}</td>
+                ${actionCols
+                  .map((c) => {
+                    const k = `${s}.${c.key}`;
+                    const on = !!editingUser.perms.actions?.[k];
+                    return `<td><label class="chk" style="justify-content:center;"><input type="checkbox" class="permAct" data-key="${escapeAttr(k)}" ${on ? "checked" : ""}><span></span></label></td>`;
+                  })
+                  .join("")}
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+    <p class="muted small" style="margin-top:10px;">Qeyd: Bu cədvəldə işarələnən icazələr bölmə+əməliyyat üzrə daha dəqiq nəzarətdir (məs: <strong>sales.pay</strong>). Köhnə “ümumi” icazələr (aşağıdakı checkbox-lar) geriyə uyğunluq üçündür.</p>
+  `;
   const sections = [
     "dash",
     "cust",
@@ -4199,6 +4665,12 @@ function openUser(uidOrNull = null) {
           </div>
         </div>
         <div class="span-3 info-block">
+          <div class="info-row">
+            <div class="info-label">Detallı icazələr</div>
+            <div class="info-value">${actionMatrix}</div>
+          </div>
+        </div>
+        <div class="span-3 info-block">
           <div class="info-row"><div class="info-label">Bölmələr</div><div class="info-value" style="display:flex;flex-wrap:wrap;gap:10px;">${checks}</div></div>
         </div>
       </div>
@@ -4227,6 +4699,12 @@ function saveUser(e) {
   const canExport = !!byId("u_can_exp")?.checked;
   const canImport = !!byId("u_can_imp")?.checked;
   const canReset = !!byId("u_can_reset")?.checked;
+  const actions = {};
+  document.querySelectorAll(".permAct").forEach((el) => {
+    const k = el.getAttribute("data-key");
+    if (!k) return;
+    if (el.checked) actions[k] = true;
+  });
   const sections = Array.from(document.querySelectorAll(".permSec"))
     .filter((x) => x.checked)
     .map((x) => x.value);
@@ -4237,13 +4715,13 @@ function saveUser(e) {
     if (!cid) return alert("Cari şirkət müəyyən deyil.");
     if (!prefix || prefix !== cid) return alert("İstifadəçi adı şirkət adı ilə başlamalıdır: " + (meta?.session?.companyId || cid) + "_ (məs: " + (meta?.session?.companyId || cid) + "_rustamb).");
     if (meta.users.some((u) => u.username === username)) return alert("Bu istifadəçi adı var.");
-    meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset }, createdAt: nowISODateTimeLocal() });
+    meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions }, createdAt: nowISODateTimeLocal() });
   } else {
     const idx = meta.users.findIndex((x) => String(x.uid) === String(uidVal));
     if (idx === -1) return;
     const keep = meta.users[idx];
     if (!isDeveloper() && cid && !userBelongsToCompany(keep, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
-    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset } };
+    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions } };
   }
   saveMeta();
   closeMdl();
@@ -4525,6 +5003,12 @@ function buildMelumatHtml(q) {
 
     const purchStaffName = getStaffName(p.employeeId);
     const purchStatusText = p.returnedAt ? "QAYTARILIB" : "AKTİV";
+    const purchActions = `
+      <div class="modal-footer" style="justify-content:flex-start;gap:10px;margin-top:10px;">
+        <button class="btn-cancel" type="button" onclick="closeMdl();openPurchInfo(${pIdx})">Info</button>
+        ${!p.returnedAt && userCanRefund("purch") ? `<button class="btn-cancel" type="button" onclick="closeMdl();openReturnPurch(${pIdx})">Qaytar</button>` : ""}
+      </div>
+    `;
 
     let saleHtml = "";
     if (purchIsBulk(p)) {
@@ -4581,6 +5065,7 @@ function buildMelumatHtml(q) {
         <div class="info-row"><div class="info-label">Alış məbləğ</div><div class="info-value">${money(p.amount)} AZN${purchIsBulk(p) ? ` • 1 ədəd: ${money(unitPurch)} AZN` : ""}</div></div>
         <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(purchStaffName)}</div></div>
         ${saleHtml}
+        ${purchActions}
       </div>
     `);
   });
@@ -4606,6 +5091,13 @@ function buildMelumatHtml(q) {
     const saleStaffName = s.employeeName || getStaffName(s.employeeId);
     const rem = saleRemaining(s);
     const st = debtStatus(n(s.amount), rem);
+    const saleActions = `
+      <div class="modal-footer" style="justify-content:flex-start;gap:10px;margin-top:10px;">
+        <button class="btn-cancel" type="button" onclick="closeMdl();openSaleInfo(${sIdx})">Info</button>
+        ${rem > 0.000001 && userCanPay("sales") ? `<button class="btn-main" type="button" onclick="closeMdl();openSalePayment(${sIdx})">Ödəniş et</button>` : ""}
+        ${!s.returnedAt && userCanRefund("sales") ? `<button class="btn-cancel" type="button" onclick="closeMdl();openReturnSale(${sIdx})">Qaytar</button>` : ""}
+      </div>
+    `;
 
     blocks.push(`
       <div class="info-block melumat-block" style="margin-bottom:16px;">
@@ -4625,6 +5117,7 @@ function buildMelumatHtml(q) {
         <div class="info-row"><div class="info-label">Ödəniş statusu</div><div class="info-value">${escapeHtml(debtLabel(st))}</div></div>
         ${rem > 0.000001 ? `<div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>` : ""}
         <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
+        ${saleActions}
       </div>
     `);
     if (key) shownKeys.add(key);
@@ -4688,11 +5181,53 @@ function runGlobalSearch() {
   melumatEl.innerHTML = buildMelumatHtml(q);
 }
 
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function validateCompanyDBShape(data) {
+  const errors = [];
+  if (!isPlainObject(data)) return { ok: false, errors: ["DB obyekt deyil."] };
+
+  const mustBeArrays = [
+    "cust",
+    "supp",
+    "prod",
+    "purch",
+    "sales",
+    "staff",
+    "cash",
+    "accounts",
+    "counters",
+    "expenseCats",
+    "audit",
+    "trash",
+    "cashCounts",
+    "overdueNotes",
+  ];
+  for (const k of mustBeArrays) {
+    if (k in data && !Array.isArray(data[k])) errors.push(`${k} array deyil.`);
+  }
+
+  if ("settings" in data && data.settings != null && !isPlainObject(data.settings)) {
+    errors.push("settings obyekt deyil.");
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
 function exportCompany() {
   if (!userCanExport()) return alert("Export icazəsi yoxdur.");
   const cid = meta?.session?.companyId;
   if (!cid) return;
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const payload = {
+    _type: "bakfon-erp-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    companyId: cid,
+    data: db,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `erp_${cid}_${nowISODate()}.json`;
@@ -4709,7 +5244,17 @@ function importCompany(ev) {
   r.onload = () => {
     try {
       const parsed = JSON.parse(String(r.result || "{}"));
-      db = { ...defaultDB(), ...parsed };
+      const incoming = isPlainObject(parsed) && parsed._type === "bakfon-erp-backup" ? parsed.data : parsed; // köhnə export dəstəyi
+      const check = validateCompanyDBShape(incoming);
+      if (!check.ok) {
+        return alert(`Import dayandırıldı.\n\nXətalar:\n- ${check.errors.join("\n- ")}`);
+      }
+      const ok = confirm(
+        "Bu import cari şirkətin bütün məlumatını yenisi ilə əvəz edəcək.\n\nDavam edək?"
+      );
+      if (!ok) return;
+
+      db = { ...defaultDB(), ...incoming };
       saveDB();
       logEvent("import", "company", { companyId: meta?.session?.companyId || "-" });
       alert("Import olundu.");
@@ -4983,6 +5528,104 @@ function openCashDiffAnalysis() {
   `);
 }
 
+function openDayClose() {
+  if (!userCanPay("cash")) return alert("İcazə yoxdur.");
+  ensureAuditTrash();
+  const accId = getSelectedCashAccountId();
+  const ts = nowISODateTimeLocal();
+  const date = ts.slice(0, 10);
+  const accounts = (db.accounts || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const rows = (accId ? accounts.filter((a) => Number(a.uid) === Number(accId)) : accounts)
+    .map((a) => {
+      const bal = accountBalance(Number(a.uid));
+      return `<tr><td>${escapeHtml(a.name)}</td><td>${escapeHtml(a.type || "-")}</td><td style="text-align:right;"><strong>${money(bal)} AZN</strong></td></tr>`;
+    })
+    .join("");
+  const total = totalAccountsBalance();
+  openModal(`
+    <h2>Gün sonu</h2>
+    <p class="muted" style="margin:0 0 12px 0;">Bu əməliyyat “snapshot” saxlayır (balansların şəkli). Kassa sayımındakı kimi düzəliş yazmır.</p>
+    <div class="grid-3">
+      <input type="datetime-local" id="dc_ts" value="${ts}" required>
+      <input id="dc_note" class="span-2" placeholder="Qeyd (istəyə bağlı)">
+    </div>
+    <div class="info-block" style="margin-top:12px;">
+      <div class="info-row"><div class="info-label">Ümumi balans</div><div class="info-value"><strong>${money(total)} AZN</strong></div></div>
+      <div class="info-row"><div class="info-label">Seçilmiş hesab</div><div class="info-value">${accId ? `#${accId}` : "Hamısı"}</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Hesab</th><th>Tip</th><th>Balans</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="3">Hesab yoxdur</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="saveDayClose()">Yadda saxla</button>
+      <button class="btn-cancel" type="button" onclick="openDayCloseHistory()">Tarixçə</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function saveDayClose() {
+  if (!userCanPay("cash")) return;
+  ensureAuditTrash();
+  const ts = val("dc_ts") || nowISODateTimeLocal();
+  const note = val("dc_note") || "";
+  const accId = getSelectedCashAccountId();
+  const accounts = (db.accounts || []).slice().map((a) => ({ uid: a.uid, name: a.name, type: a.type, balance: accountBalance(Number(a.uid)) }));
+  const snapshot = accId ? accounts.filter((a) => Number(a.uid) === Number(accId)) : accounts;
+  const u = currentUser();
+  db.dayCloses.push({
+    uid: genId(db.dayCloses, 1),
+    ts,
+    date: ts.slice(0, 10),
+    accountId: accId ? Number(accId) : null,
+    totalBalance: totalAccountsBalance(),
+    accounts: snapshot,
+    note,
+    user: u ? u.username : "-",
+  });
+  logEvent("create", "day_close", { ts, accountId: accId || null });
+  saveDB();
+  toast("Gün sonu saxlandı", "ok", 1800);
+  closeMdl();
+}
+
+function openDayCloseHistory() {
+  ensureAuditTrash();
+  const rows = (db.dayCloses || [])
+    .slice()
+    .sort((a, b) => String(a.ts).localeCompare(String(b.ts)) * -1)
+    .map((x) => {
+      const acc = x.accountId ? `#${x.accountId}` : "Hamısı";
+      return `
+        <tr>
+          <td>${x.uid}</td>
+          <td>${fmtDT(x.ts)}</td>
+          <td>${escapeHtml(acc)}</td>
+          <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
+          <td>${escapeHtml(x.user || "-")}</td>
+          <td>${escapeHtml(x.note || "")}</td>
+        </tr>
+      `;
+    })
+    .join("");
+  openModal(`
+    <h2>Gün sonu tarixçəsi</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tarix</th><th>Hesab</th><th>Ümumi balans</th><th>İstifadəçi</th><th>Qeyd</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="6">Tarixçə boşdur</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="openDayClose()">Geri</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
 function openOverdueInfo(customerId) {
   ensureAuditTrash();
   const cid = String(customerId || "");
@@ -5213,13 +5856,30 @@ function restoreTrash(uid) {
   if (i < 0) return;
   const t = db.trash[i];
   const it = t.item;
-  if (t.type === "cust") db.cust.push(it);
-  else if (t.type === "supp") db.supp.push(it);
-  else if (t.type === "prod") db.prod.push(it);
-  else if (t.type === "staff") db.staff.push(it);
-  else if (t.type === "purch") db.purch.push(it);
-  else if (t.type === "sales") db.sales.push(it);
-  else if (t.type === "cash") db.cash.push(it);
+  const existsUid = (arr, x) => (arr || []).some((z) => z && x && String(z.uid) === String(x.uid));
+  if (!it || it.uid == null) return alert("Bərpa üçün məlumat tapılmadı.");
+  if (t.type === "cust") {
+    if (existsUid(db.cust, it)) return alert("Bu müştəri artıq mövcuddur (UID təkrarı).");
+    db.cust.push(it);
+  } else if (t.type === "supp") {
+    if (existsUid(db.supp, it)) return alert("Bu təchizatçı artıq mövcuddur (UID təkrarı).");
+    db.supp.push(it);
+  } else if (t.type === "prod") {
+    if (existsUid(db.prod, it)) return alert("Bu məhsul artıq mövcuddur (UID təkrarı).");
+    db.prod.push(it);
+  } else if (t.type === "staff") {
+    if (existsUid(db.staff, it)) return alert("Bu əməkdaş artıq mövcuddur (UID təkrarı).");
+    db.staff.push(it);
+  } else if (t.type === "purch") {
+    if (existsUid(db.purch, it)) return alert("Bu alış artıq mövcuddur (UID təkrarı).");
+    db.purch.push(it);
+  } else if (t.type === "sales") {
+    if (existsUid(db.sales, it)) return alert("Bu satış artıq mövcuddur (UID təkrarı).");
+    db.sales.push(it);
+  } else if (t.type === "cash") {
+    if (existsUid(db.cash, it)) return alert("Bu kassa əməliyyatı artıq mövcuddur (UID təkrarı).");
+    db.cash.push(it);
+  }
   db.trash.splice(i, 1);
   logEvent("restore", "trash", { type: t.type });
   saveDB();

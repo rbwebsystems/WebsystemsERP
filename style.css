@@ -90,6 +90,43 @@ body.theme-dark .nav-link.active{background:rgba(255,255,255,.14);color:#fff;bor
   transition:none !important;
   scroll-behavior:auto !important;
 }
+
+.perm-matrix{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+}
+.perm-matrix th,
+.perm-matrix td{
+  padding:10px 10px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  text-align:center;
+  vertical-align:middle;
+}
+.perm-matrix th:first-child,
+.perm-matrix td:first-child{
+  text-align:left;
+}
+body.theme-dark .perm-matrix th,
+body.theme-dark .perm-matrix td{
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+.notif-badge{
+  position:absolute;
+  top:6px;
+  right:6px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#ef4444;
+  color:#fff;
+  font-size:11px;
+  line-height:18px;
+  text-align:center;
+  font-weight:700;
+}
 body.theme-dark .nav-sep{background:rgba(255,255,255,.2);}
 .btn-theme-inactive{opacity:.7;background:var(--border-color) !important;}
 
