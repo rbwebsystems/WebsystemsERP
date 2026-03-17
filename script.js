@@ -3737,6 +3737,7 @@ function openDebtorInfo(customerId) {
   const items = (db.sales || [])
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => String(s.customerId) === String(customerId))
+    .filter(({ s }) => !s.returnedAt)
     .sort((a, b) => String(a.s.date).localeCompare(String(b.s.date)) * -1);
 
   const custName = items[0]?.s.customerName || customerId;
@@ -3788,6 +3789,7 @@ function openDebtorPayment(customerId) {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const rem = db.sales
     .filter((s) => String(s.customerId) === String(customerId))
+    .filter((s) => !s.returnedAt)
     .reduce((a, s) => a + saleRemaining(s), 0);
   if (rem <= 0.000001) {
     alert("Borc yoxdur.");
@@ -6668,6 +6670,7 @@ function renderAll() {
   // debts (debitor) grouped by customer + date filter + pagination
   const debtsStatus = byId("debtsStatus")?.value || "all";
   const debtsAll = db.sales
+    .filter((s) => !s.returnedAt)
     .filter((s) => inDateRange(s.date, "debtsFrom", "debtsTo"))
     .map((s, saleIdx) => {
       const total = n(s.amount);
