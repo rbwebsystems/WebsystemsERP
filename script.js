@@ -11,6 +11,7 @@ const defaultDB = () => ({
   sales: [],
   staff: [],
   cash: [],
+  cashCounts: [],
   accounts: [{ uid: 1, name: "Kassa", type: "cash" }],
   counters: { purchInv: 1, salesInv: 1 },
   expenseCats: [
@@ -927,6 +928,7 @@ function ensureAuditTrash() {
   if (!db.audit || !Array.isArray(db.audit)) db.audit = [];
   if (!db.trash || !Array.isArray(db.trash)) db.trash = [];
   if (!db.settings) db.settings = defaultDB().settings;
+  if (!db.cashCounts || !Array.isArray(db.cashCounts)) db.cashCounts = [];
 }
 
 function nextInvNo(kind) {
@@ -2961,7 +2963,7 @@ function delCashOp(uid) {
       if (pi >= 0) s.payments.splice(pi, 1);
       s.paidTotal = String(sumPayments(s.payments || []));
     }
-  } else if (kind === "sale_payment") {
+  } else if (kind === "sale_payment" || kind === "sale") {
     const saleUid = c.link?.saleUid;
     const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
     if (s) {
@@ -4405,6 +4407,173 @@ function totalReturnedSalesCreditLeft() {
     }, 0);
 }
 
+function salePaymentMismatches() {
+  // Compare sale.payments entries vs cash ops that represent those payments.
+  // This helps find "kassada artiq/eskik" sources quickly.
+  const cashByKey = new Map();
+  for (const c of db.cash || []) {
+    const kind = c.link?.kind || "";
+    if (c.type !== "in") continue;
+    if (kind !== "sale" && kind !== "sale_payment") continue;
+    const k = `${String(c.link?.saleUid || "")}::${String(c.date)}::${money(c.amount)}`;
+    cashByKey.set(k, (cashByKey.get(k) || 0) + 1);
+  }
+
+  let missingCashTotal = 0;
+  let missingCashCount = 0;
+  const missingCashSamples = [];
+
+  for (const s of db.sales || []) {
+    for (const p of s.payments || []) {
+      const k = `${String(s.uid)}::${String(p.date)}::${money(p.amount)}`;
+      const left = cashByKey.get(k) || 0;
+      if (left > 0) cashByKey.set(k, left - 1);
+      else {
+        missingCashTotal += n(p.amount);
+        missingCashCount++;
+        if (missingCashSamples.length < 10) {
+          missingCashSamples.push({
+            saleUid: s.uid,
+            invNo: s.invNo || invFallback("sales", s.uid),
+            date: p.date,
+            amount: n(p.amount),
+            customer: s.customerName || "-",
+          });
+        }
+      }
+    }
+  }
+
+  // leftover cashByKey entries mean cash ops exist without a matching sale payment entry
+  let orphanCashTotal = 0;
+  let orphanCashCount = 0;
+  const orphanCashSamples = [];
+  for (const c of db.cash || []) {
+    const kind = c.link?.kind || "";
+    if (c.type !== "in") continue;
+    if (kind !== "sale" && kind !== "sale_payment") continue;
+    const k = `${String(c.link?.saleUid || "")}::${String(c.date)}::${money(c.amount)}`;
+    const left = cashByKey.get(k) || 0;
+    if (left > 0) {
+      cashByKey.set(k, left - 1);
+      orphanCashTotal += n(c.amount);
+      orphanCashCount++;
+      if (orphanCashSamples.length < 10) {
+        orphanCashSamples.push({ saleUid: c.link?.saleUid, date: c.date, amount: n(c.amount), source: c.source || "", uid: c.uid });
+      }
+    }
+  }
+
+  return { missingCashTotal, missingCashCount, missingCashSamples, orphanCashTotal, orphanCashCount, orphanCashSamples };
+}
+
+function systemCashBalanceForSelected() {
+  const cashAccId = getSelectedCashAccountId();
+  if (cashAccId) return accountBalance(Number(cashAccId));
+  const income = (db.cash || []).filter((c) => c.type === "in").reduce((a, b) => a + n(b.amount), 0);
+  const expense = (db.cash || []).filter((c) => c.type === "out").reduce((a, b) => a + n(b.amount), 0);
+  return income - expense;
+}
+
+function openCashReconcile() {
+  if (!userCanPay()) return alert("İcazə yoxdur.");
+  ensureAuditTrash();
+  const sys = systemCashBalanceForSelected();
+  const accId = getSelectedCashAccountId() || 1;
+  openModal(`
+    <h2>Kassa sayımı</h2>
+    <p class="muted" style="margin:0 0 12px 0;">Faktiki kassadakı məbləği yazın. Sistemlə fərq çıxacaq. Fərqi istəsəniz “kassa düzəlişi” kimi yazdırın.</p>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Sistem qalığı</div><div class="info-value"><strong>${money(sys)} AZN</strong></div></div>
+    </div>
+    <form onsubmit="saveCashReconcile(event)">
+      <div class="grid-3">
+        <input type="datetime-local" id="cc_date" value="${nowISODateTimeLocal()}" required>
+        <input type="number" step="0.01" id="cc_physical" class="span-2" placeholder="Faktiki sayım (AZN)" required>
+        <select id="cc_acc" class="span-3" required>${accountOptionsHtml(Number(accId))}</select>
+        <input id="cc_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      </div>
+      <div class="info-block">
+        <div class="info-row"><div class="info-label">Fərq (faktiki − sistem)</div><div class="info-value" id="cc_diff">0.00</div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Fərqi düzəliş kimi yaz</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+  const physEl = byId("cc_physical");
+  const diffEl = byId("cc_diff");
+  const update = () => {
+    const phys = n(physEl?.value || 0);
+    const diff = phys - sys;
+    if (diffEl) diffEl.textContent = `${diff >= 0 ? "+" : ""}${money(diff)} AZN`;
+  };
+  if (physEl) physEl.oninput = update;
+  update();
+}
+
+function saveCashReconcile(e) {
+  e.preventDefault();
+  if (!userCanPay()) return;
+  ensureAuditTrash();
+  const date = val("cc_date");
+  const physical = Math.max(0, n(val("cc_physical")));
+  const accId = Number(val("cc_acc") || 1);
+  const note = val("cc_note");
+  const sys = accountBalance(accId);
+  const diff = physical - sys;
+  if (Math.abs(diff) < 0.000001) return alert("Fərq yoxdur.");
+
+  const type = diff > 0 ? "in" : "out";
+  const amt = Math.abs(diff);
+  addCashOp({
+    type,
+    date,
+    source: "Kassa düzəlişi (sayım fərqi)",
+    amount: amt,
+    note: note || "",
+    link: { kind: "cash_adjust", accountId: accId },
+    meta: { physical, system: sys, diff },
+    accountId: accId,
+  });
+  db.cashCounts.push({ uid: genId(db.cashCounts, 1), date, accountId: accId, physical, system: sys, diff, note: note || "" });
+  logEvent("create", "cash", { type, kind: "cash_adjust", amount: amt, accountId: accId });
+  saveDB();
+  closeMdl();
+}
+
+function openCashDiffAnalysis() {
+  ensureAuditTrash();
+  const adv = totalReturnedSalesCreditLeft();
+  const mm = salePaymentMismatches();
+  const last = (db.cashCounts || []).slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0] || null;
+  const lastHtml = last
+    ? `<div class="info-row"><div class="info-label">Son sayım</div><div class="info-value">${fmtDT(last.date)} • Faktiki ${money(last.physical)} AZN • Sistem ${money(last.system)} AZN • Fərq ${last.diff >= 0 ? "+" : ""}${money(last.diff)} AZN</div></div>`
+    : `<div class="info-row"><div class="info-label">Son sayım</div><div class="info-value">Yoxdur</div></div>`;
+
+  const mis1 = mm.missingCashCount
+    ? `<div class="info-row"><div class="info-label">Satış ödənişi var, kassaya düşməyib</div><div class="info-value">${mm.missingCashCount} əməliyyat • ${money(mm.missingCashTotal)} AZN</div></div>`
+    : `<div class="info-row"><div class="info-label">Satış ödənişi var, kassaya düşməyib</div><div class="info-value">Yoxdur</div></div>`;
+  const mis2 = mm.orphanCashCount
+    ? `<div class="info-row"><div class="info-label">Kassaya satış mədaxili var, satışda ödəniş yoxdur</div><div class="info-value">${mm.orphanCashCount} əməliyyat • ${money(mm.orphanCashTotal)} AZN</div></div>`
+    : `<div class="info-row"><div class="info-label">Kassaya satış mədaxili var, satışda ödəniş yoxdur</div><div class="info-value">Yoxdur</div></div>`;
+
+  openModal(`
+    <h2>Artıq / Əskik analizi</h2>
+    <div class="info-block">
+      ${lastHtml}
+      <div class="info-row"><div class="info-label">Qaytarma avansı</div><div class="info-value">${money(adv)} AZN</div></div>
+      ${mis1}
+      ${mis2}
+    </div>
+    <p class="muted" style="margin:0 0 12px 0;">Detallı siyahı üçün: “Qaytarma avansları”. Sayım fərqini düzəltmək üçün: “Kassa sayımı”.</p>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
 function openReturnedSalesCreditReport() {
   ensureAuditTrash();
   const rows = (db.sales || [])
@@ -5614,6 +5783,9 @@ Object.assign(window, {
   openEditCashOp,
   saveEditCashOp,
   delCashOp,
+  openCashReconcile,
+  saveCashReconcile,
+  openCashDiffAnalysis,
   toggleCashKind,
   toggleIncomeSourceBox,
   refreshSubcats,
