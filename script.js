@@ -527,6 +527,18 @@ function onStockCatChange() {
   renderAll();
 }
 
+function setDebtsStatus(status, btn) {
+  const st = String(status || "all");
+  const input = byId("debtsStatus");
+  if (input) input.value = st;
+  const wrap = byId("debtsStatusBtns");
+  if (wrap) {
+    wrap.querySelectorAll(".debts-st-btn").forEach((b) => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+  renderAll();
+}
+
 function seedDevTestData() {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   if (!isTestCompany()) return alert("Bu funksiya yalnız test şirkətində aktivdir.");
@@ -6815,7 +6827,13 @@ function renderAll() {
     return { customerId, customerName: items[0]?.s.customerName || customerId, total, paid, rem, st, items };
   });
 
-  const groupsFiltered = groups.filter((g) => (debtsStatus === "all" ? true : g.st === debtsStatus));
+  const groupsFiltered = groups.filter((g) => {
+    if (debtsStatus === "all") return true;
+    if (debtsStatus === "credit") {
+      return (g.items || []).some((x) => String(x.s.saleType || "").toLowerCase() === "kredit" && x.rem > 0.000001);
+    }
+    return g.st === debtsStatus;
+  });
   groupsFiltered.sort((a, b) => (a.rem < b.rem ? 1 : -1));
 
   window.__debtorGroups = groupsFiltered;
@@ -7699,6 +7717,7 @@ Object.assign(window, {
   openOverdueInfo,
   saveOverdueNote,
   onStockCatChange,
+  setDebtsStatus,
   seedDevTestData,
   toggleCashKind,
   toggleIncomeSourceBox,

@@ -428,6 +428,12 @@ main{flex:1;padding:40px;}
 .header-actions .btn-cancel{height:34px;padding:0 14px;font-size:.86rem;}
 .header-actions .btn-main i,
 .header-actions .btn-cancel i{font-size:.85rem;}
+.btn-group-row{display:flex;gap:8px;flex-wrap:wrap;}
+.debts-st-btn.active{
+  background:var(--accent) !important;
+  color:#fff !important;
+  border-color:transparent !important;
+}
 
 /* IMPORTANT: keep compact sizing only in header filters.
    Modal/forms use the normal input/select/textarea rule further below. */

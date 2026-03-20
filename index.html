@@ -342,12 +342,14 @@
       <div class="content-header">
         <h1>Debitor borclar</h1>
         <div class="header-actions">
-          <select id="debtsStatus" class="select-small" onchange="renderAll()">
-            <option value="all">Hamısı</option>
-            <option value="paid">Tam ödənilmiş</option>
-            <option value="partial">Qismən</option>
-            <option value="unpaid">Ödənilməmiş</option>
-          </select>
+          <input type="hidden" id="debtsStatus" value="all">
+          <div class="btn-group-row" id="debtsStatusBtns">
+            <button type="button" class="btn-cancel debts-st-btn active" data-st="all" onclick="setDebtsStatus('all', this)">Hamısı</button>
+            <button type="button" class="btn-cancel debts-st-btn" data-st="paid" onclick="setDebtsStatus('paid', this)">Tam ödənilmiş</button>
+            <button type="button" class="btn-cancel debts-st-btn" data-st="partial" onclick="setDebtsStatus('partial', this)">Qismən ödənilmiş</button>
+            <button type="button" class="btn-cancel debts-st-btn" data-st="unpaid" onclick="setDebtsStatus('unpaid', this)">Ödənilməmiş</button>
+            <button type="button" class="btn-cancel debts-st-btn" data-st="credit" onclick="setDebtsStatus('credit', this)">Kredit borcları</button>
+          </div>
           <div class="date-range">
             <input type="date" id="debtsFrom" onchange="renderAll()">
             <span>—</span>
