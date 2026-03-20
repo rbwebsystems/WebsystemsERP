@@ -7243,10 +7243,10 @@ function renderAll() {
         }
         const pk = c.meta?.payKind || "";
         payType =
-          kind === "return_refund" ? "qaytarma" :
-          pk === "down" ? "ilkin" :
-          pk === "monthly" ? "aylıq" :
-          "satış";
+          kind === "return_refund" ? "Qaytarma" :
+          pk === "down" ? "İlkin" :
+          pk === "monthly" ? "Aylıq" :
+          "Satış";
       } else if (kind === "debtor_payment") {
         const allocs = c.meta?.allocations || [];
         const firstSaleUid = allocs[0]?.saleUid ?? allocs[0]?.salesUid ?? null;
@@ -7259,7 +7259,7 @@ function renderAll() {
           customer = c.source || "-";
         }
         const pk = c.meta?.payKind || "";
-        payType = pk === "down" ? "ilkin" : pk === "monthly" ? "aylıq" : "debitor";
+        payType = pk === "down" ? "İlkin" : pk === "monthly" ? "Aylıq" : "Debitor";
       } else if (kind === "creditor_invoice_payment" || kind === "purch_payment" || kind === "purch_payment_adj") {
         const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
         if (p) {
@@ -7267,7 +7267,7 @@ function renderAll() {
           customer = p.supp || "-";
           employee = getStaffName(p.employeeId) || "-";
         }
-        payType = "təchizatçı";
+        payType = "Alış";
       } else if (kind === "creditor_payment") {
         const allocs = c.meta?.allocations || [];
         const firstPurchUid = allocs[0]?.purchUid ?? null;
@@ -7277,20 +7277,21 @@ function renderAll() {
           employee = getStaffName(p.employeeId) || "-";
         }
         customer = c.link?.supp || c.source || "-";
-        payType = "təchizatçı";
+        payType = "Alış";
       } else if (kind === "staff_salary") {
         customer = c.link?.staffName || "-";
         employee = c.link?.staffName || "-";
-        payType = c.link?.payType || "əməkhaqqı";
+        payType = c.link?.payType ? String(c.link.payType).charAt(0).toUpperCase() + String(c.link.payType).slice(1) : "Əməkhaqqı";
       } else if (kind === "transfer") {
         customer = "Hesablar arası";
-        payType = "transfer";
+        payType = "Transfer";
       } else if (kind === "expense" || kind === "income") {
         customer = c.source || "-";
-        payType = kind === "expense" ? "xərc" : "mədaxil";
+        payType = kind === "expense" ? "Xərc" : "Mədaxil";
       } else {
         customer = c.source || "-";
-        payType = kind || (c.type === "in" ? "mədaxil" : "məxaric");
+        const fallback = kind || (c.type === "in" ? "Mədaxil" : "Məxaric");
+        payType = String(fallback).charAt(0).toUpperCase() + String(fallback).slice(1);
       }
 
       return `
