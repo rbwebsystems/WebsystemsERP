@@ -540,6 +540,26 @@ main{flex:1;padding:40px;}
   line-height:1;
 }
 
+/* Overdue table: make action column truly narrow */
+#overdue .card table{
+  table-layout:fixed;
+  width:100%;
+}
+#overdue .card table th,
+#overdue .card table td{
+  word-break:break-word;
+}
+/* Əməliyyat sütunu (12-ci sütun) */
+#overdue .card table th:nth-child(12),
+#overdue .card table td:nth-child(12){
+  width:44px;
+  min-width:44px;
+  max-width:44px;
+  text-align:center;
+  padding-left:2px;
+  padding-right:2px;
+}
+
 /* IMPORTANT: keep compact sizing only in header filters.
    Modal/forms use the normal input/select/textarea rule further below. */
 select{
