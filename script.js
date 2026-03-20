@@ -7052,7 +7052,9 @@ function renderAll() {
     };
     const todayT = toDayStart(todayISO);
 
-    const bySale = new Map();
+    const rows = [];
+    const overdueBySale = new Map();
+    const invoiceRemBySale = new Map();
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
       .forEach((s, idx) => {
@@ -7074,32 +7076,33 @@ function renderAll() {
           if (view === "all" && daysLate < 0) continue;
           if (Math.max(0, daysLate) < daysFrom) continue;
           if (daysTo != null && Math.max(0, daysLate) > daysTo) continue;
-          const key = String(s.uid);
-          if (!bySale.has(key)) {
-            bySale.set(key, {
-              saleUid: s.uid,
-              customer: custFull || s.customerName || "-",
-              inv,
-              dueFullAmount: Math.max(0, n(r.amount)),
-              duePaidAmount: 0,
-              dueDate: r.due,
-              dueAmount: 0,
-              invoiceRemaining: Math.max(0, saleRemaining(s)),
-              daysLate: Math.max(0, daysLate),
-              zam,
-            });
-          }
-          const g = bySale.get(key);
-          g.duePaidAmount += Math.max(0, n(r.paid));
-          g.dueAmount += Math.max(0, n(r.remaining));
-          if (!g.dueDate || String(r.due) < String(g.dueDate)) g.dueDate = r.due;
-          g.daysLate = Math.max(g.daysLate, Math.max(0, daysLate));
+          const saleKey = String(s.uid);
+          overdueBySale.set(saleKey, (overdueBySale.get(saleKey) || 0) + Math.max(0, n(r.remaining)));
+          if (!invoiceRemBySale.has(saleKey)) invoiceRemBySale.set(saleKey, Math.max(0, saleRemaining(s)));
+          rows.push({
+            saleUid: s.uid,
+            customer: custFull || s.customerName || "-",
+            inv,
+            dueFullAmount: Math.max(0, n(r.amount)),
+            duePaidAmount: Math.max(0, n(r.paid)),
+            dueDate: r.due,
+            rowRemaining: Math.max(0, n(r.remaining)),
+            dueAmount: 0, // fill after aggregation (invoice overdue total)
+            invoiceRemaining: Math.max(0, saleRemaining(s)),
+            daysLate: Math.max(0, daysLate),
+            zam,
+          });
         }
       });
 
-    const rows = Array.from(bySale.values());
+    for (const x of rows) {
+      const saleKey = String(x.saleUid);
+      x.dueAmount = Math.max(0, n(overdueBySale.get(saleKey) || 0));
+      x.invoiceRemaining = Math.max(0, n(invoiceRemBySale.get(saleKey) || x.invoiceRemaining));
+    }
+
     rows.sort((a, b) => (b.daysLate - a.daysLate) || String(a.dueDate).localeCompare(String(b.dueDate)));
-    const overdueTotal = rows.reduce((a, x) => a + n(x.dueAmount), 0);
+    const overdueTotal = Array.from(overdueBySale.values()).reduce((a, v) => a + n(v), 0);
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
@@ -7130,7 +7133,7 @@ function renderAll() {
     if (rows.length) {
       const overdueFullTotal = rows.reduce((a, x) => a + n(x.dueFullAmount), 0);
       const overduePaidTotal = rows.reduce((a, x) => a + n(x.duePaidAmount), 0);
-      const overdueInvoiceRemTotal = rows.reduce((a, x) => a + n(x.invoiceRemaining), 0);
+      const overdueInvoiceRemTotal = Array.from(invoiceRemBySale.values()).reduce((a, v) => a + n(v), 0);
       overdueBody.innerHTML += `
         <tr class="total-row">
           <td colspan="3"><strong>Cəmi</strong></td>
