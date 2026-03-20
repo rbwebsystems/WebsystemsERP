@@ -7052,7 +7052,7 @@ function renderAll() {
     };
     const todayT = toDayStart(todayISO);
 
-    const rows = [];
+    const bySale = new Map();
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
       .forEach((s, idx) => {
@@ -7074,21 +7074,31 @@ function renderAll() {
           if (view === "all" && daysLate < 0) continue;
           if (Math.max(0, daysLate) < daysFrom) continue;
           if (daysTo != null && Math.max(0, daysLate) > daysTo) continue;
-          rows.push({
-            saleUid: s.uid,
-            customer: custFull || s.customerName || "-",
-            inv,
-            dueFullAmount: Math.max(0, n(r.amount)),
-            duePaidAmount: Math.max(0, n(r.paid)),
-            dueDate: r.due,
-            dueAmount: Math.max(0, n(r.remaining)),
-            invoiceRemaining: Math.max(0, saleRemaining(s)),
-            daysLate: Math.max(0, daysLate),
-            zam,
-          });
+          const key = String(s.uid);
+          if (!bySale.has(key)) {
+            bySale.set(key, {
+              saleUid: s.uid,
+              customer: custFull || s.customerName || "-",
+              inv,
+              dueFullAmount: 0,
+              duePaidAmount: 0,
+              dueDate: r.due,
+              dueAmount: 0,
+              invoiceRemaining: Math.max(0, saleRemaining(s)),
+              daysLate: Math.max(0, daysLate),
+              zam,
+            });
+          }
+          const g = bySale.get(key);
+          g.dueFullAmount += Math.max(0, n(r.amount));
+          g.duePaidAmount += Math.max(0, n(r.paid));
+          g.dueAmount += Math.max(0, n(r.remaining));
+          if (!g.dueDate || String(r.due) < String(g.dueDate)) g.dueDate = r.due;
+          g.daysLate = Math.max(g.daysLate, Math.max(0, daysLate));
         }
       });
 
+    const rows = Array.from(bySale.values());
     rows.sort((a, b) => (b.daysLate - a.daysLate) || String(a.dueDate).localeCompare(String(b.dueDate)));
     const overdueTotal = rows.reduce((a, x) => a + n(x.dueAmount), 0);
     overdueBody.innerHTML =
