@@ -7013,6 +7013,8 @@ function renderAll() {
             saleUid: s.uid,
             customer: custFull || s.customerName || "-",
             inv,
+            dueFullAmount: Math.max(0, n(r.amount)),
+            duePaidAmount: Math.max(0, n(r.paid)),
             dueDate: r.due,
             dueAmount: Math.max(0, n(r.remaining)),
             daysLate: Math.max(0, daysLate),
@@ -7036,6 +7038,8 @@ function renderAll() {
             <td>${i + 1}</td>
             <td>${escapeHtml(x.customer)}</td>
             <td>${escapeHtml(x.inv || "-")}</td>
+            <td>${money(x.dueFullAmount)} AZN</td>
+            <td>${money(x.duePaidAmount)} AZN</td>
             <td>${money(x.dueAmount)} AZN</td>
             <td>${escapeHtml(x.dueDate || "-")}</td>
             <td class="${lateCellClass} overdue-days-cell">${x.daysLate}</td>
@@ -7046,11 +7050,15 @@ function renderAll() {
           </tr>`;
         })
         .join("")
-      || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`;
+      || `<tr><td colspan="10">Məlumat yoxdur</td></tr>`;
     if (rows.length) {
+      const overdueFullTotal = rows.reduce((a, x) => a + n(x.dueFullAmount), 0);
+      const overduePaidTotal = rows.reduce((a, x) => a + n(x.duePaidAmount), 0);
       overdueBody.innerHTML += `
         <tr class="total-row">
           <td colspan="3"><strong>Cəmi</strong></td>
+          <td><strong>${money(overdueFullTotal)} AZN</strong></td>
+          <td><strong>${money(overduePaidTotal)} AZN</strong></td>
           <td><strong>${money(overdueTotal)} AZN</strong></td>
           <td colspan="4"></td>
         </tr>
