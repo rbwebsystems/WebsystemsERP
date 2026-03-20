@@ -494,10 +494,10 @@ main{flex:1;padding:40px;}
 }
 .overdue-actions-cell{
   text-align:center;
-  width:72px;
-  min-width:72px;
-  padding-left:6px !important;
-  padding-right:6px !important;
+  width:44px;
+  min-width:44px;
+  padding-left:2px !important;
+  padding-right:2px !important;
 }
 .overdue-num-cell{
   width:112px;
@@ -528,9 +528,9 @@ main{flex:1;padding:40px;}
   background:transparent !important;
   box-shadow:none !important;
   width:auto;
-  min-width:24px;
-  height:24px;
-  padding:0 4px;
+  min-width:18px;
+  height:20px;
+  padding:0 2px;
 }
 .info-i-plain{
   font-style:italic;
