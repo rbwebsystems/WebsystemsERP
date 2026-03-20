@@ -7227,71 +7227,82 @@ function renderAll() {
 
   byId("tblCash").innerHTML = cashRows
     .map((c, i) => {
-      const payKind = c.meta?.payKind || "";
-      const payBadge =
-        c.link?.kind === "sale" && payKind
-          ? `<small class="muted" style="margin-left:8px;">(${payKind === "down" ? "ilkin" : payKind === "monthly" ? "aylıq" : payKind})</small>`
-          : "";
-      const invInfo = (() => {
-        const kind = c.link?.kind || "";
-        if (kind === "sale" || kind === "sale_payment") {
-          const s = db.sales.find((x) => Number(x.uid) === Number(c.link?.saleUid));
-          if (!s) return "";
-          const inv = s.invNo || invFallback("sales", s.uid);
-          return `Qaimə: ${inv}`;
+      const kind = c.link?.kind || "";
+      const accountName = (db.accounts || []).find((a) => Number(a.uid) === Number(c.accountId || 1))?.name || `#${Number(c.accountId || 1)}`;
+      let invNo = "-";
+      let customer = "-";
+      let employee = "-";
+      let payType = "-";
+
+      if (kind === "sale" || kind === "sale_payment" || kind === "return_refund") {
+        const s = db.sales.find((x) => Number(x.uid) === Number(c.link?.saleUid));
+        if (s) {
+          invNo = s.invNo || invFallback("sales", s.uid);
+          customer = s.customerName || "-";
+          employee = s.employeeName || getStaffName(s.employeeId) || "-";
         }
-        if (kind === "debtor_payment") {
-          const allocs = c.meta?.allocations || [];
-          const invs = Array.from(
-            new Set(
-              allocs
-                .map((a) => {
-                  const saleUid = a.saleUid ?? a.salesUid ?? null;
-                  const s = saleUid ? db.sales.find((x) => Number(x.uid) === Number(saleUid)) : null;
-                  return s ? (s.invNo || invFallback("sales", s.uid)) : null;
-                })
-                .filter(Boolean)
-            )
-          );
-          return invs.length ? `Qaimə: ${invs.join(", ")}` : "";
+        const pk = c.meta?.payKind || "";
+        payType =
+          kind === "return_refund" ? "qaytarma" :
+          pk === "down" ? "ilkin" :
+          pk === "monthly" ? "aylıq" :
+          "satış";
+      } else if (kind === "debtor_payment") {
+        const allocs = c.meta?.allocations || [];
+        const firstSaleUid = allocs[0]?.saleUid ?? allocs[0]?.salesUid ?? null;
+        const s = firstSaleUid ? db.sales.find((x) => Number(x.uid) === Number(firstSaleUid)) : null;
+        if (s) {
+          invNo = s.invNo || invFallback("sales", s.uid);
+          customer = s.customerName || "-";
+          employee = s.employeeName || getStaffName(s.employeeId) || "-";
+        } else {
+          customer = c.source || "-";
         }
-        if (kind === "creditor_invoice_payment") {
-          const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
-          if (!p) return "";
-          const inv = p.invNo || invFallback("purch", p.uid);
-          return `Qaimə: ${inv}`;
+        const pk = c.meta?.payKind || "";
+        payType = pk === "down" ? "ilkin" : pk === "monthly" ? "aylıq" : "debitor";
+      } else if (kind === "creditor_invoice_payment" || kind === "purch_payment" || kind === "purch_payment_adj") {
+        const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
+        if (p) {
+          invNo = p.invNo || invFallback("purch", p.uid);
+          customer = p.supp || "-";
+          employee = getStaffName(p.employeeId) || "-";
         }
-        if (kind === "creditor_payment") {
-          const allocs = c.meta?.allocations || [];
-          const invs = Array.from(
-            new Set(
-              allocs
-                .map((a) => {
-                  const p = db.purch.find((x) => Number(x.uid) === Number(a.purchUid));
-                  return p ? (p.invNo || invFallback("purch", p.uid)) : null;
-                })
-                .filter(Boolean)
-            )
-          );
-          return invs.length ? `Qaimə: ${invs.join(", ")}` : "";
+        payType = "təchizatçı";
+      } else if (kind === "creditor_payment") {
+        const allocs = c.meta?.allocations || [];
+        const firstPurchUid = allocs[0]?.purchUid ?? null;
+        const p = firstPurchUid ? db.purch.find((x) => Number(x.uid) === Number(firstPurchUid)) : null;
+        if (p) {
+          invNo = p.invNo || invFallback("purch", p.uid);
+          employee = getStaffName(p.employeeId) || "-";
         }
-        return "";
-      })();
-      const noteHtml = invInfo
-        ? `${escapeHtml(c.note || "")}<div class="muted" style="font-size:.85em;margin-top:2px;">${escapeHtml(invInfo)}</div>`
-        : escapeHtml(c.note || "");
+        customer = c.link?.supp || c.source || "-";
+        payType = "təchizatçı";
+      } else if (kind === "staff_salary") {
+        customer = c.link?.staffName || "-";
+        employee = c.link?.staffName || "-";
+        payType = c.link?.payType || "əməkhaqqı";
+      } else if (kind === "transfer") {
+        customer = "Hesablar arası";
+        payType = "transfer";
+      } else if (kind === "expense" || kind === "income") {
+        customer = c.source || "-";
+        payType = kind === "expense" ? "xərc" : "mədaxil";
+      } else {
+        customer = c.source || "-";
+        payType = kind || (c.type === "in" ? "mədaxil" : "məxaric");
+      }
+
       return `
     <tr>
       <td>${i + 1}</td>
-      <td>${c.type === "in" ? "Gəlir" : "Xərc"}</td>
+      <td>${escapeHtml(invNo)}</td>
+      <td>${escapeHtml(customer)}</td>
+      <td class="${c.type === "in" ? "amt-in" : "amt-out"}">${money(c.amount)} AZN</td>
+      <td>${escapeHtml(accountName)}</td>
+      <td>${escapeHtml(employee)}</td>
       <td>${fmtDT(c.date)}</td>
-      <td>${escapeHtml(c.source)}${payBadge}</td>
-      <td class="${c.type === "in" ? "amt-in" : "amt-out"}">${c.type === "in" ? "+" : "-"}${money(c.amount)} AZN</td>
-      <td>${noteHtml}</td>
-      <td class="tbl-actions">
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openEditCashOp(${c.uid})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
-        ${userCanDelete() ? `<button class="icon-btn delete" onclick="delCashOp(${c.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
-      </td>
+      <td>${escapeHtml(payType)}</td>
     </tr>`;
     })
     .join("");
