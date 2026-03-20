@@ -792,6 +792,90 @@ function seedDevTestData() {
   });
 }
 
+function ensureOverdueTestPack() {
+  const cid = String(meta?.session?.companyId || "").toLowerCase();
+  if (cid !== "devtest") return;
+  ensureAuditTrash();
+  if (!db.settings) db.settings = defaultDB().settings;
+  if (db.settings.__overdueTestPackV1) return;
+
+  const lateDaysList = [2, 6, 11, 19, 28, 37, 52, 67, 89, 121];
+  const today = new Date();
+  const guarantorUid = (db.cust && db.cust[0] ? db.cust[0].uid : null);
+
+  for (let i = 0; i < lateDaysList.length; i++) {
+    const lateDays = lateDaysList[i];
+    const due = new Date(today);
+    due.setHours(10, 0, 0, 0);
+    due.setDate(due.getDate() - lateDays);
+    const dueISO = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`;
+    const saleDateISO = addMonthsISO(dueISO, -1) + "T10:00";
+
+    const custUid = genId(db.cust, 1);
+    const saleUid = genId(db.sales, 1);
+    const invNo = nextInvNo("sales");
+
+    const amount = 1200 + i * 140;
+    const down = 200 + (i % 3) * 50;
+    const termMonths = 6;
+    const monthly = (amount - down) / termMonths;
+    const extraMonthlyPaid = i % 2 === 0 ? 0 : 1;
+    const paidTotal = Math.min(amount, down + extraMonthlyPaid * monthly);
+
+    const sur = `Test${i + 1}`;
+    const name = `Gecikmə`;
+    const father = `Müştəri`;
+    db.cust.push({
+      uid: custUid,
+      createdAt: nowISODateTimeLocal(),
+      sur,
+      name,
+      father,
+      fin: `TST${String(1000 + i)}`,
+      seriaNum: `AZE${String(100000 + i)}`,
+      ph1: `0500000${String(100 + i)}`,
+      ph2: "",
+      ph3: "",
+      work: "Test",
+      addr: "Bakı",
+      zam: guarantorUid || "",
+      creditLimit: "0",
+    });
+
+    const emp = db.staff && db.staff.length ? db.staff[i % db.staff.length] : { uid: "", name: "-" };
+    db.sales.push({
+      uid: saleUid,
+      invNo,
+      date: saleDateISO,
+      saleType: "kredit",
+      customerId: custUid,
+      customerName: `${sur} ${name} ${father}`,
+      employeeId: emp.uid || "",
+      employeeName: emp.name || "-",
+      productName: `Test Məhsul ${i + 1}`,
+      code: `TST-P${i + 1}`,
+      qty: 1,
+      bulkPurchUid: null,
+      bulkAllocations: null,
+      imei1: "",
+      imei2: "",
+      seria: "",
+      amount: String(amount),
+      unitPrice: "",
+      itemKey: `TEST-OVD-${saleUid}`,
+      payments: paidTotal > 0 ? [{ uid: 1, date: saleDateISO, amount: paidTotal, source: "down" }] : [],
+      paidTotal: String(paidTotal),
+      credit: { termMonths, downPayment: down, monthlyPayment: monthly },
+      paymentAccountId: 1,
+      lastPayAmount: paidTotal,
+    });
+  }
+
+  db.settings.__overdueTestPackV1 = true;
+  logEvent("create", "tools", { kind: "overdue_test_pack", count: 10 });
+  saveCompanyDB();
+}
+
 function loadMeta() {
   try {
     const raw = localStorage.getItem(META_KEY);
@@ -7874,6 +7958,7 @@ function initApp() {
       navToUse = firstVisible;
     }
   }
+  ensureOverdueTestPack();
   if (secToShow && navToUse) showSec(secToShow, navToUse);
   renderAll();
 }
