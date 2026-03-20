@@ -964,6 +964,16 @@ function userDisplay(u) {
   return fn || un || "-";
 }
 
+function currentActorName() {
+  return userDisplay(currentUser()) || "-";
+}
+
+function operationActorName(rec, fallback = "-") {
+  if (rec && String(rec.actor || "").trim()) return String(rec.actor).trim();
+  if (rec && String(rec.actorName || "").trim()) return String(rec.actorName).trim();
+  return fallback || "-";
+}
+
 function isDeveloper() {
   const u = currentUser();
   return !!u && u.role === "developer";
@@ -1955,10 +1965,58 @@ function runCreditRoundingMigration() {
   return changed;
 }
 
+function runActorBackfillMigration() {
+  let changed = false;
+  const fb = (v) => String(v || "").trim();
+
+  for (const c of db.cash || []) {
+    if (!fb(c.actor)) {
+      let actor = "";
+      const kind = c.link?.kind || "";
+      if (kind === "sale" || kind === "sale_payment" || kind === "return_refund") {
+        const s = (db.sales || []).find((x) => Number(x.uid) === Number(c.link?.saleUid));
+        actor = fb(s?.actorName) || fb(s?.employeeName) || getStaffName(s?.employeeId);
+      } else if (kind === "debtor_payment") {
+        const firstSaleUid = c.meta?.allocations?.[0]?.saleUid ?? c.meta?.allocations?.[0]?.salesUid ?? null;
+        const s = firstSaleUid ? (db.sales || []).find((x) => Number(x.uid) === Number(firstSaleUid)) : null;
+        actor = fb(s?.actorName) || fb(s?.employeeName) || getStaffName(s?.employeeId);
+      } else if (kind === "creditor_invoice_payment" || kind === "purch_payment" || kind === "purch_payment_adj" || kind === "creditor_payment") {
+        const p = (db.purch || []).find((x) => Number(x.uid) === Number(c.link?.purchUid));
+        actor = fb(p?.actorName) || getStaffName(p?.employeeId);
+      }
+      c.actor = actor || "-";
+      changed = true;
+    }
+  }
+
+  for (const s of db.sales || []) {
+    if (!fb(s.actorName)) {
+      s.actorName = fb(s.employeeName) || getStaffName(s.employeeId) || "-";
+      changed = true;
+    }
+  }
+
+  for (const p of db.purch || []) {
+    if (!fb(p.actorName)) {
+      p.actorName = getStaffName(p.employeeId) || "-";
+      changed = true;
+    }
+  }
+
+  for (const t of db.staff || []) {
+    if (!fb(t.actorName)) {
+      t.actorName = fb(t.name) || "-";
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
 function runMigrations() {
   ensureAuditTrash();
   if (!db.settings) db.settings = defaultDB().settings;
-  const TARGET_SCHEMA_VERSION = 1;
+  const TARGET_SCHEMA_VERSION = 2;
   let ver = Math.max(0, Math.floor(n(db.settings.__schemaVersion || 0)));
   let changed = false;
 
@@ -1971,6 +2029,16 @@ function runMigrations() {
     }
     db.settings.__creditRoundV2 = true; // backward compatibility marker
     ver = 1;
+  }
+
+  // v2: backfill actor/actorName on historical records
+  if (ver < 2) {
+    const did = runActorBackfillMigration();
+    if (did) {
+      logEvent("update", "tools", { kind: "actor_backfill_migration_v1" });
+      changed = true;
+    }
+    ver = 2;
   }
 
   db.settings.__schemaVersion = TARGET_SCHEMA_VERSION;
@@ -2027,6 +2095,7 @@ function saveCust(e, idx) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   if (idx === null && !userCanEdit()) return alert("Əlavə etmə icazəsi yoxdur.");
   const isNew = idx === null;
+  const actorName = currentActorName();
   const data = {
     uid: idx !== null ? db.cust[idx].uid : genId(db.cust, 1),
     createdAt: idx !== null ? (db.cust[idx].createdAt || db.cust[idx].date || nowISODateTimeLocal()) : nowISODateTimeLocal(),
@@ -2042,6 +2111,7 @@ function saveCust(e, idx) {
     addr: val("f_addr"),
     zam: val("f_zam"),
     creditLimit: String(Math.max(0, n(val("f_climit")))),
+    actorName,
   };
   if (idx !== null) db.cust[idx] = data;
   else db.cust.push(data);
@@ -2230,6 +2300,7 @@ function saveSupp(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
+  const actorName = currentActorName();
   const data = {
     uid: idx !== null ? db.supp[idx].uid : genId(db.supp, 1000),
     createdAt: idx !== null ? (db.supp[idx].createdAt || db.supp[idx].date || nowISODateTimeLocal()) : nowISODateTimeLocal(),
@@ -2237,6 +2308,7 @@ function saveSupp(e, idx) {
     per: val("f_per"),
     mob: val("f_mob"),
     voen: val("f_voen"),
+    actorName,
   };
   if (idx !== null) db.supp[idx] = data;
   else db.supp.push(data);
@@ -2269,6 +2341,7 @@ function saveProd(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
+  const actorName = currentActorName();
   const oldName = idx !== null ? String(db.prod[idx]?.name || "") : "";
   const nextName = val("f_p_name");
   if (idx !== null && oldName.trim() && String(nextName || "").trim() !== oldName.trim()) {
@@ -2282,6 +2355,7 @@ function saveProd(e, idx) {
     name: nextName,
     cat: val("f_p_cat"),
     subCat: val("f_p_subcat"),
+    actorName,
   };
   if (idx !== null) db.prod[idx] = data;
   else db.prod.push(data);
@@ -2560,6 +2634,7 @@ async function savePurch(e, idx) {
     }
   }
   const employeeId = (val("f_p_staff") || "").trim() || undefined;
+  const actorName = currentActorName();
   const invNoVal = (val("f_p_inv") || "").trim();
   const unitPrice = isBulk ? Math.max(0, n(val("f_p_amount"))) : null;
   const totalAmount = isBulk ? unitPrice * qty : Math.max(0, n(val("f_p_amount")));
@@ -2579,6 +2654,7 @@ async function savePurch(e, idx) {
     payType: val("f_p_payType"),
     paidTotal: String(Math.max(0, n(val("f_p_paid")))),
     employeeId,
+    actorName,
     paymentAccountId: Number(val("f_p_pay_acc") || (idx !== null ? db.purch[idx]?.paymentAccountId : 1) || 1),
   };
   if (idx !== null) db.purch[idx] = data;
@@ -2973,6 +3049,7 @@ function saveStaff(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
+  const actorName = currentActorName();
   const data = {
     uid: idx !== null ? db.staff[idx].uid : genId(db.staff, 1),
     createdAt: idx !== null ? (db.staff[idx].createdAt || db.staff[idx].date || nowISODateTimeLocal()) : nowISODateTimeLocal(),
@@ -2981,6 +3058,7 @@ function saveStaff(e, idx) {
     phone: val("f_st_phone"),
     baseSalary: String(Math.max(0, n(val("f_st_salary")))),
     commPct: String(Math.max(0, n(val("f_st_comm")))),
+    actorName,
   };
   if (idx !== null) db.staff[idx] = data;
   else db.staff.push(data);
@@ -3434,6 +3512,7 @@ function saveSale(e, idx) {
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isEdit = idx !== null;
   const isNew = !isEdit;
+  const actorName = currentActorName();
 
   const customerId = val("f_s_customer");
   const employeeId = val("f_s_staff");
@@ -3534,6 +3613,7 @@ function saveSale(e, idx) {
     customerName: `${cust.sur} ${cust.name} ${cust.father}`.trim(),
     employeeId: staff.uid,
     employeeName: staff.name,
+    actorName,
     productName: samplePurch ? (samplePurch.name || "") : "",
     code: samplePurch ? (samplePurch.code || "") : "",
     qty,
@@ -3771,7 +3851,7 @@ function openSaleInfo(idx) {
       <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(s.imei2 || "-")}</div></div>
       <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(s.seria || "-")}</div></div>
       <div class="info-row"><div class="info-label">Satış növü</div><div class="info-value">${escapeHtml(String(s.saleType).toUpperCase())}</div></div>
-      <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(s.employeeName || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
       <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
       <div class="info-row"><div class="info-label">Ödənilən</div><div class="info-value">${money(s.paidTotal)} AZN</div></div>
       <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
@@ -5602,7 +5682,7 @@ function buildMelumatHtml(q) {
     if (shownKeys.has(key)) return;
     shownKeys.add(key);
 
-    const purchStaffName = getStaffName(p.employeeId);
+    const purchStaffName = operationActorName(p, getStaffName(p.employeeId));
     const purchStatusText = p.returnedAt ? "QAYTARILIB" : "AKTİV";
     const purchActions = `
       <div class="modal-footer" style="justify-content:flex-start;gap:10px;margin-top:10px;">
@@ -5616,7 +5696,7 @@ function buildMelumatHtml(q) {
       const sales = (db.sales || []).filter((s) => !s.returnedAt && String(s.bulkPurchUid || "") === String(p.uid));
       saleHtml = sales.length
         ? sales.map((s) => {
-            const saleStaffName = s.employeeName || getStaffName(s.employeeId);
+            const saleStaffName = operationActorName(s, s.employeeName || getStaffName(s.employeeId));
             const inv = s.invNo || invFallback("sales", s.uid);
             const rem = saleRemaining(s);
             const st = debtStatus(n(s.amount), rem);
@@ -5634,7 +5714,7 @@ function buildMelumatHtml(q) {
         : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
     } else {
       const s = (db.sales || []).find((s) => !s.returnedAt && s.itemKey === key);
-      const saleStaffName = s ? (s.employeeName || getStaffName(s.employeeId)) : "-";
+      const saleStaffName = s ? operationActorName(s, s.employeeName || getStaffName(s.employeeId)) : "-";
       saleHtml = s
         ? (() => {
             const inv = s.invNo || invFallback("sales", s.uid);
@@ -5688,8 +5768,8 @@ function buildMelumatHtml(q) {
     const purchInv = p ? (p.invNo || invFallback("purch", p.uid)) : "-";
     const supp = p ? (p.supp || "-") : "-";
     const purchDate = p ? fmtDT(p.date) : "-";
-    const purchStaffName = p ? getStaffName(p.employeeId) : "-";
-    const saleStaffName = s.employeeName || getStaffName(s.employeeId);
+    const purchStaffName = p ? operationActorName(p, getStaffName(p.employeeId)) : "-";
+    const saleStaffName = operationActorName(s, s.employeeName || getStaffName(s.employeeId));
     const rem = saleRemaining(s);
     const st = debtStatus(n(s.amount), rem);
     const saleActions = `
@@ -6377,7 +6457,7 @@ function openOverdueInfo(saleUid) {
   const credit = buildCreditSchedule(sale);
   const saleDate = String(sale.date || "").slice(0, 10);
   const dueStart = credit.rows[0]?.due || "-";
-  const empName = sale.employeeName || getStaffName(sale.employeeId);
+  const empName = operationActorName(sale, sale.employeeName || getStaffName(sale.employeeId));
 
   openModal(`
     <h2>Gecikmə detalları</h2>
@@ -6899,7 +6979,7 @@ function renderAll() {
         s.code,
         s.qty,
         s.saleType,
-        s.employeeName,
+        operationActorName(s, s.employeeName),
         s.employeeId,
         s.imei1,
         s.imei2,
@@ -6924,7 +7004,7 @@ function renderAll() {
         <td>${escapeHtml(s.productName)}</td>
         <td>${String(Math.max(1, Math.floor(n(s.qty || 1))))}</td>
         <td>${escapeHtml(String(s.saleType).toUpperCase())}</td>
-        <td>${escapeHtml(s.employeeName || "")}</td>
+        <td>${escapeHtml(operationActorName(s, s.employeeName || ""))}</td>
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal)} AZN</td>
         <td>${money(rem)} AZN</td>
@@ -7241,7 +7321,7 @@ function renderAll() {
         if (s) {
           invNo = s.invNo || invFallback("sales", s.uid);
           customer = s.customerName || "-";
-          employee = s.employeeName || getStaffName(s.employeeId) || "-";
+          employee = operationActorName(s, s.employeeName || getStaffName(s.employeeId) || "-");
         }
         const pk = c.meta?.payKind || "";
         payType =
@@ -7256,7 +7336,7 @@ function renderAll() {
         if (s) {
           invNo = s.invNo || invFallback("sales", s.uid);
           customer = s.customerName || "-";
-          employee = s.employeeName || getStaffName(s.employeeId) || "-";
+          employee = operationActorName(s, s.employeeName || getStaffName(s.employeeId) || "-");
         } else {
           customer = c.source || "-";
         }
@@ -7267,7 +7347,7 @@ function renderAll() {
         if (p) {
           invNo = p.invNo || invFallback("purch", p.uid);
           customer = p.supp || "-";
-          employee = getStaffName(p.employeeId) || "-";
+          employee = operationActorName(p, getStaffName(p.employeeId) || "-");
         }
         payType = "Alış";
       } else if (kind === "creditor_payment") {
@@ -7276,7 +7356,7 @@ function renderAll() {
         const p = firstPurchUid ? db.purch.find((x) => Number(x.uid) === Number(firstPurchUid)) : null;
         if (p) {
           invNo = p.invNo || invFallback("purch", p.uid);
-          employee = getStaffName(p.employeeId) || "-";
+          employee = operationActorName(p, getStaffName(p.employeeId) || "-");
         }
         customer = c.link?.supp || c.source || "-";
         payType = "Alış";
