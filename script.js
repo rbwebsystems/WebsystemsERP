@@ -6839,6 +6839,9 @@ function renderAll() {
   window.__debtorGroups = groupsFiltered;
   const debtsPageSize = getPageSize("debtsPageSize", 50);
   const groupsPage = paginate(groupsFiltered, "debts", debtsPageSize, "debtsPageInfo");
+  const debtsTotal = groupsFiltered.reduce((a, g) => a + n(g.total), 0);
+  const debtsPaid = groupsFiltered.reduce((a, g) => a + n(g.paid), 0);
+  const debtsRem = groupsFiltered.reduce((a, g) => a + n(g.rem), 0);
 
   byId("tblDebts").innerHTML = groupsPage
     .map((g, i) => {
@@ -6857,7 +6860,17 @@ function renderAll() {
         </td>
       </tr>`;
     })
-    .join("");
+    .join("")
+    + (groupsFiltered.length
+      ? `<tr class="total-row">
+          <td colspan="2"><strong>Cəmi</strong></td>
+          <td><strong>${money(debtsTotal)} AZN</strong></td>
+          <td><strong>${money(debtsPaid)} AZN</strong></td>
+          <td><strong>${money(debtsRem)} AZN</strong></td>
+          <td></td>
+          <td></td>
+        </tr>`
+      : "");
   filterDebts();
   const creditQ = byId("srcCreditOnly")?.value || "";
   if (creditQ) filterCreditOnly();
@@ -6909,6 +6922,7 @@ function renderAll() {
       });
 
     rows.sort((a, b) => (b.daysLate - a.daysLate) || String(a.dueDate).localeCompare(String(b.dueDate)));
+    const overdueTotal = rows.reduce((a, x) => a + n(x.dueAmount), 0);
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
@@ -6926,7 +6940,17 @@ function renderAll() {
             </td>
           </tr>`;
         })
-        .join("") || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`;
+        .join("")
+      || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`;
+    if (rows.length) {
+      overdueBody.innerHTML += `
+        <tr class="total-row">
+          <td colspan="3"><strong>Cəmi</strong></td>
+          <td><strong>${money(overdueTotal)} AZN</strong></td>
+          <td colspan="4"></td>
+        </tr>
+      `;
+    }
   }
 
   // creditor (suppliers) + date filter + pagination
@@ -6955,6 +6979,9 @@ function renderAll() {
     if (credStatus === "open") return g.st !== "paid";
     return g.st === credStatus;
   });
+  const credTotal = filteredGroupsAll.reduce((a, g) => a + n(g.total), 0);
+  const credPaid = filteredGroupsAll.reduce((a, g) => a + n(g.paid), 0);
+  const credRem = filteredGroupsAll.reduce((a, g) => a + n(g.rem), 0);
 
   const credPageSize = getPageSize("credPageSize", 50);
   const filteredGroups = paginate(filteredGroupsAll, "cred", credPageSize, "credPageInfo");
@@ -6974,7 +7001,17 @@ function renderAll() {
       </td>
     </tr>`
     )
-    .join("");
+    .join("")
+    + (filteredGroupsAll.length
+      ? `<tr class="total-row">
+          <td colspan="2"><strong>Cəmi</strong></td>
+          <td><strong>${money(credTotal)} AZN</strong></td>
+          <td><strong>${money(credPaid)} AZN</strong></td>
+          <td><strong>${money(credRem)} AZN</strong></td>
+          <td></td>
+          <td></td>
+        </tr>`
+      : "");
   filterCreditor();
 
   // cash list + filters + pagination
