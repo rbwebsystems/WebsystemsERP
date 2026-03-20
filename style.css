@@ -465,6 +465,23 @@ main{flex:1;padding:40px;}
   background:rgba(127,29,29,.92);
   border-color:rgba(127,29,29,.98);
 }
+.btn-mini-info{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.info-i{
+  width:16px;
+  height:16px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.72rem;
+  font-weight:800;
+  color:#fff;
+  background:var(--accent);
+}
 
 /* IMPORTANT: keep compact sizing only in header filters.
    Modal/forms use the normal input/select/textarea rule further below. */

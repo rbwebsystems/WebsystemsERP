@@ -6282,6 +6282,10 @@ function openOverdueInfo(saleUid) {
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeydlər</h3>
     ${notesHtml || `<p class="muted">Qeyd yoxdur.</p>`}
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
   `);
 }
 
@@ -6951,8 +6955,7 @@ function renderAll() {
             <td><span class="late-days ${lateClass}">${x.daysLate}</span></td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions">
-              <button class="btn-mini-pay" type="button" onclick="openOverduePayment('${escapeAttr(x.saleUid)}')">Ödəniş et</button>
-              <button class="btn-mini" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')"><i class="fas fa-circle-info"></i> Info</button>
+              <button class="btn-mini btn-mini-info" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')"><span class="info-i">i</span> Info</button>
             </td>
           </tr>`;
         })
