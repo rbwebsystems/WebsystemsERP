@@ -335,6 +335,50 @@ function openAccount(idx = null) {
   `);
 }
 
+function renderAccountsManagerTable() {
+  const el = byId("mdlAccountsTbl");
+  if (!el) return;
+  ensureAccounts();
+  el.innerHTML = (db.accounts || [])
+    .map((a, i) => {
+      const bal = accountBalance(a.uid);
+      const delDisabled = a.uid === 1 ? "disabled" : "";
+      return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(a.name)}</td>
+        <td>${escapeHtml(a.type)}</td>
+        <td>${money(bal)} AZN</td>
+        <td class="tbl-actions">
+          ${userCanEdit() ? `<button class="icon-btn edit" onclick="closeMdl();openAccount(${i})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          ${userCanDelete() ? `<button class="icon-btn delete" onclick="closeMdl();delAccount(${i})" title="Sil" ${delDisabled}><i class="fas fa-trash"></i></button>` : ""}
+        </td>
+      </tr>`;
+    })
+    .join("");
+}
+
+function openAccountsManager() {
+  if (!userCanSection("accounts")) return alert("Hesablar bölməsinə giriş icazəniz yoxdur.");
+  openModal(`
+    <h2>Hesablar</h2>
+    <div class="modal-footer" style="justify-content:space-between; margin-bottom:10px;">
+      <div class="muted">Hesab yarat, redaktə et, sil və qalıqlara bax.</div>
+      ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl();openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>` : ""}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Ad</th><th>Tip</th><th>Balans</th><th>Əməliyyat</th></tr></thead>
+        <tbody id="mdlAccountsTbl"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+  renderAccountsManagerTable();
+}
+
 function saveAccount(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
@@ -352,6 +396,7 @@ function saveAccount(e, idx) {
     db.accounts[idx] = { uid: keepUid, name, type };
   }
   saveDB();
+  renderAccountsManagerTable();
   closeMdl();
 }
 
@@ -367,6 +412,7 @@ function delAccount(idx) {
     if (!ok) return;
     db.accounts.splice(idx, 1);
     saveDB();
+    renderAccountsManagerTable();
   });
 }
 
@@ -7436,9 +7482,10 @@ function renderAll() {
 
   // accounts
   ensureAccounts();
-  const cashAccountsBlock = byId("cashAccountsBlock");
-  if (cashAccountsBlock) cashAccountsBlock.style.display = userCanSection("accounts") ? "" : "none";
-  byId("tblAccounts").innerHTML = db.accounts
+  const cashAccountsBtn = byId("cashAccountsBtn");
+  if (cashAccountsBtn) cashAccountsBtn.style.display = userCanSection("accounts") ? "" : "none";
+  const tblAccounts = byId("tblAccounts");
+  if (tblAccounts) tblAccounts.innerHTML = db.accounts
     .map((a, i) => {
       const bal = accountBalance(a.uid);
       const delDisabled = a.uid === 1 ? "disabled" : "";
@@ -8111,6 +8158,7 @@ Object.assign(window, {
   recalcCredit,
   togglePurchBulk,
   toggleSaleQty,
+  openAccountsManager,
   openAccount,
   saveAccount,
   delAccount,

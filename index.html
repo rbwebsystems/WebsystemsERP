@@ -474,6 +474,7 @@
           <button class="btn-cancel" type="button" onclick="openCashReconcile()"><i class="fas fa-scale-balanced"></i> Kassa sayımı</button>
           <button class="btn-cancel" type="button" onclick="openDayClose()"><i class="fas fa-calendar-check"></i> Gün sonu</button>
           <button class="btn-cancel" type="button" onclick="openCashDiffAnalysis()"><i class="fas fa-circle-exclamation"></i> Artıq/Əskik</button>
+          <button id="cashAccountsBtn" class="btn-cancel" type="button" onclick="openAccountsManager()"><i class="fas fa-building-columns"></i> Hesablar</button>
           <button class="btn-main" type="button" onclick="openCashOp()"><i class="fas fa-plus"></i> Yeni əməliyyat</button>
         </div>
       </div>
@@ -502,21 +503,6 @@
             <option value="150">150</option>
           </select>
         </div>
-      </div>
-
-      <div id="cashAccountsBlock">
-      <div class="content-header" style="margin-top:14px;">
-        <h1>Hesablar</h1>
-        <div class="header-actions">
-          <button class="btn-main" type="button" onclick="openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>
-        </div>
-      </div>
-      <div class="card">
-        <table>
-          <thead><tr><th>#</th><th>Ad</th><th>Tip</th><th>Balans</th><th>Əməliyyat</th></tr></thead>
-          <tbody id="tblAccounts"></tbody>
-        </table>
-      </div>
       </div>
     </div>
 
