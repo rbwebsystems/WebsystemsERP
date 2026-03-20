@@ -6936,6 +6936,11 @@ function renderAll() {
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
+          const lateClass =
+            x.daysLate >= 91 ? "late-91p" :
+            x.daysLate >= 61 ? "late-61-90" :
+            x.daysLate >= 31 ? "late-31-60" :
+            x.daysLate >= 1 ? "late-1-30" : "";
           return `
           <tr>
             <td>${i + 1}</td>
@@ -6943,7 +6948,7 @@ function renderAll() {
             <td>${escapeHtml(x.inv || "-")}</td>
             <td>${money(x.dueAmount)} AZN</td>
             <td>${escapeHtml(x.dueDate || "-")}</td>
-            <td>${x.daysLate}</td>
+            <td><span class="late-days ${lateClass}">${x.daysLate}</span></td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions">
               <button class="btn-mini-pay" type="button" onclick="openOverduePayment('${escapeAttr(x.saleUid)}')">Ödəniş et</button>

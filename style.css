@@ -434,6 +434,37 @@ main{flex:1;padding:40px;}
   color:#fff !important;
   border-color:transparent !important;
 }
+.late-days{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:42px;
+  padding:2px 8px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:.82rem;
+  border:1px solid transparent;
+}
+.late-1-30{
+  color:#065f46;
+  background:rgba(16,185,129,.18);
+  border-color:rgba(16,185,129,.35);
+}
+.late-31-60{
+  color:#9a3412;
+  background:rgba(249,115,22,.20);
+  border-color:rgba(249,115,22,.38);
+}
+.late-61-90{
+  color:#b91c1c;
+  background:rgba(239,68,68,.22);
+  border-color:rgba(239,68,68,.42);
+}
+.late-91p{
+  color:#fff;
+  background:rgba(127,29,29,.92);
+  border-color:rgba(127,29,29,.98);
+}
 
 /* IMPORTANT: keep compact sizing only in header filters.
    Modal/forms use the normal input/select/textarea rule further below. */
