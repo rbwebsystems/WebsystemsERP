@@ -1785,13 +1785,14 @@ function debtLabel(st) {
 }
 
 function addMonthsISO(dateISO, addMonths) {
-  const [y, m, d] = (dateISO || "").split("-").map(Number);
-  if (!y || !m || !d) return dateISO || "";
-  const dt = new Date(y, m - 1 + addMonths, d);
-  const yy = dt.getFullYear();
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const dd = String(dt.getDate()).padStart(2, "0");
-  return `${yy}-${mm}-${dd}`;
+  const [y, m, d] = String(dateISO || "").slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return String(dateISO || "").slice(0, 10) || "";
+  const targetM = (m - 1) + addMonths;
+  const yy = y + Math.floor(targetM / 12);
+  const mm0 = ((targetM % 12) + 12) % 12;
+  const lastDay = new Date(yy, mm0 + 1, 0).getDate();
+  const dd = Math.min(d, lastDay);
+  return `${yy}-${String(mm0 + 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
 }
 
 function buildCreditSchedule(sale) {
@@ -6133,10 +6134,14 @@ function openDayCloseHistory() {
   `);
 }
 
-function openOverdueInfo(customerId) {
+function openOverdueInfo(saleUid) {
   ensureAuditTrash();
-  const cid = String(customerId || "");
-  const custName = (db.sales || []).find((s) => String(s.customerId) === cid)?.customerName || cid;
+  const sale = (db.sales || []).find((s) => Number(s.uid) === Number(saleUid));
+  if (!sale) return alert("Satış tapılmadı.");
+  const cid = String(sale.customerId || "");
+  const cust = (db.cust || []).find((c) => String(c.uid) === cid) || null;
+  const guarantor = cust?.zam ? (db.cust || []).find((x) => String(x.uid) === String(cust.zam)) : null;
+  const custName = sale.customerName || cid;
   const today = new Date();
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const dayMs = 24 * 60 * 60 * 1000;
@@ -6148,20 +6153,16 @@ function openOverdueInfo(customerId) {
   const todayT = toDayStart(todayISO);
 
   const items = [];
-  (db.sales || [])
-    .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit" && String(s.customerId) === cid)
-    .forEach((s) => {
-      const inv = s.invNo || invFallback("sales", s.uid);
-      const sched = buildCreditSchedule(s);
-      for (const r of sched.rows) {
-        if (r.remaining <= 0.000001) continue;
-        const dueT = toDayStart(r.due);
-        if (dueT == null || todayT == null) continue;
-        const daysLate = Math.floor((todayT - dueT) / dayMs);
-        if (daysLate < 1) continue;
-        items.push({ inv, due: r.due, monthly: r.amount, remaining: r.remaining, daysLate, saleUid: s.uid });
-      }
-    });
+  const inv = sale.invNo || invFallback("sales", sale.uid);
+  const sched = buildCreditSchedule(sale);
+  for (const r of sched.rows) {
+    if (r.remaining <= 0.000001) continue;
+    const dueT = toDayStart(r.due);
+    if (dueT == null || todayT == null) continue;
+    const daysLate = Math.floor((todayT - dueT) / dayMs);
+    if (daysLate < 1) continue;
+    items.push({ inv, due: r.due, monthly: r.amount, remaining: r.remaining, daysLate, saleUid: sale.uid, idx: r.idx });
+  }
 
   items.sort((a, b) => (b.daysLate - a.daysLate) || String(a.due).localeCompare(String(b.due)));
   const rowsHtml = items
@@ -6169,7 +6170,7 @@ function openOverdueInfo(customerId) {
       (x, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${escapeHtml(x.inv)}</td>
+        <td>${escapeHtml(x.inv)} • ${x.idx}. ay</td>
       <td>${escapeHtml(x.due)}</td>
       <td>${money(x.monthly)} AZN</td>
       <td>${money(x.remaining)} AZN</td>
@@ -6194,10 +6195,40 @@ function openOverdueInfo(customerId) {
     )
     .join("");
 
+  const payHistHtml = (sale.payments || [])
+    .slice()
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${fmtDT(p.date)}</td>
+        <td>${money(p.amount)} AZN</td>
+        <td>${escapeHtml(p.source || "-")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const total = n(sale.amount);
+  const paid = n(sale.paidTotal);
+  const rem = saleRemaining(sale);
+  const credit = buildCreditSchedule(sale);
+  const saleDate = String(sale.date || "").slice(0, 10);
+  const dueStart = credit.rows[0]?.due || "-";
+  const empName = sale.employeeName || getStaffName(sale.employeeId);
+
   openModal(`
     <h2>Gecikmə detalları</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}</div></div>
+      <div class="info-row"><div class="info-label">Ad Soyad Ata</div><div class="info-value">${escapeHtml(cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : custName)}</div></div>
+      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-")}</div></div>
+      <div class="info-row"><div class="info-label">Qaimə</div><div class="info-value">${escapeHtml(inv)}</div></div>
+      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(sale.productName || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(sale.date)}</div></div>
+      <div class="info-row"><div class="info-label">İlk ödəniş günü</div><div class="info-value">${escapeHtml(dueStart)}</div></div>
+      <div class="info-row"><div class="info-label">Müddət</div><div class="info-value">${credit.term} ay</div></div>
+      <div class="info-row"><div class="info-label">Rəsmiləşdirən əməkdaş</div><div class="info-value">${escapeHtml(empName || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(total)} / ${money(paid)} / ${money(rem)} AZN</strong></div></div>
     </div>
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Gecikən aylıqlar</h3>
@@ -6208,8 +6239,26 @@ function openOverdueInfo(customerId) {
       </table>
     </div>
 
+    <h3 style="margin:16px 0 10px;font-size:1.05rem;">Ödəniş cədvəli</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Ödəniş günü</th><th>Məbləğ</th><th>Ödənilib</th><th>Qalıq</th><th>Status</th></tr></thead>
+        <tbody>
+          ${credit.rows.map((r) => `<tr><td>${r.idx}</td><td>${escapeHtml(r.due)}</td><td>${money(r.amount)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.remaining)} AZN</td><td>${escapeHtml(debtLabel(r.status))}</td></tr>`).join("") || `<tr><td colspan="6">Cədvəl yoxdur</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:16px 0 10px;font-size:1.05rem;">Ödəniş tarixçəsi</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tarix</th><th>Məbləğ</th><th>Mənbə</th></tr></thead>
+        <tbody>${payHistHtml || `<tr><td colspan="4">Ödəniş yoxdur</td></tr>`}</tbody>
+      </table>
+    </div>
+
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeyd əlavə et</h3>
-    <form onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}')">
+    <form onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}', '${escapeAttr(sale.uid)}')">
       <div class="grid-3">
         <input id="ov_note" class="span-3" placeholder="Qeyd..." required>
       </div>
@@ -6224,7 +6273,7 @@ function openOverdueInfo(customerId) {
   `);
 }
 
-function saveOverdueNote(e, customerId) {
+function saveOverdueNote(e, customerId, saleUid = null) {
   e.preventDefault();
   ensureAuditTrash();
   const cid = String(customerId || "");
@@ -6234,7 +6283,8 @@ function saveOverdueNote(e, customerId) {
   db.overdueNotes.push({ uid: genId(db.overdueNotes, 1), customerId: cid, text, ts: nowISODateTimeLocal(), user: u ? u.username : "-" });
   logEvent("create", "overdue_note", { customerId: cid });
   saveDB();
-  openOverdueInfo(cid);
+  if (saleUid != null && saleUid !== "") openOverdueInfo(saleUid);
+  else closeMdl();
 }
 
 function openReturnedSalesCreditReport() {
@@ -6808,11 +6858,16 @@ function renderAll() {
     };
     const todayT = toDayStart(todayISO);
 
-    const byCust = new Map();
+    const rows = [];
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
-      .forEach((s) => {
+      .forEach((s, idx) => {
         const sched = buildCreditSchedule(s);
+        const inv = s.invNo || invFallback("sales", s.uid);
+        const cust = (db.cust || []).find((c) => String(c.uid) === String(s.customerId)) || null;
+        const guarantor = cust?.zam ? (db.cust || []).find((g) => String(g.uid) === String(cust.zam)) : null;
+        const custFull = cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : (s.customerName || "-");
+        const zam = guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-";
         for (const r of sched.rows) {
           if (r.remaining <= 0.000001) continue;
           const dueT = toDayStart(r.due);
@@ -6822,42 +6877,34 @@ function renderAll() {
           const isToday = daysLate === 0;
           if (view === "overdue" && !isOverdue) continue;
           if (view === "today" && !isToday) continue;
-          const inv = s.invNo || invFallback("sales", s.uid);
-          const cid = String(s.customerId || "");
-          if (!byCust.has(cid)) {
-            byCust.set(cid, { customerId: cid, customer: s.customerName || "-", maxLate: 0, dueCount: 0, dueTotal: 0, nextDue: null, nextDueT: null });
-          }
-          const g = byCust.get(cid);
-          g.maxLate = Math.max(g.maxLate, Math.max(0, daysLate));
-          g.dueCount += 1;
-          g.dueTotal += Math.max(0, n(r.remaining));
-          if (g.nextDueT == null || dueT < g.nextDueT) {
-            g.nextDueT = dueT;
-            g.nextDue = r.due;
-          }
-          // keep a few sample invoices for display
-          if (!g.invs) g.invs = [];
-          if (g.invs.length < 3 && !g.invs.includes(inv)) g.invs.push(inv);
+          if (view === "all" && daysLate < 0) continue;
+          rows.push({
+            saleUid: s.uid,
+            customer: custFull || s.customerName || "-",
+            inv,
+            dueDate: r.due,
+            dueAmount: Math.max(0, n(r.remaining)),
+            daysLate: Math.max(0, daysLate),
+            zam,
+          });
         }
       });
 
-    const rows = Array.from(byCust.values());
-    rows.sort((a, b) => (b.maxLate - a.maxLate) || (b.dueTotal - a.dueTotal));
+    rows.sort((a, b) => (b.daysLate - a.daysLate) || String(a.dueDate).localeCompare(String(b.dueDate)));
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
-          const invText = (x.invs || []).join(", ");
           return `
           <tr>
             <td>${i + 1}</td>
             <td>${escapeHtml(x.customer)}</td>
-            <td>${escapeHtml(invText || "-")}</td>
-            <td>${escapeHtml(x.nextDue || "-")}</td>
-            <td>${x.dueCount}</td>
-            <td>${money(x.dueTotal)} AZN</td>
-            <td>${x.maxLate}</td>
+            <td>${escapeHtml(x.inv || "-")}</td>
+            <td>${money(x.dueAmount)} AZN</td>
+            <td>${escapeHtml(x.dueDate || "-")}</td>
+            <td>${x.daysLate}</td>
+            <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions">
-              <button class="btn-mini" type="button" onclick="openOverdueInfo('${escapeAttr(x.customerId)}')"><i class="fas fa-circle-info"></i> Info</button>
+              <button class="btn-mini" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')"><i class="fas fa-circle-info"></i> Info</button>
             </td>
           </tr>`;
         })
