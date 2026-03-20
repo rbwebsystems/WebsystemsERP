@@ -1020,9 +1020,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;
 /* Minimal top filters: compact + horizontal */
 .header-actions{
   gap:8px;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  scrollbar-width:thin;
+  flex-wrap:wrap;
+  overflow-x:visible;
 }
 .header-actions > *{flex:0 0 auto;}
 .header-actions .btn-main,
@@ -1041,9 +1040,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;
 .header-actions .date-range{gap:4px;}
 .header-actions .date-range input{
   height:30px !important;
-  width:104px;
-  padding:0 8px !important;
+  width:132px;
+  min-width:132px;
+  padding:0 30px 0 8px !important;
   border-radius:10px !important;
+  text-align:left;
 }
 
 /* Search icon -> expand to input */
@@ -1078,11 +1079,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;
   white-space:nowrap;
 }
 .header-actions .search-container.search-collapsible.open{
-  width:250px;
-  min-width:250px;
+  width:220px;
+  min-width:220px;
 }
 .header-actions .search-container.search-collapsible.open input{
-  width:250px;
+  width:220px;
   opacity:1;
   height:30px;
   padding:0 40px 0 10px;
@@ -1132,6 +1133,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;
   transform:translateY(-50%);
   margin-left:0 !important;
   z-index:2;
+}
+
+/* Date fields: keep text clear from calendar icon */
+input[type="date"],
+input[type="datetime-local"]{
+  text-align:left;
+  padding-right:30px !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  margin-left:6px;
 }
 
 /* Info blocks */

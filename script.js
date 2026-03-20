@@ -1398,8 +1398,8 @@ function fmtDT(input) {
   const dd = String(d).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
   const yy = String(y);
-  let timePart = timePartRaw || "00:00";
-  timePart = timePart.slice(0, 5);
+  let timePart = (timePartRaw || "").slice(0, 5);
+  if (!timePart || timePart === "00:00") return `${dd}.${mm}.${yy}`;
   return `${dd}.${mm}.${yy} ${timePart}`;
 }
 
@@ -3872,7 +3872,7 @@ function openSaleInfo(idx) {
   openModal(`
     <h2>Satış məlumatı</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${escapeHtml(s.date)}</div></div>
+      <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(s.date)}</div></div>
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
       <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
@@ -4595,7 +4595,7 @@ function refreshCustomerInvoices() {
     .sort((a, b) => (a.date > b.date ? 1 : -1))
     .map((s) => {
       const invNo = s.invNo || invFallback("sales", s.uid);
-      return `<option value="${s.uid}">Qaimə #${escapeHtml(invNo)} • ${escapeHtml(s.date)} • Qalıq ${money(saleRemaining(s))}</option>`;
+      return `<option value="${s.uid}">Qaimə #${escapeHtml(invNo)} • ${fmtDT(s.date)} • Qalıq ${money(saleRemaining(s))}</option>`;
     })
     .join("");
   sel.innerHTML = `<option value="">Qaimə seç (istəyə bağlı)</option>` + inv;
@@ -4609,7 +4609,7 @@ function refreshSupplierInvoices() {
     .filter((p) => String(p.supp) === String(supp))
     .filter((p) => purchRemaining(p) > 0.000001)
     .sort((a, b) => (a.date > b.date ? 1 : -1))
-    .map((p) => `<option value="${p.uid}">Qaimə #${p.uid} • ${escapeHtml(p.date)} • ${escapeHtml(p.name)} • Qalıq ${money(purchRemaining(p))}</option>`)
+    .map((p) => `<option value="${p.uid}">Qaimə #${p.uid} • ${fmtDT(p.date)} • ${escapeHtml(p.name)} • Qalıq ${money(purchRemaining(p))}</option>`)
     .join("");
   sel.innerHTML = `<option value="">Qaimə seç (istəyə bağlı)</option>` + inv;
 }
