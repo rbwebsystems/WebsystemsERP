@@ -7080,7 +7080,7 @@ function renderAll() {
               saleUid: s.uid,
               customer: custFull || s.customerName || "-",
               inv,
-              dueFullAmount: 0,
+              dueFullAmount: Math.max(0, n(r.amount)),
               duePaidAmount: 0,
               dueDate: r.due,
               dueAmount: 0,
@@ -7090,7 +7090,6 @@ function renderAll() {
             });
           }
           const g = bySale.get(key);
-          g.dueFullAmount += Math.max(0, n(r.amount));
           g.duePaidAmount += Math.max(0, n(r.paid));
           g.dueAmount += Math.max(0, n(r.remaining));
           if (!g.dueDate || String(r.due) < String(g.dueDate)) g.dueDate = r.due;
