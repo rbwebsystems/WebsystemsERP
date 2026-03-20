@@ -6275,6 +6275,7 @@ function openOverdueInfo(saleUid) {
         <input id="ov_note" class="span-3" placeholder="Qeyd..." required>
       </div>
       <div class="modal-footer">
+        <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
         <button class="btn-main" type="submit">Yadda saxla</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
@@ -6282,10 +6283,6 @@ function openOverdueInfo(saleUid) {
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeydlər</h3>
     ${notesHtml || `<p class="muted">Qeyd yoxdur.</p>`}
-    <div class="modal-footer">
-      <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
-      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
-    </div>
   `);
 }
 
