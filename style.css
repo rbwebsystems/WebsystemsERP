@@ -131,9 +131,15 @@ body.theme-dark .nav-sep{background:rgba(255,255,255,.2);}
 .btn-theme-inactive{opacity:.7;background:var(--border-color) !important;}
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
-body{background:var(--bg-main);color:var(--text-main);display:flex;}
+body{
+  background:var(--bg-main);
+  color:var(--text-main);
+  display:flex;
+  height:100vh;
+  overflow:hidden;
+}
 body.login-open{overflow:hidden;}
-#appShell{width:100%;display:flex;}
+#appShell{width:100%;height:100vh;display:flex;overflow:hidden;}
 body.login-open #appShell{display:none;}
 body.offline-block{overflow:hidden;}
 body.offline-block #appShell{display:none;}
@@ -406,7 +412,7 @@ main{
   overflow:hidden;
 }
 .section{display:none;min-height:0;}
-.section.active{display:flex;flex-direction:column;min-height:0;}
+.section.active{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
 
 
 .content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
@@ -862,6 +868,7 @@ td{
 
 /* Sticky table headers */
 .section.active .card{flex:1 1 auto;min-height:0;max-height:100%;overflow:auto;}
+.section.active > .pager{flex:0 0 auto;}
 .card table thead th{
   position:sticky;
   top:0;
