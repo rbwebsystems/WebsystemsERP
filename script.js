@@ -7121,8 +7121,8 @@ function renderAll() {
             <td>${escapeHtml(x.inv || "-")}</td>
             <td class="overdue-num-cell">${money(x.dueFullAmount)} AZN</td>
             <td class="overdue-num-cell">${money(x.duePaidAmount)} AZN</td>
-            <td class="overdue-num-cell"><strong>${money(x.dueAmount)} AZN</strong></td>
-            <td class="overdue-num-cell"><strong>${money(x.invoiceRemaining)} AZN</strong></td>
+            <td class="overdue-num-cell">${money(x.dueAmount)} AZN</td>
+            <td class="overdue-num-cell">${money(x.invoiceRemaining)} AZN</td>
             <td>${escapeHtml(x.dueDate || "-")}</td>
             <td class="${lateCellClass} overdue-days-cell">${x.daysLate}</td>
             <td>${escapeHtml(x.zam || "-")}</td>
