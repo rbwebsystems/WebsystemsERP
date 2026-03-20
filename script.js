@@ -6299,6 +6299,16 @@ function saveOverdueNote(e, customerId, saleUid = null) {
   else closeMdl();
 }
 
+function openOverduePayment(saleUid) {
+  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  const idx = (db.sales || []).findIndex((s) => Number(s.uid) === Number(saleUid));
+  if (idx < 0) return alert("Satış tapılmadı.");
+  const s = db.sales[idx];
+  if (!s || s.returnedAt) return alert("Bu satış aktiv deyil.");
+  if (saleRemaining(s) <= 0.000001) return alert("Qalıq borc yoxdur.");
+  openSalePayment(idx);
+}
+
 function openReturnedSalesCreditReport() {
   ensureAuditTrash();
   const rows = (db.sales || [])
@@ -6936,6 +6946,7 @@ function renderAll() {
             <td>${x.daysLate}</td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions">
+              <button class="btn-mini-pay" type="button" onclick="openOverduePayment('${escapeAttr(x.saleUid)}')">Ödəniş et</button>
               <button class="btn-mini" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')"><i class="fas fa-circle-info"></i> Info</button>
             </td>
           </tr>`;
@@ -7752,6 +7763,7 @@ Object.assign(window, {
   saveCashReconcile,
   openCashDiffAnalysis,
   openOverdueInfo,
+  openOverduePayment,
   saveOverdueNote,
   onStockCatChange,
   setDebtsStatus,
