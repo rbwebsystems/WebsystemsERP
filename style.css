@@ -528,17 +528,14 @@ main{flex:1;padding:40px;}
   background:var(--accent);
 }
 .overdue-info-btn{
-  border:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  width:100%;
-  min-width:0;
-  height:20px;
+  width:28px;
+  min-width:28px;
+  height:28px;
   padding:0;
-  display:flex;
+  display:inline-flex;
   align-items:center;
   justify-content:center;
-  margin:0;
+  margin:0 auto;
 }
 .info-i-plain{
   font-style:italic;
