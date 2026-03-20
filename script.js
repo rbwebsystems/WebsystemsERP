@@ -7063,6 +7063,7 @@ function renderAll() {
         const cust = (db.cust || []).find((c) => String(c.uid) === String(s.customerId)) || null;
         const guarantor = cust?.zam ? (db.cust || []).find((g) => String(g.uid) === String(cust.zam)) : null;
         const custFull = cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : (s.customerName || "-");
+        const custPhone = String(cust?.ph1 || cust?.ph2 || cust?.ph3 || "-");
         const zam = guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-";
         for (const r of sched.rows) {
           if (r.remaining <= 0.000001) continue;
@@ -7082,6 +7083,7 @@ function renderAll() {
           rows.push({
             saleUid: s.uid,
             customer: custFull || s.customerName || "-",
+            phone: custPhone,
             inv,
             dueFullAmount: Math.max(0, n(r.amount)),
             duePaidAmount: Math.max(0, n(r.paid)),
@@ -7115,11 +7117,12 @@ function renderAll() {
           <tr>
             <td>${i + 1}</td>
             <td>${escapeHtml(x.customer)}</td>
+            <td>${escapeHtml(x.phone || "-")}</td>
             <td>${escapeHtml(x.inv || "-")}</td>
-            <td>${money(x.dueFullAmount)} AZN</td>
-            <td>${money(x.duePaidAmount)} AZN</td>
-            <td>${money(x.dueAmount)} AZN</td>
-            <td>${money(x.invoiceRemaining)} AZN</td>
+            <td class="overdue-num-cell">${money(x.dueFullAmount)} AZN</td>
+            <td class="overdue-num-cell">${money(x.duePaidAmount)} AZN</td>
+            <td class="overdue-num-cell"><strong>${money(x.dueAmount)} AZN</strong></td>
+            <td class="overdue-num-cell"><strong>${money(x.invoiceRemaining)} AZN</strong></td>
             <td>${escapeHtml(x.dueDate || "-")}</td>
             <td class="${lateCellClass} overdue-days-cell">${x.daysLate}</td>
             <td>${escapeHtml(x.zam || "-")}</td>
@@ -7129,18 +7132,18 @@ function renderAll() {
           </tr>`;
         })
         .join("")
-      || `<tr><td colspan="11">Məlumat yoxdur</td></tr>`;
+      || `<tr><td colspan="12">Məlumat yoxdur</td></tr>`;
     if (rows.length) {
       const overdueFullTotal = rows.reduce((a, x) => a + n(x.dueFullAmount), 0);
       const overduePaidTotal = rows.reduce((a, x) => a + n(x.duePaidAmount), 0);
       const overdueInvoiceRemTotal = Array.from(invoiceRemBySale.values()).reduce((a, v) => a + n(v), 0);
       overdueBody.innerHTML += `
         <tr class="total-row">
-          <td colspan="3"><strong>Cəmi</strong></td>
-          <td><strong>${money(overdueFullTotal)} AZN</strong></td>
-          <td><strong>${money(overduePaidTotal)} AZN</strong></td>
-          <td><strong>${money(overdueTotal)} AZN</strong></td>
-          <td><strong>${money(overdueInvoiceRemTotal)} AZN</strong></td>
+          <td colspan="4"><strong>Cəmi</strong></td>
+          <td class="overdue-num-cell"><strong>${money(overdueFullTotal)} AZN</strong></td>
+          <td class="overdue-num-cell"><strong>${money(overduePaidTotal)} AZN</strong></td>
+          <td class="overdue-num-cell"><strong>${money(overdueTotal)} AZN</strong></td>
+          <td class="overdue-num-cell"><strong>${money(overdueInvoiceRemTotal)} AZN</strong></td>
           <td colspan="4"></td>
         </tr>
       `;

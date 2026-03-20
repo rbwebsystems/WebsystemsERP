@@ -499,6 +499,13 @@ main{flex:1;padding:40px;}
   padding-left:6px !important;
   padding-right:6px !important;
 }
+.overdue-num-cell{
+  width:112px;
+  min-width:112px;
+  white-space:nowrap;
+  padding-left:6px !important;
+  padding-right:6px !important;
+}
 .btn-mini-info{
   display:inline-flex;
   align-items:center;
