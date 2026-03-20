@@ -6661,7 +6661,7 @@ function renderAll() {
   byId("tblStock").innerHTML = stockListAll
     .filter(({ p }) => inDateRange(p.date, "stockFrom", "stockTo"))
     .filter(({ p }) => {
-      const st = byId("stockStatus")?.value || "all";
+      const st = byId("stockStatus")?.value || "stock";
       const remQty = purchRemainingQty(p);
       const isReturned = !!p.returnedAt;
       const isSold = !isReturned && remQty <= 0;
