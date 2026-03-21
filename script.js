@@ -4228,6 +4228,37 @@ function openEditCashOp(uid) {
   `);
 }
 
+function openCashInfo(uid) {
+  const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
+  if (i < 0) return;
+  const c = db.cash[i];
+  const accountName = (db.accounts || []).find((a) => Number(a.uid) === Number(c.accountId || 1))?.name || `#${Number(c.accountId || 1)}`;
+  const kind = c.link?.kind || (c.type === "in" ? "income" : "expense");
+  const actor = operationActorName(c, "-");
+  const metaText = c.meta ? JSON.stringify(c.meta, null, 2) : "-";
+  openModal(`
+    <h2>Kassa əməliyyatı məlumatı</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">ID</div><div class="info-value">${escapeHtml(String(c.uid))}</div></div>
+      <div class="info-row"><div class="info-label">Tip</div><div class="info-value">${c.type === "in" ? "Gəlir" : "Xərc"}</div></div>
+      <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(String(kind))}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value"><strong>${money(c.amount)} AZN</strong></div></div>
+      <div class="info-row"><div class="info-label">Hesab</div><div class="info-value">${escapeHtml(accountName)}</div></div>
+      <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(c.date)}</div></div>
+      <div class="info-row"><div class="info-label">Mənbə</div><div class="info-value">${escapeHtml(c.source || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(actor)}</div></div>
+      <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">${escapeHtml(c.note || "-")}</div></div>
+    </div>
+    <div class="card" style="padding:0;">
+      <div class="muted" style="padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.06);">Əlavə məlumat (meta)</div>
+      <pre style="margin:0;padding:14px;white-space:pre-wrap;word-break:break-word;">${escapeHtml(metaText)}</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
 function syncCashOpAmountToLinked(c, oldAmount, newAmount) {
   const kind = c.link?.kind || "";
   const oldA = n(oldAmount);
@@ -7465,6 +7496,7 @@ function renderAll() {
       <td>${fmtDT(c.date)}</td>
       <td>${escapeHtml(payType)}</td>
       <td class="tbl-actions">
+        <button class="icon-btn info" onclick="openCashInfo(${c.uid})" title="Info"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<button class="icon-btn edit" onclick="openEditCashOp(${c.uid})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
         ${userCanDelete("cash") ? `<button class="icon-btn delete" onclick="delCashOp(${c.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
@@ -8127,6 +8159,7 @@ Object.assign(window, {
   openStaff,
   saveStaff,
   openCashOp,
+  openCashInfo,
   saveCashOp,
   openEditCashOp,
   saveEditCashOp,
