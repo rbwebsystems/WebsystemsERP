@@ -3650,12 +3650,27 @@ function recalcCredit() {
   }
 }
 
-function saveSale(e, idx) {
+async function saveSale(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isEdit = idx !== null;
   const isNew = !isEdit;
   const actorName = currentActorName();
+  if (isEdit) {
+    const old = db.sales[idx];
+    const oldInv = old ? (old.invNo || invFallback("sales", old.uid)) : "-";
+    const oldPaid = old ? n(old.paidTotal) : 0;
+    const oldDate = old ? fmtDT(old.date) : "-";
+    const warnMsg =
+      `Diqqət: mövcud satışı redaktə edirsiniz.\n\n` +
+      `Qaimə: ${oldInv}\n` +
+      `Tarix: ${oldDate}\n` +
+      `Ödənilən: ${money(oldPaid)} AZN\n\n` +
+      `Köhnə satışlarda redaktə etdikdə ödəniş/borc balanslarına təsir ola bilər.\n` +
+      `Dəyişiklikləri yadda saxlamaq istədiyinizə əminsiniz?`;
+    const ok = await appConfirm(warnMsg);
+    if (!ok) return;
+  }
 
   const customerId = val("f_s_customer");
   const employeeId = val("f_s_staff");
