@@ -431,11 +431,16 @@ main{flex:1;padding:40px;}
 .search-container.search-plain{
   width:220px;
   min-width:220px;
+  height:30px;
+  display:flex;
+  align-items:center;
 }
 .search-container.search-plain input{
   width:100% !important;
+  height:30px !important;
   padding:0 10px !important;
   line-height:30px;
+  margin:0;
 }
 .search-container.search-plain .search-btn{
   display:none !important;
