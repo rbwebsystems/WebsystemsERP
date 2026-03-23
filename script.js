@@ -1602,6 +1602,7 @@ function genId(list, minStart = 1) {
 
 const THEME_KEY = "bakfon_theme";
 const SKIN_KEY = "bakfon_skin";
+const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
   { id: "teal", name: "Teal (default)", accent: "#0D9488", accentHover: "#0b7a6f", accentLight: "#ccfbf1", sidebarLight: "#0D9488", sidebarDark: "#111827" },
@@ -1656,6 +1657,22 @@ function applyTheme() {
   const isDark = getTheme() === "dark";
   document.body.classList.toggle("theme-dark", isDark);
   applySkin();
+}
+
+function applySidebarState() {
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+  } catch (e) {}
+  document.body.classList.toggle("sidebar-collapsed", !!collapsed);
+}
+
+function toggleSidebar() {
+  const next = !document.body.classList.contains("sidebar-collapsed");
+  document.body.classList.toggle("sidebar-collapsed", next);
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+  } catch (e) {}
 }
 
 function isOnline() {
@@ -8421,6 +8438,7 @@ Object.assign(window, {
   saveSettings,
   openSkins,
   setSkin,
+  toggleSidebar,
   openAuditDetails,
   openGlobalSearch,
   runGlobalSearch,
@@ -8447,6 +8465,7 @@ Object.assign(window, {
 
 function initApp() {
   applyAccessUI();
+  applySidebarState();
   initHeaderCompactSearch();
   if (!meta.session) {
     showLoginOverlay(true);
