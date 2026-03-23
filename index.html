@@ -722,36 +722,199 @@
   </div>
 
   <div id="publicLanding" class="public-landing">
-    <header class="public-topbar">
-      <div class="public-topbar-brand">
-        <span class="brand-mark">A</span>
-        <strong>RBSoft</strong>
+    <header>
+      <div class="container nav">
+        <a href="#" class="brand">
+          <div class="brand-icon">RB</div>
+          <div class="brand-text">
+            <strong>RBSoft</strong>
+            <span>SYSTEMS</span>
+          </div>
+        </a>
+        <div class="nav-links">
+          <a href="#modullar">Modullar</a>
+          <a href="#haqqinda">Haqqında</a>
+          <a href="#elaqe">Əlaqə</a>
+          <button type="button" class="btn btn-primary" onclick="openLoginModal()">Daxil ol</button>
+        </div>
       </div>
-      <button class="btn-main" type="button" onclick="openLoginModal()"><i class="fas fa-right-to-bracket"></i> Daxil ol</button>
     </header>
-    <div class="public-center">
-      <div class="version-pill"><span></span> Yeni versiya v2.0 artıq aktiv</div>
-      <h1>Biznesinizi <span>bir platformada</span><br>idarə edin</h1>
-      <p>
-        Satış, anbar, maliyyə, müştəri əlaqələri — bütün iş proseslərinizi
-        RBSoft ERP ilə rahat və effektiv şəkildə idarə edin.
-      </p>
-      <div class="public-actions">
-        <button class="btn-main btn-lg" type="button" onclick="openLoginModal()">Sistemə Daxil Ol <i class="fas fa-arrow-right"></i></button>
-        <button class="btn-outline btn-lg" type="button">Demo Baxış</button>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <div class="hero-badge">
+              <span class="dot"></span>
+              Muasir idareetme ve ERP helli
+            </div>
+
+            <h1>
+              Biznesinizi <span>bir sistemde</span> idare edin
+            </h1>
+
+            <p>
+              RBSoft Systems satis, anbar, maliyye, musteri idareetmesi ve hesabatlari
+              bir merkezde birlesdiren muasir ERP platformadir. Sade, suretli ve pesekar.
+            </p>
+
+            <div class="hero-actions">
+              <button type="button" class="btn btn-primary" onclick="openLoginModal()">Daxil ol</button>
+              <a href="#modullar" class="btn btn-secondary">Etrafli bax</a>
+            </div>
+
+            <div class="hero-stats">
+              <div class="stat">
+                <strong>Satis</strong>
+                <span>Perakende ve topdan emeliyyatlar</span>
+              </div>
+              <div class="stat">
+                <strong>Anbar</strong>
+                <span>Stok ve qaliq nezareti</span>
+              </div>
+              <div class="stat">
+                <strong>Hesabat</strong>
+                <span>Canli statistik gostericiler</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-card">
+            <div class="mock-top">
+              <div class="mock-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="mock-title">RBSoft Dashboard</div>
+            </div>
+
+            <div class="dashboard">
+              <div class="sidebar">
+                <div class="side-item active">Dashboard</div>
+                <div class="side-item">Satis</div>
+                <div class="side-item">Mehsullar</div>
+                <div class="side-item">Anbar</div>
+                <div class="side-item">Musteriler</div>
+                <div class="side-item">Maliyye</div>
+                <div class="side-item">Hesabatlar</div>
+              </div>
+
+              <div class="main-panel">
+                <div class="panel-row">
+                  <div class="mini-card">
+                    <h4>Bugunku satis</h4>
+                    <strong>AZN 12,480</strong>
+                    <span>+18% artim</span>
+                  </div>
+                  <div class="mini-card">
+                    <h4>Sifaris sayi</h4>
+                    <strong>94</strong>
+                    <span>Aktiv emeliyyatlar</span>
+                  </div>
+                  <div class="mini-card">
+                    <h4>Anbar qaligi</h4>
+                    <strong>1,276</strong>
+                    <span>Mehsul movcuddur</span>
+                  </div>
+                </div>
+
+                <div class="chart-card">
+                  <h4>Ayliq dinamika</h4>
+                  <div class="chart">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                  </div>
+                </div>
+
+                <div class="table-card">
+                  <h4>Son emeliyyatlar</h4>
+                  <div class="table-lines">
+                    <div class="line"></div>
+                    <div class="line"></div>
+                    <div class="line"></div>
+                    <div class="line"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="modullar">
+        <div class="container">
+          <div class="section-title">
+            <h2>Esas modullar</h2>
+            <p>
+              RBSoft Systems gundelik is axinini asanlasdirmaq ucun hazirlanmis
+              esas idareetme modullarini bir merkezde teqdim edir.
+            </p>
+          </div>
+
+          <div class="features">
+            <div class="feature-card">
+              <div class="feature-icon">S</div>
+              <h3>Satis</h3>
+              <p>Kassa, qaime, satis tarixcesi, geri qaytarma ve tam nezaret paneli.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">A</div>
+              <h3>Anbar</h3>
+              <p>Mehsul qaligi, giris-cixis, stok nezareti ve tedaruk emeliyyatlari.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">M</div>
+              <h3>Musteriler</h3>
+              <p>Borc, odenis, elaqe melumatlari ve musteri tarixcesinin idaresi.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">H</div>
+              <h3>Hesabatlar</h3>
+              <p>Canli statistikalar, menfeet analizi ve idareetme ucun vacib gostericiler.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="haqqinda">
+        <div class="container">
+          <div class="section-title">
+            <h2>Niye RBSoft Systems?</h2>
+            <p>
+              Modern dizayn, sade istifade, suretli emeliyyat ve pesekar gorunus.
+              ERP sistemini hem teqdimat, hem de is aleti kimi guclu gosterir.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" id="elaqe">
+        <div class="container">
+          <div class="cta-box">
+            <div>
+              <h3>Sisteme daxil olun</h3>
+              <p>
+                Giris etdikden sonra dashboard, satis, anbar ve diger butun modullara
+                birbasa kecid ede bilersiniz.
+              </p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openLoginModal()">Login sehifesine kec</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        © 2026 RBSoft Systems — Butun huquqlar qorunur.
       </div>
-    </div>
-    <div class="public-features-row">
-      <div class="feature-item"><i class="fas fa-cube"></i><span>Anbar İdarəetməsi</span></div>
-      <div class="feature-item"><i class="fas fa-dollar-sign"></i><span>Maliyyə & Kassa</span></div>
-      <div class="feature-item"><i class="fas fa-users"></i><span>Müştəri Əlaqələri</span></div>
-      <div class="feature-item"><i class="fas fa-chart-column"></i><span>Hesabat & Analitika</span></div>
-    </div>
-    <div class="public-footer">© 2026 RBSoft ERP. Bütün hüquqlar qorunur.</div>
-    <div class="landing-orb orb-1" aria-hidden="true"></div>
-    <div class="landing-orb orb-2" aria-hidden="true"></div>
-    <div class="landing-orb orb-3" aria-hidden="true"></div>
-    <div class="landing-grid" aria-hidden="true"></div>
+    </footer>
   </div>
 
   <div class="modal" id="mdlMain">
