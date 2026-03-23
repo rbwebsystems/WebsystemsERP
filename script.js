@@ -7253,7 +7253,7 @@ function renderAll() {
     const todayT = toDayStart(todayISO);
 
     const rows = [];
-    const overdueBySale = new Map();
+    const overdueBySale = new Map(); // invoice üzrə gecikmiş aylıqların cəmi (view-dan asılı deyil)
     const invoiceRemBySale = new Map();
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
@@ -7272,14 +7272,16 @@ function renderAll() {
           const daysLate = Math.floor((todayT - dueT) / dayMs);
           const isOverdue = daysLate >= 1;
           const isToday = daysLate === 0;
+          const saleKey = String(s.uid);
+          if (isOverdue) {
+            overdueBySale.set(saleKey, (overdueBySale.get(saleKey) || 0) + Math.max(0, n(r.remaining)));
+          }
           if (view === "overdue" && !isOverdue) continue;
           if (view === "today" && !isToday) continue;
           // "Ümumi kreditlər": all unpaid installments (including future due dates)
           const daysForFilter = Math.max(0, daysLate);
           if (daysForFilter < daysFrom) continue;
           if (daysTo != null && daysForFilter > daysTo) continue;
-          const saleKey = String(s.uid);
-          overdueBySale.set(saleKey, (overdueBySale.get(saleKey) || 0) + Math.max(0, n(r.remaining)));
           if (!invoiceRemBySale.has(saleKey)) invoiceRemBySale.set(saleKey, Math.max(0, saleRemaining(s)));
           rows.push({
             saleUid: s.uid,
