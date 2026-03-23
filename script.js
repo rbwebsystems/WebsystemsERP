@@ -7831,6 +7831,17 @@ function renderAll() {
       .filter((s) => (useMonth ? inMonth(s.date, repMonth) : inDateRange(s.date, "repFrom", "repTo")))
       .filter((s) => !s.returnedAt);
     const salesTotal = salesInRange.reduce((a, s) => a + n(s.amount), 0);
+    const salesPaidInRange = (db.cash || [])
+      .filter((c) => (useMonth ? inMonth(c.date, repMonth) : inDateRange(c.date, "repFrom", "repTo")))
+      .filter((c) => {
+        const k = String(c.link?.kind || "");
+        return k === "sale" || k === "sale_payment" || k === "debtor_payment" || k === "debtor_invoice_payment";
+      })
+      .reduce((a, c) => a + Math.max(0, n(c.amount)), 0)
+      - (db.cash || [])
+        .filter((c) => (useMonth ? inMonth(c.date, repMonth) : inDateRange(c.date, "repFrom", "repTo")))
+        .filter((c) => String(c.link?.kind || "") === "return_refund")
+        .reduce((a, c) => a + Math.max(0, n(c.amount)), 0);
     const cogs = salesInRange.reduce((a, s) => {
       if (s.bulkPurchUid) {
         const p = db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid));
@@ -7862,12 +7873,17 @@ function renderAll() {
       }
     }
     const pl = salesTotal - cogs - exp;
+    const plCash = salesPaidInRange - cogs - exp;
     byId("repSales").innerText = money(salesTotal);
+    const repSalesPaidEl = byId("repSalesPaid");
+    if (repSalesPaidEl) repSalesPaidEl.innerText = money(Math.max(0, salesPaidInRange));
     byId("repCogs").innerText = money(cogs);
     byId("repExp").innerText = money(exp);
     const repPayrollEl = byId("repPayroll");
     if (repPayrollEl) repPayrollEl.innerText = money(payrollTotalPeriod);
     byId("repPL").innerText = money(pl);
+    const repPLCashEl = byId("repPLCash");
+    if (repPLCashEl) repPLCashEl.innerText = money(plCash);
 
     // month detailed list
     const head = byId("repListHead");
@@ -8054,10 +8070,12 @@ function renderAll() {
         head.innerHTML = `<tr><th>Göstəriş</th><th>Dəyər</th></tr>`;
         body.innerHTML = `
           <tr><td>Satış</td><td>${money(salesTotal)} AZN</td></tr>
+          <tr><td>Satış (ödənilən)</td><td>${money(Math.max(0, salesPaidInRange))} AZN</td></tr>
           <tr><td>Alış</td><td>${money(cogs)} AZN</td></tr>
           <tr><td>Xərc</td><td>${money(exp)} AZN</td></tr>
           <tr><td>Əməkhaqqı (bütün əməkdaşlar, ay üzrə)</td><td>${money(payrollTotalPeriod)} AZN</td></tr>
           <tr><td>Mənfəət/Zərər</td><td>${money(pl)} AZN</td></tr>
+          <tr><td>Nağdlaşan mənfəət</td><td>${money(plCash)} AZN</td></tr>
         `;
       }
     }
