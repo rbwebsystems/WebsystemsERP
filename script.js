@@ -1332,7 +1332,6 @@ function applyAccessUI() {
 }
 
 function toggleDevMenu() {
-  expandSidebarIfCollapsed();
   const menu = byId("devMenu");
   if (!menu) return;
   const open = menu.style.display !== "none";

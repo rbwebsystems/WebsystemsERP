@@ -1348,9 +1348,15 @@ body.sidebar-collapsed .nav-link i{
   color:#fff;
   font-size:14px;
 }
-body.sidebar-collapsed .nav-link.dev-toggle .dev-caret,
-body.sidebar-collapsed #devMenu{
+body.sidebar-collapsed .nav-link.dev-toggle .dev-caret{
   display:none !important;
+}
+body.sidebar-collapsed #devMenu{
+  display:block;
+}
+body.sidebar-collapsed #devMenu .nav-link.dev-sub{
+  padding-left:0;
+  padding-right:0;
 }
 body.sidebar-collapsed .nav-link{
   position:relative;
