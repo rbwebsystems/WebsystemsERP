@@ -1948,9 +1948,46 @@ function appConfirm(msg, title = "Təsdiq") {
   });
 }
 
+function appRequireNote(title = "Qeyd", message = "Qeyd daxil edin") {
+  return new Promise((resolve) => {
+    const finish = (val) => {
+      window.__appRequireNoteResolve = null;
+      resolve(val);
+      closeMdl();
+    };
+    openModal(`
+      <h2>${escapeHtml(title)}</h2>
+      <div class="info-block">
+        <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(message)}</div></div>
+      </div>
+      <div class="grid-3">
+        <textarea id="appRequireNoteInput" class="span-3" placeholder="Qeyd yazın..." style="min-height:110px;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="button" onclick="window.__appRequireNoteResolve && window.__appRequireNoteResolve()">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="window.__appRequireNoteResolve && window.__appRequireNoteResolve(true)">Ləğv et</button>
+      </div>
+    `);
+    window.__appRequireNoteResolve = (cancel) => {
+      if (cancel) return finish(null);
+      const txt = (byId("appRequireNoteInput")?.value || "").trim();
+      if (!txt) return alert("Qeyd məcburidir.");
+      finish(txt);
+    };
+  });
+}
+
 // Override built-in popup alerts in this app scope
 function alert(msg) {
   return appAlert(msg);
+}
+
+function getLastDayCloseDate() {
+  const list = (db.dayCloses || [])
+    .map((x) => String(x.date || "").slice(0, 10))
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+  return list.length ? list[list.length - 1] : "";
 }
 
 // Search
@@ -3661,6 +3698,26 @@ async function saveSale(e, idx) {
     const oldInv = old ? (old.invNo || invFallback("sales", old.uid)) : "-";
     const oldPaid = old ? n(old.paidTotal) : 0;
     const oldDate = old ? fmtDT(old.date) : "-";
+    const lastCloseDate = getLastDayCloseDate();
+    const saleDateISO = String(old?.date || "").slice(0, 10);
+    const inClosedPeriod = !!(lastCloseDate && saleDateISO && saleDateISO <= lastCloseDate);
+    if (inClosedPeriod) {
+      if (!(isAdmin() || isDeveloper())) {
+        return alert(`Bu satış bağlanmış dövrə aiddir (${lastCloseDate}). Redaktə icazəsi yoxdur.`);
+      }
+      const overrideNote = await appRequireNote(
+        "Bağlı dövr redaktəsi",
+        `Bu satış bağlanmış dövrə aiddir (${lastCloseDate}).\nAdmin/Developer düzəlişi üçün qeyd yazın (auditə düşəcək).`
+      );
+      if (!overrideNote) return;
+      logEvent("update", "sales_locked_override", {
+        uid: old?.uid || null,
+        invNo: oldInv,
+        saleDate: saleDateISO || "",
+        lastCloseDate,
+        note: overrideNote,
+      });
+    }
     const warnMsg =
       `Diqqət: mövcud satışı redaktə edirsiniz.\n\n` +
       `Qaimə: ${oldInv}\n` +
