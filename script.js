@@ -585,6 +585,21 @@ function setDebtsStatus(status, btn) {
   renderAll();
 }
 
+function setOverdueView(status, btn) {
+  const input = byId("overdueView");
+  if (input) input.value = status;
+  const wrap = byId("overdueViewBtns");
+  if (wrap) {
+    wrap.querySelectorAll(".debts-st-btn").forEach((b) => b.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    else {
+      const match = wrap.querySelector(`.debts-st-btn[data-st="${status}"]`);
+      if (match) match.classList.add("active");
+    }
+  }
+  renderAll();
+}
+
 function seedDevTestData() {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   if (!isTestCompany()) return alert("Bu funksiya yalnız test şirkətində aktivdir.");
@@ -1291,7 +1306,7 @@ function sectionLabelAz(id) {
     sales: "Satışlar",
     staff: "Əməkdaşlar",
     debts: "Debitor borclar",
-    overdue: "Vaxtı keçmiş kreditlər",
+    overdue: "Kreditlər",
     creditor: "Kreditor borclar",
     cash: "Kassa",
     accounts: "Hesablar",
@@ -7155,6 +7170,7 @@ function renderAll() {
   const debtsStatus = byId("debtsStatus")?.value || "all";
   const debtsAllRaw = db.sales
     .filter((s) => !s.returnedAt)
+    .filter((s) => String(s.saleType || "").toLowerCase() !== "kredit")
     .filter((s) => inDateRange(s.date, "debtsFrom", "debtsTo"))
     .map((s, saleIdx) => {
       const total = n(s.amount);
@@ -7163,14 +7179,7 @@ function renderAll() {
       return { s, saleIdx, total, rem, st };
     });
 
-  const debtsAll = debtsAllRaw.filter((x) => {
-    const isCredit = String(x.s.saleType || "").toLowerCase() === "kredit";
-    if (debtsStatus === "all") return true; // include everything (credit + non-credit)
-    if (debtsStatus === "credit") return isCredit && x.rem > 0.000001; // credit debts only
-    // paid/partial/unpaid buttons should only show non-credit sales
-    if (isCredit) return false;
-    return x.st === debtsStatus;
-  });
+  const debtsAll = debtsAllRaw.filter((x) => (debtsStatus === "all" ? true : x.st === debtsStatus));
 
   const groupMap = new Map();
   for (const x of debtsAll) {
@@ -7225,8 +7234,6 @@ function renderAll() {
         </tr>`
       : "");
   filterDebts();
-  const creditQ = byId("srcCreditOnly")?.value || "";
-  if (creditQ) filterCreditOnly();
 
   // overdue credits (monthly installments)
   const overdueBody = byId("tblOverdue");
@@ -8175,6 +8182,7 @@ Object.assign(window, {
   saveOverdueNote,
   onStockCatChange,
   setDebtsStatus,
+  setOverdueView,
   seedDevTestData,
   toggleCashKind,
   toggleIncomeSourceBox,
