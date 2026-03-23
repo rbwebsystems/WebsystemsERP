@@ -1509,7 +1509,7 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   min-height:520px;
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-end;
   overflow:visible;
 }
 .public-landing.erp-landing-v4 .wave{
@@ -1539,8 +1539,8 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 }
 .public-landing.erp-landing-v4 .dashboard-wrap{
   position:relative;
-  width:100%;
-  max-width:720px;
+  width:min(100%,720px);
+  min-height:460px;
   padding:26px;
   border-radius:34px;
   background:
@@ -1551,7 +1551,7 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
     0 24px 80px rgba(0,0,0,.45);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  transform:perspective(1400px) rotateY(-7deg) rotateX(4deg);
+  transform:none;
   margin-left:auto;
 }
 .public-landing.erp-landing-v4 .dashboard-wrap::before{
@@ -1571,6 +1571,7 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   border:1px solid rgba(255,255,255,.10);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   overflow:hidden;
+  min-height:408px;
 }
 .public-landing.erp-landing-v4 .dash-top{
   display:grid;
