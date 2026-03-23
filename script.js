@@ -1364,19 +1364,36 @@ function sectionLabelAz(id) {
 
 function showLoginOverlay(show) {
   const ov = byId("loginOverlay");
+  const landing = byId("publicLanding");
   if (!ov) return;
-  ov.style.display = show ? "flex" : "none";
+  ov.style.display = "none";
+  if (landing) landing.style.display = show ? "flex" : "none";
   document.body.classList.toggle("login-open", !!show);
-  if (show) {
-    const sel = byId("loginCompany");
-    if (sel) {
-      sel.innerHTML = meta.companies.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} (${escapeHtml(c.id)})</option>`).join("");
-      const fromUrl = window.__loginCompanyFromUrl;
-      if (fromUrl && meta.companies.some((c) => c.id === fromUrl)) sel.value = fromUrl;
-    }
-    byId("loginHint").innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş." : "Keçid ünvanında ?company=ŞİRKƏT_ID olmalıdır.";
-    setTimeout(() => byId("loginUser")?.focus(), 0);
+  if (show) prepareLoginForm();
+}
+
+function prepareLoginForm() {
+  const sel = byId("loginCompany");
+  if (sel) {
+    sel.innerHTML = meta.companies.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} (${escapeHtml(c.id)})</option>`).join("");
+    const fromUrl = window.__loginCompanyFromUrl;
+    if (fromUrl && meta.companies.some((c) => c.id === fromUrl)) sel.value = fromUrl;
   }
+  byId("loginHint").innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş." : "Keçid ünvanında ?company=ŞİRKƏT_ID olmalıdır.";
+}
+
+function openLoginModal() {
+  const ov = byId("loginOverlay");
+  if (!ov) return;
+  prepareLoginForm();
+  ov.style.display = "flex";
+  setTimeout(() => byId("loginUser")?.focus(), 0);
+}
+
+function closeLoginModal() {
+  const ov = byId("loginOverlay");
+  if (!ov) return;
+  ov.style.display = "none";
 }
 
 function doLoginWithCompany(companyId) {
@@ -8455,6 +8472,8 @@ Object.assign(window, {
   saveSettings,
   openSkins,
   setSkin,
+  openLoginModal,
+  closeLoginModal,
   toggleSidebar,
   openAuditDetails,
   openGlobalSearch,

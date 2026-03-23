@@ -139,6 +139,7 @@ body{
 body.login-open{overflow:hidden;}
 #appShell{width:100%;display:flex;}
 body.login-open #appShell{display:none;}
+body.login-open #publicLanding{display:flex;}
 body.offline-block{overflow:hidden;}
 body.offline-block #appShell{display:none;}
 
@@ -748,17 +749,16 @@ select{
 
 .login-overlay{
   position:fixed;
-  top:0;left:0;
-  width:100vw;height:100vh;
-  background:var(--sidebar-solid);
-  display:flex;
+  inset:0;
+  background:rgba(2,6,23,.52);
+  display:none;
   align-items:center;
   justify-content:center;
   padding:24px;
   z-index:9999;
   overflow:hidden;
 }
-body.theme-dark .login-overlay{background:var(--sidebar-solid);}
+body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 .login-overlay .login-bg-blob{
   position:absolute;
   width:1px;
@@ -781,6 +781,59 @@ body.theme-dark .login-overlay{background:var(--sidebar-solid);}
 }
 .login-logo{display:block;max-width:280px;max-height:100px;width:auto;height:auto;margin:0 auto 20px;background:transparent;}
 .login-card h2{font-size:1.25rem;margin-bottom:12px;}
+
+.public-landing{
+  display:none;
+  min-height:100vh;
+  background:linear-gradient(140deg,#0f172a 0%, #111827 45%, #1e3a8a 100%);
+  color:#fff;
+  padding:56px;
+  gap:28px;
+  align-items:stretch;
+}
+.public-hero{
+  flex:1.2;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:18px;
+  padding:34px;
+  backdrop-filter:blur(4px);
+  animation:fadeSlideUp .45s ease !important;
+}
+.public-brand{
+  display:inline-block;
+  font-size:.75rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;
+  padding:6px 10px;
+  margin-bottom:14px;
+}
+.public-hero h1{font-size:2rem;line-height:1.2;margin-bottom:12px;}
+.public-hero p{color:#cbd5e1;max-width:760px;}
+.public-actions{margin-top:18px;}
+.public-features{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.public-card{
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;
+  padding:18px;
+  animation:fadeSlideUp .5s ease !important;
+}
+.public-card h3{font-size:1rem;margin-bottom:8px;}
+.public-card p{font-size:.9rem;color:#dbeafe;}
+
+@keyframes fadeSlideUp{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
 
 .search-container{position:relative;display:flex;align-items:center;}
 .search-container input{
