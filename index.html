@@ -346,7 +346,8 @@
             <option value="overdue">Borc növü: Kreditlər</option>
           </select>
           <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
-            <option value="all" selected>Alt seçim: Hamısı</option>
+            <option value="" selected>Alt seçim: Seçin</option>
+            <option value="all">Alt seçim: Hamısı</option>
             <option value="paid">Alt seçim: Tam ödənilmiş</option>
             <option value="partial">Alt seçim: Qismən ödənilmiş</option>
             <option value="unpaid">Alt seçim: Ödənilməmiş</option>
@@ -362,6 +363,7 @@
           </div>
         </div>
       </div>
+      <div id="debtsContent">
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Müştəri</th><th>Cəmi borc</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
@@ -380,6 +382,7 @@
           </select>
         </div>
       </div>
+      </div>
     </div>
 
     <div id="overdue" class="section">
@@ -393,7 +396,8 @@
             <option value="overdue" selected>Borc növü: Kreditlər</option>
           </select>
           <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
-            <option value="all" selected>Alt seçim: Ümumi kreditlər</option>
+            <option value="" selected>Alt seçim: Seçin</option>
+            <option value="all">Alt seçim: Ümumi kreditlər</option>
             <option value="overdue">Alt seçim: Vaxtı keçmiş kreditlər</option>
           </select>
           <input type="number" id="overdueDaysFrom" class="select-small" placeholder="Min gün" min="0" onchange="renderAll()">
@@ -404,11 +408,13 @@
           </div>
         </div>
       </div>
+      <div id="overdueContent">
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Müştəri (Ad Soyad Ata)</th><th>Mobil</th><th>Qaimə №</th><th>Cədvəl üzrə</th><th>Ödənilmiş</th><th>Ödənilməli</th><th>Qalıq</th><th>Ödəmə tarixi</th><th>Gecikmə günü</th><th>Zamin</th><th>Info</th></tr></thead>
           <tbody id="tblOverdue"></tbody>
         </table>
+      </div>
       </div>
     </div>
 
@@ -423,7 +429,8 @@
             <option value="overdue">Borc növü: Kreditlər</option>
           </select>
           <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
-            <option value="open" selected>Ödənilməmiş / Qismən</option>
+            <option value="" selected>Alt seçim: Seçin</option>
+            <option value="open">Ödənilməmiş / Qismən</option>
             <option value="all">Hamısı</option>
             <option value="paid">Tam ödənilmiş</option>
             <option value="partial">Qismən</option>
@@ -440,6 +447,7 @@
           </div>
         </div>
       </div>
+      <div id="creditorContent">
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Təchizatçı</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
@@ -457,6 +465,7 @@
             <option value="150">150</option>
           </select>
         </div>
+      </div>
       </div>
     </div>
 

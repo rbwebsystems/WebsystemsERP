@@ -589,6 +589,7 @@ function setOverdueView(status) {
 function showDebtSub(sectionId) {
   if (!sectionId) {
     updateDebtSubSelectVisibility("");
+    updateDebtSectionVisibility();
     return;
   }
   const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
@@ -597,6 +598,8 @@ function showDebtSub(sectionId) {
     s.value = sectionId;
   });
   updateDebtSubSelectVisibility(sectionId);
+  updateDebtSectionVisibility();
+  renderAll();
 }
 
 function updateDebtSubSelectVisibility(sectionId) {
@@ -606,8 +609,26 @@ function updateDebtSubSelectVisibility(sectionId) {
   });
 }
 
+function updateDebtSectionVisibility() {
+  const activeSec =
+    byId("debts")?.classList.contains("active") ? "debts" :
+    byId("creditor")?.classList.contains("active") ? "creditor" :
+    byId("overdue")?.classList.contains("active") ? "overdue" :
+    "";
+  const activeType = document.querySelector(".debt-type-select")?.value || "";
+  const showDebts = activeSec === "debts" && activeType === "debts" && !!(byId("debtsStatus")?.value || "");
+  const showCred = activeSec === "creditor" && activeType === "creditor" && !!(byId("credStatus")?.value || "");
+  const showOver = activeSec === "overdue" && activeType === "overdue" && !!(byId("overdueView")?.value || "");
+  const d = byId("debtsContent"); if (d) d.style.display = showDebts ? "" : "none";
+  const c = byId("creditorContent"); if (c) c.style.display = showCred ? "" : "none";
+  const o = byId("overdueContent"); if (o) o.style.display = showOver ? "" : "none";
+}
+
 function onDebtTypeChange(sel) {
   const sectionId = String(sel?.value || "");
+  if (sectionId === "debts" && byId("debtsStatus")) byId("debtsStatus").value = "";
+  if (sectionId === "creditor" && byId("credStatus")) byId("credStatus").value = "";
+  if (sectionId === "overdue" && byId("overdueView")) byId("overdueView").value = "";
   showDebtSub(sectionId);
 }
 
@@ -1800,6 +1821,7 @@ function showSec(id, el) {
       s.value = "";
     });
     updateDebtSubSelectVisibility("");
+    updateDebtSectionVisibility();
   }
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
@@ -7198,11 +7220,11 @@ function renderAll() {
     .join("");
 
   // debts (debitor) grouped by customer + date filter + pagination
-  const debtsStatus = byId("debtsStatus")?.value || "all";
+  const debtsStatus = byId("debtsStatus")?.value || "";
   const debtsAllRaw = db.sales
     .filter((s) => !s.returnedAt)
     .filter((s) => String(s.saleType || "").toLowerCase() !== "kredit")
-    .filter((s) => inDateRange(s.date, "debtsFrom", "debtsTo"))
+    .filter((s) => debtsStatus ? inDateRange(s.date, "debtsFrom", "debtsTo") : false)
     .map((s, saleIdx) => {
       const total = n(s.amount);
       const rem = saleRemaining(s);
@@ -7210,7 +7232,7 @@ function renderAll() {
       return { s, saleIdx, total, rem, st };
     });
 
-  const debtsAll = debtsAllRaw.filter((x) => (debtsStatus === "all" ? true : x.st === debtsStatus));
+  const debtsAll = debtsAllRaw.filter((x) => (debtsStatus === "all" ? true : debtsStatus ? x.st === debtsStatus : false));
 
   const groupMap = new Map();
   for (const x of debtsAll) {
@@ -7269,7 +7291,7 @@ function renderAll() {
   // overdue credits (monthly installments)
   const overdueBody = byId("tblOverdue");
   if (overdueBody) {
-    const view = byId("overdueView")?.value || "overdue";
+    const view = byId("overdueView")?.value || "";
     const daysFrom = Math.max(0, Math.floor(n(byId("overdueDaysFrom")?.value || 0)));
     const daysToRaw = byId("overdueDaysTo")?.value;
     const daysTo = daysToRaw === "" ? null : Math.max(0, Math.floor(n(daysToRaw)));
@@ -7328,7 +7350,7 @@ function renderAll() {
         const includeByView =
           view === "overdue" ? overdueSum > 0.000001 :
           view === "today" ? false :
-          true; // all
+          view === "all"; // all
         if (!includeByView) return;
 
         const rep = view === "overdue" ? (repOverdue || repAll) : repAll;
@@ -7407,7 +7429,7 @@ function renderAll() {
   }
 
   // creditor (suppliers) + date filter + pagination
-  const credStatus = byId("credStatus")?.value || "open";
+  const credStatus = byId("credStatus")?.value || "";
   const groupsMap = new Map();
   for (const p of db.purch.filter((p) => !p.returnedAt).filter((p) => inDateRange(p.date, "credFrom", "credTo"))) {
     const supp = p.supp || "(Seçilməyib)";
@@ -7428,6 +7450,7 @@ function renderAll() {
   window.__credGroups = credGroups;
 
   const filteredGroupsAll = credGroups.filter((g) => {
+    if (!credStatus) return false;
     if (credStatus === "all") return true;
     if (credStatus === "open") return g.st !== "paid";
     return g.st === credStatus;
@@ -8086,6 +8109,7 @@ function renderAll() {
   if (purchYearEl) purchYearEl.textContent = money(purchYear);
   const stockCountEl = byId("dashStatStockCount");
   if (stockCountEl) stockCountEl.textContent = String(stockCount);
+  updateDebtSectionVisibility();
 
   // Re-apply active text searches so results do not reset after auto refresh/render.
   reapplyActiveSearchFilters();
