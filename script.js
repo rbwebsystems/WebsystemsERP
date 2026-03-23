@@ -1332,6 +1332,7 @@ function applyAccessUI() {
 }
 
 function toggleDevMenu() {
+  expandSidebarIfCollapsed();
   const menu = byId("devMenu");
   if (!menu) return;
   const open = menu.style.display !== "none";
@@ -1673,6 +1674,21 @@ function toggleSidebar() {
   try {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
   } catch (e) {}
+}
+
+function expandSidebarIfCollapsed() {
+  if (!document.body.classList.contains("sidebar-collapsed")) return;
+  document.body.classList.remove("sidebar-collapsed");
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "0");
+  } catch (e) {}
+}
+
+function setupNavTooltips() {
+  document.querySelectorAll(".nav-link").forEach((el) => {
+    const raw = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (raw) el.setAttribute("data-tip", raw);
+  });
 }
 
 function isOnline() {
@@ -8466,6 +8482,7 @@ Object.assign(window, {
 function initApp() {
   applyAccessUI();
   applySidebarState();
+  setupNavTooltips();
   initHeaderCompactSearch();
   if (!meta.session) {
     showLoginOverlay(true);

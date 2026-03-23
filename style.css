@@ -1352,5 +1352,25 @@ body.sidebar-collapsed .nav-link.dev-toggle .dev-caret,
 body.sidebar-collapsed #devMenu{
   display:none !important;
 }
+body.sidebar-collapsed .nav-link{
+  position:relative;
+}
+body.sidebar-collapsed .nav-link:hover::before{
+  content:attr(data-tip);
+  position:absolute;
+  left:calc(100% + 10px);
+  top:50%;
+  transform:translateY(-50%);
+  background:#111827;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.14);
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:.78rem;
+  font-weight:600;
+  white-space:nowrap;
+  z-index:2000;
+  pointer-events:none;
+}
 
 
