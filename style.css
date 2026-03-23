@@ -427,6 +427,17 @@ main{flex:1;padding:40px;}
   text-transform:uppercase;
   letter-spacing:.02em;
 }
+.search-container.search-plain{
+  width:220px;
+  min-width:220px;
+}
+.search-container.search-plain input{
+  width:100% !important;
+  padding:0 10px !important;
+}
+.search-container.search-plain .search-btn{
+  display:none !important;
+}
 
 /* Make filters compact and consistent */
 .header-actions > *{flex:0 0 auto;}

@@ -604,8 +604,7 @@ function showDebtSub(sectionId) {
 
 function updateDebtSubSelectVisibility(sectionId) {
   document.querySelectorAll(".debt-sub-select").forEach((el) => {
-    const forSec = el.getAttribute("data-debt-sub-for") || "";
-    el.style.display = sectionId && forSec === sectionId ? "" : "none";
+    el.style.display = "";
   });
 }
 
