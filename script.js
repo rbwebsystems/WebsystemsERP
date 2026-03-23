@@ -1366,9 +1366,8 @@ function showLoginOverlay(show) {
   const ov = byId("loginOverlay");
   const landing = byId("publicLanding");
   if (!ov) return;
-  ov.style.display = "none";
-  document.body.classList.remove("landing-login-open");
-  if (landing) landing.style.display = show ? "flex" : "none";
+  ov.style.display = show ? "flex" : "none";
+  if (landing) landing.style.display = "none";
   document.body.classList.toggle("login-open", !!show);
   if (show) prepareLoginForm();
 }
@@ -1387,7 +1386,6 @@ function openLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
   prepareLoginForm();
-  document.body.classList.add("landing-login-open");
   ov.style.display = "flex";
   setTimeout(() => byId("loginUser")?.focus(), 0);
 }
@@ -1395,20 +1393,7 @@ function openLoginModal() {
 function closeLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
-  document.body.classList.remove("landing-login-open");
   ov.style.display = "none";
-}
-
-function loginFromLanding(e) {
-  e.preventDefault();
-  const username = (byId("landingLoginUser")?.value || "").trim();
-  const pass = byId("landingLoginPass")?.value || "";
-  const loginUserInput = byId("loginUser");
-  const loginPassInput = byId("loginPass");
-  if (!loginUserInput || !loginPassInput) return;
-  loginUserInput.value = username;
-  loginPassInput.value = pass;
-  login(e);
 }
 
 function doLoginWithCompany(companyId) {
@@ -8496,7 +8481,6 @@ Object.assign(window, {
   setSkin,
   openLoginModal,
   closeLoginModal,
-  loginFromLanding,
   toggleSidebar,
   openAuditDetails,
   openGlobalSearch,
