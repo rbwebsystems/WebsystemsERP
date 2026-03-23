@@ -1367,6 +1367,7 @@ function showLoginOverlay(show) {
   const landing = byId("publicLanding");
   if (!ov) return;
   ov.style.display = "none";
+  document.body.classList.remove("landing-login-open");
   if (landing) landing.style.display = show ? "flex" : "none";
   document.body.classList.toggle("login-open", !!show);
   if (show) prepareLoginForm();
@@ -1386,6 +1387,7 @@ function openLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
   prepareLoginForm();
+  document.body.classList.add("landing-login-open");
   ov.style.display = "flex";
   setTimeout(() => byId("loginUser")?.focus(), 0);
 }
@@ -1393,6 +1395,7 @@ function openLoginModal() {
 function closeLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
+  document.body.classList.remove("landing-login-open");
   ov.style.display = "none";
 }
 
