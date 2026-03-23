@@ -7266,7 +7266,7 @@ function renderAll() {
     };
     const todayT = toDayStart(todayISO);
 
-    const rows = [];
+    const saleRowsMap = new Map();
     const overdueBySale = new Map(); // invoice üzrə gecikmiş aylıqların cəmi (view-dan asılı deyil)
     const invoiceRemBySale = new Map();
     (db.sales || [])
@@ -7297,7 +7297,7 @@ function renderAll() {
           if (daysForFilter < daysFrom) continue;
           if (daysTo != null && daysForFilter > daysTo) continue;
           if (!invoiceRemBySale.has(saleKey)) invoiceRemBySale.set(saleKey, Math.max(0, saleRemaining(s)));
-          rows.push({
+          const candidate = {
             saleUid: s.uid,
             customer: custFull || s.customerName || "-",
             phone: custPhone,
@@ -7310,10 +7310,26 @@ function renderAll() {
             invoiceRemaining: Math.max(0, saleRemaining(s)),
             daysLate: Math.max(0, daysLate),
             zam,
-          });
+          };
+          const prev = saleRowsMap.get(saleKey);
+          if (!prev) {
+            saleRowsMap.set(saleKey, candidate);
+          } else {
+            const prevDays = Math.max(0, n(prev.daysLate));
+            const curDays = Math.max(0, n(candidate.daysLate));
+            const prevDue = String(prev.dueDate || "");
+            const curDue = String(candidate.dueDate || "");
+            // Overdue view: show the most delayed installment for that invoice.
+            // All view: show the earliest unpaid installment for that invoice.
+            const replace = view === "overdue"
+              ? (curDays > prevDays || (curDays === prevDays && curDue < prevDue))
+              : (curDue < prevDue);
+            if (replace) saleRowsMap.set(saleKey, candidate);
+          }
         }
       });
 
+    const rows = Array.from(saleRowsMap.values());
     for (const x of rows) {
       const saleKey = String(x.saleUid);
       const overdueTotalForInvoice = Math.max(0, n(overdueBySale.get(saleKey) || 0));
