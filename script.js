@@ -587,11 +587,28 @@ function setOverdueView(status) {
 }
 
 function showDebtSub(sectionId) {
+  if (!sectionId) {
+    updateDebtSubSelectVisibility("");
+    return;
+  }
   const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
   showSec(sectionId, debtNav || null);
   document.querySelectorAll(".debt-type-select").forEach((s) => {
     s.value = sectionId;
   });
+  updateDebtSubSelectVisibility(sectionId);
+}
+
+function updateDebtSubSelectVisibility(sectionId) {
+  document.querySelectorAll(".debt-sub-select").forEach((el) => {
+    const forSec = el.getAttribute("data-debt-sub-for") || "";
+    el.style.display = sectionId && forSec === sectionId ? "" : "none";
+  });
+}
+
+function onDebtTypeChange(sel) {
+  const sectionId = String(sel?.value || "");
+  showDebtSub(sectionId);
 }
 
 function seedDevTestData() {
@@ -1778,6 +1795,12 @@ function showSec(id, el) {
     sec.classList.add("active");
   }
   if (el) el.classList.add("active");
+  if (id === "debts") {
+    document.querySelectorAll(".debt-type-select").forEach((s) => {
+      s.value = "";
+    });
+    updateDebtSubSelectVisibility("");
+  }
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
 }
@@ -8220,6 +8243,7 @@ Object.assign(window, {
   setDebtsStatus,
   setOverdueView,
   showDebtSub,
+  onDebtTypeChange,
   seedDevTestData,
   toggleCashKind,
   toggleIncomeSourceBox,

@@ -339,12 +339,13 @@
       <div class="content-header">
         <h1>Borclar - Debitor</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="showDebtSub(this.value)" title="Borc növü">
-            <option value="debts" selected>Borc növü: Debitor</option>
+          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <option value="" selected>Borc növü: Seçin</option>
+            <option value="debts">Borc növü: Debitor</option>
             <option value="creditor">Borc növü: Kreditor</option>
             <option value="overdue">Borc növü: Kreditlər</option>
           </select>
-          <select id="debtsStatus" class="select-small" onchange="setDebtsStatus(this.value)">
+          <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
             <option value="all" selected>Alt seçim: Hamısı</option>
             <option value="paid">Alt seçim: Tam ödənilmiş</option>
             <option value="partial">Alt seçim: Qismən ödənilmiş</option>
@@ -385,12 +386,13 @@
       <div class="content-header">
         <h1>Borclar - Kreditlər</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="showDebtSub(this.value)" title="Borc növü">
+          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <option value="">Borc növü: Seçin</option>
             <option value="debts">Borc növü: Debitor</option>
             <option value="creditor">Borc növü: Kreditor</option>
             <option value="overdue" selected>Borc növü: Kreditlər</option>
           </select>
-          <select id="overdueView" class="select-small" onchange="setOverdueView(this.value)">
+          <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
             <option value="all" selected>Alt seçim: Ümumi kreditlər</option>
             <option value="overdue">Alt seçim: Vaxtı keçmiş kreditlər</option>
           </select>
@@ -414,12 +416,13 @@
       <div class="content-header">
         <h1>Borclar - Kreditor</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="showDebtSub(this.value)" title="Borc növü">
+          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <option value="">Borc növü: Seçin</option>
             <option value="debts">Borc növü: Debitor</option>
             <option value="creditor" selected>Borc növü: Kreditor</option>
             <option value="overdue">Borc növü: Kreditlər</option>
           </select>
-          <select id="credStatus" class="select-small" onchange="renderAll()">
+          <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
             <option value="open" selected>Ödənilməmiş / Qismən</option>
             <option value="all">Hamısı</option>
             <option value="paid">Tam ödənilmiş</option>
