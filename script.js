@@ -589,6 +589,7 @@ function setOverdueView(status) {
 function showDebtSub(sectionId) {
   if (!sectionId) {
     updateDebtSubSelectVisibility("");
+    updateDebtSubEnabled();
     updateDebtSectionVisibility();
     return;
   }
@@ -598,6 +599,7 @@ function showDebtSub(sectionId) {
     s.value = sectionId;
   });
   updateDebtSubSelectVisibility(sectionId);
+  updateDebtSubEnabled();
   updateDebtSectionVisibility();
   renderAll();
 }
@@ -605,6 +607,16 @@ function showDebtSub(sectionId) {
 function updateDebtSubSelectVisibility(sectionId) {
   document.querySelectorAll(".debt-sub-select").forEach((el) => {
     el.style.display = "";
+  });
+}
+
+function updateDebtSubEnabled() {
+  const activeType = document.querySelector(".debt-type-select")?.value || "";
+  document.querySelectorAll(".debt-sub-select").forEach((el) => {
+    const forSec = el.getAttribute("data-debt-sub-for") || "";
+    const enabled = !!activeType && activeType === forSec;
+    el.disabled = !enabled;
+    if (!enabled) el.value = "";
   });
 }
 
@@ -625,9 +637,9 @@ function updateDebtSectionVisibility() {
 
 function onDebtTypeChange(sel) {
   const sectionId = String(sel?.value || "");
-  if (sectionId === "debts" && byId("debtsStatus")) byId("debtsStatus").value = "";
-  if (sectionId === "creditor" && byId("credStatus")) byId("credStatus").value = "";
-  if (sectionId === "overdue" && byId("overdueView")) byId("overdueView").value = "";
+  if (byId("debtsStatus")) byId("debtsStatus").value = "";
+  if (byId("credStatus")) byId("credStatus").value = "";
+  if (byId("overdueView")) byId("overdueView").value = "";
   showDebtSub(sectionId);
 }
 
@@ -1820,6 +1832,7 @@ function showSec(id, el) {
       s.value = "";
     });
     updateDebtSubSelectVisibility("");
+    updateDebtSubEnabled();
     updateDebtSectionVisibility();
   }
   refreshHeaderBar();
