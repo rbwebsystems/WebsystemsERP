@@ -1366,8 +1366,8 @@ function showLoginOverlay(show) {
   const ov = byId("loginOverlay");
   const landing = byId("publicLanding");
   if (!ov) return;
-  ov.style.display = show ? "flex" : "none";
-  if (landing) landing.style.display = "none";
+  ov.style.display = "none";
+  if (landing) landing.style.display = show ? "flex" : "none";
   document.body.classList.toggle("login-open", !!show);
   if (show) prepareLoginForm();
 }
