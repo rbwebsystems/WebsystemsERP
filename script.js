@@ -1686,7 +1686,9 @@ function expandSidebarIfCollapsed() {
 function setupNavTooltips() {
   document.querySelectorAll(".nav-link").forEach((el) => {
     const raw = (el.textContent || "").replace(/\s+/g, " ").trim();
-    if (raw) el.setAttribute("data-tip", raw);
+    if (!raw) return;
+    el.setAttribute("data-tip", raw);
+    el.setAttribute("title", raw); // native fallback tooltip
   });
 }
 
