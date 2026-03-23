@@ -721,57 +721,89 @@
   </div>
   </div>
 
-  <div id="publicLanding" class="public-landing erp-landing-v3">
-    <div class="erp3-shell">
-      <aside class="erp3-side">
-        <div class="erp3-logo">
-          <i class="fas fa-cubes"></i>
+  <div id="publicLanding" class="public-landing erp-landing-v2">
+    <header class="erp2-header">
+      <div class="erp2-wrap erp2-nav">
+        <div class="erp2-brand">
+          <div class="erp2-brand-mark"><i class="fas fa-layer-group"></i></div>
           <div>
             <strong>RBSoft ERP</strong>
-            <small>Core Workspace</small>
+            <small>Business Operating Platform</small>
           </div>
         </div>
-        <nav class="erp3-menu">
-          <a href="javascript:void(0)" class="active"><i class="fas fa-gauge"></i> Dashboard</a>
-          <a href="javascript:void(0)"><i class="fas fa-cart-shopping"></i> Satış</a>
-          <a href="javascript:void(0)"><i class="fas fa-boxes-stacked"></i> Anbar</a>
-          <a href="javascript:void(0)"><i class="fas fa-users"></i> Müştərilər</a>
-          <a href="javascript:void(0)"><i class="fas fa-wallet"></i> Kassa</a>
-          <a href="javascript:void(0)"><i class="fas fa-chart-pie"></i> Hesabatlar</a>
-        </nav>
-      </aside>
+        <div class="erp2-links">
+          <a href="#erp2-modules">Modullar</a>
+          <a href="#erp2-benefits">Üstünlüklər</a>
+          <button type="button" class="erp2-btn erp2-btn-primary" onclick="openLoginModal()">Daxil ol</button>
+        </div>
+      </div>
+    </header>
 
-      <section class="erp3-main">
-        <header class="erp3-top">
-          <h1>Sistem Giriş Portalı</h1>
-          <button type="button" class="erp3-login-btn" onclick="openLoginModal()"><i class="fas fa-right-to-bracket"></i> Daxil ol</button>
-        </header>
+    <main>
+      <section class="erp2-hero">
+        <div class="erp2-wrap erp2-hero-grid">
+          <div>
+            <span class="erp2-badge">ERP SOFT • Yeni təqdimat dizaynı</span>
+            <h1>Bütün əməliyyatlarınız üçün vahid idarəetmə mərkəzi</h1>
+            <p>
+              Satış, anbar, kassa, borclar və hesabatlar arasında əl ilə keçid etmədən,
+              komandanız üçün sürətli və nəzarətli iş axını qurun.
+            </p>
+            <div class="erp2-hero-actions">
+              <button type="button" class="erp2-btn erp2-btn-primary" onclick="openLoginModal()">Sistemə daxil ol</button>
+              <a href="#erp2-modules" class="erp2-btn erp2-btn-ghost">Modullara bax</a>
+            </div>
+          </div>
 
-        <div class="erp3-content">
-          <article class="erp3-welcome">
-            <h2>Xoş gəlmisiniz</h2>
-            <p>Bu ekran ERP sisteminizin daxili giriş qapısıdır. İstifadəçi adı və şifrə ilə daxil olub birbaşa iş axınına keçin.</p>
-            <div class="erp3-tags">
-              <span>Satış</span><span>Anbar</span><span>Borclar</span><span>Kassa</span><span>Hesabatlar</span>
+          <div class="erp2-preview">
+            <div class="erp2-preview-top">
+              <span></span><span></span><span></span>
+              <strong>Live ERP Overview</strong>
             </div>
-          </article>
-
-          <article class="erp3-panel">
-            <div class="erp3-kpis">
-              <div><small>Günlük dövriyyə</small><b>₼ 14,280</b></div>
-              <div><small>Açıq sifariş</small><b>89</b></div>
-              <div><small>Gecikən borc</small><b>12</b></div>
+            <div class="erp2-kpi-grid">
+              <div><small>Günlük satış</small><b>₼ 28,940</b></div>
+              <div><small>Aktiv sifariş</small><b>127</b></div>
+              <div><small>Gecikən ödəniş</small><b>11</b></div>
             </div>
-            <div class="erp3-lines">
-              <i style="--w:82%"></i>
-              <i style="--w:60%"></i>
-              <i style="--w:92%"></i>
-              <i style="--w:74%"></i>
+            <div class="erp2-bars">
+              <i style="--h:34%"></i><i style="--h:48%"></i><i style="--h:62%"></i>
+              <i style="--h:40%"></i><i style="--h:73%"></i><i style="--h:58%"></i>
+              <i style="--h:81%"></i><i style="--h:67%"></i>
             </div>
-          </article>
+          </div>
         </div>
       </section>
-    </div>
+
+      <section id="erp2-benefits" class="erp2-wrap erp2-benefits">
+        <article>
+          <i class="fas fa-bolt"></i>
+          <h3>Sürətli əməliyyat</h3>
+          <p>Satışdan ödənişə qədər bütün proseslər bir axında.</p>
+        </article>
+        <article>
+          <i class="fas fa-shield-halved"></i>
+          <h3>Nəzarətli sistem</h3>
+          <p>Rollar, icazələr və audit izi ilə təhlükəsiz idarəetmə.</p>
+        </article>
+        <article>
+          <i class="fas fa-chart-line"></i>
+          <h3>Canlı analitika</h3>
+          <p>Modullar üzrə göstəricilər real vaxtda görünür.</p>
+        </article>
+      </section>
+
+      <section id="erp2-modules" class="erp2-wrap erp2-modules">
+        <h2>Əsas modullar</h2>
+        <div class="erp2-module-grid">
+          <article><h4>Satış</h4><p>Qaimə, ödəniş, geri qaytarma və nəzarət.</p></article>
+          <article><h4>Anbar</h4><p>Stok axını, giriş-çıxış və məhsul izləmə.</p></article>
+          <article><h4>Borclar</h4><p>Debitor, kreditor və kredit izləmə paneli.</p></article>
+          <article><h4>Hesabatlar</h4><p>Mənfəət, balans və performans göstəriciləri.</p></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="erp2-footer">© 2026 RBSoft ERP — Bütün hüquqlar qorunur.</footer>
   </div>
 
   <div class="modal" id="mdlMain">
