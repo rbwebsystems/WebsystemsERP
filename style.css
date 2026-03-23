@@ -410,6 +410,9 @@ main{flex:1;padding:40px;}
   flex-wrap:wrap;
   width:100%;
 }
+.debt-header-actions{
+  justify-content:flex-start;
+}
 
 /* Make filters compact and consistent */
 .header-actions > *{flex:0 0 auto;}

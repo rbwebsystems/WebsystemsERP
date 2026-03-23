@@ -573,37 +573,23 @@ function onStockCatChange() {
   renderAll();
 }
 
-function setDebtsStatus(status, btn) {
+function setDebtsStatus(status) {
   const st = String(status || "all");
   const input = byId("debtsStatus");
   if (input) input.value = st;
-  const wrap = byId("debtsStatusBtns");
-  if (wrap) {
-    wrap.querySelectorAll(".debts-st-btn").forEach((b) => b.classList.remove("active"));
-  }
-  if (btn) btn.classList.add("active");
   renderAll();
 }
 
-function setOverdueView(status, btn) {
+function setOverdueView(status) {
   const input = byId("overdueView");
   if (input) input.value = status;
-  const wrap = byId("overdueViewBtns");
-  if (wrap) {
-    wrap.querySelectorAll(".debts-st-btn").forEach((b) => b.classList.remove("active"));
-    if (btn) btn.classList.add("active");
-    else {
-      const match = wrap.querySelector(`.debts-st-btn[data-st="${status}"]`);
-      if (match) match.classList.add("active");
-    }
-  }
   renderAll();
 }
 
 function showDebtSub(sectionId) {
   const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
   showSec(sectionId, debtNav || null);
-  document.querySelectorAll(".section .content-header .header-actions select[title='Borc növü']").forEach((s) => {
+  document.querySelectorAll(".debt-type-select").forEach((s) => {
     s.value = sectionId;
   });
 }
