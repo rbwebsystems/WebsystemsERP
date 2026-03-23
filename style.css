@@ -1923,6 +1923,54 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   .public-landing.erp-landing-v4 .foot{gap:16px; flex-wrap:wrap;}
 }
 
+/* v4 palette override: white + green */
+.public-landing.erp-landing-v4{
+  background:
+    radial-gradient(900px 500px at 18% 16%, rgba(16,185,129,.20), transparent 60%),
+    radial-gradient(700px 420px at 78% 24%, rgba(34,197,94,.14), transparent 60%),
+    radial-gradient(700px 380px at 50% 65%, rgba(5,150,105,.12), transparent 60%),
+    linear-gradient(180deg, #03150f 0%, #07251b 52%, #03150f 100%);
+}
+.public-landing.erp-landing-v4::before{
+  background:
+    radial-gradient(240px 240px at 12% 68%, rgba(16,185,129,.18), transparent 70%),
+    radial-gradient(180px 180px at 80% 40%, rgba(74,222,128,.12), transparent 70%),
+    radial-gradient(200px 200px at 70% 84%, rgba(5,150,105,.14), transparent 70%);
+}
+.public-landing.erp-landing-v4 .brand-icon,
+.public-landing.erp-landing-v4 .login-btn,
+.public-landing.erp-landing-v4 .btn-primary{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)),
+    linear-gradient(135deg, #34d399 0%, #16a34a 100%);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.14) inset,
+    0 0 24px rgba(52,211,153,.24),
+    0 10px 28px rgba(0,0,0,.35);
+}
+.public-landing.erp-landing-v4 .hero h1 .accent{
+  background:linear-gradient(135deg, #ffffff 10%, #bbf7d0 45%, #22c55e 95%);
+  -webkit-background-clip:text;
+  background-clip:text;
+}
+.public-landing.erp-landing-v4 .ico,
+.public-landing.erp-landing-v4 .small-ico,
+.public-landing.erp-landing-v4 .module .mi{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04)),
+    linear-gradient(135deg, rgba(52,211,153,.24), rgba(34,197,94,.34));
+  color:#d1fae5;
+}
+.public-landing.erp-landing-v4 .side-item.active{
+  background:linear-gradient(135deg, rgba(22,163,74,.40), rgba(16,185,129,.24));
+}
+.public-landing.erp-landing-v4 .bar{
+  background:linear-gradient(180deg, #bbf7d0 0%, #4ade80 36%, #16a34a 100%);
+  box-shadow:
+    0 0 18px rgba(74,222,128,.22),
+    inset 0 0 10px rgba(255,255,255,.15);
+}
+
 .search-container{position:relative;display:flex;align-items:center;}
 .search-container input{
   border:1px solid var(--border-color);
