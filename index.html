@@ -721,89 +721,177 @@
   </div>
   </div>
 
-  <div id="publicLanding" class="public-landing erp-landing-v2">
-    <header class="erp2-header">
-      <div class="erp2-wrap erp2-nav">
-        <div class="erp2-brand">
-          <div class="erp2-brand-mark"><i class="fas fa-layer-group"></i></div>
-          <div>
-            <strong>RBSoft ERP</strong>
-            <small>Business Operating Platform</small>
+  <div id="publicLanding" class="public-landing erp-landing-v4">
+    <header>
+      <div class="container nav">
+        <a class="brand" href="javascript:void(0)">
+          <div class="brand-icon">RB</div>
+          <div class="brand-text">
+            <div class="top">RBSoft</div>
+            <div class="sub">SYSTEMS</div>
           </div>
-        </div>
-        <div class="erp2-links">
-          <a href="#erp2-modules">Modullar</a>
-          <a href="#erp2-benefits">Üstünlüklər</a>
-          <button type="button" class="erp2-btn erp2-btn-primary" onclick="openLoginModal()">Daxil ol</button>
+        </a>
+
+        <div class="nav-right">
+          <nav class="nav-links">
+            <a href="#modullar">Modullar</a>
+            <a href="#haqqinda">Haqqında</a>
+            <a href="#elaqe">Əlaqə</a>
+          </nav>
+          <button type="button" class="login-btn" onclick="openLoginModal()">Daxil ol</button>
         </div>
       </div>
     </header>
 
-    <main>
-      <section class="erp2-hero">
-        <div class="erp2-wrap erp2-hero-grid">
-          <div>
-            <span class="erp2-badge">ERP SOFT • Yeni təqdimat dizaynı</span>
-            <h1>Bütün əməliyyatlarınız üçün vahid idarəetmə mərkəzi</h1>
-            <p>
-              Satış, anbar, kassa, borclar və hesabatlar arasında əl ilə keçid etmədən,
-              komandanız üçün sürətli və nəzarətli iş axını qurun.
-            </p>
-            <div class="erp2-hero-actions">
-              <button type="button" class="erp2-btn erp2-btn-primary" onclick="openLoginModal()">Sistemə daxil ol</button>
-              <a href="#erp2-modules" class="erp2-btn erp2-btn-ghost">Modullara bax</a>
-            </div>
+    <main class="container">
+      <section class="hero">
+        <div class="hero-left">
+          <div class="badge">
+            <span class="dot"></span>
+            Müasir idarəetmə və ERP həlli
           </div>
 
-          <div class="erp2-preview">
-            <div class="erp2-preview-top">
-              <span></span><span></span><span></span>
-              <strong>Live ERP Overview</strong>
-            </div>
-            <div class="erp2-kpi-grid">
-              <div><small>Günlük satış</small><b>₼ 28,940</b></div>
-              <div><small>Aktiv sifariş</small><b>127</b></div>
-              <div><small>Gecikən ödəniş</small><b>11</b></div>
-            </div>
-            <div class="erp2-bars">
-              <i style="--h:34%"></i><i style="--h:48%"></i><i style="--h:62%"></i>
-              <i style="--h:40%"></i><i style="--h:73%"></i><i style="--h:58%"></i>
-              <i style="--h:81%"></i><i style="--h:67%"></i>
+          <h1>
+            Biznesinizi<br>
+            <span class="accent">bir sistemdə</span><br>
+            idarə edin
+          </h1>
+
+          <p>
+            Satış, anbar və maliyyəni bir platformada birləşdirin.
+            RBSoft gündəlik idarəetməni daha sürətli, daha rahat və daha peşəkar edir.
+          </p>
+
+          <div class="cta-row">
+            <button type="button" class="btn btn-primary" onclick="openLoginModal()">Daxil ol</button>
+            <a class="btn btn-outline" href="#modullar">Ətraflı bax</a>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="wave"></div>
+
+          <div class="dashboard-wrap">
+            <div class="dashboard">
+              <div class="dash-top">
+                <aside class="side">
+                  <div class="side-item active"><span class="ico"></span>Başla</div>
+                  <div class="side-item"><span class="ico"></span>Satış</div>
+                  <div class="side-item"><span class="ico"></span>Anbar</div>
+                  <div class="side-item"><span class="ico"></span>Hesabatlar</div>
+                </aside>
+
+                <div class="main">
+                  <div class="stats">
+                    <div class="stat">
+                      <div class="k">Dövriyyə</div>
+                      <div class="v">₼12,480</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">Sifariş</div>
+                      <div class="v">94</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">Müştəri</div>
+                      <div class="v">1,276</div>
+                    </div>
+                  </div>
+
+                  <div class="chart-card">
+                    <div class="chart-title">Dashboard</div>
+                    <div class="chart-grid">
+                      <div class="bar"></div>
+                      <div class="bar"></div>
+                      <div class="bar"></div>
+                      <div class="bar"></div>
+                      <div class="bar"></div>
+                      <div class="bar"></div>
+                    </div>
+                    <div class="chart-labels">
+                      <span>Yan</span>
+                      <span>Fev</span>
+                      <span>Mar</span>
+                      <span>Apr</span>
+                      <span>May</span>
+                      <span>İyn</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="erp2-benefits" class="erp2-wrap erp2-benefits">
-        <article>
-          <i class="fas fa-bolt"></i>
-          <h3>Sürətli əməliyyat</h3>
-          <p>Satışdan ödənişə qədər bütün proseslər bir axında.</p>
-        </article>
-        <article>
-          <i class="fas fa-shield-halved"></i>
-          <h3>Nəzarətli sistem</h3>
-          <p>Rollar, icazələr və audit izi ilə təhlükəsiz idarəetmə.</p>
-        </article>
-        <article>
-          <i class="fas fa-chart-line"></i>
-          <h3>Canlı analitika</h3>
-          <p>Modullar üzrə göstəricilər real vaxtda görünür.</p>
-        </article>
-      </section>
+      <section class="cards-row">
+        <div class="small-card">
+          <div class="small-top">
+            <div class="small-ico">▤</div>
+            <div class="small-title">Satış</div>
+          </div>
+          <div class="small-desc">Pərakəndə, qaimə və gündəlik satış əməliyyatları.</div>
+        </div>
 
-      <section id="erp2-modules" class="erp2-wrap erp2-modules">
-        <h2>Əsas modullar</h2>
-        <div class="erp2-module-grid">
-          <article><h4>Satış</h4><p>Qaimə, ödəniş, geri qaytarma və nəzarət.</p></article>
-          <article><h4>Anbar</h4><p>Stok axını, giriş-çıxış və məhsul izləmə.</p></article>
-          <article><h4>Borclar</h4><p>Debitor, kreditor və kredit izləmə paneli.</p></article>
-          <article><h4>Hesabatlar</h4><p>Mənfəət, balans və performans göstəriciləri.</p></article>
+        <div class="small-card">
+          <div class="small-top">
+            <div class="small-ico">◫</div>
+            <div class="small-title">Anbar</div>
+          </div>
+          <div class="small-desc">Stok və qalıq, giriş-çıxış və məhsul nəzarəti.</div>
+        </div>
+
+        <div class="small-card">
+          <div class="small-top">
+            <div class="small-ico">▮</div>
+            <div class="small-title">Hesabat</div>
+          </div>
+          <div class="small-desc">Canlı statistikalar və idarəetmə üçün vacib göstəricilər.</div>
         </div>
       </section>
+
+      <section class="section" id="modullar">
+        <div class="section-title">Əsas modullar</div>
+        <div class="section-sub">
+          RBSoft Systems gündəlik iş axınını asanlaşdırmaq üçün hazırlanmış əsas idarəetmə
+          modullarını bir mərkəzdə təqdim edir.
+        </div>
+
+        <div class="module-grid">
+          <div class="module">
+            <div class="mi">▤</div>
+            <h3>Satış</h3>
+            <p>Kassa, qaimə, satış tarixçəsi və nəzarət paneli.</p>
+          </div>
+
+          <div class="module">
+            <div class="mi">◫</div>
+            <h3>Anbar</h3>
+            <p>Məhsul qalığı, giriş-çıxış və stok idarəetməsi.</p>
+          </div>
+
+          <div class="module" id="haqqinda">
+            <div class="mi">◉</div>
+            <h3>Müştərilər</h3>
+            <p>Borc, ödəniş, əlaqə məlumatları və tarixçə.</p>
+          </div>
+
+          <div class="module">
+            <div class="mi">▮</div>
+            <h3>Hesabatlar</h3>
+            <p>Canlı statistikalar, mənfəət və analitik göstəricilər.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer id="elaqe">
+        <div class="foot">
+          <span>Modullar</span>
+          <span>Haqqında</span>
+          <span>Əlaqə</span>
+        </div>
+        <div class="copy">© 2026 RBSoft Systems — Bütün hüquqlar qorunur</div>
+      </footer>
     </main>
-
-    <footer class="erp2-footer">© 2026 RBSoft ERP — Bütün hüquqlar qorunur.</footer>
   </div>
 
   <div class="modal" id="mdlMain">
