@@ -1444,7 +1444,14 @@ function login(e) {
   e.preventDefault();
   const username = val("loginUser").trim();
   const pass = val("loginPass");
-  const u = meta.users.find((x) => x.username === username);
+  const unameNorm = String(username || "").trim().toLowerCase();
+  let u = meta.users.find((x) => x.username === username);
+  if (!u) {
+    u = meta.users.find((x) => String(x.username || "").trim().toLowerCase() === unameNorm);
+  }
+  if (!u && unameNorm === "developer") {
+    u = meta.users.find((x) => x && x.active && x.role === "developer");
+  }
   if (!u || !u.active) return alert("İstifadəçi tapılmadı (və ya deaktivdir).");
   if (u.pass !== pass) return alert("Şifrə yanlışdır.");
   window.__pendingLogin = { u, pass };
