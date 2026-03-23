@@ -1401,13 +1401,13 @@ function closeLoginModal() {
 
 function loginFromLanding(e) {
   e.preventDefault();
-  const u = byId("landingLoginUser");
-  const p = byId("landingLoginPass");
-  const loginU = byId("loginUser");
-  const loginP = byId("loginPass");
-  if (!u || !p || !loginU || !loginP) return;
-  loginU.value = (u.value || "").trim();
-  loginP.value = p.value || "";
+  const username = (byId("landingLoginUser")?.value || "").trim();
+  const pass = byId("landingLoginPass")?.value || "";
+  const loginUserInput = byId("loginUser");
+  const loginPassInput = byId("loginPass");
+  if (!loginUserInput || !loginPassInput) return;
+  loginUserInput.value = username;
+  loginPassInput.value = pass;
   login(e);
 }
 
