@@ -136,7 +136,7 @@ body{
   color:var(--text-main);
   display:flex;
 }
-body.login-open{overflow:hidden;}
+body.login-open{overflow:auto;}
 #appShell{width:100%;display:flex;}
 body.login-open #appShell{display:none;}
 body.login-open #publicLanding{display:flex;}
