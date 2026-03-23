@@ -22,9 +22,7 @@
       <div class="nav-link" onclick="showSec('sales', this)"><i class="fas fa-receipt"></i> Satışlar</div>
       <div class="nav-sep"></div>
       <div class="nav-link" onclick="showSec('staff', this)"><i class="fas fa-user-tie"></i> Əməkdaşlar</div>
-      <div class="nav-link" onclick="showSec('debts', this)"><i class="fas fa-hand-holding-dollar"></i> Debitor borclar</div>
-      <div class="nav-link" onclick="showSec('overdue', this)"><i class="fas fa-triangle-exclamation"></i> Kreditlər</div>
-      <div class="nav-link" onclick="showSec('creditor', this)"><i class="fas fa-file-invoice-dollar"></i> Kreditor borclar</div>
+      <div class="nav-link" onclick="showSec('debts', this)"><i class="fas fa-hand-holding-dollar"></i> Borclar</div>
       <div class="nav-link admin-only" onclick="showSec('users', this)"><i class="fas fa-user-shield"></i> İstifadəçilər</div>
       <div class="nav-link admin-only" onclick="showSec('audit', this)"><i class="fas fa-clipboard-list"></i> Audit</div>
       <div class="nav-link admin-only" onclick="showSec('trash', this)"><i class="fas fa-trash-can"></i> Səbət</div>
@@ -339,8 +337,13 @@
 
     <div id="debts" class="section">
       <div class="content-header">
-        <h1>Debitor borclar</h1>
+        <h1>Borclar - Debitor</h1>
         <div class="header-actions">
+          <div class="btn-group-row">
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
+          </div>
           <input type="hidden" id="debtsStatus" value="all">
           <div class="btn-group-row" id="debtsStatusBtns">
             <button type="button" class="btn-cancel debts-st-btn active" data-st="all" onclick="setDebtsStatus('all', this)">Hamısı</button>
@@ -381,8 +384,13 @@
 
     <div id="overdue" class="section">
       <div class="content-header">
-        <h1>Kreditlər</h1>
+        <h1>Borclar - Kreditlər</h1>
         <div class="header-actions">
+          <div class="btn-group-row">
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
+          </div>
           <input type="hidden" id="overdueView" value="all">
           <div class="btn-group-row" id="overdueViewBtns">
             <button type="button" class="btn-cancel debts-st-btn active" data-st="all" onclick="setOverdueView('all', this)">Ümumi kreditlər</button>
@@ -406,8 +414,13 @@
 
     <div id="creditor" class="section">
       <div class="content-header">
-        <h1>Kreditor borclar</h1>
+        <h1>Borclar - Kreditor</h1>
         <div class="header-actions">
+          <div class="btn-group-row">
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
+            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
+          </div>
           <select id="credStatus" class="select-small" onchange="renderAll()">
             <option value="open" selected>Ödənilməmiş / Qismən</option>
             <option value="all">Hamısı</option>

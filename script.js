@@ -600,6 +600,14 @@ function setOverdueView(status, btn) {
   renderAll();
 }
 
+function showDebtSub(sectionId, btn) {
+  const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
+  showSec(sectionId, debtNav || null);
+  document.querySelectorAll(".debt-sub-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(`.debt-sub-btn[data-debt-sub="${sectionId}"]`).forEach((b) => b.classList.add("active"));
+  if (btn) btn.classList.add("active");
+}
+
 function seedDevTestData() {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   if (!isTestCompany()) return alert("Bu funksiya yalnız test şirkətində aktivdir.");
@@ -1305,9 +1313,9 @@ function sectionLabelAz(id) {
     stock: "Anbar",
     sales: "Satışlar",
     staff: "Əməkdaşlar",
-    debts: "Debitor borclar",
-    overdue: "Kreditlər",
-    creditor: "Kreditor borclar",
+    debts: "Borclar - Debitor",
+    overdue: "Borclar - Kreditlər",
+    creditor: "Borclar - Kreditor",
     cash: "Kassa",
     accounts: "Hesablar",
     audit: "Audit",
@@ -8225,6 +8233,7 @@ Object.assign(window, {
   onStockCatChange,
   setDebtsStatus,
   setOverdueView,
+  showDebtSub,
   seedDevTestData,
   toggleCashKind,
   toggleIncomeSourceBox,
