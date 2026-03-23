@@ -600,12 +600,12 @@ function setOverdueView(status, btn) {
   renderAll();
 }
 
-function showDebtSub(sectionId, btn) {
+function showDebtSub(sectionId) {
   const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
   showSec(sectionId, debtNav || null);
-  document.querySelectorAll(".debt-sub-btn").forEach((b) => b.classList.remove("active"));
-  document.querySelectorAll(`.debt-sub-btn[data-debt-sub="${sectionId}"]`).forEach((b) => b.classList.add("active"));
-  if (btn) btn.classList.add("active");
+  document.querySelectorAll(".section .content-header .header-actions select[title='Borc növü']").forEach((s) => {
+    s.value = sectionId;
+  });
 }
 
 function seedDevTestData() {

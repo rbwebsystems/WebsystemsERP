@@ -339,11 +339,11 @@
       <div class="content-header">
         <h1>Borclar - Debitor</h1>
         <div class="header-actions">
-          <div class="btn-group-row">
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
-          </div>
+          <select class="select-small" onchange="showDebtSub(this.value)" title="Borc növü">
+            <option value="debts" selected>Borc növü: Debitor</option>
+            <option value="creditor">Borc növü: Kreditor</option>
+            <option value="overdue">Borc növü: Kreditlər</option>
+          </select>
           <input type="hidden" id="debtsStatus" value="all">
           <div class="btn-group-row" id="debtsStatusBtns">
             <button type="button" class="btn-cancel debts-st-btn active" data-st="all" onclick="setDebtsStatus('all', this)">Hamısı</button>
@@ -386,11 +386,11 @@
       <div class="content-header">
         <h1>Borclar - Kreditlər</h1>
         <div class="header-actions">
-          <div class="btn-group-row">
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
-          </div>
+          <select class="select-small" onchange="showDebtSub(this.value)" title="Borc növü">
+            <option value="debts">Borc növü: Debitor</option>
+            <option value="creditor">Borc növü: Kreditor</option>
+            <option value="overdue" selected>Borc növü: Kreditlər</option>
+          </select>
           <input type="hidden" id="overdueView" value="all">
           <div class="btn-group-row" id="overdueViewBtns">
             <button type="button" class="btn-cancel debts-st-btn active" data-st="all" onclick="setOverdueView('all', this)">Ümumi kreditlər</button>
@@ -416,11 +416,11 @@
       <div class="content-header">
         <h1>Borclar - Kreditor</h1>
         <div class="header-actions">
-          <div class="btn-group-row">
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="debts" onclick="showDebtSub('debts', this)">Debitor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn active" data-debt-sub="creditor" onclick="showDebtSub('creditor', this)">Kreditor</button>
-            <button type="button" class="btn-cancel debts-st-btn debt-sub-btn" data-debt-sub="overdue" onclick="showDebtSub('overdue', this)">Kreditlər</button>
-          </div>
+          <select class="select-small" onchange="showDebtSub(this.value)" title="Borc növü">
+            <option value="debts">Borc növü: Debitor</option>
+            <option value="creditor" selected>Borc növü: Kreditor</option>
+            <option value="overdue">Borc növü: Kreditlər</option>
+          </select>
           <select id="credStatus" class="select-small" onchange="renderAll()">
             <option value="open" selected>Ödənilməmiş / Qismən</option>
             <option value="all">Hamısı</option>
