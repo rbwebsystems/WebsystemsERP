@@ -1849,6 +1849,44 @@ body.login-open.landing-login-open .login-card{
   font-size:17px;
   line-height:1.65;
 }
+.public-landing.erp-landing-v4 .embedded-login{
+  margin-top:14px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border-radius:16px;
+  padding:14px;
+}
+.public-landing.erp-landing-v4 .embedded-login h4{
+  margin:0 0 10px;
+  font-size:16px;
+  color:#dbe6f8;
+}
+.public-landing.erp-landing-v4 .embedded-login form{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+}
+.public-landing.erp-landing-v4 .embedded-login input{
+  height:40px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(7,15,34,.7);
+  color:#fff;
+  padding:0 12px;
+  outline:none;
+}
+.public-landing.erp-landing-v4 .embedded-login input::placeholder{color:#9fb0cb;}
+.public-landing.erp-landing-v4 .embedded-login button{
+  height:42px;
+  border:none;
+  border-radius:12px;
+  font-weight:800;
+  cursor:pointer;
+  color:#fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)),
+    linear-gradient(135deg, #1fe0ff 0%, #2f6bff 100%);
+}
 .public-landing.erp-landing-v4 footer{
   padding:40px 0 48px;
   margin-top:34px;

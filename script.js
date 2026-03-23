@@ -1399,6 +1399,18 @@ function closeLoginModal() {
   ov.style.display = "none";
 }
 
+function loginFromLanding(e) {
+  e.preventDefault();
+  const u = byId("landingLoginUser");
+  const p = byId("landingLoginPass");
+  const loginU = byId("loginUser");
+  const loginP = byId("loginPass");
+  if (!u || !p || !loginU || !loginP) return;
+  loginU.value = (u.value || "").trim();
+  loginP.value = p.value || "";
+  login(e);
+}
+
 function doLoginWithCompany(companyId) {
   const pending = window.__pendingLogin;
   if (!pending) return;
@@ -8477,6 +8489,7 @@ Object.assign(window, {
   setSkin,
   openLoginModal,
   closeLoginModal,
+  loginFromLanding,
   toggleSidebar,
   openAuditDetails,
   openGlobalSearch,

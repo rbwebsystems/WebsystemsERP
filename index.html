@@ -754,9 +754,7 @@
             RBSoft gündəlik idarəetməni daha sürətli, daha rahat və daha peşəkar edir.
           </p>
 
-          <div class="cta-row">
-            <button type="button" class="btn btn-primary" onclick="openLoginModal()">Daxil ol</button>
-          </div>
+          <div class="cta-row"></div>
         </div>
 
         <div class="hero-right">
@@ -806,6 +804,15 @@
                       <span>May</span>
                       <span>İyn</span>
                     </div>
+                  </div>
+
+                  <div class="embedded-login">
+                    <h4>Sistemə giriş</h4>
+                    <form onsubmit="loginFromLanding(event)">
+                      <input id="landingLoginUser" type="text" placeholder="İstifadəçi adı" autocomplete="username" required>
+                      <input id="landingLoginPass" type="password" placeholder="Şifrə" autocomplete="current-password" required>
+                      <button type="submit">Daxil ol</button>
+                    </form>
                   </div>
                 </div>
               </div>
