@@ -7153,7 +7153,7 @@ function renderAll() {
 
   // debts (debitor) grouped by customer + date filter + pagination
   const debtsStatus = byId("debtsStatus")?.value || "all";
-  const debtsAll = db.sales
+  const debtsAllRaw = db.sales
     .filter((s) => !s.returnedAt)
     .filter((s) => inDateRange(s.date, "debtsFrom", "debtsTo"))
     .map((s, saleIdx) => {
@@ -7162,6 +7162,15 @@ function renderAll() {
       const st = debtStatus(total, rem);
       return { s, saleIdx, total, rem, st };
     });
+
+  const debtsAll = debtsAllRaw.filter((x) => {
+    const isCredit = String(x.s.saleType || "").toLowerCase() === "kredit";
+    if (debtsStatus === "all") return true; // include everything (credit + non-credit)
+    if (debtsStatus === "credit") return isCredit && x.rem > 0.000001; // credit debts only
+    // paid/partial/unpaid buttons should only show non-credit sales
+    if (isCredit) return false;
+    return x.st === debtsStatus;
+  });
 
   const groupMap = new Map();
   for (const x of debtsAll) {
@@ -7177,13 +7186,7 @@ function renderAll() {
     return { customerId, customerName: items[0]?.s.customerName || customerId, total, paid, rem, st, items };
   });
 
-  const groupsFiltered = groups.filter((g) => {
-    if (debtsStatus === "all") return true;
-    if (debtsStatus === "credit") {
-      return (g.items || []).some((x) => String(x.s.saleType || "").toLowerCase() === "kredit" && x.rem > 0.000001);
-    }
-    return g.st === debtsStatus;
-  });
+  const groupsFiltered = groups;
   groupsFiltered.sort((a, b) => (a.rem < b.rem ? 1 : -1));
 
   window.__debtorGroups = groupsFiltered;
