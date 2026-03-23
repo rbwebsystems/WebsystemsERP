@@ -3915,10 +3915,10 @@ function sumPayments(payments) {
 
 function addSalePaymentInternal(sale, amount, date, source) {
   const a = Math.max(0, n(amount));
-  if (a <= 0) return;
+  if (a <= 0) return 0;
   const rem = Math.max(0, n(sale.amount) - sumPayments(sale.payments));
   const applied = Math.min(rem, a);
-  if (applied <= 0) return;
+  if (applied <= 0) return 0;
 
   sale.payments.push({
     uid: genId(sale.payments, 1),
@@ -3927,6 +3927,7 @@ function addSalePaymentInternal(sale, amount, date, source) {
     source: source || "manual",
   });
   sale.paidTotal = String(sumPayments(sale.payments));
+  return applied;
 }
 
 function applyCustomerPaymentToDebts(customerId, amount, date, source) {
@@ -4124,6 +4125,7 @@ function openSalePayment(idx) {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const s = db.sales[idx];
   const rem = saleRemaining(s);
+  if (rem <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
   const defAcc = Number(s.paymentAccountId || 1);
   const isCredit = String(s.saleType || "").toLowerCase() === "kredit";
   const payTypeOptions = isCredit
@@ -4141,7 +4143,7 @@ function openSalePayment(idx) {
     <form onsubmit="saveSalePayment(event, ${idx})">
       <div class="grid-3">
         <input type="datetime-local" id="pay_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="pay_amount" placeholder="Məbləğ (AZN)" class="span-2" required>
+        <input type="number" step="0.01" id="pay_amount" placeholder="Məbləğ (AZN)" class="span-2" max="${escapeAttr(String(Math.max(0, rem)))}" required>
         <select id="pay_acc" class="span-3" required>${accountOptionsHtml(defAcc)}</select>
         ${payTypeOptions}
         <input id="pay_note" placeholder="Qeyd (istəyə bağlı)" class="span-3">
@@ -4159,13 +4161,17 @@ function saveSalePayment(e, idx) {
   e.preventDefault();
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const s = db.sales[idx];
+  const rem = saleRemaining(s);
+  if (rem <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
   const date = val("pay_date");
   const amount = Math.max(0, n(val("pay_amount")));
   const accId = Number(val("pay_acc") || 1);
   const payKind = val("pay_kind") || "regular";
   if (amount <= 0) return;
+  if (amount - rem > 0.000001) return alert(`Məbləğ qalıq borcdan çox ola bilməz. Qalıq: ${money(rem)} AZN`);
 
-  addSalePaymentInternal(s, amount, date, payKind === "down" ? "down" : payKind === "monthly" ? "monthly" : "sale_info");
+  const applied = addSalePaymentInternal(s, amount, date, payKind === "down" ? "down" : payKind === "monthly" ? "monthly" : "sale_info");
+  if (applied <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
 
   // Cash operation: payment into cash only if this is cash payment (assume nagd) or user pays cash from cash module.
   // Here we treat it as cash-in (kassa) by default.
@@ -4173,13 +4179,13 @@ function saveSalePayment(e, idx) {
     type: "in",
     date,
     source: `Debitor ödəniş (${s.customerName})`,
-    amount: Math.min(amount, amount), // recorded amount input (even if part applied is less, adjust below)
+    amount: applied,
     note: val("pay_note") || `Satış #${s.uid}`,
     link: { kind: "sale", saleUid: s.uid },
     meta: { customerId: s.customerId, payKind },
     accountId: accId,
-  }, { clampToApplied: true, applied: Math.min(amount, amountAppliedToSaleLast(s)) });
-  logEvent("create", "cash", { type: "in", kind: "sale", amount: Math.min(amount, amountAppliedToSaleLast(s)), saleUid: s.uid });
+  }, { clampToApplied: true, applied });
+  logEvent("create", "cash", { type: "in", kind: "sale", amount: applied, saleUid: s.uid });
 
   saveDB();
   openPaymentHistory("sale", idx);
