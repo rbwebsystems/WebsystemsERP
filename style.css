@@ -773,11 +773,13 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 }
 .login-card{
   width:min(500px, 100%);
-  background:linear-gradient(180deg,#ffffff,#f8fbff);
-  border:1px solid #d8e5fa;
+  background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.28);
   border-radius:22px;
   padding:22px 22px 18px;
-  box-shadow:0 28px 70px rgba(2,6,23,.36);
+  box-shadow:0 28px 70px rgba(2,6,23,.46);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
 }
 .login-head{
   display:flex;
@@ -786,28 +788,29 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   margin-bottom:8px;
 }
 .login-logo{display:block;max-width:220px;max-height:72px;width:auto;height:auto;margin:0;background:transparent;}
-.login-card h2{font-size:1.25rem;margin-bottom:6px;color:#0f172a;}
-.login-sub{font-size:.9rem;color:#64748b;margin-bottom:12px;}
+.login-card h2{font-size:1.25rem;margin-bottom:6px;color:#fff;}
+.login-sub{font-size:.9rem;color:#dbe7f6;margin-bottom:12px;}
 .login-form-modern{display:grid;grid-template-columns:1fr;gap:8px;}
 .login-form-modern label{
   font-size:.78rem;
   font-weight:800;
-  color:#475569;
+  color:#e2ecfb;
 }
 .login-form-modern input,
 .login-form-modern select{
   height:42px;
   border-radius:12px;
-  border:1px solid #d5e3fa;
-  background:#fff;
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(255,255,255,.10);
   padding:0 12px;
-  color:#0f172a;
+  color:#fff;
   outline:none;
 }
+.login-form-modern input::placeholder{color:#d7e4f7;}
 .login-form-modern input:focus,
 .login-form-modern select:focus{
-  border-color:#60a5fa;
-  box-shadow:0 0 0 3px rgba(96,165,250,.16);
+  border-color:#7dd3fc;
+  box-shadow:0 0 0 3px rgba(125,211,252,.22);
 }
 .login-submit{
   margin-top:6px;
@@ -1606,6 +1609,18 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   overflow:hidden;
   min-height:408px;
+  position:relative;
+}
+.public-landing.erp-landing-v4 .dashboard::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.22;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 38px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 42px);
 }
 .public-landing.erp-landing-v4 .dash-top{
   display:grid;
