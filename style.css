@@ -1520,6 +1520,49 @@ body.login-open.landing-login-open .login-card{
   justify-content:flex-end;
   overflow:visible;
 }
+.public-landing.erp-landing-v4 .landing-login-fixed{
+  position:absolute;
+  right:10px;
+  bottom:8px;
+  width:min(300px, 92%);
+  z-index:5;
+  border:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(180deg, rgba(7,16,36,.94), rgba(7,16,36,.86));
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+}
+.public-landing.erp-landing-v4 .landing-login-fixed h4{
+  margin:0 0 8px;
+  font-size:15px;
+  color:#e2ecfb;
+}
+.public-landing.erp-landing-v4 .landing-login-fixed form{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+}
+.public-landing.erp-landing-v4 .landing-login-fixed input{
+  height:38px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(8,18,42,.72);
+  color:#fff;
+  padding:0 10px;
+  outline:none;
+}
+.public-landing.erp-landing-v4 .landing-login-fixed input::placeholder{color:#a9bad7;}
+.public-landing.erp-landing-v4 .landing-login-fixed button{
+  height:40px;
+  border:none;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+  color:#fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)),
+    linear-gradient(135deg, #1fe0ff 0%, #2f6bff 100%);
+}
 .public-landing.erp-landing-v4 .wave{
   position:absolute;
   left:-100px;
@@ -1928,6 +1971,11 @@ body.login-open.landing-login-open .login-card{
   .public-landing.erp-landing-v4 .hero p{font-size:17px;}
   .public-landing.erp-landing-v4 .badge{font-size:15px; padding:12px 16px;}
   .public-landing.erp-landing-v4 .dashboard-wrap{transform:none; padding:16px;}
+  .public-landing.erp-landing-v4 .landing-login-fixed{
+    position:static;
+    width:100%;
+    margin-top:12px;
+  }
   .public-landing.erp-landing-v4 .dash-top{grid-template-columns:1fr;}
   .public-landing.erp-landing-v4 .stats{grid-template-columns:1fr;}
   .public-landing.erp-landing-v4 .cards-row{gap:18px;}
