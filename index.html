@@ -339,27 +339,39 @@
       <div class="content-header">
         <h1>Borclar - Debitor</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-            <option value="" selected>Borc növü: Seçin</option>
-            <option value="debts">Borc növü: Debitor</option>
-            <option value="creditor">Borc növü: Kreditor</option>
-            <option value="overdue">Borc növü: Kreditlər</option>
-          </select>
-          <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
-            <option value="" selected>Alt seçim: Seçin</option>
-            <option value="all">Alt seçim: Hamısı</option>
-            <option value="paid">Alt seçim: Tam ödənilmiş</option>
-            <option value="partial">Alt seçim: Qismən ödənilmiş</option>
-            <option value="unpaid">Alt seçim: Ödənilməmiş</option>
-          </select>
-          <div class="date-range">
-            <input type="date" id="debtsFrom" onchange="renderAll()">
-            <span>—</span>
-            <input type="date" id="debtsTo" onchange="renderAll()">
+          <div class="filter-field">
+            <label>Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+              <option value="" selected>Seçin</option>
+              <option value="debts">Debitor</option>
+              <option value="creditor">Kreditor</option>
+              <option value="overdue">Kreditlər</option>
+            </select>
           </div>
-          <div class="search-container">
-            <input type="text" id="srcDebts" placeholder="Axtar..." onkeyup="filterDebts()">
-            <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+          <div class="filter-field">
+            <label>Alt seçim</label>
+            <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
+              <option value="" selected>Seçin</option>
+              <option value="all">Hamısı</option>
+              <option value="paid">Tam ödənilmiş</option>
+              <option value="partial">Qismən ödənilmiş</option>
+              <option value="unpaid">Ödənilməmiş</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Tarix aralığı</label>
+            <div class="date-range">
+              <input type="date" id="debtsFrom" onchange="renderAll()">
+              <span>—</span>
+              <input type="date" id="debtsTo" onchange="renderAll()">
+            </div>
+          </div>
+          <div class="filter-field">
+            <label>Axtarış</label>
+            <div class="search-container">
+              <input type="text" id="srcDebts" placeholder="" onkeyup="filterDebts()">
+              <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -389,22 +401,37 @@
       <div class="content-header">
         <h1>Borclar - Kreditlər</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-            <option value="">Borc növü: Seçin</option>
-            <option value="debts">Borc növü: Debitor</option>
-            <option value="creditor">Borc növü: Kreditor</option>
-            <option value="overdue" selected>Borc növü: Kreditlər</option>
-          </select>
-          <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
-            <option value="" selected>Alt seçim: Seçin</option>
-            <option value="all">Alt seçim: Ümumi kreditlər</option>
-            <option value="overdue">Alt seçim: Vaxtı keçmiş kreditlər</option>
-          </select>
-          <input type="number" id="overdueDaysFrom" class="select-small" placeholder="Min gün" min="0" onchange="renderAll()">
-          <input type="number" id="overdueDaysTo" class="select-small" placeholder="Max gün" min="0" onchange="renderAll()">
-          <div class="search-container">
-            <input type="text" id="srcOverdue" placeholder="Axtar (müştəri / qaimə)..." onkeyup="filterTable('tblOverdue', this.value)">
-            <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+          <div class="filter-field">
+            <label>Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+              <option value="">Seçin</option>
+              <option value="debts">Debitor</option>
+              <option value="creditor">Kreditor</option>
+              <option value="overdue" selected>Kreditlər</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Alt seçim</label>
+            <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
+              <option value="" selected>Seçin</option>
+              <option value="all">Ümumi kreditlər</option>
+              <option value="overdue">Vaxtı keçmiş kreditlər</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Gecikmə gün aralığı</label>
+            <div class="date-range">
+              <input type="number" id="overdueDaysFrom" class="select-small" placeholder="" min="0" onchange="renderAll()">
+              <span>—</span>
+              <input type="number" id="overdueDaysTo" class="select-small" placeholder="" min="0" onchange="renderAll()">
+            </div>
+          </div>
+          <div class="filter-field">
+            <label>Axtarış</label>
+            <div class="search-container">
+              <input type="text" id="srcOverdue" placeholder="" onkeyup="filterTable('tblOverdue', this.value)">
+              <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -422,28 +449,40 @@
       <div class="content-header">
         <h1>Borclar - Kreditor</h1>
         <div class="header-actions debt-header-actions">
-          <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-            <option value="">Borc növü: Seçin</option>
-            <option value="debts">Borc növü: Debitor</option>
-            <option value="creditor" selected>Borc növü: Kreditor</option>
-            <option value="overdue">Borc növü: Kreditlər</option>
-          </select>
-          <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
-            <option value="" selected>Alt seçim: Seçin</option>
-            <option value="open">Ödənilməmiş / Qismən</option>
-            <option value="all">Hamısı</option>
-            <option value="paid">Tam ödənilmiş</option>
-            <option value="partial">Qismən</option>
-            <option value="unpaid">Ödənilməmiş</option>
-          </select>
-          <div class="date-range">
-            <input type="date" id="credFrom" onchange="renderAll()">
-            <span>—</span>
-            <input type="date" id="credTo" onchange="renderAll()">
+          <div class="filter-field">
+            <label>Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+              <option value="">Seçin</option>
+              <option value="debts">Debitor</option>
+              <option value="creditor" selected>Kreditor</option>
+              <option value="overdue">Kreditlər</option>
+            </select>
           </div>
-          <div class="search-container">
-            <input type="text" id="srcCred" placeholder="Axtar..." onkeyup="filterCreditor()">
-            <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+          <div class="filter-field">
+            <label>Alt seçim</label>
+            <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
+              <option value="" selected>Seçin</option>
+              <option value="open">Ödənilməmiş / Qismən</option>
+              <option value="all">Hamısı</option>
+              <option value="paid">Tam ödənilmiş</option>
+              <option value="partial">Qismən</option>
+              <option value="unpaid">Ödənilməmiş</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Tarix aralığı</label>
+            <div class="date-range">
+              <input type="date" id="credFrom" onchange="renderAll()">
+              <span>—</span>
+              <input type="date" id="credTo" onchange="renderAll()">
+            </div>
+          </div>
+          <div class="filter-field">
+            <label>Axtarış</label>
+            <div class="search-container">
+              <input type="text" id="srcCred" placeholder="" onkeyup="filterCreditor()">
+              <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
+            </div>
           </div>
         </div>
       </div>
