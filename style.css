@@ -1184,6 +1184,100 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   .public-landing.erp-landing-v2 .erp2-links{width:100%;justify-content:flex-start;flex-wrap:wrap;}
 }
 
+/* ERP Landing v3: looks like inside app */
+.public-landing.erp-landing-v3{
+  display:none;
+  min-height:100vh;
+  background:linear-gradient(180deg,#edf3fb 0%, #e8eef8 100%);
+  padding:18px;
+}
+.public-landing.erp-landing-v3::before,
+.public-landing.erp-landing-v3::after{display:none !important;}
+.public-landing.erp-landing-v3 .erp3-shell{
+  min-height:calc(100vh - 36px);
+  border:1px solid #d8e2f0;
+  border-radius:16px;
+  background:#f6f9ff;
+  box-shadow:0 12px 30px rgba(15,23,42,.08);
+  display:grid;
+  grid-template-columns:260px 1fr;
+  overflow:hidden;
+}
+.public-landing.erp-landing-v3 .erp3-side{
+  background:var(--sidebar-solid);
+  color:#fff;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.public-landing.erp-landing-v3 .erp3-logo{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);
+  border-radius:12px;padding:10px;
+}
+.public-landing.erp-landing-v3 .erp3-logo i{font-size:1.1rem;}
+.public-landing.erp-landing-v3 .erp3-logo strong{display:block;font-size:.95rem;}
+.public-landing.erp-landing-v3 .erp3-logo small{display:block;color:#c8d4e6;font-size:.72rem;}
+.public-landing.erp-landing-v3 .erp3-menu{display:flex;flex-direction:column;gap:8px;}
+.public-landing.erp-landing-v3 .erp3-menu a{
+  color:#e2e8f0;text-decoration:none;font-weight:700;font-size:.88rem;
+  border:1px solid transparent;border-radius:10px;padding:10px 12px;
+  display:flex;align-items:center;gap:8px;
+}
+.public-landing.erp-landing-v3 .erp3-menu a.active,
+.public-landing.erp-landing-v3 .erp3-menu a:hover{
+  border-color:rgba(255,255,255,.24);
+  background:rgba(255,255,255,.11);
+  color:#fff;
+}
+
+.public-landing.erp-landing-v3 .erp3-main{
+  display:flex;flex-direction:column;min-width:0;
+}
+.public-landing.erp-landing-v3 .erp3-top{
+  height:64px;border-bottom:1px solid #d8e2f0;
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;
+}
+.public-landing.erp-landing-v3 .erp3-top h1{font-size:1.05rem;color:#0f172a;}
+.public-landing.erp-landing-v3 .erp3-login-btn{
+  height:38px;border:none;border-radius:10px;padding:0 14px;
+  background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;
+  font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+}
+.public-landing.erp-landing-v3 .erp3-content{
+  padding:18px;display:grid;grid-template-columns:1.12fr .88fr;gap:14px;
+}
+.public-landing.erp-landing-v3 .erp3-welcome,
+.public-landing.erp-landing-v3 .erp3-panel{
+  background:#fff;border:1px solid #d8e2f0;border-radius:14px;padding:16px;
+}
+.public-landing.erp-landing-v3 .erp3-welcome h2{font-size:1.2rem;color:#0f172a;}
+.public-landing.erp-landing-v3 .erp3-welcome p{margin-top:8px;color:#475569;line-height:1.65;}
+.public-landing.erp-landing-v3 .erp3-tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;}
+.public-landing.erp-landing-v3 .erp3-tags span{
+  background:#eff6ff;border:1px solid #cfe2ff;color:#1d4ed8;
+  border-radius:999px;padding:6px 10px;font-weight:700;font-size:.78rem;
+}
+.public-landing.erp-landing-v3 .erp3-kpis{display:grid;grid-template-columns:1fr;gap:8px;}
+.public-landing.erp-landing-v3 .erp3-kpis div{
+  border:1px solid #d8e2f0;background:#f8fbff;border-radius:10px;padding:10px;
+}
+.public-landing.erp-landing-v3 .erp3-kpis small{display:block;color:#64748b;font-size:.74rem;}
+.public-landing.erp-landing-v3 .erp3-kpis b{display:block;margin-top:3px;font-size:1rem;}
+.public-landing.erp-landing-v3 .erp3-lines{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.public-landing.erp-landing-v3 .erp3-lines i{
+  display:block;height:12px;width:var(--w);border-radius:999px;
+  background:linear-gradient(90deg,#38bdf8,#2563eb);
+}
+@media (max-width: 980px){
+  .public-landing.erp-landing-v3 .erp3-shell{grid-template-columns:1fr;}
+  .public-landing.erp-landing-v3 .erp3-side{display:none;}
+  .public-landing.erp-landing-v3 .erp3-content{grid-template-columns:1fr;}
+}
+
 .search-container{position:relative;display:flex;align-items:center;}
 .search-container input{
   border:1px solid var(--border-color);
