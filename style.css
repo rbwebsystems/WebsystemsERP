@@ -791,12 +791,55 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
     radial-gradient(700px 380px at 92% 5%, rgba(59,130,246,.12), transparent 58%),
     linear-gradient(180deg,#f8fbff 0%, #f1f6ff 100%);
   color:#0f172a;
-  padding:56px;
-  gap:28px;
+  padding:18px 24px 24px;
+  gap:18px;
   align-items:stretch;
+  overflow:auto;
+}
+.public-topbar{
+  width:100%;
+  min-height:64px;
+  background:rgba(255,255,255,.78);
+  border:1px solid #dbe5f2;
+  border-radius:14px;
+  box-shadow:0 10px 24px rgba(15,23,42,.05);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:10px 14px;
+}
+.public-topbar-brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#0f172a;
+}
+.public-topbar-brand .dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#14b8a6,#0ea5e9);
+}
+.public-topbar-nav{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.public-topbar-nav a{
+  color:#334155;
+  text-decoration:none;
+  font-size:.88rem;
+  font-weight:700;
+}
+.public-topbar-nav a:hover{color:#0f172a;}
+.public-body{
+  display:grid;
+  grid-template-columns:1.2fr 1fr;
+  gap:18px;
+  min-height:calc(100vh - 110px);
 }
 .public-hero{
-  flex:1.2;
   background:#ffffff;
   border:1px solid #dbe5f2;
   border-radius:18px;
@@ -871,7 +914,6 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 .metric-chip strong{font-size:1rem;color:#0f172a;}
 .public-actions{margin-top:18px;}
 .public-showcase{
-  flex:1;
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -984,7 +1026,10 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 }
 
 @media (max-width: 1080px){
-  .public-landing{padding:24px;flex-direction:column;}
+  .public-landing{padding:14px;}
+  .public-topbar{flex-wrap:wrap;}
+  .public-topbar-nav{order:3;width:100%;justify-content:flex-start;flex-wrap:wrap;}
+  .public-body{grid-template-columns:1fr;min-height:auto;}
   .showcase-grid{grid-template-columns:1fr;}
   .hero-bars{inset:14px 14px 14px 140px;}
   .hero-metrics{grid-template-columns:1fr;}
