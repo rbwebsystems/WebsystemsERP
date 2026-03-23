@@ -1059,6 +1059,131 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
   .public-landing .hero-card{width:100%;}
 }
 
+/* ERP Landing v2 (force-new look) */
+.public-landing.erp-landing-v2{
+  display:none;
+  min-height:100vh;
+  background:
+    radial-gradient(900px 500px at 12% -5%, rgba(20,184,166,.16), transparent 60%),
+    radial-gradient(700px 400px at 90% 10%, rgba(59,130,246,.14), transparent 60%),
+    linear-gradient(180deg,#f8fbff 0%, #eef4ff 100%);
+  color:#0f172a;
+}
+.public-landing.erp-landing-v2::before,
+.public-landing.erp-landing-v2::after{display:none !important;}
+.public-landing.erp-landing-v2 .erp2-wrap{width:min(1180px,92%);margin:0 auto;}
+.public-landing.erp-landing-v2 .erp2-header{
+  position:sticky;top:0;z-index:12;
+  background:rgba(248,251,255,.88);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid #dbe7fb;
+}
+.public-landing.erp-landing-v2 .erp2-nav{
+  height:74px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.public-landing.erp-landing-v2 .erp2-brand{display:flex;align-items:center;gap:12px;}
+.public-landing.erp-landing-v2 .erp2-brand-mark{
+  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#14b8a6,#3b82f6);color:#fff;
+  box-shadow:0 10px 24px rgba(59,130,246,.25);
+}
+.public-landing.erp-landing-v2 .erp2-brand strong{display:block;font-size:1.04rem;}
+.public-landing.erp-landing-v2 .erp2-brand small{display:block;color:#64748b;font-size:.72rem;}
+.public-landing.erp-landing-v2 .erp2-links{display:flex;align-items:center;gap:16px;}
+.public-landing.erp-landing-v2 .erp2-links a{color:#475569;text-decoration:none;font-weight:700;font-size:.9rem;}
+.public-landing.erp-landing-v2 .erp2-links a:hover{color:#0f172a;}
+
+.public-landing.erp-landing-v2 .erp2-btn{
+  border:none;border-radius:12px;height:42px;padding:0 18px;
+  display:inline-flex;align-items:center;justify-content:center;
+  text-decoration:none;font-weight:800;cursor:pointer;
+}
+.public-landing.erp-landing-v2 .erp2-btn-primary{
+  color:#fff;background:linear-gradient(135deg,#0ea5e9,#2563eb);
+  box-shadow:0 10px 24px rgba(37,99,235,.28);
+}
+.public-landing.erp-landing-v2 .erp2-btn-ghost{
+  color:#0f172a;background:#fff;border:1px solid #cddcf6;
+}
+
+.public-landing.erp-landing-v2 .erp2-hero{padding:54px 0 16px;}
+.public-landing.erp-landing-v2 .erp2-hero-grid{
+  display:grid;grid-template-columns:1.02fr .98fr;gap:24px;align-items:center;
+}
+.public-landing.erp-landing-v2 .erp2-badge{
+  display:inline-block;padding:8px 12px;border-radius:999px;
+  background:#e0f2fe;color:#0369a1;font-weight:800;font-size:.74rem;
+}
+.public-landing.erp-landing-v2 .erp2-hero h1{
+  margin-top:14px;font-size:clamp(2rem,4.4vw,3.2rem);line-height:1.1;letter-spacing:-.02em;
+}
+.public-landing.erp-landing-v2 .erp2-hero p{
+  margin-top:14px;color:#475569;line-height:1.7;max-width:590px;
+}
+.public-landing.erp-landing-v2 .erp2-hero-actions{
+  margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;
+}
+
+.public-landing.erp-landing-v2 .erp2-preview{
+  border:1px solid #c9daf8;border-radius:20px;padding:16px;
+  background:linear-gradient(180deg,#ffffff,#f3f8ff);
+  box-shadow:0 18px 42px rgba(15,23,42,.10);
+}
+.public-landing.erp-landing-v2 .erp2-preview-top{
+  display:flex;align-items:center;gap:8px;color:#334155;font-size:.86rem;font-weight:700;
+}
+.public-landing.erp-landing-v2 .erp2-preview-top span{
+  width:8px;height:8px;border-radius:50%;background:#93c5fd;
+}
+.public-landing.erp-landing-v2 .erp2-kpi-grid{
+  margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+}
+.public-landing.erp-landing-v2 .erp2-kpi-grid div{
+  background:#eff6ff;border:1px solid #dbeafe;border-radius:12px;padding:10px;
+}
+.public-landing.erp-landing-v2 .erp2-kpi-grid small{display:block;font-size:.72rem;color:#64748b;}
+.public-landing.erp-landing-v2 .erp2-kpi-grid b{display:block;margin-top:3px;font-size:1rem;}
+.public-landing.erp-landing-v2 .erp2-bars{
+  margin-top:14px;height:130px;border-radius:12px;
+  background:#0f172a;display:flex;align-items:flex-end;gap:7px;padding:10px;
+}
+.public-landing.erp-landing-v2 .erp2-bars i{
+  flex:1;height:var(--h);display:block;border-radius:8px 8px 4px 4px;
+  background:linear-gradient(180deg,#22d3ee,#2563eb);
+}
+
+.public-landing.erp-landing-v2 .erp2-benefits{
+  margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+}
+.public-landing.erp-landing-v2 .erp2-benefits article{
+  background:#fff;border:1px solid #dbe7fb;border-radius:16px;padding:16px;
+  box-shadow:0 10px 24px rgba(15,23,42,.06);
+}
+.public-landing.erp-landing-v2 .erp2-benefits i{color:#0284c7;font-size:1.1rem;}
+.public-landing.erp-landing-v2 .erp2-benefits h3{margin-top:8px;font-size:1rem;}
+.public-landing.erp-landing-v2 .erp2-benefits p{margin-top:5px;color:#64748b;font-size:.9rem;}
+
+.public-landing.erp-landing-v2 .erp2-modules{padding:28px 0 44px;}
+.public-landing.erp-landing-v2 .erp2-modules h2{font-size:1.5rem;}
+.public-landing.erp-landing-v2 .erp2-module-grid{
+  margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+}
+.public-landing.erp-landing-v2 .erp2-module-grid article{
+  background:#fff;border:1px solid #dbe7fb;border-radius:14px;padding:14px;
+}
+.public-landing.erp-landing-v2 .erp2-module-grid h4{font-size:1rem;}
+.public-landing.erp-landing-v2 .erp2-module-grid p{margin-top:5px;color:#64748b;font-size:.88rem;line-height:1.55;}
+.public-landing.erp-landing-v2 .erp2-footer{
+  border-top:1px solid #dbe7fb;padding:20px 0 30px;text-align:center;color:#64748b;
+}
+@media (max-width: 980px){
+  .public-landing.erp-landing-v2 .erp2-hero-grid,
+  .public-landing.erp-landing-v2 .erp2-benefits,
+  .public-landing.erp-landing-v2 .erp2-module-grid{grid-template-columns:1fr;}
+  .public-landing.erp-landing-v2 .erp2-nav{height:auto;padding:12px 0;flex-wrap:wrap;}
+  .public-landing.erp-landing-v2 .erp2-links{width:100%;justify-content:flex-start;flex-wrap:wrap;}
+}
+
 .search-container{position:relative;display:flex;align-items:center;}
 .search-container input{
   border:1px solid var(--border-color);
