@@ -7302,7 +7302,8 @@ function renderAll() {
 
     for (const x of rows) {
       const saleKey = String(x.saleUid);
-      x.dueAmount = Math.max(0, n(overdueBySale.get(saleKey) || 0));
+      const overdueTotalForInvoice = Math.max(0, n(overdueBySale.get(saleKey) || 0));
+      x.dueAmount = view === "all" && x.daysLate < 1 ? 0 : overdueTotalForInvoice;
       x.invoiceRemaining = Math.max(0, n(invoiceRemBySale.get(saleKey) || x.invoiceRemaining));
     }
 
