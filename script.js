@@ -7267,8 +7267,6 @@ function renderAll() {
     const todayT = toDayStart(todayISO);
 
     const saleRowsMap = new Map();
-    const overdueBySale = new Map(); // invoice üzrə gecikmiş aylıqların cəmi (view-dan asılı deyil)
-    const invoiceRemBySale = new Map();
     (db.sales || [])
       .filter((s) => !s.returnedAt && String(s.saleType || "").toLowerCase() === "kredit")
       .forEach((s, idx) => {
@@ -7279,66 +7277,73 @@ function renderAll() {
         const custFull = cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : (s.customerName || "-");
         const custPhone = String(cust?.ph1 || cust?.ph2 || cust?.ph3 || "-");
         const zam = guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-";
+        const saleKey = String(s.uid);
+        const invoiceRemaining = Math.max(0, saleRemaining(s));
+        if (invoiceRemaining <= 0.000001) return;
+
+        let overdueSum = 0;
+        let maxDaysLate = 0;
+        let repAll = null; // earliest unpaid installment
+        let repOverdue = null; // most delayed unpaid installment
+
         for (const r of sched.rows) {
           if (r.remaining <= 0.000001) continue;
           const dueT = toDayStart(r.due);
           if (dueT == null || todayT == null) continue;
-          const daysLate = Math.floor((todayT - dueT) / dayMs);
-          const isOverdue = daysLate >= 1;
-          const isToday = daysLate === 0;
-          const saleKey = String(s.uid);
+          const daysLateRaw = Math.floor((todayT - dueT) / dayMs);
+          const daysLate = Math.max(0, daysLateRaw);
+          const isOverdue = daysLateRaw >= 1;
           if (isOverdue) {
-            overdueBySale.set(saleKey, (overdueBySale.get(saleKey) || 0) + Math.max(0, n(r.remaining)));
+            overdueSum += Math.max(0, n(r.remaining));
+            if (daysLate > maxDaysLate) maxDaysLate = daysLate;
           }
-          if (view === "overdue" && !isOverdue) continue;
-          if (view === "today" && !isToday) continue;
-          // "Ümumi kreditlər": all unpaid installments (including future due dates)
-          const daysForFilter = Math.max(0, daysLate);
-          if (daysForFilter < daysFrom) continue;
-          if (daysTo != null && daysForFilter > daysTo) continue;
-          if (!invoiceRemBySale.has(saleKey)) invoiceRemBySale.set(saleKey, Math.max(0, saleRemaining(s)));
-          const candidate = {
-            saleUid: s.uid,
-            customer: custFull || s.customerName || "-",
-            phone: custPhone,
-            inv,
-            dueFullAmount: Math.max(0, n(r.amount)),
-            duePaidAmount: Math.max(0, n(r.paid)),
-            dueDate: r.due,
-            rowRemaining: Math.max(0, n(r.remaining)),
-            dueAmount: 0, // fill after aggregation (invoice overdue total)
-            invoiceRemaining: Math.max(0, saleRemaining(s)),
-            daysLate: Math.max(0, daysLate),
-            zam,
-          };
-          const prev = saleRowsMap.get(saleKey);
-          if (!prev) {
-            saleRowsMap.set(saleKey, candidate);
-          } else {
-            const prevDays = Math.max(0, n(prev.daysLate));
-            const curDays = Math.max(0, n(candidate.daysLate));
-            const prevDue = String(prev.dueDate || "");
-            const curDue = String(candidate.dueDate || "");
-            // Overdue view: show the most delayed installment for that invoice.
-            // All view: show the earliest unpaid installment for that invoice.
-            const replace = view === "overdue"
-              ? (curDays > prevDays || (curDays === prevDays && curDue < prevDue))
-              : (curDue < prevDue);
-            if (replace) saleRowsMap.set(saleKey, candidate);
+          if (!repAll || String(r.due || "") < String(repAll.due || "")) repAll = r;
+          if (
+            isOverdue &&
+            (!repOverdue ||
+              daysLate > Math.max(0, n(repOverdue.__daysLate || 0)) ||
+              (daysLate === Math.max(0, n(repOverdue.__daysLate || 0)) && String(r.due || "") < String(repOverdue.due || "")))
+          ) {
+            repOverdue = { ...r, __daysLate: daysLate };
           }
         }
+
+        const includeByView =
+          view === "overdue" ? overdueSum > 0.000001 :
+          view === "today" ? false :
+          true; // all
+        if (!includeByView) return;
+
+        const rep = view === "overdue" ? (repOverdue || repAll) : repAll;
+        if (!rep) return;
+
+        const daysForFilter = view === "overdue" ? maxDaysLate : Math.max(0, maxDaysLate);
+        if (daysForFilter < daysFrom) return;
+        if (daysTo != null && daysForFilter > daysTo) return;
+
+        saleRowsMap.set(saleKey, {
+          saleUid: s.uid,
+          customer: custFull || s.customerName || "-",
+          phone: custPhone,
+          inv,
+          dueFullAmount: Math.max(0, n(rep.amount)),
+          duePaidAmount: Math.max(0, n(rep.paid)),
+          dueDate: rep.due,
+          rowRemaining: Math.max(0, n(rep.remaining)),
+          dueAmount: Math.max(0, overdueSum),
+          invoiceRemaining,
+          daysLate: view === "overdue" ? Math.max(0, n(rep.__daysLate || maxDaysLate)) : Math.max(0, maxDaysLate),
+          zam,
+        });
       });
 
     const rows = Array.from(saleRowsMap.values());
     for (const x of rows) {
-      const saleKey = String(x.saleUid);
-      const overdueTotalForInvoice = Math.max(0, n(overdueBySale.get(saleKey) || 0));
-      x.dueAmount = view === "all" && x.daysLate < 1 ? 0 : overdueTotalForInvoice;
-      x.invoiceRemaining = Math.max(0, n(invoiceRemBySale.get(saleKey) || x.invoiceRemaining));
+      if (view === "all" && x.daysLate < 1) x.dueAmount = 0;
     }
 
     rows.sort((a, b) => (b.daysLate - a.daysLate) || String(a.dueDate).localeCompare(String(b.dueDate)));
-    const overdueTotal = Array.from(overdueBySale.values()).reduce((a, v) => a + n(v), 0);
+    const overdueTotal = rows.reduce((a, x) => a + n(x.dueAmount), 0);
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
@@ -7370,7 +7375,7 @@ function renderAll() {
     if (rows.length) {
       const overdueFullTotal = rows.reduce((a, x) => a + n(x.dueFullAmount), 0);
       const overduePaidTotal = rows.reduce((a, x) => a + n(x.duePaidAmount), 0);
-      const overdueInvoiceRemTotal = Array.from(invoiceRemBySale.values()).reduce((a, v) => a + n(v), 0);
+      const overdueInvoiceRemTotal = rows.reduce((a, x) => a + n(x.invoiceRemaining), 0);
       overdueBody.innerHTML += `
         <tr class="total-row">
           <td colspan="4"><strong>Cəmi</strong></td>
