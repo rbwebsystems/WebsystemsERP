@@ -4975,6 +4975,20 @@ function filterCreditor() {
   });
 }
 
+function reapplyActiveSearchFilters() {
+  const inputs = Array.from(document.querySelectorAll(".search-container input[type='text']"));
+  for (const inp of inputs) {
+    const q = String(inp.value || "");
+    if (!q.trim()) continue;
+    const handler = inp.getAttribute("onkeyup");
+    if (!handler) continue;
+    try {
+      // Keep filtered rows after each render/realtime refresh.
+      new Function(handler).call(inp);
+    } catch (e) {}
+  }
+}
+
 function applySupplierPaymentToCreditor(suppName, amount, date, source) {
   let left = Math.max(0, n(amount));
   if (left <= 0) return { applied: 0, remaining: left, allocations: [] };
@@ -8034,6 +8048,9 @@ function renderAll() {
   if (purchYearEl) purchYearEl.textContent = money(purchYear);
   const stockCountEl = byId("dashStatStockCount");
   if (stockCountEl) stockCountEl.textContent = String(stockCount);
+
+  // Re-apply active text searches so results do not reset after auto refresh/render.
+  reapplyActiveSearchFilters();
 }
 
 function delItem(type, i) {
