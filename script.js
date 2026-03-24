@@ -7767,14 +7767,15 @@ function renderAll() {
   const purchAmountTotal = purchListAll.reduce((a, g) => a + g.rows.reduce((x, p) => x + n(p.amount), 0), 0);
   const purchPaidTotal = purchListAll.reduce((a, g) => a + g.rows.reduce((x, p) => x + n(p.paidTotal), 0), 0);
   const purchRemTotal = Math.max(0, purchAmountTotal - purchPaidTotal);
-  const purchTotalsEl = byId("purchTotals");
-  if (purchTotalsEl) {
-    purchTotalsEl.innerHTML = `
-      <span class="total-chip">Qaimə sayı: ${purchListAll.length}</span>
-      <span class="total-chip">Məbləğ cəmi: ${money(purchAmountTotal)} AZN</span>
-      <span class="total-chip">Ödənilən cəmi: ${money(purchPaidTotal)} AZN</span>
-      <span class="total-chip">Qalıq cəmi: ${money(purchRemTotal)} AZN</span>
-    `;
+  const purchFootEl = byId("tblPurchFoot");
+  if (purchFootEl) {
+    purchFootEl.innerHTML = `<tr class="total-row">
+      <td colspan="5"><strong>Cəm</strong> (Qaimə: ${purchListAll.length})</td>
+      <td><strong>${money(purchAmountTotal)} AZN</strong></td>
+      <td><strong>${money(purchPaidTotal)} AZN</strong></td>
+      <td><strong>${money(purchRemTotal)} AZN</strong></td>
+      <td></td>
+    </tr>`;
   }
 
   byId("tblPurch").innerHTML = purchList
@@ -7842,23 +7843,26 @@ function renderAll() {
       if (sub && meta.subCat !== sub) return false;
       return true;
     });
-  const stockTotalsEl = byId("stockTotals");
-  if (stockTotalsEl) {
-    const stockAmountTotal = stockFiltered.reduce((a, { p }) => a + n(p.amount), 0);
-    const stockRemainingValue = stockFiltered.reduce((a, { p }) => {
-      const remQty = purchRemainingQty(p);
-      const isReturned = !!p.returnedAt;
-      const isSold = !isReturned && remQty <= 0;
-      if (isReturned || isSold) return a;
-      const qtyAll = Math.max(1, Math.floor(n(p.qty || 1)));
-      const unit = purchIsBulk(p) ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : (n(p.amount) / qtyAll)) : n(p.amount);
-      return a + (purchIsBulk(p) ? remQty * unit : unit);
-    }, 0);
-    stockTotalsEl.innerHTML = `
-      <span class="total-chip">Sətir sayı: ${stockFiltered.length}</span>
-      <span class="total-chip">Məbləğ cəmi: ${money(stockAmountTotal)} AZN</span>
-      <span class="total-chip">Anbar dəyəri: ${money(stockRemainingValue)} AZN</span>
-    `;
+  const stockAmountTotal = stockFiltered.reduce((a, { p }) => a + n(p.amount), 0);
+  const stockRemainingValue = stockFiltered.reduce((a, { p }) => {
+    const remQty = purchRemainingQty(p);
+    const isReturned = !!p.returnedAt;
+    const isSold = !isReturned && remQty <= 0;
+    if (isReturned || isSold) return a;
+    const qtyAll = Math.max(1, Math.floor(n(p.qty || 1)));
+    const unit = purchIsBulk(p) ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : (n(p.amount) / qtyAll)) : n(p.amount);
+    return a + (purchIsBulk(p) ? remQty * unit : unit);
+  }, 0);
+  const stockFootEl = byId("tblStockFoot");
+  if (stockFootEl) {
+    stockFootEl.innerHTML = `<tr class="total-row">
+      <td colspan="6"><strong>Cəm</strong> (Sətir: ${stockFiltered.length})</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td><strong>${money(stockAmountTotal)} AZN</strong><br><small class="muted">Anbar dəyəri: ${money(stockRemainingValue)} AZN</small></td>
+    </tr>`;
   }
 
   byId("tblStock").innerHTML = stockFiltered
@@ -7906,14 +7910,15 @@ function renderAll() {
   const salesAmountTotal = salesListAll.reduce((a, { s }) => a + n(s.amount), 0);
   const salesPaidTotal = salesListAll.reduce((a, { s }) => a + n(s.paidTotal), 0);
   const salesRemTotal = Math.max(0, salesAmountTotal - salesPaidTotal);
-  const salesTotalsEl = byId("salesTotals");
-  if (salesTotalsEl) {
-    salesTotalsEl.innerHTML = `
-      <span class="total-chip">Sətir sayı: ${salesListAll.length}</span>
-      <span class="total-chip">Məbləğ cəmi: ${money(salesAmountTotal)} AZN</span>
-      <span class="total-chip">Ödənilən cəmi: ${money(salesPaidTotal)} AZN</span>
-      <span class="total-chip">Qalıq cəmi: ${money(salesRemTotal)} AZN</span>
-    `;
+  const salesFootEl = byId("tblSalesFoot");
+  if (salesFootEl) {
+    salesFootEl.innerHTML = `<tr class="total-row">
+      <td colspan="8"><strong>Cəm</strong> (Sətir: ${salesListAll.length})</td>
+      <td><strong>${money(salesAmountTotal)} AZN</strong></td>
+      <td><strong>${money(salesPaidTotal)} AZN</strong></td>
+      <td><strong>${money(salesRemTotal)} AZN</strong></td>
+      <td></td>
+    </tr>`;
   }
 
   byId("tblSales").innerHTML = salesList
