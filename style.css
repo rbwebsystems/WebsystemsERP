@@ -86,7 +86,13 @@ body.theme-dark .last-saved{
   border-color:rgba(255,255,255,.08);
 }
 body.theme-dark .nav-link{color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:none;}
-body.theme-dark .nav-link:hover{background:rgba(255,255,255,.12);}
+body.theme-dark .nav-link:hover{
+  background:#f8fafc;
+  color:#0f172a;
+  border-color:rgba(15,23,42,.12);
+  box-shadow:0 4px 14px rgba(0,0,0,.15);
+}
+body.theme-dark .nav-link:hover i{color:#0f172a;opacity:1;}
 body.theme-dark .nav-link.active{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.22);box-shadow:0 10px 22px rgba(0,0,0,.35);}
 
 /* Nav "window fly" transition ghost */
@@ -709,7 +715,31 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
 .nav-link.dev-sub{padding-left:34px;}
 .dev-toggle{justify-content:space-between;}
 .dev-caret{margin-left:auto;opacity:.85;}
-.nav-link:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18);color:#fff;}
+.nav-link:hover{
+  background:#fff;
+  color:#0f172a;
+  border-color:rgba(15,23,42,.1);
+  box-shadow:0 4px 14px rgba(15,23,42,.1);
+}
+.nav-link:hover i{color:#0f172a;opacity:1;}
+/* Yığılmış sidebar: yalnız ikon tünd, mətn gizli qalır */
+body.sidebar-collapsed .nav-link:hover{
+  color:transparent;
+  font-size:0;
+}
+body.sidebar-collapsed .nav-link:hover i{
+  font-size:14px;
+  color:#0f172a;
+}
+body.theme-dark.sidebar-collapsed .nav-link:hover{
+  background:#f8fafc;
+  color:transparent;
+  font-size:0;
+}
+body.theme-dark.sidebar-collapsed .nav-link:hover i{
+  font-size:14px;
+  color:#0f172a;
+}
 .nav-link.active{
   background:rgba(255,255,255,.12);
   color:#fff;
@@ -1654,7 +1684,9 @@ body.landing-login-open .lp-aurora{
 .lp-fcard:hover{
   background:#fff;
   color:#0f172a;
+  box-shadow:0 8px 28px rgba(15,23,42,.1);
 }
+.lp-fcard:hover h3{color:#0f172a;}
 .lp-fcard-icon{
   width:4rem;height:4rem;
   border-radius:1.5rem;
@@ -1665,10 +1697,13 @@ body.landing-login-open .lp-aurora{
   margin-bottom:1.75rem;
   transition:background .4s;
 }
-.lp-fcard:hover .lp-fcard-icon{background:var(--brand-green);color:#fff;}
+.lp-fcard:hover .lp-fcard-icon{
+  background:rgba(15,23,42,.08);
+  color:#0f172a;
+}
 .lp-fcard h3{font-size:1.35rem;font-weight:900;margin:0 0 .75rem;letter-spacing:-.02em;}
 .lp-fcard p{margin:0;font-size:.95rem;line-height:1.65;opacity:.75;font-weight:500;}
-.lp-fcard:hover p{opacity:1;}
+.lp-fcard:hover p{opacity:1;color:#1e293b;}
 .lp-footer{
   background:#fff;
   border-top:1px solid #f8fafc;
