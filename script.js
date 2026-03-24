@@ -2641,7 +2641,7 @@ function openPurchInfoByInv(invNoRaw) {
   const rows = (db.purch || [])
     .filter((p) => String(p.invNo || "").trim() === invNo)
     .slice()
-    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   if (!rows.length) return alert("Qaimə tapılmadı.");
   const head = rows[0];
   const supp = head.supp || "-";
@@ -3031,7 +3031,10 @@ async function savePurch(e, idx) {
     if (!draft.length) return alert("Ən azı bir məhsul əlavə edin.");
     const supp = val("f_p_supp");
     if (!supp) return alert("Təchizatçı seçin.");
-    const invNo = (val("f_p_inv") || "").trim() || nextInvNo("purch");
+    let invNo = (val("f_p_inv") || "").trim() || nextInvNo("purch");
+    if ((db.purch || []).some((x) => String(x.invNo || "").trim() === invNo)) {
+      invNo = nextInvNo("purch");
+    }
     const date = val("f_p_date");
     const employeeId = (val("f_p_staff") || "").trim() || undefined;
     const actorName = currentActorName();
@@ -3153,9 +3156,15 @@ async function savePurch(e, idx) {
   const invNoVal = (val("f_p_inv") || "").trim();
   const unitPrice = isBulk ? Math.max(0, n(val("f_p_amount"))) : null;
   const totalAmount = isBulk ? unitPrice * qty : Math.max(0, n(val("f_p_amount")));
+  const finalInvNo = (() => {
+    if (idx !== null) return db.purch[idx].invNo || invFallback("purch", db.purch[idx].uid);
+    const desired = invNoVal || nextInvNo("purch");
+    if ((db.purch || []).some((x) => String(x.invNo || "").trim() === String(desired).trim())) return nextInvNo("purch");
+    return desired;
+  })();
   const data = {
     uid: idx !== null ? db.purch[idx].uid : genId(db.purch, 1),
-    invNo: idx !== null ? (db.purch[idx].invNo || invFallback("purch", db.purch[idx].uid)) : (invNoVal || nextInvNo("purch")),
+    invNo: finalInvNo,
     date: val("f_p_date"),
     supp: val("f_p_supp"),
     name: val("f_p_prod"),
