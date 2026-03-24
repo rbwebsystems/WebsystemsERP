@@ -732,96 +732,84 @@
   </div>
   </div>
 
-  <div id="publicLanding" class="public-landing erp-landing-v4">
-    <header>
-      <div class="container nav">
-        <a class="brand" href="javascript:void(0)">
-          <div class="rbsoft-logo rbsoft-logo-compact rbsoft-logo-landing" aria-label="RBSoft logo">
-            <div class="rbsoft-wordmark">
-              <span class="rb">rb</span><span class="soft">soft</span>
-              <span class="rbsoft-dot"></span>
-            </div>
-            <div class="rbsoft-progress"><span></span></div>
+  <div id="publicLanding" class="public-landing lp-home">
+    <div class="lp-aurora" aria-hidden="true">
+      <div class="lp-aurora-blob lp-aurora-blob-a"></div>
+      <div class="lp-aurora-blob lp-aurora-blob-b"></div>
+      <div class="lp-aurora-dots"></div>
+      <div class="lp-aurora-fade"></div>
+    </div>
+
+    <div class="lp-main" id="lpMainContent">
+      <nav class="lp-nav" id="lpNav">
+        <div class="lp-nav-inner">
+          <div class="lp-nav-desktop">
+            <a href="#lp-features" class="lp-nav-link">Haqqımızda</a>
+            <a href="#lp-footer" class="lp-nav-link">Əlaqə</a>
+            <button type="button" class="lp-nav-cta" onclick="openLoginModal()">
+              Daxil ol <i class="fas fa-arrow-right"></i>
+            </button>
           </div>
-        </a>
-
-      </div>
-    </header>
-
-    <main class="container">
-      <section class="hero">
-        <div class="hero-left">
-          <div class="badge">
-            <span class="dot"></span>
-            Müasir idarəetmə və ERP həlli
-          </div>
-
-          <h1>
-            Biznesinizi<br>
-            <span class="accent">bir sistemdə</span><br>
-            idarə edin
-          </h1>
-
-          <p>
-            Satış, anbar və maliyyəni bir platformada birləşdirin.
-            RBSoft gündəlik idarəetməni daha sürətli, daha rahat və daha peşəkar edir.
-          </p>
-
-          <div class="cta-row">
-            <button type="button" class="btn btn-primary" onclick="openLoginModal()">Daxil ol</button>
-            <a class="btn btn-outline" href="#modullar">Sistem haqqında</a>
-          </div>
+          <button type="button" class="lp-nav-burger" id="lpBurger" onclick="toggleLpMenu()" aria-label="Menyu">
+            <i class="fas fa-bars" id="lpBurgerIcon"></i>
+          </button>
         </div>
+        <div class="lp-nav-mobile" id="lpNavMobile" style="display:none">
+          <a href="#lp-features" class="lp-nav-mobile-link" onclick="closeLpMenu()">Haqqımızda</a>
+          <a href="#lp-footer" class="lp-nav-mobile-link" onclick="closeLpMenu()">Əlaqə</a>
+          <button type="button" class="lp-nav-mobile-cta" onclick="openLoginModal(); closeLpMenu();">Daxil ol</button>
+        </div>
+      </nav>
 
-        <div class="hero-right">
-          <div class="wave"></div>
-
-          <div class="dashboard-wrap">
-            <div class="dashboard">
-              <div class="dash-top">
-                <aside class="side">
-                  <div class="side-item active"><span class="ico"></span>Başla</div>
-                  <div class="side-item"><span class="ico"></span>Satış</div>
-                  <div class="side-item"><span class="ico"></span>Anbar</div>
-                  <div class="side-item"><span class="ico"></span>Hesabatlar</div>
-                </aside>
-
-                <div class="main">
-                  <div class="stats">
-                    <div class="stat">
-                      <div class="k">Dövriyyə</div>
-                      <div class="v">₼12,480</div>
+      <section class="lp-hero">
+        <div class="lp-hero-grid">
+          <div class="lp-hero-left">
+            <div class="lp-hero-brand">
+              <div class="rbsoft-wordmark lp-hero-wordmark">
+                <span class="rb">rb</span><span class="soft">soft</span>
+                <span class="rbsoft-dot"></span>
+              </div>
+              <div class="rbsoft-progress lp-hero-bar"><span></span></div>
+              <div class="lp-hero-ready">
+                <span class="lp-hero-ready-dot"></span>
+                <span>Sistem hazırdır</span>
+              </div>
+            </div>
+            <div class="lp-hero-copy">
+              <h1 class="lp-hero-title">
+                Müəssisənizi <span class="lp-hero-accent">Ağıllı</span> idarə edin.
+              </h1>
+              <p class="lp-hero-lead">
+                RBSoft ilə maliyyə, anbar, satış və insan resurslarını tək platformadan izləyin. Biznesiniz üçün minimalist və effektiv həll.
+              </p>
+            </div>
+          </div>
+          <div class="lp-hero-right">
+            <div class="lp-mock-wrap">
+              <div class="lp-mock-outer">
+                <div class="lp-mock-inner">
+                  <div class="lp-mock-screen">
+                    <div class="lp-mock-top">
+                      <div>
+                        <div class="lp-mock-line-a"></div>
+                        <div class="lp-mock-line-b"></div>
+                      </div>
+                      <div class="lp-mock-icon"><i class="fas fa-chart-column"></i></div>
                     </div>
-                    <div class="stat">
-                      <div class="k">Sifariş</div>
-                      <div class="v">94</div>
+                    <div class="lp-mock-bars">
+                      <span style="height:50%"></span>
+                      <span style="height:30%"></span>
+                      <span style="height:70%"></span>
+                      <span style="height:40%"></span>
+                      <span style="height:95%"></span>
+                      <span style="height:60%"></span>
+                      <span style="height:80%"></span>
                     </div>
-                    <div class="stat">
-                      <div class="k">Müştəri</div>
-                      <div class="v">1,276</div>
+                    <div class="lp-mock-badge">
+                      <div class="lp-mock-pct">98%</div>
+                      <div class="lp-mock-badge-lbl">Sinxronizasiya</div>
                     </div>
                   </div>
-
-                  <div class="chart-card">
-                    <div class="chart-title">Dashboard</div>
-                    <div class="chart-grid">
-                      <div class="bar"></div>
-                      <div class="bar"></div>
-                      <div class="bar"></div>
-                      <div class="bar"></div>
-                      <div class="bar"></div>
-                      <div class="bar"></div>
-                    </div>
-                    <div class="chart-labels">
-                      <span>Yan</span>
-                      <span>Fev</span>
-                      <span>Mar</span>
-                      <span>Apr</span>
-                      <span>May</span>
-                      <span>İyn</span>
-                    </div>
-                  </div>
-
                 </div>
               </div>
             </div>
@@ -829,174 +817,124 @@
         </div>
       </section>
 
-      <section class="cards-row">
-        <div class="small-card">
-          <div class="small-top">
-            <div class="small-ico">▤</div>
-            <div class="small-title">Satış</div>
-          </div>
-          <div class="small-desc">Pərakəndə, qaimə və gündəlik satış əməliyyatları.</div>
-        </div>
-
-        <div class="small-card">
-          <div class="small-top">
-            <div class="small-ico">◫</div>
-            <div class="small-title">Anbar</div>
-          </div>
-          <div class="small-desc">Stok və qalıq, giriş-çıxış və məhsul nəzarəti.</div>
-        </div>
-
-        <div class="small-card">
-          <div class="small-top">
-            <div class="small-ico">▮</div>
-            <div class="small-title">Hesabat</div>
-          </div>
-          <div class="small-desc">Canlı statistikalar və idarəetmə üçün vacib göstəricilər.</div>
+      <section class="lp-stats">
+        <div class="lp-stats-grid">
+          <div class="lp-stat"><div class="lp-stat-val">10k+</div><div class="lp-stat-lbl">İstifadəçi</div></div>
+          <div class="lp-stat"><div class="lp-stat-val">500+</div><div class="lp-stat-lbl">Müəssisə</div></div>
+          <div class="lp-stat"><div class="lp-stat-val">24/7</div><div class="lp-stat-lbl">Dəstək</div></div>
+          <div class="lp-stat"><div class="lp-stat-val">SSL</div><div class="lp-stat-lbl">Təhlükəsizlik</div></div>
         </div>
       </section>
 
-      <section class="section" id="modullar">
-        <div class="section-title">Əsas modullar</div>
-        <div class="section-sub">
-          RBSoft Systems gündəlik iş axınını asanlaşdırmaq üçün hazırlanmış əsas idarəetmə
-          modullarını bir mərkəzdə təqdim edir.
-        </div>
-
-        <div class="module-grid">
-          <div class="module">
-            <div class="mi">▤</div>
-            <h3>Satış</h3>
-            <p>Kassa, qaimə, satış tarixçəsi və nəzarət paneli.</p>
+      <section class="lp-features" id="lp-features">
+        <div class="lp-features-inner">
+          <div class="lp-features-head">
+            <h2>Mükəmməllik üçün dizayn edilib</h2>
+            <p class="lp-features-quote">«Mürəkkəb proseslərə minimalist yanaşma.»</p>
           </div>
-
-          <div class="module">
-            <div class="mi">◫</div>
-            <h3>Anbar</h3>
-            <p>Məhsul qalığı, giriş-çıxış və stok idarəetməsi.</p>
-          </div>
-
-          <div class="module" id="haqqinda">
-            <div class="mi">◉</div>
-            <h3>Müştərilər</h3>
-            <p>Borc, ödəniş, əlaqə məlumatları və tarixçə.</p>
-          </div>
-
-          <div class="module">
-            <div class="mi">▮</div>
-            <h3>Hesabatlar</h3>
-            <p>Canlı statistikalar, mənfəət və analitik göstəricilər.</p>
+          <div class="lp-features-grid">
+            <article class="lp-fcard">
+              <div class="lp-fcard-icon"><i class="fas fa-chart-column"></i></div>
+              <h3>Maliyyə nəzarəti</h3>
+              <p>Bütün gəlir və xərclərinizi anlıq qrafiklərlə izləyin, hesabatları saniyələr içində hazırlayın.</p>
+            </article>
+            <article class="lp-fcard">
+              <div class="lp-fcard-icon"><i class="fas fa-table-cells-large"></i></div>
+              <h3>Anbar idarəetməsi</h3>
+              <p>Məhsul dövriyyəsini, qalıqları və tədarük zəncirini avtomatlaşdırılmış şəkildə idarə edin.</p>
+            </article>
+            <article class="lp-fcard">
+              <div class="lp-fcard-icon"><i class="fas fa-shield-halved"></i></div>
+              <h3>Məlumat təhlükəsizliyi</h3>
+              <p>Müəssisənizin kritik məlumatları ən yüksək səviyyədə qorunur.</p>
+            </article>
           </div>
         </div>
       </section>
 
-      <footer id="elaqe">
-        <div class="foot">
-          <span>Modullar</span>
-          <span>Haqqında</span>
-          <span>Əlaqə</span>
+      <footer class="lp-footer" id="lp-footer">
+        <div class="lp-footer-grid">
+          <div class="lp-footer-brand">
+            <div class="rbsoft-wordmark lp-footer-logo">
+              <span class="rb">rb</span><span class="soft">soft</span>
+            </div>
+            <p>Azərbaycanın biznes mühitini rəqəmsal gələcəyə hazırlayırıq. Çevik, müasir və etibarlı.</p>
+          </div>
+          <div>
+            <h4 class="lp-footer-h">Naviqasiya</h4>
+            <ul class="lp-footer-ul">
+              <li><a href="#lp-features">Haqqımızda</a></li>
+              <li><a href="#lp-footer">Əlaqə</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="lp-footer-h">Hüquqi</h4>
+            <ul class="lp-footer-ul">
+              <li><a href="javascript:void(0)" onclick="appAlert('Məxfilik siyasəti tezliklə əlavə olunacaq.'); return false;">Məxfilik</a></li>
+              <li><a href="javascript:void(0)" onclick="appAlert('İstifadə şərtləri tezliklə əlavə olunacaq.'); return false;">Şərtlər</a></li>
+            </ul>
+          </div>
         </div>
-        <div class="copy">© 2026 RBSoft Systems — Bütün hüquqlar qorunur</div>
+        <div class="lp-footer-bottom">
+          <span>© 2026 RBSoft</span>
+        </div>
       </footer>
-    </main>
+    </div>
   </div>
 
   <div class="modal" id="mdlMain">
     <div class="modal-body" id="modalContent"></div>
   </div>
 
-  <div class="login-overlay" id="loginOverlay">
-    <div class="login-v2-bg" aria-hidden="true">
-      <div class="login-v2-blob login-v2-blob-a"></div>
-      <div class="login-v2-blob login-v2-blob-b"></div>
-      <div class="login-v2-grid"></div>
-      <div class="login-v2-shape login-v2-shape-a"></div>
-      <div class="login-v2-shape login-v2-shape-b"></div>
-    </div>
-    <div class="login-v2-shell">
-      <button type="button" class="login-v2-close" onclick="closeLoginModal()" aria-label="Bağla"><i class="fas fa-xmark"></i></button>
-      <div class="login-v2-panel">
-        <div class="login-v2-left">
-          <div class="login-v2-left-glow"></div>
-          <div class="login-v2-left-inner">
-            <h2 class="login-v2-left-title">Müəssisənizi rəqəmsal idarə edin</h2>
-            <p class="login-v2-left-lead">
-              RBSoft ERP ilə bütün biznes proseslərinizi tək platformadan izləyin, hesabatlılığı artırın və vaxtınıza qənaət edin.
-            </p>
-            <ul class="login-v2-features">
-              <li>
-                <span class="login-v2-ficon"><i class="fas fa-chart-column"></i></span>
-                <span>
-                  <strong>Real-vaxt analitika</strong>
-                  <small>Anlıq məlumatlarla doğru qərarlar verin.</small>
-                </span>
-              </li>
-              <li>
-                <span class="login-v2-ficon"><i class="fas fa-table-cells-large"></i></span>
-                <span>
-                  <strong>Modul quruluş</strong>
-                  <small>Ehtiyacınıza uyğun modulları aktivləşdirin.</small>
-                </span>
-              </li>
-              <li>
-                <span class="login-v2-ficon"><i class="fas fa-shield-halved"></i></span>
-                <span>
-                  <strong>Yüksək təhlükəsizlik</strong>
-                  <small>Məlumatlarınız bizim üçün önəmlidir.</small>
-                </span>
-              </li>
-            </ul>
-            <p class="login-v2-copy">© 2026 RBSoft</p>
-          </div>
+  <div class="login-overlay login-v3" id="loginOverlay">
+    <div class="login-v3-backdrop" onclick="closeLoginModal()" aria-hidden="true"></div>
+    <div class="login-v3-card" role="dialog" aria-modal="true" aria-labelledby="loginV3Title" onclick="event.stopPropagation()">
+      <button type="button" class="login-v3-x" onclick="closeLoginModal()" aria-label="Bağla"><i class="fas fa-xmark"></i></button>
+      <div class="login-v3-brand">
+        <div class="rbsoft-wordmark">
+          <span class="rb">rb</span><span class="soft">soft</span>
+          <span class="rbsoft-dot"></span>
         </div>
-        <div class="login-v2-right">
-          <div class="login-v2-brand">
-            <div class="rbsoft-wordmark">
-              <span class="rb">rb</span><span class="soft">soft</span>
-              <span class="rbsoft-dot"></span>
-            </div>
-            <div class="rbsoft-progress login-v2-brand-bar"><span></span></div>
-          </div>
-          <div class="login-v2-welcome">
-            <h1>Xoş gəlmisiniz!</h1>
-            <p>Sistemə daxil olmaq üçün məlumatlarınızı daxil edin.</p>
-          </div>
-          <form class="login-form-v2" onsubmit="login(event)">
-            <div id="loginCompanyWrap" class="login-company-wrap login-v2-company hidden">
-              <label for="loginCompany">Şirkət</label>
-              <select id="loginCompany" class="login-v2-select"></select>
-            </div>
-            <div class="login-v2-field">
-              <label for="loginUser">İstifadəçi adı</label>
-              <div class="login-v2-input-wrap">
-                <span class="login-v2-icon" aria-hidden="true"><i class="fas fa-user"></i></span>
-                <input id="loginUser" placeholder="İstifadəçi adı" autocomplete="username" required>
-              </div>
-            </div>
-            <div class="login-v2-field">
-              <label for="loginPass">Şifrə</label>
-              <div class="login-v2-input-wrap">
-                <span class="login-v2-icon" aria-hidden="true"><i class="fas fa-lock"></i></span>
-                <input id="loginPass" placeholder="••••••••" type="password" autocomplete="current-password" required>
-                <button type="button" class="login-v2-eye" id="loginPassToggle" onclick="toggleLoginPassword()" aria-label="Şifrəni göstər/gizlət">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </div>
-            </div>
-            <div class="login-v2-row">
-              <label class="login-v2-check">
-                <input type="checkbox" id="loginRemember">
-                <span>Məni xatırla</span>
-              </label>
-              <a href="javascript:void(0)" class="login-v2-forgot" onclick="appAlert('Şifrə bərpası üçün administratorla əlaqə saxlayın.'); return false;">Şifrəni unutmusunuz?</a>
-            </div>
-            <button class="login-v2-submit" type="submit">
-              Daxil ol
-              <i class="fas fa-arrow-right"></i>
-            </button>
-          </form>
-          <small class="login-v2-hint" id="loginHint"></small>
-        </div>
+        <div class="rbsoft-progress login-v3-brand-bar"><span></span></div>
       </div>
+      <div class="login-v3-welcome">
+        <h1 id="loginV3Title">Xoş gəlmisiniz!</h1>
+        <p>Sistemə daxil olun</p>
+      </div>
+      <form class="login-form-v3" onsubmit="login(event)">
+        <div id="loginCompanyWrap" class="login-company-wrap login-v3-company hidden">
+          <label class="login-v3-lbl" for="loginCompany">Şirkət</label>
+          <select id="loginCompany" class="login-v3-select"></select>
+        </div>
+        <div class="login-v3-field">
+          <label class="login-v3-lbl" for="loginUser">İstifadəçi adı</label>
+          <div class="login-v3-input-wrap">
+            <span class="login-v3-ico" aria-hidden="true"><i class="fas fa-user"></i></span>
+            <input id="loginUser" placeholder="istifadəçi_adı" autocomplete="username" required>
+          </div>
+        </div>
+        <div class="login-v3-field">
+          <label class="login-v3-lbl" for="loginPass">Şifrə</label>
+          <div class="login-v3-input-wrap">
+            <span class="login-v3-ico" aria-hidden="true"><i class="fas fa-lock"></i></span>
+            <input id="loginPass" placeholder="••••••••" type="password" autocomplete="current-password" required>
+            <button type="button" class="login-v3-eye" id="loginPassToggle" onclick="toggleLoginPassword()" aria-label="Şifrəni göstər">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="login-v3-row">
+          <label class="login-v3-check">
+            <input type="checkbox" id="loginRemember">
+            <span>Məni xatırla</span>
+          </label>
+          <a href="javascript:void(0)" class="login-v3-forgot" onclick="appAlert('Şifrə bərpası üçün administratorla əlaqə saxlayın.'); return false;">Şifrə bərpası</a>
+        </div>
+        <button class="login-v3-submit" type="submit">
+          Daxil ol <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+      <small class="login-v3-hint" id="loginHint"></small>
     </div>
   </div>
 

@@ -1415,6 +1415,8 @@ function openLoginModal() {
   if (!ov) return;
   prepareLoginForm();
   ov.style.display = "flex";
+  document.body.classList.add("landing-login-open");
+  closeLpMenu();
   setTimeout(() => byId("loginUser")?.focus(), 0);
 }
 
@@ -1422,6 +1424,33 @@ function closeLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
   ov.style.display = "none";
+  document.body.classList.remove("landing-login-open");
+}
+
+function setupLandingPage() {
+  const nav = byId("lpNav");
+  if (!nav) return;
+  const onScroll = () => {
+    nav.classList.toggle("lp-nav-scrolled", window.scrollY > 20);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
+
+function toggleLpMenu() {
+  const m = byId("lpNavMobile");
+  const icon = byId("lpBurgerIcon");
+  if (!m) return;
+  const hidden = window.getComputedStyle(m).display === "none";
+  m.style.display = hidden ? "flex" : "none";
+  if (icon) icon.className = hidden ? "fas fa-xmark" : "fas fa-bars";
+}
+
+function closeLpMenu() {
+  const m = byId("lpNavMobile");
+  const icon = byId("lpBurgerIcon");
+  if (m) m.style.display = "none";
+  if (icon) icon.className = "fas fa-bars";
 }
 
 function doLoginWithCompany(companyId) {
@@ -9148,6 +9177,8 @@ Object.assign(window, {
   openLoginModal,
   closeLoginModal,
   toggleLoginPassword,
+  toggleLpMenu,
+  closeLpMenu,
   toggleSidebar,
   openAuditDetails,
   openGlobalSearch,
@@ -9178,6 +9209,7 @@ function initApp() {
   applySidebarState();
   setupNavTooltips();
   initHeaderCompactSearch();
+  setupLandingPage();
   if (!meta.session) {
     showLoginOverlay(true);
     return;
