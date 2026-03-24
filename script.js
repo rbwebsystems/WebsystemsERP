@@ -2635,6 +2635,63 @@ function openPurchInfo(idx) {
   `);
 }
 
+function openPurchInfoByInv(invNoRaw) {
+  const invNo = String(invNoRaw || "").trim();
+  if (!invNo) return;
+  const rows = (db.purch || [])
+    .filter((p) => String(p.invNo || "").trim() === invNo)
+    .slice()
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  if (!rows.length) return alert("Qaimə tapılmadı.");
+  const head = rows[0];
+  const supp = head.supp || "-";
+  const staff = head.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(head.employeeId)) : null;
+  const staffName = staff ? staff.name : "-";
+  const totalAmount = rows.reduce((a, p) => a + n(p.amount), 0);
+  const totalPaid = rows.reduce((a, p) => a + n(p.paidTotal), 0);
+  const totalRem = Math.max(0, totalAmount - totalPaid);
+  const listRows = rows
+    .map((p, i) => {
+      const isBulk = purchIsBulk(p);
+      const qty = isBulk ? Math.max(1, Math.floor(n(p.qty || 1))) : 1;
+      const unit = isBulk ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : n(p.amount) / qty) : n(p.amount);
+      const codeOrImei = isBulk ? (p.code || "-") : (p.imei1 || p.imei2 || p.seria || "-");
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(p.name || "-")}</td>
+        <td>${isBulk ? "Sayla" : "Seriyalı"}</td>
+        <td>${escapeHtml(codeOrImei)}</td>
+        <td>${qty}</td>
+        <td>${money(unit)} AZN</td>
+        <td>${money(p.amount)} AZN</td>
+      </tr>`;
+    })
+    .join("");
+  openModal(`
+    <h2>Alış – Qaimə Məlumatı</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Qaimə №</div><div class="info-value">${escapeHtml(invNo)}</div></div>
+      <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(head.date)}</div></div>
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(supp)}</div></div>
+      <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(staffName)}</div></div>
+    </div>
+    <div class="table-wrap" style="margin-top:10px;">
+      <table>
+        <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Kod/IMEI</th><th>Say</th><th>1 ədəd qiymət</th><th>Məbləğ</th></tr></thead>
+        <tbody>${listRows}</tbody>
+        <tfoot><tr class="total-row"><td colspan="6">Cəmi</td><td>${money(totalAmount)} AZN</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="info-block" style="margin-top:10px;">
+      <div class="info-row"><div class="info-label">Ödənilən</div><div class="info-value">${money(totalPaid)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(totalRem)} AZN</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
 function openReturnPurch(idx) {
   if (!userCanEdit()) return alert("İcazə yoxdur.");
   const p = db.purch[idx];
@@ -2724,7 +2781,7 @@ function openPurch(idx = null) {
         </select>
         <select id="f_p_staff" class="span-3">${staffOptions}</select>
 
-        <select id="f_p_prod" class="span-3" required>
+        <select id="f_p_prod" class="span-3" ${idx !== null ? "required" : ""}>
           <option value="">Məhsul seç</option>
           ${prodOptions}
         </select>
@@ -2747,7 +2804,7 @@ function openPurch(idx = null) {
           <input id="f_p_ser" value="${escapeHtml(p.seria || "")}" placeholder="Seriya №">
         </div>
 
-        <input type="number" step="0.01" id="f_p_amount" value="${escapeAttr(isBulk ? String(prefUnit) : String(p.amount))}" placeholder="${isBulk ? "1 ədəd qiymət (AZN)" : "Məbləğ (AZN)"}" class="span-2" required>
+        <input type="number" step="0.01" id="f_p_amount" value="${escapeAttr(isBulk ? String(prefUnit) : String(p.amount))}" placeholder="${isBulk ? "1 ədəd qiymət (AZN)" : "Məbləğ (AZN)"}" class="span-2" ${idx !== null ? "required" : ""}>
         <select id="f_p_payType">
           <option value="nagd" ${p.payType === "nagd" ? "selected" : ""}>nagd</option>
           <option value="kocurme" ${p.payType === "kocurme" ? "selected" : ""}>kocurme</option>
@@ -3713,7 +3770,7 @@ function openSale(idx = null) {
         <select id="f_s_customer" class="span-2" required>${custOptions}</select>
         <select id="f_s_staff" required>${staffOptions}</select>
 
-        <select id="f_s_item" class="span-3" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" required>
+        <select id="f_s_item" class="span-3" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" ${isEdit ? "required" : ""}>
           ${fifoOptions ? `<optgroup label="AUTO">${fifoOptions}</optgroup>` : ""}
           <optgroup label="Anbar">${itemOptions}</optgroup>
         </select>
@@ -3722,7 +3779,7 @@ function openSale(idx = null) {
           <input type="number" step="1" min="1" id="f_s_qty" class="span-3" placeholder="Say">
         </div>
 
-        <input type="number" step="0.01" id="f_s_amount" class="span-2" placeholder="Ümumi məbləğ (AZN)" required oninput="recalcCredit()">
+        <input type="number" step="0.01" id="f_s_amount" class="span-2" placeholder="Ümumi məbləğ (AZN)" ${isEdit ? "required" : ""} oninput="recalcCredit()">
         <div id="sTotalHint" class="span-3 muted small" style="display:none">Cəmi: —</div>
         <div class="span-3 paybox">
           <label class="chk">
@@ -7523,51 +7580,56 @@ function renderAll() {
 
   // purchases (latest first) + date filter + pagination
   const purchStatus = byId("purchStatus")?.value || "active";
-  const purchListAll = db.purch
+  const purchGroupsMap = new Map();
+  (db.purch || [])
     .map((p, idx) => ({ p, idx }))
     .filter(({ p }) => (purchStatus === "all" ? true : purchStatus === "returned" ? !!p.returnedAt : !p.returnedAt))
     .filter(({ p }) => inDateRange(p.date, "purchFrom", "purchTo"))
-    .sort((a, b) => String(a.p.date).localeCompare(String(b.p.date)) * -1);
+    .forEach(({ p, idx }) => {
+      const inv = String(p.invNo || invFallback("purch", p.uid));
+      if (!purchGroupsMap.has(inv)) {
+        purchGroupsMap.set(inv, { invNo: inv, supp: p.supp || "-", date: p.date || "", rows: [], idxList: [] });
+      }
+      const g = purchGroupsMap.get(inv);
+      g.rows.push(p);
+      g.idxList.push(idx);
+      if (String(p.date || "") > String(g.date || "")) g.date = p.date || g.date;
+      if (!g.supp && p.supp) g.supp = p.supp;
+    });
+  const purchListAll = Array.from(purchGroupsMap.values()).sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) * -1);
 
   const purchPageSize = getPageSize("purchPageSize", 50);
   const purchList = paginate(purchListAll, "purch", purchPageSize, "purchPageInfo");
 
   byId("tblPurch").innerHTML = purchList
-    .map(({ p, idx }, i) => {
-      const rem = purchRemaining(p);
+    .map((g, i) => {
+      const amountSum = g.rows.reduce((a, p) => a + n(p.amount), 0);
+      const paidSum = g.rows.reduce((a, p) => a + n(p.paidTotal), 0);
+      const rem = Math.max(0, amountSum - paidSum);
+      const itemCount = g.rows.length;
+      const names = Array.from(new Set(g.rows.map((p) => p.name).filter(Boolean)));
+      const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
       const actions = `
-        <button class="icon-btn info" onclick="openPurchInfo(${idx})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openPurch(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
-        ${userCanDelete("purch") ? `<button class="icon-btn delete" onclick="delItem('purch', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+        <button class="icon-btn info" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}')" title="Məlumat"><i class="fas fa-circle-info"></i></button>
       `;
-      const invNo = p.invNo || invFallback("purch", p.uid);
       const searchText = [
-        p.uid,
-        invNo,
-        p.date,
-        p.supp,
-        p.name,
-        p.code,
-        p.qty,
-        p.imei1,
-        p.imei2,
-        p.seria,
-        p.amount,
-        p.paidTotal,
-        p.payType,
+        g.invNo,
+        g.date,
+        g.supp,
+        ...g.rows.map((p) => [p.name, p.code, p.imei1, p.imei2, p.seria, p.amount, p.paidTotal, p.payType, p.qty]).flat(),
       ]
         .filter((x) => x != null && String(x).trim() !== "")
         .join(" ");
       return `
       <tr>
         <td>${i + 1}</td>
-        <td>${escapeHtml(invNo)}</td>
-        <td>${fmtDT(p.date)}</td>
-        <td>${escapeHtml(p.supp)}</td>
-        <td>${escapeHtml(p.name)}</td>
-        <td>${purchIsBulk(p) ? String(Math.max(1, Math.floor(n(p.qty || 1)))) : ""}</td>
-        <td>${money(p.amount)} AZN</td>
-        <td>${money(p.paidTotal)} AZN</td>
+        <td>${escapeHtml(g.invNo)}</td>
+        <td>${fmtDT(g.date)}</td>
+        <td>${escapeHtml(g.supp || "-")}</td>
+        <td>${escapeHtml(namePreview || "-")}</td>
+        <td>${itemCount}</td>
+        <td>${money(amountSum)} AZN</td>
+        <td>${money(paidSum)} AZN</td>
         <td>${money(rem)} AZN</td>
         <td class="tbl-actions">${actions}<span style="display:none">${escapeHtml(searchText)}</span></td>
       </tr>`;
