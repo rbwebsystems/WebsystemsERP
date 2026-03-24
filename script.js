@@ -1954,12 +1954,51 @@ function paginate(list, pageKey, pageSize, infoElId) {
 
 // Modal helpers
 const modal = document.getElementById("mdlMain");
+function renderModalWithNav(rawHtml) {
+  const hist = window.__modalHistory || [];
+  const canBack = hist.length > 0;
+  const nav = canBack
+    ? `<div class="modal-nav-top"><button class="btn-cancel" type="button" onclick="modalBack()"><i class="fas fa-arrow-left"></i> Geri</button></div>`
+    : "";
+  return `${nav}${rawHtml}`;
+}
 function openModal(html) {
-  document.getElementById("modalContent").innerHTML = html;
+  const body = document.getElementById("modalContent");
+  if (!body) return;
+  const now = Date.now();
+  const alreadyOpen = modal.style.display === "flex";
+  const justClosed = window.__modalJustClosedAt && now - window.__modalJustClosedAt < 350;
+  const curRaw = window.__currentModalRaw || "";
+  if ((alreadyOpen || justClosed) && curRaw) {
+    window.__modalHistory = window.__modalHistory || [];
+    window.__modalHistory.push(curRaw);
+  } else if (!alreadyOpen) {
+    window.__modalHistory = [];
+  }
+  window.__currentModalRaw = html;
+  body.innerHTML = renderModalWithNav(html);
+  modal.style.display = "flex";
+  window.__modalJustClosedAt = 0;
+}
+function modalBack() {
+  const body = document.getElementById("modalContent");
+  const hist = window.__modalHistory || [];
+  if (!body || !hist.length) return;
+  const prevRaw = hist.pop();
+  window.__currentModalRaw = prevRaw;
+  body.innerHTML = renderModalWithNav(prevRaw);
   modal.style.display = "flex";
 }
 function closeMdl() {
   modal.style.display = "none";
+  window.__modalJustClosedAt = Date.now();
+  setTimeout(() => {
+    const stillClosed = modal.style.display !== "flex";
+    if (stillClosed && window.__modalJustClosedAt && Date.now() - window.__modalJustClosedAt >= 320) {
+      window.__modalHistory = [];
+      window.__currentModalRaw = "";
+    }
+  }, 340);
 }
 
 function appAlert(msg, title = "Bildiriş") {
@@ -8925,6 +8964,7 @@ Object.assign(window, {
   pageNext,
   filterTable,
   closeMdl,
+  modalBack,
   login,
   logout,
   openCust,

@@ -2166,6 +2166,11 @@ tr.total-row td{padding:10px 12px;}
   box-shadow:0 20px 40px rgba(0,0,0,.15);
 }
 .modal-body h2{margin-bottom:14px;}
+.modal-nav-top{
+  display:flex;
+  justify-content:flex-start;
+  margin-bottom:10px;
+}
 .modal-footer{
   margin-top:18px;
   display:flex;
