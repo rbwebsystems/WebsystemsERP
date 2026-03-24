@@ -1089,6 +1089,14 @@ body.landing-login-open .lp-aurora{
   display:flex;
   flex-direction:column;
   overflow-x:hidden;
+  /* Sabit topbar üçün yer — məzmun (o cümlədən dashboard mock) nav xəttinin altından başlasın */
+  padding-top:max(8.75rem, calc(6.25rem + env(safe-area-inset-top, 0px)));
+  box-sizing:border-box;
+}
+@media (min-width:768px){
+  .lp-main{
+    padding-top:max(9.5rem, calc(6.75rem + env(safe-area-inset-top, 0px)));
+  }
 }
 .lp-nav{
   position:fixed;
@@ -1099,9 +1107,12 @@ body.landing-login-open .lp-aurora{
   transition:background .3s, box-shadow .3s, padding .3s;
   padding:1.5rem 0;
   box-sizing:border-box;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
 }
 .lp-nav.lp-nav-scrolled{
-  background:rgba(255,255,255,.92);
+  background:rgba(255,255,255,.96);
   backdrop-filter:blur(12px);
   -webkit-backdrop-filter:blur(12px);
   box-shadow:0 1px 3px rgba(15,23,42,.06);
@@ -1200,15 +1211,13 @@ body.landing-login-open .lp-aurora{
 .lp-hero{
   width:100%;
   max-width:100%;
-  /* Nav altında kifayət boşluq: başlıq yerində, məzmun aşağı */
-  padding:7.5rem max(1rem, env(safe-area-inset-left)) 3rem max(1rem, env(safe-area-inset-right));
-  padding-top:max(7.5rem, calc(5rem + env(safe-area-inset-top, 0px)));
+  /* Üst boşluq əsasən .lp-main padding-top ilə verilir */
+  padding:1.75rem max(1rem, env(safe-area-inset-left)) 3rem max(1rem, env(safe-area-inset-right));
   box-sizing:border-box;
 }
 @media (min-width:768px){
   .lp-hero{
-    padding:10rem max(1.5rem, env(safe-area-inset-left)) 5rem max(1.5rem, env(safe-area-inset-right));
-    padding-top:max(10rem, calc(7rem + env(safe-area-inset-top, 0px)));
+    padding:2.25rem max(1.5rem, env(safe-area-inset-left)) 5rem max(1.5rem, env(safe-area-inset-right));
   }
 }
 .lp-hero-grid{
