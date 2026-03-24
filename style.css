@@ -1,10 +1,11 @@
 :root{
   --bg-main:#f9fafb;
   --sidebar-bg:#ffffff;
-  --accent:#0D9488;
-  --accent-hover:#0b7a6f;
-  --accent-light:#ccfbf1;
-  --sidebar-solid:#0D9488;
+  /* Ana səhifə ilə eyni emerald (Tailwind emerald-600/700/100) */
+  --accent:#059669;
+  --accent-hover:#047857;
+  --accent-light:#d1fae5;
+  --sidebar-solid:#059669;
   --text-main:#111827;
   --text-muted:#6b7280;
   --border-color:#e5e7eb;
@@ -28,6 +29,8 @@ body.theme-dark{
   --text-main:#f9fafb;
   --text-muted:#9ca3af;
   --border-color:#374151;
+  --accent:#10b981;
+  --accent-hover:#059669;
   --accent-light:#064e3b;
   --stock-bg:#064e3b;
   --stock-border:#047857;
@@ -277,7 +280,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 .header-logo .logo-svg{max-height:52px;}
 .header-rest{
   flex:1;
-  background:#0D9488;
+  background:var(--sidebar-solid);
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -356,7 +359,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 .hidden{display:none !important;}
 .realtime-indicator{
   font-size:.75rem;
-  color:rgba(13,148,136,.95);
+  color:rgba(5,150,105,.95);
   margin-right:8px;
   padding:2px 8px;
   border-radius:6px;
@@ -426,7 +429,7 @@ body.theme-dark .profile-dropdown{
 }
 body.theme-dark .profile-dropdown-item{color:#f9fafb;}
 body.theme-dark .profile-dropdown-item:hover{background:#4b5563;}
-body.theme-dark .profile-dropdown-item-active{background:rgba(13,148,136,.25);color:#5eead4;}
+body.theme-dark .profile-dropdown-item-active{background:rgba(16,185,129,.22);color:#6ee7b7;}
 body.theme-dark .profile-dropdown-sep{background:#4b5563;}
 
 @media (max-width:640px){
@@ -2735,13 +2738,13 @@ body.landing-login-open .lp-aurora{
 }
 
 .btn-main{
-  background:linear-gradient(135deg,#0D9488,#0b7a6f);
+  background:linear-gradient(135deg,var(--accent),var(--accent-hover));
   color:#fff;border:none;height:42px;padding:0 22px;border-radius:999px;font-weight:800;
   cursor:pointer;display:inline-flex;align-items:center;gap:8px;
   transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
-  box-shadow:0 10px 20px rgba(13,148,136,.25);font-size:.9rem;
+  box-shadow:0 10px 20px rgba(5,150,105,.28);font-size:.9rem;
 }
-.btn-main:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 14px 26px rgba(13,148,136,.35);}
+.btn-main:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 14px 26px rgba(5,150,105,.38);}
 .btn-cancel{
   background:#f3f4f6;color:#4b5563;border:none;height:42px;padding:0 18px;border-radius:999px;
   font-weight:700;cursor:pointer;display:inline-flex;align-items:center;
@@ -2749,7 +2752,7 @@ body.landing-login-open .lp-aurora{
 }
 .btn-cancel:hover{background:#e5e7eb;transform:translateY(-1px);}
 .btn-secondary{
-  background:#fff;color:#0D9488;border:2px solid #0D9488;height:42px;padding:0 18px;border-radius:999px;
+  background:#fff;color:var(--accent);border:2px solid var(--accent);height:42px;padding:0 18px;border-radius:999px;
   font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
   transition:background .15s ease,color .15s ease,transform .15s ease;font-size:.9rem;
 }
