@@ -1503,12 +1503,21 @@ function login(e) {
   window.__pendingLogin = { u, pass };
   if (u.role === "developer") {
     const list = (meta.companies || [])
-      .map((c) => `<button type="button" class="btn-main" style="width:100%;margin-bottom:8px;text-align:left;padding:12px 16px;" onclick="closeMdl();window.__developerCompanyCallback('${escapeAttr(c.id)}');">${escapeHtml(c.name)} <small class="muted">(${escapeHtml(c.id)})</small></button>`)
+      .map(
+        (c) =>
+          `<button type="button" class="dev-company-item" onclick="closeMdl();window.__developerCompanyCallback('${escapeAttr(c.id)}');"><span class="dev-co-name">${escapeHtml(c.name)}</span><span class="dev-co-id">${escapeHtml(c.id)}</span></button>`
+      )
       .join("");
-    const html = `<div class="modal-body"><h3 style="margin-bottom:16px;">Şirkət seçin</h3><div style="display:flex;flex-direction:column;max-height:60vh;overflow-y:auto;">${list || "<p class=\"muted\">Şirkət yoxdur.</p>"}</div></div>`;
+    const html = `
+      <div class="pick-company-modal">
+        <h2 class="pick-company-title">Şirkət seçin</h2>
+        <p class="pick-company-sub">Davam etmək üçün şirkət seçin.</p>
+        <div class="pick-company-list">${list || "<p class=\"muted\">Şirkət yoxdur.</p>"}</div>
+      </div>`;
     window.__developerCompanyCallback = (companyId) => {
       doLoginWithCompany(companyId);
     };
+    closeLoginModal();
     openModal(html);
     return;
   }
