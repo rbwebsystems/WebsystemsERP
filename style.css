@@ -1,19 +1,19 @@
 :root{
   --bg-main:#f9fafb;
   --sidebar-bg:#ffffff;
-  --accent:#0D9488;
-  --accent-hover:#0b7a6f;
-  --accent-light:#ccfbf1;
-  --sidebar-solid:#0D9488;
+  --accent:#4F46E5;
+  --accent-hover:#4338CA;
+  --accent-light:#EEF2FF;
+  --sidebar-solid:#312E81;
   --text-main:#111827;
   --text-muted:#6b7280;
   --border-color:#e5e7eb;
   --radius:12px;
   --danger:#ef4444;
 
-  --stock-bg:#ecfdf5;
-  --stock-border:#bbf7d0;
-  --stock-text:#065f46;
+  --stock-bg:#EEF2FF;
+  --stock-border:#C7D2FE;
+  --stock-text:#312E81;
 
   --sold-bg:#fef2f2;
   --sold-border:#fecaca;
@@ -24,14 +24,14 @@
 body.theme-dark{
   --bg-main:#1f2937;
   --sidebar-bg:#111827;
-  --sidebar-solid:#111827;
+  --sidebar-solid:#0F172A;
   --text-main:#f9fafb;
   --text-muted:#9ca3af;
   --border-color:#374151;
-  --accent-light:#064e3b;
-  --stock-bg:#064e3b;
-  --stock-border:#047857;
-  --stock-text:#a7f3d0;
+  --accent-light:#1E1B4B;
+  --stock-bg:#1E1B4B;
+  --stock-border:#4338CA;
+  --stock-text:#C7D2FE;
   --sold-bg:#450a0a;
   --sold-border:#991b1b;
   --sold-text:#fecaca;
@@ -1941,30 +1941,30 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 /* v4 palette override: white + green */
 .public-landing.erp-landing-v4{
   background:
-    radial-gradient(900px 500px at 18% 16%, rgba(16,185,129,.20), transparent 60%),
-    radial-gradient(700px 420px at 78% 24%, rgba(34,197,94,.14), transparent 60%),
-    radial-gradient(700px 380px at 50% 65%, rgba(5,150,105,.12), transparent 60%),
-    linear-gradient(180deg, #03150f 0%, #07251b 52%, #03150f 100%);
+    radial-gradient(900px 500px at 18% 16%, rgba(79,70,229,.22), transparent 60%),
+    radial-gradient(700px 420px at 78% 24%, rgba(59,130,246,.15), transparent 60%),
+    radial-gradient(700px 380px at 50% 65%, rgba(99,102,241,.12), transparent 60%),
+    linear-gradient(180deg, #060816 0%, #0c1430 52%, #060816 100%);
 }
 .public-landing.erp-landing-v4::before{
   background:
-    radial-gradient(240px 240px at 12% 68%, rgba(16,185,129,.18), transparent 70%),
-    radial-gradient(180px 180px at 80% 40%, rgba(74,222,128,.12), transparent 70%),
-    radial-gradient(200px 200px at 70% 84%, rgba(5,150,105,.14), transparent 70%);
+    radial-gradient(240px 240px at 12% 68%, rgba(79,70,229,.18), transparent 70%),
+    radial-gradient(180px 180px at 80% 40%, rgba(96,165,250,.13), transparent 70%),
+    radial-gradient(200px 200px at 70% 84%, rgba(99,102,241,.14), transparent 70%);
 }
 .public-landing.erp-landing-v4 .brand-icon,
 .public-landing.erp-landing-v4 .login-btn,
 .public-landing.erp-landing-v4 .btn-primary{
   background:
     linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)),
-    linear-gradient(135deg, #34d399 0%, #16a34a 100%);
+    linear-gradient(135deg, #60A5FA 0%, #4F46E5 100%);
   box-shadow:
     0 0 0 1px rgba(255,255,255,.14) inset,
-    0 0 24px rgba(52,211,153,.24),
+    0 0 24px rgba(96,165,250,.24),
     0 10px 28px rgba(0,0,0,.35);
 }
 .public-landing.erp-landing-v4 .hero h1 .accent{
-  background:linear-gradient(135deg, #ffffff 10%, #bbf7d0 45%, #22c55e 95%);
+  background:linear-gradient(135deg, #ffffff 10%, #bfdbfe 45%, #6366F1 95%);
   -webkit-background-clip:text;
   background-clip:text;
 }
@@ -1973,16 +1973,16 @@ body.theme-dark .login-overlay{background:rgba(2,6,23,.6);}
 .public-landing.erp-landing-v4 .module .mi{
   background:
     linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04)),
-    linear-gradient(135deg, rgba(52,211,153,.24), rgba(34,197,94,.34));
-  color:#d1fae5;
+    linear-gradient(135deg, rgba(96,165,250,.24), rgba(79,70,229,.34));
+  color:#dbeafe;
 }
 .public-landing.erp-landing-v4 .side-item.active{
-  background:linear-gradient(135deg, rgba(22,163,74,.40), rgba(16,185,129,.24));
+  background:linear-gradient(135deg, rgba(79,70,229,.45), rgba(59,130,246,.24));
 }
 .public-landing.erp-landing-v4 .bar{
-  background:linear-gradient(180deg, #bbf7d0 0%, #4ade80 36%, #16a34a 100%);
+  background:linear-gradient(180deg, #bfdbfe 0%, #60a5fa 36%, #4f46e5 100%);
   box-shadow:
-    0 0 18px rgba(74,222,128,.22),
+    0 0 18px rgba(96,165,250,.24),
     inset 0 0 10px rgba(255,255,255,.15);
 }
 
