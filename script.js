@@ -1581,6 +1581,11 @@ function nextInvNo(kind) {
   const n0 = db.counters.salesInv++;
   return "ST-" + String(n0).padStart(3, "0");
 }
+function previewInvNo(kind) {
+  ensureCounters();
+  if (kind === "purch") return "AL-" + String(db.counters.purchInv || 1).padStart(3, "0");
+  return "ST-" + String(db.counters.salesInv || 1).padStart(3, "0");
+}
 
 function invFallback(kind, uid) {
   return kind === "purch" ? "AL-000" : "ST-000";
@@ -2902,7 +2907,7 @@ function openPurch(idx = null) {
   const staffOptions = `<option value="">— Əməkdaş seçin —</option>` + (db.staff || []).map((s) => `<option value="${s.uid}" ${String(p.employeeId || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " – " + escapeHtml(s.role) : ""}</option>`).join("");
   ensureAccounts();
   const payAccOptions = accountOptionsHtml(Number(p.paymentAccountId || 1));
-  const invVal = idx !== null ? (p.invNo || invFallback("purch", p.uid)) : nextInvNo("purch");
+  const invVal = idx !== null ? (p.invNo || invFallback("purch", p.uid)) : previewInvNo("purch");
   window.__purchDraftItems = [];
 
   const isBulk = purchIsBulk(p);
@@ -2911,7 +2916,7 @@ function openPurch(idx = null) {
     <h2>${idx !== null ? "Alış Redaktə" : "Yeni Alış"}</h2>
     <form onsubmit="savePurch(event, ${idx})">
       <div class="grid-3">
-        <input id="f_p_inv" class="span-3" value="${escapeAttr(invVal)}" placeholder="Qaimə № (məs: AL-001)" ${idx !== null ? "readonly" : ""} required>
+        <input id="f_p_inv" class="span-3" value="${escapeAttr(invVal)}" placeholder="Qaimə № (auto)" readonly required>
         <input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required>
         <select id="f_p_supp" class="span-2" required>
           <option value="">Təchizatçı seç</option>
@@ -3074,10 +3079,7 @@ async function savePurch(e, idx) {
     if (!draft.length) return alert("Ən azı bir məhsul əlavə edin.");
     const supp = val("f_p_supp");
     if (!supp) return alert("Təchizatçı seçin.");
-    let invNo = (val("f_p_inv") || "").trim() || nextInvNo("purch");
-    if ((db.purch || []).some((x) => String(x.invNo || "").trim() === invNo)) {
-      invNo = nextInvNo("purch");
-    }
+    const invNo = nextInvNo("purch");
     const date = val("f_p_date");
     const employeeId = (val("f_p_staff") || "").trim() || undefined;
     const actorName = currentActorName();
@@ -3196,14 +3198,11 @@ async function savePurch(e, idx) {
   }
   const employeeId = (val("f_p_staff") || "").trim() || undefined;
   const actorName = currentActorName();
-  const invNoVal = (val("f_p_inv") || "").trim();
   const unitPrice = isBulk ? Math.max(0, n(val("f_p_amount"))) : null;
   const totalAmount = isBulk ? unitPrice * qty : Math.max(0, n(val("f_p_amount")));
   const finalInvNo = (() => {
     if (idx !== null) return db.purch[idx].invNo || invFallback("purch", db.purch[idx].uid);
-    const desired = invNoVal || nextInvNo("purch");
-    if ((db.purch || []).some((x) => String(x.invNo || "").trim() === String(desired).trim())) return nextInvNo("purch");
-    return desired;
+    return nextInvNo("purch");
   })();
   const data = {
     uid: idx !== null ? db.purch[idx].uid : genId(db.purch, 1),
