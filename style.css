@@ -1570,6 +1570,34 @@ body.landing-login-open .lp-aurora{
 @media (min-width:768px){
   .lp-hero-lead{margin:0;}
 }
+@keyframes lp-type-cursor-blink{
+  0%, 45%{ opacity: 1; }
+  50%, 100%{ opacity: 0; }
+}
+.lp-hero-title--typewriter{
+  min-height:2.35em;
+}
+.lp-hero-lead--typewriter{
+  min-height:4.25em;
+}
+.lp-type-title-out,
+.lp-type-lead-out{display:inline;}
+.lp-type-cursor{
+  display:inline-block;
+  width:3px;
+  margin-left:2px;
+  height:.72em;
+  background:var(--brand-green);
+  vertical-align:-0.05em;
+  border-radius:1px;
+  animation: lp-type-cursor-blink 0.95s step-end infinite !important;
+}
+.lp-type-cursor--lead{
+  background:#64748b;
+  height:.55em;
+  vertical-align:-0.02em;
+}
+.lp-type-cursor.is-done{display:none !important;}
 /* Hero — 3D dashboard mockup (statik təqlid) */
 @keyframes lp-dash-float{
   0%, 100%{ transform: translateY(0); }

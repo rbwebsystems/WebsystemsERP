@@ -1435,6 +1435,109 @@ function setupLandingPage() {
   };
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
+  initLpHeroTypewriter();
+}
+
+/** Ana səhifə hero: çap maşını tipli mətn (reduced-motion-da statik). */
+function initLpHeroTypewriter() {
+  const landing = byId("publicLanding");
+  const titleHost = byId("lpTypeTitle");
+  const leadHost = byId("lpTypeLead");
+  const cTitle = byId("lpTypeTitleCursor");
+  const cLead = byId("lpTypeLeadCursor");
+  if (!landing || !titleHost || !leadHost) return;
+
+  const titleP1 = "Müəssisənizi ";
+  const titleAccent = "Ağıllı";
+  const titleP2 = " idarə edin.";
+  const lead =
+    "RBSoft ilə maliyyə, anbar, satış və insan resurslarını tək platformadan izləyin. Biznesiniz üçün minimalist və effektiv həll.";
+
+  function landingVisible() {
+    try {
+      if (window.getComputedStyle(landing).display === "none") return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function applyStatic() {
+    titleHost.innerHTML =
+      titleP1 + '<span class="lp-hero-accent">' + titleAccent + "</span>" + titleP2;
+    leadHost.textContent = lead;
+    if (cTitle) cTitle.classList.add("is-done");
+    if (cLead) cLead.classList.add("is-done");
+  }
+
+  if (!landingVisible()) {
+    applyStatic();
+    return;
+  }
+
+  try {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      applyStatic();
+      return;
+    }
+  } catch {
+    applyStatic();
+    return;
+  }
+
+  if (titleHost.getAttribute("data-lp-typed") === "1") return;
+  titleHost.textContent = "";
+  leadHost.textContent = "";
+  if (cTitle) cTitle.classList.remove("is-done");
+  if (cLead) cLead.classList.add("is-done");
+
+  const p1Len = titleP1.length;
+  const acLen = titleAccent.length;
+  const p2Len = titleP2.length;
+  const titleTotal = p1Len + acLen + p2Len;
+  let idx = 0;
+  const msTitle = 32;
+  const msLead = 14;
+
+  function tickTitle() {
+    if (!landingVisible()) {
+      applyStatic();
+      return;
+    }
+    idx += 1;
+    if (idx <= p1Len) {
+      titleHost.textContent = titleP1.slice(0, idx);
+    } else if (idx <= p1Len + acLen) {
+      const a = titleAccent.slice(0, idx - p1Len);
+      titleHost.innerHTML = titleP1 + '<span class="lp-hero-accent">' + a + "</span>";
+    } else if (idx <= titleTotal) {
+      const p2 = titleP2.slice(0, idx - p1Len - acLen);
+      titleHost.innerHTML =
+        titleP1 + '<span class="lp-hero-accent">' + titleAccent + "</span>" + p2;
+    }
+    if (idx < titleTotal) {
+      setTimeout(tickTitle, msTitle);
+    } else {
+      titleHost.setAttribute("data-lp-typed", "1");
+      if (cTitle) cTitle.classList.add("is-done");
+      if (cLead) cLead.classList.remove("is-done");
+      let j = 0;
+      function tickLead() {
+        if (!landingVisible()) {
+          leadHost.textContent = lead;
+          if (cLead) cLead.classList.add("is-done");
+          return;
+        }
+        j += 1;
+        leadHost.textContent = lead.slice(0, j);
+        if (j < lead.length) setTimeout(tickLead, msLead);
+        else if (cLead) cLead.classList.add("is-done");
+      }
+      setTimeout(tickLead, 240);
+    }
+  }
+
+  setTimeout(tickTitle, 380);
 }
 
 function toggleLpMenu() {
