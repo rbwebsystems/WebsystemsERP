@@ -2713,7 +2713,10 @@ function openPurchInvoiceEdit(invNoRaw) {
         <td>${qty}</td>
         <td>${money(unit)} AZN</td>
         <td>${money(p.amount)} AZN</td>
-        <td class="tbl-actions"><button class="icon-btn edit" type="button" onclick="closeMdl();openPurch(${idx})" title="Redaktə"><i class="fas fa-pen"></i></button></td>
+        <td class="tbl-actions">
+          <button class="icon-btn edit" type="button" onclick="closeMdl();openPurch(${idx})" title="Redaktə"><i class="fas fa-pen"></i></button>
+          ${userCanDelete("purch") ? `<button class="icon-btn delete" type="button" onclick="delPurchInvoiceRow(${idx}, '${escapeAttr(invNo)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+        </td>
       </tr>`;
     })
     .join("");
@@ -2729,6 +2732,29 @@ function openPurchInvoiceEdit(invNoRaw) {
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
+}
+
+function delPurchInvoiceRow(idx, invNoRaw) {
+  const invNo = String(invNoRaw || "").trim();
+  const p = db.purch[idx];
+  if (!p) return;
+  if (!userCanDelete("purch")) return alert("Sil icazəsi yoxdur.");
+  if (n(p.paidTotal) > 0.000001) return alert("Bu məhsul sətrində ödəniş var. Silmək olmaz.");
+  if (!canDeletePurchase(p)) return alert("Bu məhsul satılıb. Silmək olmaz.");
+  appConfirm("Bu məhsul sətri silinsin?").then((ok) => {
+    if (!ok) return;
+    ensureAuditTrash();
+    const u = currentUser();
+    const deletedBy = u ? u.username : "-";
+    const deletedAt = nowISODateTimeLocal();
+    db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy });
+    logEvent("delete", "purch", { uid: p.uid, invNo });
+    db.purch.splice(idx, 1);
+    saveDB();
+    const left = (db.purch || []).some((x) => String(x.invNo || "").trim() === invNo);
+    if (left) openPurchInvoiceEdit(invNo);
+    else closeMdl();
+  });
 }
 
 function delPurchInvoice(invNoRaw) {
@@ -7675,7 +7701,6 @@ function renderAll() {
       const amountSum = g.rows.reduce((a, p) => a + n(p.amount), 0);
       const paidSum = g.rows.reduce((a, p) => a + n(p.paidTotal), 0);
       const rem = Math.max(0, amountSum - paidSum);
-      const itemCount = g.rows.length;
       const names = Array.from(new Set(g.rows.map((p) => p.name).filter(Boolean)));
       const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
       const actions = `
@@ -7698,7 +7723,6 @@ function renderAll() {
         <td>${fmtDT(g.date)}</td>
         <td>${escapeHtml(g.supp || "-")}</td>
         <td>${escapeHtml(namePreview || "-")}</td>
-        <td>${itemCount}</td>
         <td>${money(amountSum)} AZN</td>
         <td>${money(paidSum)} AZN</td>
         <td>${money(rem)} AZN</td>
