@@ -1704,7 +1704,7 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "teal", name: "Emerald (default)", accent: "#059669", accentHover: "#047857", accentLight: "#d1fae5", sidebarLight: "#059669", sidebarDark: "#111827" },
+  { id: "teal", name: "Mint (default)", accent: "#3FE0A2", accentHover: "#2BCF8E", accentLight: "#d4f8ee", sidebarLight: "#3FE0A2", sidebarDark: "#111827" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
   { id: "slate", name: "Slate", accent: "#0f172a", accentHover: "#111827", accentLight: "#e2e8f0", sidebarLight: "#0f172a", sidebarDark: "#0b1220" },
@@ -3422,7 +3422,7 @@ function openPrintWindow(title, html) {
       th{background:#f9fafb;text-align:left;}
       .right{text-align:right;}
       .neg{color:#b91c1c;}
-      .pos{color:#047857;}
+      .pos{color:#2BCF8E;}
       @media print{button{display:none !important;} body{margin:0;}}
     </style>
   `;
