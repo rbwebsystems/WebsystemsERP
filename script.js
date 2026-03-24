@@ -7710,8 +7710,10 @@ function renderAll() {
       const amountSum = g.rows.reduce((a, p) => a + n(p.amount), 0);
       const paidSum = g.rows.reduce((a, p) => a + n(p.paidTotal), 0);
       const rem = Math.max(0, amountSum - paidSum);
-      const names = Array.from(new Set(g.rows.map((p) => p.name).filter(Boolean)));
-      const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
+      const latestRow = g.rows
+        .slice()
+        .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))[0];
+      const actor = latestRow ? operationActorName(latestRow, getStaffName(latestRow.employeeId) || "-") : "-";
       const actions = `
         <button class="icon-btn info" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}')" title="Məlumat"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<button class="icon-btn edit" onclick="openPurchInvoiceEdit('${escapeAttr(g.invNo)}')" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
@@ -7731,7 +7733,7 @@ function renderAll() {
         <td>${escapeHtml(g.invNo)}</td>
         <td>${fmtDT(g.date)}</td>
         <td>${escapeHtml(g.supp || "-")}</td>
-        <td>${escapeHtml(namePreview || "-")}</td>
+        <td>${escapeHtml(actor || "-")}</td>
         <td>${money(amountSum)} AZN</td>
         <td>${money(paidSum)} AZN</td>
         <td>${money(rem)} AZN</td>
