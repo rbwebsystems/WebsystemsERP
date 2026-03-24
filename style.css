@@ -196,17 +196,93 @@ aside nav{
 .logo .logo-svg{color:var(--accent);}
 .login-logo-svg{display:block;max-width:200px;margin:0 auto 14px;}
 .login-logo-svg .logo-svg{max-height:56px;width:100%;}
-/* RBSoft — Loqo konsepti 1 (Sonsuzluq): kəsişən R/B SVG + RBSoft */
+/* RBSoft — Loqo konsepti 2 (Rəqəmsal sütunlar) + rbsoft wordmark */
 .rbsoft{
   display:flex;
   align-items:center;
   gap:0.65rem;
   line-height:1;
 }
-.rbsoft-mark{
+.rbsoft-digital{
+  display:flex;
+  align-items:flex-end;
   flex-shrink:0;
-  display:block;
+  gap:0.5rem;
+  height:6rem;
 }
+.rbsoft-digital__a{
+  width:1.5rem;
+  height:100%;
+  min-height:100%;
+  border-radius:999px;
+  background:#0f172a;
+  box-shadow:0 6px 16px rgba(15,23,42,.18);
+}
+.rbsoft-digital__mid{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-self:stretch;
+  height:100%;
+  gap:0.5rem;
+}
+.rbsoft-digital__mid span{
+  display:block;
+  width:1.5rem;
+  border-radius:999px;
+  background:#0f172a;
+  box-shadow:0 4px 12px rgba(15,23,42,.12);
+}
+.rbsoft-digital__mid span:last-child{
+  background:var(--accent);
+  box-shadow:0 4px 14px rgba(35,120,116,.22);
+}
+.rbsoft-digital--hero .rbsoft-digital__mid span:first-child{height:2.5rem;}
+.rbsoft-digital--hero .rbsoft-digital__mid span:last-child{height:3rem;}
+.rbsoft-digital__end{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-self:stretch;
+  height:100%;
+}
+.rbsoft-digital__end span{
+  width:1.5rem;
+  height:4rem;
+  border-radius:999px;
+  background:var(--accent);
+  box-shadow:0 4px 14px rgba(35,120,116,.25);
+}
+/* Kompakt başlıq */
+.rbsoft-digital--compact{
+  height:2.5rem;
+  gap:0.35rem;
+}
+.rbsoft-digital--compact .rbsoft-digital__a{width:0.55rem;}
+.rbsoft-digital--compact .rbsoft-digital__mid span{width:0.55rem;}
+.rbsoft-digital--compact .rbsoft-digital__mid span:first-child{height:0.95rem;}
+.rbsoft-digital--compact .rbsoft-digital__mid span:last-child{height:1.15rem;}
+.rbsoft-digital--compact .rbsoft-digital__end span{width:0.55rem;height:1.65rem;}
+.header-logo .rbsoft-digital--compact{box-shadow:none;}
+/* Hero / login ölçü */
+.rbsoft-digital--login{
+  height:5.5rem;
+  gap:0.5rem;
+}
+.rbsoft-digital--login .rbsoft-digital__mid span:first-child{height:2.35rem;}
+.rbsoft-digital--login .rbsoft-digital__mid span:last-child{height:2.75rem;}
+.rbsoft-digital--login .rbsoft-digital__end span{height:3.75rem;}
+/* Footer */
+.rbsoft-digital--footer{
+  height:3.75rem;
+  gap:0.45rem;
+}
+.rbsoft-digital--footer .rbsoft-digital__a{width:1.1rem;}
+.rbsoft-digital--footer .rbsoft-digital__mid span{width:1.1rem;}
+.rbsoft-digital--footer .rbsoft-digital__mid span:first-child{height:1.55rem;}
+.rbsoft-digital--footer .rbsoft-digital__mid span:last-child{height:1.85rem;}
+.rbsoft-digital--footer .rbsoft-digital__end span{width:1.1rem;height:2.5rem;}
+
 .rbsoft-brand-text{
   display:flex;
   flex-direction:column;
@@ -215,29 +291,46 @@ aside nav{
 }
 .rbsoft-brand-title{
   font-weight:900;
-  letter-spacing:-0.03em;
+  letter-spacing:-0.04em;
   color:#0f172a;
 }
+.rbsoft-brand-title .rb-low{color:#0f172a;}
 .rbsoft-brand-title .soft{color:var(--accent);}
+body.theme-dark .rbsoft-brand-title .rb-low{color:#f8fafc;}
+.rbsoft-brand-track{
+  width:100%;
+  max-width:14rem;
+  height:6px;
+  border-radius:999px;
+  background:#f1f5f9;
+  margin-top:0.5rem;
+  overflow:hidden;
+}
+.rbsoft-brand-track--footer{
+  max-width:11rem;
+  margin-top:0.35rem;
+}
+.rbsoft-brand-track-fill{
+  height:100%;
+  width:50%;
+  border-radius:999px;
+  background:var(--accent);
+}
+.header-logo .rbsoft-brand-track{display:none;}
 .rbsoft-brand-sub{
   font-size:0.65rem;
   font-weight:700;
   text-transform:uppercase;
   letter-spacing:0.35em;
   color:#94a3b8;
-  margin-top:0.25rem;
+  margin-top:0.35rem;
 }
 body.theme-dark .rbsoft-brand-title{color:#f8fafc;}
 .rbsoft--compact{
   flex-direction:row;
 }
 .header-logo .rbsoft--compact .rbsoft-brand-sub{display:none;}
-.header-logo .rbsoft--compact .rbsoft-brand-title{font-size:1.15rem;}
-.header-logo .rbsoft-mark{
-  width:40px;
-  height:40px;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.1));
-}
+.header-logo .rbsoft--compact .rbsoft-brand-title{font-size:1.05rem;}
 .rbsoft--hero{
   flex-direction:column;
   align-items:center;
@@ -255,11 +348,16 @@ body.theme-dark .rbsoft-brand-title{color:#f8fafc;}
     text-align:left;
   }
 }
-.rbsoft--hero .rbsoft-mark{
+.rbsoft--hero .rbsoft-digital--hero{
   width:clamp(5rem, 18vw, 7.5rem);
   height:clamp(5rem, 18vw, 7.5rem);
-  filter:drop-shadow(0 12px 28px rgba(15,23,42,.12));
+  max-height:none;
 }
+.rbsoft--hero .rbsoft-digital--hero .rbsoft-digital__a{width:clamp(1rem, 3.5vw, 1.5rem);}
+.rbsoft--hero .rbsoft-digital--hero .rbsoft-digital__mid span{width:clamp(1rem, 3.5vw, 1.5rem);}
+.rbsoft--hero .rbsoft-digital--hero .rbsoft-digital__mid span:first-child{height:clamp(2rem, 5vw, 2.5rem);}
+.rbsoft--hero .rbsoft-digital--hero .rbsoft-digital__mid span:last-child{height:clamp(2.4rem, 6vw, 3rem);}
+.rbsoft--hero .rbsoft-digital--hero .rbsoft-digital__end span{width:clamp(1rem, 3.5vw, 1.5rem);height:clamp(3.2rem, 8vw, 4rem);}
 .rbsoft--hero .rbsoft-brand-title{
   font-size:clamp(2.75rem, 12vw, 6rem);
 }
@@ -280,15 +378,11 @@ body.theme-dark .rbsoft-brand-title{color:#f8fafc;}
   align-items:center;
   gap:0.75rem;
 }
-.rbsoft--login .rbsoft-mark{
-  width:88px;
-  height:88px;
-  filter:drop-shadow(0 8px 24px rgba(15,23,42,.12));
-}
 .rbsoft--login .rbsoft-brand-title{
   font-size:clamp(2rem, 5vw, 2.75rem);
 }
 .rbsoft--login .rbsoft-brand-text{align-items:center;}
+.rbsoft--login .rbsoft-brand-track{max-width:16rem;}
 
 .rbsoft-logo{
   display:flex;
@@ -3334,7 +3428,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   aside{display:none;}
   .main-area{margin-left:0;}
   .header-logo{width:120px;}
-  .header-logo .rbsoft-mark{width:32px;height:32px;}
+  .header-logo .rbsoft-digital--compact{height:2.35rem;gap:0.3rem;}
+  .header-logo .rbsoft-digital--compact .rbsoft-digital__a{width:0.5rem;}
+  .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span{width:0.5rem;}
+  .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span:first-child{height:0.88rem;}
+  .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span:last-child{height:1.05rem;}
+  .header-logo .rbsoft-digital--compact .rbsoft-digital__end span{width:0.5rem;height:1.5rem;}
   .header-logo .rbsoft--compact .rbsoft-brand-title{font-size:0.95rem;}
   .header-rest{padding-left:16px;}
   main{margin-left:0;padding:18px;}
@@ -3367,10 +3466,15 @@ body.sidebar-collapsed .header-logo .rbsoft--compact{
 body.sidebar-collapsed .header-logo .rbsoft-brand-text{
   display:none;
 }
-body.sidebar-collapsed .header-logo .rbsoft-mark{
-  width:36px;
-  height:36px;
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact{
+  height:2.1rem;
+  gap:0.28rem;
 }
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact .rbsoft-digital__a{width:0.48rem;}
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span{width:0.48rem;}
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span:first-child{height:0.85rem;}
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact .rbsoft-digital__mid span:last-child{height:1rem;}
+body.sidebar-collapsed .header-logo .rbsoft-digital--compact .rbsoft-digital__end span{width:0.48rem;height:1.4rem;}
 body.sidebar-collapsed aside nav{
   padding-left:8px;
   padding-right:8px;
