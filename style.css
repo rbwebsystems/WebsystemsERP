@@ -196,6 +196,100 @@ aside nav{
 .logo .logo-svg{color:var(--accent);}
 .login-logo-svg{display:block;max-width:200px;margin:0 auto 14px;}
 .login-logo-svg .logo-svg{max-height:56px;width:100%;}
+/* RBSoft — Loqo konsepti 1 (Sonsuzluq): kəsişən R/B SVG + RBSoft */
+.rbsoft{
+  display:flex;
+  align-items:center;
+  gap:0.65rem;
+  line-height:1;
+}
+.rbsoft-mark{
+  flex-shrink:0;
+  display:block;
+}
+.rbsoft-brand-text{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+}
+.rbsoft-brand-title{
+  font-weight:900;
+  letter-spacing:-0.03em;
+  color:#0f172a;
+}
+.rbsoft-brand-title .soft{color:var(--accent);}
+.rbsoft-brand-sub{
+  font-size:0.65rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.35em;
+  color:#94a3b8;
+  margin-top:0.25rem;
+}
+body.theme-dark .rbsoft-brand-title{color:#f8fafc;}
+.rbsoft--compact{
+  flex-direction:row;
+}
+.header-logo .rbsoft--compact .rbsoft-brand-sub{display:none;}
+.header-logo .rbsoft--compact .rbsoft-brand-title{font-size:1.15rem;}
+.header-logo .rbsoft-mark{
+  width:40px;
+  height:40px;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.1));
+}
+.rbsoft--hero{
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:1.25rem;
+}
+@media (min-width:768px){
+  .rbsoft--hero{
+    flex-direction:row;
+    align-items:center;
+    text-align:left;
+  }
+  .rbsoft--hero .rbsoft-brand-text{
+    align-items:flex-start;
+    text-align:left;
+  }
+}
+.rbsoft--hero .rbsoft-mark{
+  width:clamp(5rem, 18vw, 7.5rem);
+  height:clamp(5rem, 18vw, 7.5rem);
+  filter:drop-shadow(0 12px 28px rgba(15,23,42,.12));
+}
+.rbsoft--hero .rbsoft-brand-title{
+  font-size:clamp(2.75rem, 12vw, 6rem);
+}
+.rbsoft--footer{
+  justify-content:center;
+  margin-bottom:1.25rem;
+}
+@media (min-width:768px){
+  .rbsoft--footer{justify-content:flex-start;}
+}
+.rbsoft--footer .rbsoft-brand-title.lp-footer-logo{
+  font-size:2.5rem;
+  margin:0;
+  line-height:1;
+}
+.rbsoft--login{
+  flex-direction:column;
+  align-items:center;
+  gap:0.75rem;
+}
+.rbsoft--login .rbsoft-mark{
+  width:88px;
+  height:88px;
+  filter:drop-shadow(0 8px 24px rgba(15,23,42,.12));
+}
+.rbsoft--login .rbsoft-brand-title{
+  font-size:clamp(2rem, 5vw, 2.75rem);
+}
+.rbsoft--login .rbsoft-brand-text{align-items:center;}
+
 .rbsoft-logo{
   display:flex;
   flex-direction:column;
@@ -291,9 +385,6 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
   justify-content:center;
   box-shadow:0 4px 14px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
   border-radius:0 16px 16px 0;
-}
-.header-logo .logo{
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.12)) drop-shadow(0 4px 12px rgba(0,0,0,.08));
 }
 .header-logo .logo-svg{max-height:52px;}
 .header-rest{
@@ -912,8 +1003,6 @@ select{
   align-items:center;
   margin-bottom:2rem;
 }
-.login-v3-brand .rbsoft-wordmark{font-size:3rem;justify-content:center;}
-.login-v3-brand-bar{width:8rem;height:6px;margin-top:1rem;}
 .login-v3-welcome{text-align:center;margin-bottom:1.75rem;}
 .login-v3-welcome h1{
   margin:0;
@@ -1259,19 +1348,6 @@ body.landing-login-open .lp-aurora{
 @media (min-width:768px){
   .lp-hero-brand{text-align:left;}
 }
-.lp-hero-wordmark{
-  font-size:clamp(2.75rem, 12vw, 6rem);
-  justify-content:center;
-  flex-wrap:wrap;
-  max-width:100%;
-}
-@media (min-width:768px){
-  .lp-hero-wordmark{justify-content:flex-start;}
-}
-.lp-hero-bar{width:12rem;height:8px;margin:1.25rem auto 0;}
-@media (min-width:768px){
-  .lp-hero-bar{margin-left:0;margin-right:auto;}
-}
 .lp-hero-ready{
   margin-top:.75rem;
   display:flex;
@@ -1482,7 +1558,6 @@ body.landing-login-open .lp-aurora{
 @media (min-width:768px){
   .lp-footer-grid{grid-template-columns:2fr 1fr 1fr;text-align:left;}
 }
-.lp-footer-logo{font-size:2.5rem;margin-bottom:1.75rem;}
 .lp-footer-brand p{color:#64748b;font-weight:500;line-height:1.7;max-width:22rem;margin:0 auto;}
 @media (min-width:768px){
   .lp-footer-brand p{margin:0;}
@@ -3259,6 +3334,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   aside{display:none;}
   .main-area{margin-left:0;}
   .header-logo{width:120px;}
+  .header-logo .rbsoft-mark{width:32px;height:32px;}
+  .header-logo .rbsoft--compact .rbsoft-brand-title{font-size:0.95rem;}
   .header-rest{padding-left:16px;}
   main{margin-left:0;padding:18px;}
   .grid-3{grid-template-columns:1fr;}
@@ -3284,28 +3361,15 @@ body.sidebar-collapsed .main-area{
 body.sidebar-collapsed .header-logo{
   width:72px;
 }
-body.sidebar-collapsed .header-logo .rbsoft-logo{
-  gap:0;
+body.sidebar-collapsed .header-logo .rbsoft--compact{
+  justify-content:center;
 }
-body.sidebar-collapsed .header-logo .rbsoft-wordmark{
-  font-size:24px;
-  letter-spacing:-.5px;
-}
-body.sidebar-collapsed .header-logo .rbsoft-wordmark .soft{
+body.sidebar-collapsed .header-logo .rbsoft-brand-text{
   display:none;
 }
-body.sidebar-collapsed .header-logo .rbsoft-dot{
-  width:7px;
-  height:7px;
-  margin-left:5px;
-}
-body.sidebar-collapsed .header-logo .rbsoft-progress{
-  display:none;
-}
-body.sidebar-collapsed .header-logo .logo svg,
-body.sidebar-collapsed .header-logo .logo img{
-  max-width:36px;
-  max-height:36px;
+body.sidebar-collapsed .header-logo .rbsoft-mark{
+  width:36px;
+  height:36px;
 }
 body.sidebar-collapsed aside nav{
   padding-left:8px;

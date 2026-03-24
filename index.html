@@ -41,12 +41,25 @@
   <div class="main-area">
     <header class="app-header">
       <div class="header-logo" aria-label="RBSoft logo">
-        <div class="logo rbsoft-logo rbsoft-logo-compact">
-          <div class="rbsoft-wordmark">
-            <span class="rb">rb</span><span class="soft">soft</span>
-            <span class="rbsoft-dot"></span>
+        <div class="logo rbsoft rbsoft--compact">
+          <svg class="rbsoft-mark" viewBox="0 0 120 120" width="40" height="40" aria-hidden="true">
+            <defs>
+              <linearGradient id="rbGradSlHdr" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#475569"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="rbGradTlHdr" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5fb3ad"/>
+                <stop offset="100%" stop-color="#237874"/>
+              </linearGradient>
+            </defs>
+            <path d="M 30 90 V 30 H 60 A 15 15 0 0 1 60 60 H 30 M 50 60 L 70 90" fill="none" stroke="url(#rbGradSlHdr)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 30 60 H 65 A 15 15 0 0 1 65 90 H 30" fill="none" stroke="url(#rbGradTlHdr)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="rbsoft-brand-text">
+            <div class="rbsoft-brand-title">RB<span class="soft">Soft</span></div>
+            <div class="rbsoft-brand-sub">Business Solutions</div>
           </div>
-          <div class="rbsoft-progress"><span></span></div>
         </div>
       </div>
       <div class="header-rest">
@@ -765,11 +778,26 @@
         <div class="lp-hero-grid">
           <div class="lp-hero-left">
             <div class="lp-hero-brand">
-              <div class="rbsoft-wordmark lp-hero-wordmark">
-                <span class="rb">rb</span><span class="soft">soft</span>
-                <span class="rbsoft-dot"></span>
+              <div class="rbsoft rbsoft--hero">
+                <svg class="rbsoft-mark" viewBox="0 0 120 120" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="rbGradSlHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#475569"/>
+                      <stop offset="100%" stop-color="#0f172a"/>
+                    </linearGradient>
+                    <linearGradient id="rbGradTlHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#5fb3ad"/>
+                      <stop offset="100%" stop-color="#237874"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 30 90 V 30 H 60 A 15 15 0 0 1 60 60 H 30 M 50 60 L 70 90" fill="none" stroke="url(#rbGradSlHero)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M 30 60 H 65 A 15 15 0 0 1 65 90 H 30" fill="none" stroke="url(#rbGradTlHero)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="rbsoft-brand-text">
+                  <div class="rbsoft-brand-title">RB<span class="soft">Soft</span></div>
+                  <div class="rbsoft-brand-sub">Business Solutions</div>
+                </div>
               </div>
-              <div class="rbsoft-progress lp-hero-bar"><span></span></div>
               <div class="lp-hero-ready">
                 <span class="lp-hero-ready-dot"></span>
                 <span>Sistem hazırdır</span>
@@ -855,8 +883,24 @@
       <footer class="lp-footer" id="lp-footer">
         <div class="lp-footer-grid">
           <div class="lp-footer-brand">
-            <div class="rbsoft-wordmark lp-footer-logo">
-              <span class="rb">rb</span><span class="soft">soft</span>
+            <div class="rbsoft rbsoft--footer">
+              <svg class="rbsoft-mark" viewBox="0 0 120 120" width="56" height="56" aria-hidden="true">
+                <defs>
+                  <linearGradient id="rbGradSlFt" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#475569"/>
+                    <stop offset="100%" stop-color="#0f172a"/>
+                  </linearGradient>
+                  <linearGradient id="rbGradTlFt" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#5fb3ad"/>
+                    <stop offset="100%" stop-color="#237874"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 30 90 V 30 H 60 A 15 15 0 0 1 60 60 H 30 M 50 60 L 70 90" fill="none" stroke="url(#rbGradSlFt)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 30 60 H 65 A 15 15 0 0 1 65 90 H 30" fill="none" stroke="url(#rbGradTlFt)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <div class="rbsoft-brand-text">
+                <div class="rbsoft-brand-title lp-footer-logo">RB<span class="soft">Soft</span></div>
+              </div>
             </div>
             <p>Azərbaycanın biznes mühitini rəqəmsal gələcəyə hazırlayırıq. Çevik, müasir və etibarlı.</p>
           </div>
@@ -891,11 +935,26 @@
     <div class="login-v3-card" role="dialog" aria-modal="true" aria-labelledby="loginV3Title" onclick="event.stopPropagation()">
       <button type="button" class="login-v3-x" onclick="closeLoginModal()" aria-label="Bağla"><i class="fas fa-xmark"></i></button>
       <div class="login-v3-brand">
-        <div class="rbsoft-wordmark">
-          <span class="rb">rb</span><span class="soft">soft</span>
-          <span class="rbsoft-dot"></span>
+        <div class="rbsoft rbsoft--login">
+          <svg class="rbsoft-mark" viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <linearGradient id="rbGradSlLn" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#475569"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="rbGradTlLn" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5fb3ad"/>
+                <stop offset="100%" stop-color="#237874"/>
+              </linearGradient>
+            </defs>
+            <path d="M 30 90 V 30 H 60 A 15 15 0 0 1 60 60 H 30 M 50 60 L 70 90" fill="none" stroke="url(#rbGradSlLn)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 30 60 H 65 A 15 15 0 0 1 65 90 H 30" fill="none" stroke="url(#rbGradTlLn)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="rbsoft-brand-text">
+            <div class="rbsoft-brand-title">RB<span class="soft">Soft</span></div>
+            <div class="rbsoft-brand-sub">Business Solutions</div>
+          </div>
         </div>
-        <div class="rbsoft-progress login-v3-brand-bar"><span></span></div>
       </div>
       <div class="login-v3-welcome">
         <h1 id="loginV3Title">Xoş gəlmisiniz!</h1>
