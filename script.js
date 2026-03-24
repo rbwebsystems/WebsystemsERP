@@ -2692,6 +2692,75 @@ function openPurchInfoByInv(invNoRaw) {
   `);
 }
 
+function openPurchInvoiceEdit(invNoRaw) {
+  const invNo = String(invNoRaw || "").trim();
+  if (!invNo) return;
+  if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  const rows = (db.purch || [])
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => String(p.invNo || "").trim() === invNo)
+    .sort((a, b) => String(a.p.date || "").localeCompare(String(b.p.date || "")));
+  if (!rows.length) return alert("Qaimə tapılmadı.");
+  const body = rows
+    .map(({ p, idx }, i) => {
+      const isBulk = purchIsBulk(p);
+      const qty = isBulk ? Math.max(1, Math.floor(n(p.qty || 1))) : 1;
+      const unit = isBulk ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : n(p.amount) / qty) : n(p.amount);
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(p.name || "-")}</td>
+        <td>${isBulk ? "Sayla" : "Seriyalı"}</td>
+        <td>${qty}</td>
+        <td>${money(unit)} AZN</td>
+        <td>${money(p.amount)} AZN</td>
+        <td class="tbl-actions"><button class="icon-btn edit" type="button" onclick="closeMdl();openPurch(${idx})" title="Redaktə"><i class="fas fa-pen"></i></button></td>
+      </tr>`;
+    })
+    .join("");
+  openModal(`
+    <h2>Qaimə redaktəsi — ${escapeHtml(invNo)}</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>1 ədəd</th><th>Məbləğ</th><th></th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function delPurchInvoice(invNoRaw) {
+  const invNo = String(invNoRaw || "").trim();
+  if (!invNo) return;
+  if (!userCanDelete("purch")) return alert("Sil icazəsi yoxdur.");
+  const rows = (db.purch || [])
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => String(p.invNo || "").trim() === invNo);
+  if (!rows.length) return alert("Qaimə tapılmadı.");
+  for (const { p } of rows) {
+    if (n(p.paidTotal) > 0.000001) return alert("Bu qaimədə ödəniş olan alış var. Silmək olmaz.");
+    if (!canDeletePurchase(p)) return alert("Bu qaimədə satılmış məhsul var. Silmək olmaz.");
+  }
+  appConfirm(`Qaimə silinsin? (${invNo})`).then((ok) => {
+    if (!ok) return;
+    ensureAuditTrash();
+    const u = currentUser();
+    const deletedBy = u ? u.username : "-";
+    const deletedAt = nowISODateTimeLocal();
+    rows
+      .slice()
+      .sort((a, b) => b.idx - a.idx)
+      .forEach(({ p, idx }) => {
+        db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy });
+        logEvent("delete", "purch", { uid: p.uid, invNo });
+        db.purch.splice(idx, 1);
+      });
+    saveDB();
+  });
+}
+
 function openReturnPurch(idx) {
   if (!userCanEdit()) return alert("İcazə yoxdur.");
   const p = db.purch[idx];
@@ -7611,6 +7680,8 @@ function renderAll() {
       const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
       const actions = `
         <button class="icon-btn info" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}')" title="Məlumat"><i class="fas fa-circle-info"></i></button>
+        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openPurchInvoiceEdit('${escapeAttr(g.invNo)}')" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+        ${userCanDelete("purch") ? `<button class="icon-btn delete" onclick="delPurchInvoice('${escapeAttr(g.invNo)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       `;
       const searchText = [
         g.invNo,
