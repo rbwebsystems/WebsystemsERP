@@ -7764,6 +7764,18 @@ function renderAll() {
 
   const purchPageSize = getPageSize("purchPageSize", 50);
   const purchList = paginate(purchListAll, "purch", purchPageSize, "purchPageInfo");
+  const purchAmountTotal = purchListAll.reduce((a, g) => a + g.rows.reduce((x, p) => x + n(p.amount), 0), 0);
+  const purchPaidTotal = purchListAll.reduce((a, g) => a + g.rows.reduce((x, p) => x + n(p.paidTotal), 0), 0);
+  const purchRemTotal = Math.max(0, purchAmountTotal - purchPaidTotal);
+  const purchTotalsEl = byId("purchTotals");
+  if (purchTotalsEl) {
+    purchTotalsEl.innerHTML = `
+      <span class="total-chip">Qaimə sayı: ${purchListAll.length}</span>
+      <span class="total-chip">Məbləğ cəmi: ${money(purchAmountTotal)} AZN</span>
+      <span class="total-chip">Ödənilən cəmi: ${money(purchPaidTotal)} AZN</span>
+      <span class="total-chip">Qalıq cəmi: ${money(purchRemTotal)} AZN</span>
+    `;
+  }
 
   byId("tblPurch").innerHTML = purchList
     .map((g, i) => {
@@ -7808,7 +7820,7 @@ function renderAll() {
     .slice(0, 5000) /* safety */
     .map((p) => ({ p }));
 
-  byId("tblStock").innerHTML = stockListAll
+  const stockFiltered = stockListAll
     .filter(({ p }) => inDateRange(p.date, "stockFrom", "stockTo"))
     .filter(({ p }) => {
       const st = byId("stockStatus")?.value || "stock";
@@ -7829,7 +7841,27 @@ function renderAll() {
       if (cat && meta.cat !== cat) return false;
       if (sub && meta.subCat !== sub) return false;
       return true;
-    })
+    });
+  const stockTotalsEl = byId("stockTotals");
+  if (stockTotalsEl) {
+    const stockAmountTotal = stockFiltered.reduce((a, { p }) => a + n(p.amount), 0);
+    const stockRemainingValue = stockFiltered.reduce((a, { p }) => {
+      const remQty = purchRemainingQty(p);
+      const isReturned = !!p.returnedAt;
+      const isSold = !isReturned && remQty <= 0;
+      if (isReturned || isSold) return a;
+      const qtyAll = Math.max(1, Math.floor(n(p.qty || 1)));
+      const unit = purchIsBulk(p) ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : (n(p.amount) / qtyAll)) : n(p.amount);
+      return a + (purchIsBulk(p) ? remQty * unit : unit);
+    }, 0);
+    stockTotalsEl.innerHTML = `
+      <span class="total-chip">Sətir sayı: ${stockFiltered.length}</span>
+      <span class="total-chip">Məbləğ cəmi: ${money(stockAmountTotal)} AZN</span>
+      <span class="total-chip">Anbar dəyəri: ${money(stockRemainingValue)} AZN</span>
+    `;
+  }
+
+  byId("tblStock").innerHTML = stockFiltered
     .slice(0, 2000) /* safety */
     .map(({ p }, i) => {
       const key = itemKeyFromPurch(p);
@@ -7871,6 +7903,18 @@ function renderAll() {
 
   const salesPageSize = getPageSize("salesPageSize", 50);
   const salesList = paginate(salesListAll, "sales", salesPageSize, "salesPageInfo");
+  const salesAmountTotal = salesListAll.reduce((a, { s }) => a + n(s.amount), 0);
+  const salesPaidTotal = salesListAll.reduce((a, { s }) => a + n(s.paidTotal), 0);
+  const salesRemTotal = Math.max(0, salesAmountTotal - salesPaidTotal);
+  const salesTotalsEl = byId("salesTotals");
+  if (salesTotalsEl) {
+    salesTotalsEl.innerHTML = `
+      <span class="total-chip">Sətir sayı: ${salesListAll.length}</span>
+      <span class="total-chip">Məbləğ cəmi: ${money(salesAmountTotal)} AZN</span>
+      <span class="total-chip">Ödənilən cəmi: ${money(salesPaidTotal)} AZN</span>
+      <span class="total-chip">Qalıq cəmi: ${money(salesRemTotal)} AZN</span>
+    `;
+  }
 
   byId("tblSales").innerHTML = salesList
     .map(({ s, idx }, i) => {

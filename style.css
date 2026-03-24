@@ -2431,6 +2431,23 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
 .table-wrap table{width:100%;border-collapse:collapse;}
 .table-wrap th,.table-wrap td{padding:10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);}
 .table-wrap th:last-child,.table-wrap td:last-child{border-right:none;width:auto;text-align:left;}
+.section-totals{
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid var(--border-color);
+  border-radius:12px;
+  background:var(--accent-light);
+  font-weight:700;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.section-totals .total-chip{
+  background:#fff;
+  border:1px solid var(--border-color);
+  border-radius:999px;
+  padding:6px 10px;
+}
 
 /* Pills */
 .pill{
