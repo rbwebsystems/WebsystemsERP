@@ -1379,7 +1379,35 @@ function prepareLoginForm() {
     const fromUrl = window.__loginCompanyFromUrl;
     if (fromUrl && meta.companies.some((c) => c.id === fromUrl)) sel.value = fromUrl;
   }
-  byId("loginHint").innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş." : "Keçid ünvanında ?company=ŞİRKƏT_ID olmalıdır.";
+  const hint = byId("loginHint");
+  if (hint) hint.innerText = window.__loginCompanyFromUrl ? "Link ünvanı ilə giriş." : "Keçid ünvanında ?company=ŞİRKƏT_ID olmalıdır.";
+  const uEl = byId("loginUser");
+  const remEl = byId("loginRemember");
+  const saved = (() => {
+    try {
+      return localStorage.getItem("loginRememberUsername");
+    } catch {
+      return null;
+    }
+  })();
+  if (uEl && saved) uEl.value = saved;
+  if (remEl) remEl.checked = !!saved;
+}
+
+function toggleLoginPassword() {
+  const inp = byId("loginPass");
+  const btn = byId("loginPassToggle");
+  if (!inp || !btn) return;
+  const icon = btn.querySelector("i");
+  if (inp.type === "password") {
+    inp.type = "text";
+    if (icon) icon.className = "fas fa-eye-slash";
+    btn.setAttribute("aria-label", "Şifrəni gizlət");
+  } else {
+    inp.type = "password";
+    if (icon) icon.className = "fas fa-eye";
+    btn.setAttribute("aria-label", "Şifrəni göstər");
+  }
 }
 
 function openLoginModal() {
@@ -1429,6 +1457,10 @@ function login(e) {
   e.preventDefault();
   const username = val("loginUser").trim();
   const pass = val("loginPass");
+  try {
+    if (byId("loginRemember")?.checked) localStorage.setItem("loginRememberUsername", username);
+    else localStorage.removeItem("loginRememberUsername");
+  } catch {}
   const unameNorm = String(username || "").trim().toLowerCase();
   let u = meta.users.find((x) => x.username === username);
   if (!u) {
@@ -9115,6 +9147,7 @@ Object.assign(window, {
   setSkin,
   openLoginModal,
   closeLoginModal,
+  toggleLoginPassword,
   toggleSidebar,
   openAuditDetails,
   openGlobalSearch,
