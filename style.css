@@ -314,10 +314,28 @@ body.theme-dark .rbsoft-brand-title .rb-low{color:#f8fafc;}
   margin-top:0.35rem;
 }
 .rbsoft-brand-track-fill{
+  position:relative;
   height:100%;
   width:50%;
   border-radius:999px;
   background:var(--brand-green);
+}
+/* Yaşıl zolğun sonu — yumru nöqtə */
+.rbsoft-brand-track-fill::after{
+  content:"";
+  position:absolute;
+  right:0;
+  top:50%;
+  transform:translate(50%,-50%);
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--brand-green);
+  box-shadow:0 0 10px rgba(16,185,129,.45);
+}
+.rbsoft-brand-track--header .rbsoft-brand-track-fill::after{
+  width:4px;
+  height:4px;
 }
 .rbsoft-brand-track--header{
   max-width:6.75rem;
