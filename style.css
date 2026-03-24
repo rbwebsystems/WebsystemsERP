@@ -1200,11 +1200,16 @@ body.landing-login-open .lp-aurora{
 .lp-hero{
   width:100%;
   max-width:100%;
-  padding:5rem max(1rem, env(safe-area-inset-left)) 3rem max(1rem, env(safe-area-inset-right));
+  /* Nav altında kifayət boşluq: başlıq yerində, məzmun aşağı */
+  padding:7.5rem max(1rem, env(safe-area-inset-left)) 3rem max(1rem, env(safe-area-inset-right));
+  padding-top:max(7.5rem, calc(5rem + env(safe-area-inset-top, 0px)));
   box-sizing:border-box;
 }
 @media (min-width:768px){
-  .lp-hero{padding:7rem max(1.5rem, env(safe-area-inset-left)) 5rem max(1.5rem, env(safe-area-inset-right));}
+  .lp-hero{
+    padding:10rem max(1.5rem, env(safe-area-inset-left)) 5rem max(1.5rem, env(safe-area-inset-right));
+    padding-top:max(10rem, calc(7rem + env(safe-area-inset-top, 0px)));
+  }
 }
 .lp-hero-grid{
   width:min(80rem, 100%);
@@ -1212,7 +1217,7 @@ body.landing-login-open .lp-aurora{
   margin:0 auto;
   display:grid;
   gap:3rem;
-  align-items:center;
+  align-items:start;
   box-sizing:border-box;
 }
 @media (min-width:768px){
