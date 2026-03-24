@@ -1126,10 +1126,6 @@ select{
     flex-direction:column;
     align-items:center;
   }
-  .login-v3-brand .rbsoft--login .rbsoft-brand-text{
-    align-items:center;
-    text-align:center;
-  }
 }
 .login-v3-welcome{text-align:center;margin-bottom:1.75rem;}
 .login-v3-welcome h1{
@@ -1475,27 +1471,6 @@ body.landing-login-open .lp-aurora{
 .lp-hero-brand{margin-bottom:2rem;text-align:center;}
 @media (min-width:768px){
   .lp-hero-brand{text-align:left;}
-}
-.lp-hero-ready{
-  margin-top:.75rem;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:.5rem;
-  font-size:.65rem;
-  font-weight:900;
-  color:#94a3b8;
-  text-transform:uppercase;
-  letter-spacing:.35em;
-}
-@media (min-width:768px){
-  .lp-hero-ready{justify-content:flex-start;}
-}
-.lp-hero-ready-dot{
-  width:6px;height:6px;
-  border-radius:50%;
-  background:var(--brand-green);
-  animation:lpPulse 2s ease-in-out infinite;
 }
 .lp-hero-title{
   font-size:clamp(2.5rem,6vw,4.5rem);
@@ -3496,9 +3471,6 @@ body.sidebar-collapsed .header-logo{
 }
 body.sidebar-collapsed .header-logo .rbsoft--compact{
   justify-content:center;
-}
-body.sidebar-collapsed .header-logo .rbsoft-brand-text{
-  display:none;
 }
 body.sidebar-collapsed .header-logo .rbsoft-digital--compact{
   height:2.1rem;
