@@ -2708,14 +2708,7 @@ function openPurch(idx = null) {
   ensureAccounts();
   const payAccOptions = accountOptionsHtml(Number(p.paymentAccountId || 1));
   const invVal = idx !== null ? (p.invNo || invFallback("purch", p.uid)) : nextInvNo("purch");
-  const existingInvs = Array.from(new Set((db.purch || []).map((x) => String(x.invNo || "").trim()).filter(Boolean))).slice(0, 2000);
-  const invOptions =
-    `<option value="">— Mövcud qaimə seç (istəyə bağlı) —</option>` +
-    existingInvs
-      .slice()
-      .sort((a, b) => a.localeCompare(b))
-      .map((x) => `<option value="${escapeAttr(x)}">${escapeHtml(x)}</option>`)
-      .join("");
+  window.__purchDraftItems = [];
 
   const isBulk = purchIsBulk(p);
   const prefUnit = isBulk ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1)))) : n(p.amount);
@@ -2723,14 +2716,7 @@ function openPurch(idx = null) {
     <h2>${idx !== null ? "Alış Redaktə" : "Yeni Alış"}</h2>
     <form onsubmit="savePurch(event, ${idx})">
       <div class="grid-3">
-        <div class="span-3">
-          <div class="grid-3">
-            <input id="f_p_inv" class="span-2" value="${escapeAttr(invVal)}" placeholder="Qaimə № (məs: AL-001)" ${idx !== null ? "readonly" : ""} required>
-            <select id="f_p_inv_pick" onchange="byId('f_p_inv').value=this.value||byId('f_p_inv').value;" title="Mövcud qaiməni seçib eyni qaiməyə yeni məhsul əlavə edin">
-              ${invOptions}
-            </select>
-          </div>
-        </div>
+        <input id="f_p_inv" class="span-3" value="${escapeAttr(invVal)}" placeholder="Qaimə № (məs: AL-001)" ${idx !== null ? "readonly" : ""} required>
         <input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required>
         <select id="f_p_supp" class="span-2" required>
           <option value="">Təchizatçı seç</option>
@@ -2770,6 +2756,18 @@ function openPurch(idx = null) {
         <input type="number" step="0.01" id="f_p_paid" value="${escapeAttr(p.paidTotal || "0")}" placeholder="Ödənilən (AZN)">
         <select id="f_p_pay_acc" class="span-3">${payAccOptions}</select>
         <div id="pTotalHint" class="span-3 muted small" style="display:${isBulk ? "" : "none"}">Cəmi: —</div>
+        ${idx === null ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
+          <button class="btn-secondary" type="button" onclick="addPurchDraftItem()"><i class="fas fa-plus"></i> Əlavə et</button>
+        </div>
+        <div class="span-3">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Kod/IMEI</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
+              <tbody id="purchDraftList"><tr><td colspan="7">Məhsul əlavə edilməyib</td></tr></tbody>
+              <tfoot><tr class="total-row"><td colspan="5">Maya dəyəri cəmi</td><td id="purchDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>` : ""}
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Mədaxil et"}</button>
@@ -2795,6 +2793,80 @@ function openPurch(idx = null) {
   byId("f_p_amount") && (byId("f_p_amount").oninput = upd);
   byId("f_p_bulk") && (byId("f_p_bulk").onchange = () => { togglePurchBulk(); upd(); });
   upd();
+  if (idx === null) renderPurchDraftItems();
+}
+
+function readPurchDraftFromForm() {
+  const isBulk = !!byId("f_p_bulk")?.checked;
+  const name = val("f_p_prod");
+  if (!name) return { error: "Məhsul seçin." };
+  const qty = isBulk ? Math.max(1, Math.floor(n(val("f_p_qty") || 1))) : 1;
+  const unitOrAmount = Math.max(0, n(val("f_p_amount") || 0));
+  if (unitOrAmount <= 0) return { error: "Məbləğ düzgün deyil." };
+  const item = {
+    isBulk,
+    name,
+    code: isBulk ? val("f_p_code").trim() : "",
+    qty,
+    imei1: isBulk ? "" : val("f_p_i1").trim(),
+    imei2: isBulk ? "" : val("f_p_i2").trim(),
+    seria: isBulk ? "" : val("f_p_ser").trim(),
+    unitPrice: isBulk ? unitOrAmount : null,
+    amount: isBulk ? unitOrAmount * qty : unitOrAmount,
+  };
+  if (!isBulk && !item.imei1 && !item.imei2 && !item.seria) return { error: "IMEI və ya Seriya daxil edin." };
+  return { item };
+}
+
+function renderPurchDraftItems() {
+  const tb = byId("purchDraftList");
+  const totalEl = byId("purchDraftTotal");
+  if (!tb || !totalEl) return;
+  const arr = window.__purchDraftItems || [];
+  if (!arr.length) {
+    tb.innerHTML = `<tr><td colspan="7">Məhsul əlavə edilməyib</td></tr>`;
+    totalEl.textContent = "0.00 AZN";
+    return;
+  }
+  const total = arr.reduce((a, x) => a + n(x.amount), 0);
+  tb.innerHTML = arr
+    .map((x, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${escapeHtml(x.name)}</td>
+      <td>${x.isBulk ? "Sayla" : "Seriyalı"}</td>
+      <td>${escapeHtml(x.isBulk ? (x.code || "-") : (x.imei1 || x.imei2 || x.seria || "-"))}</td>
+      <td>${x.qty}</td>
+      <td>${money(x.amount)} AZN</td>
+      <td><button type="button" class="icon-btn delete" onclick="removePurchDraftItem(${i})"><i class="fas fa-trash"></i></button></td>
+    </tr>`)
+    .join("");
+  totalEl.textContent = `${money(total)} AZN`;
+}
+
+function addPurchDraftItem() {
+  const r = readPurchDraftFromForm();
+  if (r.error) return alert(r.error);
+  const arr = window.__purchDraftItems || [];
+  arr.push(r.item);
+  window.__purchDraftItems = arr;
+  renderPurchDraftItems();
+  if (r.item.isBulk) {
+    byId("f_p_code").value = "";
+    byId("f_p_qty").value = "1";
+  } else {
+    byId("f_p_i1").value = "";
+    byId("f_p_i2").value = "";
+    byId("f_p_ser").value = "";
+  }
+  byId("f_p_amount").value = "";
+}
+
+function removePurchDraftItem(i) {
+  const arr = window.__purchDraftItems || [];
+  if (i < 0 || i >= arr.length) return;
+  arr.splice(i, 1);
+  window.__purchDraftItems = arr;
+  renderPurchDraftItems();
 }
 
 async function savePurch(e, idx) {
@@ -2802,6 +2874,59 @@ async function savePurch(e, idx) {
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isNew = idx === null;
   const prevPaid = idx !== null ? n(db.purch[idx]?.paidTotal) : 0;
+  if (isNew) {
+    const draft = window.__purchDraftItems || [];
+    if (!draft.length) return alert("Ən azı bir məhsul əlavə edin.");
+    const supp = val("f_p_supp");
+    if (!supp) return alert("Təchizatçı seçin.");
+    const invNo = (val("f_p_inv") || "").trim() || nextInvNo("purch");
+    const date = val("f_p_date");
+    const employeeId = (val("f_p_staff") || "").trim() || undefined;
+    const actorName = currentActorName();
+    const payType = val("f_p_payType");
+    const paidTotal = Math.max(0, n(val("f_p_paid")));
+    const paymentAccountId = Number(val("f_p_pay_acc") || 1);
+    draft.forEach((it, i) => {
+      const uid = genId(db.purch, 1);
+      const row = {
+        uid,
+        invNo,
+        date,
+        supp,
+        name: it.name,
+        code: it.code || "",
+        qty: Math.max(1, Math.floor(n(it.qty || 1))),
+        imei1: it.isBulk ? "" : (it.imei1 || ""),
+        imei2: it.isBulk ? "" : (it.imei2 || ""),
+        seria: it.isBulk ? "" : (it.seria || ""),
+        amount: String(Math.max(0, n(it.amount))),
+        unitPrice: it.isBulk ? String(Math.max(0, n(it.unitPrice || 0))) : "",
+        payType,
+        paidTotal: String(i === 0 ? paidTotal : 0),
+        employeeId,
+        actorName,
+        paymentAccountId,
+      };
+      db.purch.push(row);
+      logEvent("create", "purch", { uid: row.uid, invNo: row.invNo });
+    });
+    if (paidTotal > 0.000001) {
+      addCashOp({
+        type: "out",
+        date,
+        source: `Təchizatçı ödənişi (${supp || "-"})`,
+        amount: paidTotal,
+        note: `Alış #${invNo}`,
+        link: { kind: "purch_payment", purchUid: db.purch[db.purch.length - draft.length].uid },
+        meta: { invNo },
+        accountId: paymentAccountId,
+      });
+      logEvent("create", "cash", { type: "out", kind: "purch_payment", invNo, amount: paidTotal });
+    }
+    saveDB();
+    closeMdl();
+    return;
+  }
   const isBulk = !!byId("f_p_bulk")?.checked;
   const qty = isBulk ? Math.max(1, Math.floor(n(val("f_p_qty")))) : 1;
   const code = isBulk ? val("f_p_code").trim() : "";
@@ -3610,6 +3735,18 @@ function openSale(idx = null) {
           <input type="number" step="0.01" id="f_s_paid" placeholder="Ödəniş məbləği (AZN)" value="${escapeAttr(current?.lastPayAmount ?? "0")}">
           <select id="f_pay_acc" class="span-2">${accOptions}</select>
         </div>
+        ${!isEdit ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
+          <button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button>
+        </div>
+        <div class="span-3">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
+              <tbody id="saleDraftList"><tr><td colspan="6">Məhsul əlavə edilməyib</td></tr></tbody>
+              <tfoot><tr class="total-row"><td colspan="4">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>` : ""}
       </div>
 
       <div id="creditBox" class="info-block" style="display:none; margin-top:14px;">
@@ -3673,6 +3810,8 @@ function openSale(idx = null) {
     byId("f_pay_now").checked = false;
     togglePayNow(true);
   }
+  window.__saleDraftItems = [];
+  if (!isEdit) renderSaleDraftItems();
   toggleSaleQty();
   const upd = () => {
     const sel = byId("f_s_item")?.value || "";
@@ -3694,6 +3833,63 @@ function openSale(idx = null) {
   amtEl && (amtEl.oninput = () => { upd(); recalcCredit(); });
   byId("f_s_item") && (byId("f_s_item").onchange = () => { toggleSaleQty(); upd(); recalcCredit(); });
   upd();
+}
+
+function readSaleDraftFromForm() {
+  const sel = val("f_s_item");
+  if (!sel) return { error: "Məhsul seçin." };
+  const [kind, purchUid] = String(sel).split(":");
+  if (!kind || !purchUid) return { error: "Məhsul seçimi yanlışdır." };
+  const qty = (kind === "bulk" || kind === "fifo") ? Math.max(1, Math.floor(n(val("f_s_qty") || 1))) : 1;
+  const unitOrTotal = Math.max(0, n(val("f_s_amount") || 0));
+  if (unitOrTotal <= 0) return { error: "Məbləğ düzgün deyil." };
+  const amount = (kind === "bulk" || kind === "fifo") ? unitOrTotal * qty : unitOrTotal;
+  const opt = byId("f_s_item")?.selectedOptions?.[0];
+  const label = (opt?.textContent || "").trim();
+  return { item: { kind, purchUid, qty, unitOrTotal, amount, label } };
+}
+
+function renderSaleDraftItems() {
+  const tb = byId("saleDraftList");
+  const totalEl = byId("saleDraftTotal");
+  if (!tb || !totalEl) return;
+  const arr = window.__saleDraftItems || [];
+  if (!arr.length) {
+    tb.innerHTML = `<tr><td colspan="6">Məhsul əlavə edilməyib</td></tr>`;
+    totalEl.textContent = "0.00 AZN";
+    return;
+  }
+  const total = arr.reduce((a, x) => a + n(x.amount), 0);
+  tb.innerHTML = arr
+    .map((x, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${escapeHtml(x.label || x.purchUid)}</td>
+      <td>${x.kind === "bulk" ? "Sayla" : (x.kind === "fifo" ? "FIFO" : "Seriyalı")}</td>
+      <td>${x.qty}</td>
+      <td>${money(x.amount)} AZN</td>
+      <td><button type="button" class="icon-btn delete" onclick="removeSaleDraftItem(${i})"><i class="fas fa-trash"></i></button></td>
+    </tr>`)
+    .join("");
+  totalEl.textContent = `${money(total)} AZN`;
+}
+
+function addSaleDraftItem() {
+  const r = readSaleDraftFromForm();
+  if (r.error) return alert(r.error);
+  const arr = window.__saleDraftItems || [];
+  arr.push(r.item);
+  window.__saleDraftItems = arr;
+  renderSaleDraftItems();
+  byId("f_s_amount").value = "";
+  if (byId("f_s_qty")) byId("f_s_qty").value = "1";
+}
+
+function removeSaleDraftItem(i) {
+  const arr = window.__saleDraftItems || [];
+  if (i < 0 || i >= arr.length) return;
+  arr.splice(i, 1);
+  window.__saleDraftItems = arr;
+  renderSaleDraftItems();
 }
 
 function togglePayNow(noRender) {
@@ -3751,6 +3947,166 @@ async function saveSale(e, idx) {
   const isEdit = idx !== null;
   const isNew = !isEdit;
   const actorName = currentActorName();
+  if (isNew) {
+    const draft = window.__saleDraftItems || [];
+    if (!draft.length) return alert("Ən azı bir məhsul əlavə edin.");
+    const customerId = val("f_s_customer");
+    const employeeId = val("f_s_staff");
+    const saleType = val("f_s_type");
+    const date = val("f_s_date");
+    const cust = db.cust.find((c) => String(c.uid) === String(customerId));
+    const staff = db.staff.find((s) => String(s.uid) === String(employeeId));
+    if (!cust || !staff) return alert("Müştəri və əməkdaş seçin.");
+
+    const totalAmount = draft.reduce((a, x) => a + Math.max(0, n(x.amount)), 0);
+    const payNow = !!byId("f_pay_now")?.checked;
+    const payAccountId = payNow ? Number(val("f_pay_acc") || 1) : null;
+    let paid = payNow ? Math.max(0, n(val("f_s_paid"))) : 0;
+    if (paid > totalAmount) paid = totalAmount;
+
+    if (saleType === "kredit") {
+      const lim = Math.max(0, n(cust.creditLimit || 0));
+      if (lim > 0.000001) {
+        const existing = db.sales
+          .filter((s) => String(s.customerId) === String(cust.uid))
+          .filter((s) => String(s.saleType) === "kredit")
+          .filter((s) => !s.returnedAt)
+          .reduce((a, s) => a + saleRemaining(s), 0);
+        let down = Math.max(0, n(val("f_cr_down")));
+        if (down > totalAmount) down = totalAmount;
+        const newDebt = Math.max(0, totalAmount - down);
+        const will = existing + newDebt;
+        if (will - lim > 0.000001) return alert(`Kredit limit aşılır. Limit: ${money(lim)} AZN, olacaq: ${money(will)} AZN`);
+      }
+    }
+
+    const sold = soldKeySet();
+    const usedByPurch = {};
+    const created = [];
+    const invNo = nextInvNo("sales");
+    let paidLeft = paid;
+    const totalDown = saleType === "kredit" ? Math.max(0, n(val("f_cr_down"))) : 0;
+    const termMonths = saleType === "kredit" ? Math.max(1, Math.floor(n(val("f_cr_term") || 1))) : 0;
+
+    for (const it of draft) {
+      const kind = it.kind;
+      const tokenOrUid = String(it.purchUid || "");
+      const qty = Math.max(1, Math.floor(n(it.qty || 1)));
+      const unitOrTotal = Math.max(0, n(it.unitOrTotal || 0));
+      const amount = Math.max(0, n(it.amount || 0));
+      let purch = null;
+      let bulkPurchUid = null;
+      let bulkAllocations = null;
+      let key = "";
+
+      if (kind === "fifo") {
+        const token = tokenOrUid;
+        key = `FIFO:${token}`;
+        const matches = (p) => {
+          if (!p || p.returnedAt || !purchIsBulk(p)) return false;
+          const code = String(p.code || "").trim().replace(/:/g, "_");
+          const name = String(p.name || "").trim().replace(/:/g, "_");
+          return (code && code === token) || (!code && name === token) || name === token;
+        };
+        const lots = (db.purch || []).filter(matches).slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+        bulkAllocations = [];
+        let left = qty;
+        for (const lp of lots) {
+          const already = n(usedByPurch[lp.uid] || 0);
+          const rem = Math.max(0, purchRemainingQty(lp) - already);
+          if (rem <= 0) continue;
+          const take = Math.min(left, rem);
+          if (take > 0) {
+            bulkAllocations.push({ purchUid: lp.uid, qty: take });
+            usedByPurch[lp.uid] = already + take;
+            left -= take;
+          }
+          if (left <= 0) break;
+        }
+        if (left > 0) return alert("FIFO üçün anbarda kifayət qədər say yoxdur.");
+        purch = bulkAllocations.length ? db.purch.find((p) => String(p.uid) === String(bulkAllocations[0].purchUid)) : null;
+      } else if (kind === "bulk") {
+        purch = db.purch.find((p) => String(p.uid) === tokenOrUid);
+        if (!purch) return alert("Məhsul tapılmadı.");
+        key = itemKeyFromPurch(purch);
+        bulkPurchUid = purch.uid;
+        const already = n(usedByPurch[purch.uid] || 0);
+        const avail = Math.max(0, purchRemainingQty(purch) - already);
+        if (qty > avail) return alert("Anbarda kifayət qədər say yoxdur.");
+        usedByPurch[purch.uid] = already + qty;
+      } else {
+        purch = db.purch.find((p) => String(p.uid) === tokenOrUid);
+        if (!purch) return alert("Məhsul tapılmadı.");
+        key = itemKeyFromPurch(purch);
+        if (sold.has(key)) return alert("Bu mal artıq satılıb.");
+        sold.add(key);
+      }
+
+      const samplePurch = purch || (bulkAllocations && bulkAllocations.length ? db.purch.find((p) => String(p.uid) === String(bulkAllocations[0].purchUid)) : null);
+      const base = {
+        uid: genId(db.sales, 1),
+        invNo,
+        date,
+        saleType,
+        customerId: cust.uid,
+        customerName: `${cust.sur} ${cust.name} ${cust.father}`.trim(),
+        employeeId: staff.uid,
+        employeeName: staff.name,
+        actorName,
+        productName: samplePurch ? (samplePurch.name || "") : "",
+        code: samplePurch ? (samplePurch.code || "") : "",
+        qty,
+        bulkPurchUid,
+        bulkAllocations,
+        imei1: samplePurch ? (samplePurch.imei1 || "") : "",
+        imei2: samplePurch ? (samplePurch.imei2 || "") : "",
+        seria: samplePurch ? (samplePurch.seria || "") : "",
+        amount: String(amount),
+        unitPrice: (kind === "bulk" || kind === "fifo") ? String(unitOrTotal) : "",
+        itemKey: key,
+        payments: [],
+        paidTotal: "0",
+        credit: null,
+        paymentAccountId: payAccountId,
+        lastPayAmount: 0,
+      };
+
+      if (saleType === "kredit") {
+        const downShare = totalAmount > 0 ? (Math.max(0, totalDown) * amount / totalAmount) : 0;
+        const rem = Math.max(0, amount - downShare);
+        base.credit = { termMonths, downPayment: downShare, monthlyPayment: termMonths > 0 ? rem / termMonths : 0 };
+      }
+
+      const payForThis = payNow ? Math.min(paidLeft, amount) : 0;
+      if (payForThis > 0.000001) {
+        addSalePaymentInternal(base, payForThis, base.date, "sales_form");
+        base.lastPayAmount = payForThis;
+      }
+      paidLeft -= payForThis;
+      db.sales.push(base);
+      created.push(base);
+      logEvent("create", "sales", { uid: base.uid, invNo: base.invNo });
+
+      if (payNow && payForThis > 0.000001 && payAccountId) {
+        addCashOp({
+          type: "in",
+          date: base.date,
+          source: `Satış ödənişi (${base.customerName})`,
+          amount: amountAppliedToSaleLast(base) || payForThis,
+          note: (kind === "bulk" || kind === "fifo" || (samplePurch && purchIsBulk(samplePurch)))
+            ? `${base.productName} (KOD:${base.code || "-"} • SAY:${base.qty})`
+            : `${base.productName} (${base.imei1 || base.imei2 || base.seria || "-"})`,
+          link: { kind: "sale_payment", saleUid: base.uid },
+          meta: { customerId: base.customerId, invNo: base.invNo },
+          accountId: payAccountId,
+        });
+      }
+    }
+
+    saveDB();
+    closeMdl();
+    return;
+  }
   if (isEdit) {
     const old = db.sales[idx];
     const oldInv = old ? (old.invNo || invFallback("sales", old.uid)) : "-";
