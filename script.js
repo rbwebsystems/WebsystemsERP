@@ -3937,6 +3937,10 @@ function openSale(idx = null) {
         <div id="payNowBox" class="grid-3 span-3" style="display:none;">
           <input type="number" step="0.01" id="f_s_paid" placeholder="Ödəniş məbləği (AZN)" value="${escapeAttr(current?.lastPayAmount ?? "0")}">
           <select id="f_pay_acc" class="span-2">${accOptions}</select>
+          <label class="chk span-3">
+            <input type="checkbox" id="f_pay_initial">
+            <span>İlkin ödənişdir</span>
+          </label>
         </div>
         ${!isEdit ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
           <button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button>
@@ -4102,6 +4106,7 @@ function togglePayNow(noRender) {
   box.style.display = chk.checked ? "" : "none";
   if (!chk.checked) {
     byId("f_s_paid").value = "0";
+    if (byId("f_pay_initial")) byId("f_pay_initial").checked = false;
   } else {
     // if credit, default to down payment
     if (byId("f_s_type")?.value === "kredit") {
@@ -4163,6 +4168,8 @@ async function saveSale(e, idx) {
 
     const totalAmount = draft.reduce((a, x) => a + Math.max(0, n(x.amount)), 0);
     const payNow = !!byId("f_pay_now")?.checked;
+    const isInitialPayment = payNow && !!byId("f_pay_initial")?.checked;
+    const saleFormPaySource = isInitialPayment ? "down" : "sale_info";
     const payAccountId = payNow ? Number(val("f_pay_acc") || 1) : null;
     let paid = payNow ? Math.max(0, n(val("f_s_paid"))) : 0;
     if (paid > totalAmount) paid = totalAmount;
@@ -4282,7 +4289,7 @@ async function saveSale(e, idx) {
 
       const payForThis = payNow ? Math.min(paidLeft, amount) : 0;
       if (payForThis > 0.000001) {
-        addSalePaymentInternal(base, payForThis, base.date, "sales_form");
+        addSalePaymentInternal(base, payForThis, base.date, saleFormPaySource);
         base.lastPayAmount = payForThis;
       }
       paidLeft -= payForThis;
@@ -4300,7 +4307,7 @@ async function saveSale(e, idx) {
             ? `${base.productName} (KOD:${base.code || "-"} • SAY:${base.qty})`
             : `${base.productName} (${base.imei1 || base.imei2 || base.seria || "-"})`,
           link: { kind: "sale_payment", saleUid: base.uid },
-          meta: { customerId: base.customerId, invNo: base.invNo },
+          meta: { customerId: base.customerId, invNo: base.invNo, payKind: isInitialPayment ? "down" : "regular" },
           accountId: payAccountId,
         });
       }
@@ -4402,6 +4409,8 @@ async function saveSale(e, idx) {
   const unitOrTotal = Math.max(0, n(val("f_s_amount")));
   const amount = (kind === "bulk" || kind === "fifo") ? (unitOrTotal * qty) : unitOrTotal;
   const payNow = !!byId("f_pay_now")?.checked;
+  const isInitialPayment = payNow && !!byId("f_pay_initial")?.checked;
+  const saleFormPaySource = isInitialPayment ? "down" : "sale_info";
   const payAccountId = payNow ? Number(val("f_pay_acc") || 1) : null;
   let paid = payNow ? Math.max(0, n(val("f_s_paid"))) : 0;
   if (paid > amount) paid = amount;
@@ -4487,12 +4496,12 @@ async function saveSale(e, idx) {
     // allow user to set paid amount by adding payment difference
     const diff = paid - n(base.paidTotal);
     if (diff > 0.000001) {
-      addSalePaymentInternal(base, diff, base.date, "sales_form");
+      addSalePaymentInternal(base, diff, base.date, saleFormPaySource);
     }
   } else {
     // create initial payment if paid > 0
     if (paid > 0.000001) {
-      addSalePaymentInternal(base, paid, base.date, "sales_form");
+      addSalePaymentInternal(base, paid, base.date, saleFormPaySource);
     } else {
       base.paidTotal = "0";
     }
@@ -4516,7 +4525,7 @@ async function saveSale(e, idx) {
           ? `${base.productName} (KOD:${base.code || "-"} • SAY:${base.qty})`
           : `${base.productName} (${base.imei1 || base.imei2 || base.seria || "-"})`,
         link: { kind: "sale_payment", saleUid: base.uid },
-        meta: { customerId: base.customerId },
+        meta: { customerId: base.customerId, payKind: isInitialPayment ? "down" : "regular" },
         accountId: payAccountId,
       });
     }
@@ -4528,6 +4537,15 @@ async function saveSale(e, idx) {
 
 function sumPayments(payments) {
   return (payments || []).reduce((a, p) => a + n(p.amount), 0);
+}
+
+function salePaymentSourceLabel(src) {
+  const s = String(src || "").trim().toLowerCase();
+  if (s === "down") return "İlkin ödəniş";
+  if (s === "monthly") return "Aylıq ödəniş";
+  if (s === "cash_edit") return "Nağd ödəniş (kassa düzəlişi)";
+  if (s === "sale_info" || s === "sales_form" || s === "regular" || s === "manual") return "Nağd ödəniş";
+  return src ? String(src) : "-";
 }
 
 function addSalePaymentInternal(sale, amount, date, source) {
@@ -4714,7 +4732,7 @@ function openPaymentHistory(kind, idx) {
         <td>${p.uid}</td>
         <td>${fmtDT(p.date)}</td>
         <td>${money(p.amount)} AZN</td>
-        <td>${escapeHtml(p.source || "")}</td>
+        <td>${escapeHtml(salePaymentSourceLabel(p.source))}</td>
       </tr>`
     )
     .join("");
@@ -7329,7 +7347,7 @@ function openOverdueInfo(saleUid) {
         <td>${i + 1}</td>
         <td>${fmtDT(p.date)}</td>
         <td>${money(p.amount)} AZN</td>
-        <td>${escapeHtml(p.source || "-")}</td>
+        <td>${escapeHtml(salePaymentSourceLabel(p.source))}</td>
       </tr>
     `)
     .join("");
