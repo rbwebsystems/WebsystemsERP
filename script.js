@@ -2710,7 +2710,10 @@ function openPurchInvoiceEdit(invNoRaw) {
       return `<tr>
         <td>${i + 1}</td>
         <td>${escapeHtml(p.name || "-")}</td>
-        <td>${isBulk ? "Sayla" : "Seriyalı"}</td>
+        <td>${escapeHtml(p.imei1 || "-")}</td>
+        <td>${escapeHtml(p.imei2 || "-")}</td>
+        <td>${escapeHtml(p.seria || "-")}</td>
+        <td>${escapeHtml(p.code || "-")}</td>
         <td>${qty}</td>
         <td>${money(unit)} AZN</td>
         <td>${money(p.amount)} AZN</td>
@@ -2725,7 +2728,7 @@ function openPurchInvoiceEdit(invNoRaw) {
     <h2>Qaimə redaktəsi — ${escapeHtml(invNo)}</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>1 ədəd</th><th>Məbləğ</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Məhsul</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya</th><th>Kod</th><th>Say</th><th>1 ədəd</th><th>Məbləğ</th><th></th></tr></thead>
         <tbody>${body}</tbody>
       </table>
     </div>
