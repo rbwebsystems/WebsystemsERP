@@ -2152,16 +2152,16 @@ tr.total-row td{padding:10px 12px;}
   justify-content:center;
   align-items:flex-start;
   z-index:10000;
-  padding:24px 12px;
+  padding:20px 16px;
   overflow:auto;
 }
 .modal-body{
   background:#fff;
-  width:920px;
-  max-width:95vw;
-  max-height:calc(100vh - 48px);
+  width:min(1160px, 98vw);
+  max-width:98vw;
+  max-height:calc(100vh - 40px);
   overflow:auto;
-  padding:28px;
+  padding:30px;
   border-radius:20px;
   box-shadow:0 20px 40px rgba(0,0,0,.15);
 }
@@ -2510,8 +2510,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   .grid-3{grid-template-columns:1fr;}
   .info-row{grid-template-columns:1fr;}
   th:last-child,td:last-child{width:auto;}
-  .modal{padding:14px 10px;}
-  .modal-body{padding:18px;max-height:calc(100vh - 28px);}
+  .modal{padding:12px 10px;}
+  .modal-body{
+    width:100%;
+    max-width:100%;
+    padding:18px;
+    max-height:calc(100vh - 24px);
+  }
 }
 
 /* Sidebar collapsed mode */
