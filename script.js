@@ -1704,7 +1704,7 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "teal", name: "Teal (default)", accent: "#237874", accentHover: "#1a5f5b", accentLight: "#d4ebe9", sidebarLight: "#237874", sidebarDark: "#111827" },
+  { id: "teal", name: "Emerald (default)", accent: "#059669", accentHover: "#047857", accentLight: "#d1fae5", sidebarLight: "#059669", sidebarDark: "#111827" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
   { id: "slate", name: "Slate", accent: "#0f172a", accentHover: "#111827", accentLight: "#e2e8f0", sidebarLight: "#0f172a", sidebarDark: "#0b1220" },
@@ -3422,7 +3422,7 @@ function openPrintWindow(title, html) {
       th{background:#f9fafb;text-align:left;}
       .right{text-align:right;}
       .neg{color:#b91c1c;}
-      .pos{color:#237874;}
+      .pos{color:#059669;}
       @media print{button{display:none !important;} body{margin:0;}}
     </style>
   `;
