@@ -2655,12 +2655,13 @@ function openPurchInfoByInv(invNoRaw) {
       const isBulk = purchIsBulk(p);
       const qty = isBulk ? Math.max(1, Math.floor(n(p.qty || 1))) : 1;
       const unit = isBulk ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : n(p.amount) / qty) : n(p.amount);
-      const codeOrImei = isBulk ? (p.code || "-") : (p.imei1 || p.imei2 || p.seria || "-");
       return `<tr>
         <td>${i + 1}</td>
         <td>${escapeHtml(p.name || "-")}</td>
-        <td>${isBulk ? "Sayla" : "Seriyalı"}</td>
-        <td>${escapeHtml(codeOrImei)}</td>
+        <td>${escapeHtml(p.imei1 || "-")}</td>
+        <td>${escapeHtml(p.imei2 || "-")}</td>
+        <td>${escapeHtml(p.seria || "-")}</td>
+        <td>${escapeHtml(p.code || "-")}</td>
         <td>${qty}</td>
         <td>${money(unit)} AZN</td>
         <td>${money(p.amount)} AZN</td>
@@ -2677,9 +2678,9 @@ function openPurchInfoByInv(invNoRaw) {
     </div>
     <div class="table-wrap" style="margin-top:10px;">
       <table>
-        <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Kod/IMEI</th><th>Say</th><th>1 ədəd qiymət</th><th>Məbləğ</th></tr></thead>
+        <thead><tr><th>#</th><th>Məhsul</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya</th><th>Kod</th><th>Say</th><th>1 ədəd qiymət</th><th>Məbləğ</th></tr></thead>
         <tbody>${listRows}</tbody>
-        <tfoot><tr class="total-row"><td colspan="6">Cəmi</td><td>${money(totalAmount)} AZN</td></tr></tfoot>
+        <tfoot><tr class="total-row"><td colspan="8">Cəmi</td><td>${money(totalAmount)} AZN</td></tr></tfoot>
       </table>
     </div>
     <div class="info-block" style="margin-top:10px;">
