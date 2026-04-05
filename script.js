@@ -2032,12 +2032,14 @@ function openNotifications() {
     })
     .join("");
   openModal(`
+    <div class="modal-notif-popup">
     <h2>Bildirişlər</h2>
     <div class="info-block">
       ${rows || `<div class="info-row"><div class="info-label">Status</div><div class="info-value">Bildiriş yoxdur</div></div>`}
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
     </div>
   `);
 }
@@ -2132,12 +2134,27 @@ function paginate(list, pageKey, pageSize, infoElId) {
 
 // Modal helpers
 const modal = document.getElementById("mdlMain");
+function updateModalLayoutFlags(html) {
+  if (!modal) return;
+  const isPopup = /pick-company-modal|modal-notif-popup|modal-dialog-popup/.test(String(html || ""));
+  modal.classList.toggle("modal--page", !isPopup);
+  modal.classList.toggle("modal--popup", isPopup);
+}
 function renderModalWithNav(rawHtml) {
   const hist = window.__modalHistory || [];
+  const fwd = window.__modalForward || [];
   const canBack = hist.length > 0;
-  const nav = canBack
-    ? `<div class="modal-nav-top"><button class="btn-cancel" type="button" onclick="modalBack()"><i class="fas fa-arrow-left"></i> Geri</button></div>`
+  const canForward = fwd.length > 0;
+  const backBtn = canBack
+    ? `<button class="btn-cancel" type="button" onclick="modalBack()"><i class="fas fa-arrow-left"></i> Geri</button>`
     : "";
+  const fwdBtn = canForward
+    ? `<button class="btn-cancel" type="button" onclick="modalForward()">İrəli <i class="fas fa-arrow-right"></i></button>`
+    : "";
+  const nav =
+    backBtn || fwdBtn
+      ? `<div class="modal-nav-top"><div class="modal-nav-left">${backBtn}</div><div class="modal-nav-right">${fwdBtn}</div></div>`
+      : "";
   return `${nav}${rawHtml}`;
 }
 function openModal(html) {
@@ -2150,26 +2167,45 @@ function openModal(html) {
   if ((alreadyOpen || justClosed) && curRaw) {
     window.__modalHistory = window.__modalHistory || [];
     window.__modalHistory.push(curRaw);
+    window.__modalForward = [];
   } else if (!alreadyOpen) {
     window.__modalHistory = [];
+    window.__modalForward = [];
   }
   window.__currentModalRaw = html;
   body.innerHTML = renderModalWithNav(html);
   modal.style.display = "flex";
   window.__modalJustClosedAt = 0;
+  updateModalLayoutFlags(html);
 }
 function modalBack() {
   const body = document.getElementById("modalContent");
   const hist = window.__modalHistory || [];
   if (!body || !hist.length) return;
   const prevRaw = hist.pop();
+  window.__modalForward = window.__modalForward || [];
+  window.__modalForward.push(window.__currentModalRaw);
   window.__currentModalRaw = prevRaw;
   body.innerHTML = renderModalWithNav(prevRaw);
   modal.style.display = "flex";
+  updateModalLayoutFlags(prevRaw);
+}
+function modalForward() {
+  const body = document.getElementById("modalContent");
+  const fwd = window.__modalForward || [];
+  if (!body || !fwd.length) return;
+  const nextRaw = fwd.pop();
+  window.__modalHistory = window.__modalHistory || [];
+  window.__modalHistory.push(window.__currentModalRaw);
+  window.__currentModalRaw = nextRaw;
+  body.innerHTML = renderModalWithNav(nextRaw);
+  modal.style.display = "flex";
+  updateModalLayoutFlags(nextRaw);
 }
 function closeMdl() {
   modal.style.display = "none";
   window.__modalJustClosedAt = Date.now();
+  window.__modalForward = [];
   setTimeout(() => {
     const stillClosed = modal.style.display !== "flex";
     if (stillClosed && window.__modalJustClosedAt && Date.now() - window.__modalJustClosedAt >= 320) {
@@ -2182,12 +2218,14 @@ function closeMdl() {
 function appAlert(msg, title = "Bildiriş") {
   const text = msg == null ? "" : String(msg);
   openModal(`
+    <div class="modal-dialog-popup">
     <h2>${escapeHtml(title)}</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
     </div>
   `);
   return false;
@@ -2210,6 +2248,7 @@ function appConfirm(msg, title = "Təsdiq") {
     };
     document.addEventListener("keydown", onKey);
     openModal(`
+      <div class="modal-dialog-popup">
       <h2>${escapeHtml(title)}</h2>
       <div class="info-block">
         <div class="info-row"><div class="info-label">Sual</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
@@ -2217,6 +2256,7 @@ function appConfirm(msg, title = "Təsdiq") {
       <div class="modal-footer">
         <button class="btn-main" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(true)">Bəli</button>
         <button class="btn-cancel" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(false)">Xeyr</button>
+      </div>
       </div>
     `);
     window.__appConfirmResolve = resolveAndClose;
@@ -2231,6 +2271,7 @@ function appRequireNote(title = "Qeyd", message = "Qeyd daxil edin") {
       closeMdl();
     };
     openModal(`
+      <div class="modal-dialog-popup">
       <h2>${escapeHtml(title)}</h2>
       <div class="info-block">
         <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(message)}</div></div>
@@ -2241,6 +2282,7 @@ function appRequireNote(title = "Qeyd", message = "Qeyd daxil edin") {
       <div class="modal-footer">
         <button class="btn-main" type="button" onclick="window.__appRequireNoteResolve && window.__appRequireNoteResolve()">Yadda saxla</button>
         <button class="btn-cancel" type="button" onclick="window.__appRequireNoteResolve && window.__appRequireNoteResolve(true)">Ləğv et</button>
+      </div>
       </div>
     `);
     window.__appRequireNoteResolve = (cancel) => {
@@ -3085,10 +3127,13 @@ function openPurch(idx = null) {
 
   const isBulk = purchIsBulk(p);
   const prefUnit = isBulk ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1)))) : n(p.amount);
+  const purchSplitClass = idx !== null ? "trade-form-split trade-form-split--single" : "trade-form-split";
   openModal(`
     <h2>${idx !== null ? "Alış Redaktə" : "Yeni Alış"}</h2>
     <form onsubmit="savePurch(event, ${idx})">
-      <div class="grid-3">
+      <div class="${purchSplitClass}">
+        <div class="trade-form-fields">
+          <div class="grid-3 grid-3--compact">
         <input id="f_p_inv" class="span-3" value="${escapeAttr(invVal)}" placeholder="Qaimə № (auto)" readonly required>
         <input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required>
         <select id="f_p_supp" class="span-2" required>
@@ -3129,11 +3174,13 @@ function openPurch(idx = null) {
         <input type="number" step="0.01" id="f_p_paid" value="${escapeAttr(p.paidTotal || "0")}" placeholder="Ödənilən (AZN)">
         <select id="f_p_pay_acc" class="span-3">${payAccOptions}</select>
         <div id="pTotalHint" class="span-3 muted small" style="display:${isBulk ? "" : "none"}">Cəmi: —</div>
-        ${idx === null ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
+          </div>
+        ${idx === null ? `<div class="trade-draft-toolbar">
           <button class="btn-secondary" type="button" onclick="addPurchDraftItem()"><i class="fas fa-plus"></i> Əlavə et</button>
+        </div>` : ""}
         </div>
-        <div class="span-3">
-          <div class="table-wrap">
+        ${idx === null ? `<div class="trade-draft-panel">
+          <div class="table-wrap trade-draft-table">
             <table>
               <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Kod/IMEI</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
               <tbody id="purchDraftList"><tr><td colspan="7">Məhsul əlavə edilməyib</td></tr></tbody>
@@ -4073,10 +4120,13 @@ function openSale(idx = null) {
   ensureAccounts();
   const accOptions = accountOptionsHtml(current?.paymentAccountId || 1);
 
+  const saleSplitClass = isEdit ? "trade-form-split trade-form-split--single" : "trade-form-split";
   openModal(`
     <h2>${isEdit ? "Satış Redaktə" : "Yeni Satış"}</h2>
     <form onsubmit="saveSale(event, ${idx})">
-      <div class="grid-3">
+      <div class="${saleSplitClass}">
+        <div class="trade-form-fields">
+          <div class="grid-3 grid-3--compact">
         <input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required>
 
         <select id="f_s_type" class="span-2" onchange="toggleCreditBox()" required>
@@ -4115,19 +4165,7 @@ function openSale(idx = null) {
             <span>İlkin ödənişdir</span>
           </label>
         </div>
-        ${!isEdit ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
-          <button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button>
-        </div>
-        <div class="span-3">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
-              <tbody id="saleDraftList"><tr><td colspan="6">Məhsul əlavə edilməyib</td></tr></tbody>
-              <tfoot><tr class="total-row"><td colspan="4">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
-            </table>
           </div>
-        </div>` : ""}
-      </div>
 
       <div id="creditBox" class="info-block" style="display:none; margin-top:14px;">
         <div class="grid-3">
@@ -4136,6 +4174,20 @@ function openSale(idx = null) {
           <input id="f_cr_monthly" placeholder="Aylıq ödəniş (avto)" readonly>
           <input id="f_cr_rem" class="span-3" placeholder="Qalıq (ilkindən sonra)" readonly>
         </div>
+      </div>
+        ${!isEdit ? `<div class="trade-draft-toolbar">
+          <button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button>
+        </div>` : ""}
+        </div>
+        ${!isEdit ? `<div class="trade-draft-panel">
+          <div class="table-wrap trade-draft-table">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
+              <tbody id="saleDraftList"><tr><td colspan="6">Məhsul əlavə edilməyib</td></tr></tbody>
+              <tfoot><tr class="total-row"><td colspan="4">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>` : ""}
       </div>
 
       <div class="modal-footer">
