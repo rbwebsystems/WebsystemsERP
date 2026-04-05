@@ -5489,9 +5489,15 @@ function openCashOp() {
         <div id="cash_customer_box" class="span-3">
           <div class="grid-3">
             <select id="cash_customer" class="span-3" onchange="refreshCustomerInvoices()" required>${custOptions}</select>
-            <select id="cash_customer_invoice" class="span-3">
+            <select id="cash_customer_invoice" class="span-3" onchange="refreshCashPayKind()">
               <option value="">Qaimə seç (istəyə bağlı)</option>
             </select>
+            <div id="cash_pay_kind_box" class="span-3" style="display:none;">
+              <select id="cash_pay_kind" class="span-3">
+                <option value="monthly" selected>Aylıq ödəniş</option>
+                <option value="down">İlkin ödəniş</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -5628,6 +5634,19 @@ function refreshCustomerInvoices() {
     })
     .join("");
   sel.innerHTML = `<option value="">Qaimə seç (istəyə bağlı)</option>` + inv;
+}
+
+function refreshCashPayKind() {
+  const saleUid = byId("cash_customer_invoice")?.value;
+  const box = byId("cash_pay_kind_box");
+  if (!box) return;
+  if (!saleUid) {
+    box.style.display = "none";
+    return;
+  }
+  const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
+  const isCredit = String(s?.saleType || "").toLowerCase() === "kredit";
+  box.style.display = isCredit ? "" : "none";
 }
 
 function refreshSupplierInvoices() {
@@ -5846,6 +5865,7 @@ function saveCashOp(e) {
     if (a <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
     addSalePaymentInternal(s, a, date, "cash_module_invoice");
 
+    const cashPayKind = val("cash_pay_kind") || "regular";
     addCashOp({
       type: "in",
       date,
@@ -5853,7 +5873,7 @@ function saveCashOp(e) {
       amount: a,
       note: note || `Qaimə #${s.invNo || invFallback("sales", s.uid)}`,
       link: { kind: "debtor_payment", customerId },
-      meta: { allocations: [{ saleUid: s.uid, amount: a }] },
+      meta: { allocations: [{ saleUid: s.uid, amount: a }], payKind: cashPayKind },
       accountId: accId,
     });
     logEvent("create", "cash", { type: "in", kind: "debtor_invoice_payment", amount: a, customerId, saleUid: s.uid });
@@ -5869,6 +5889,7 @@ function saveCashOp(e) {
     return;
   }
 
+  const generalPayKind = val("cash_pay_kind") || "regular";
   addCashOp({
     type: "in",
     date,
@@ -5876,7 +5897,7 @@ function saveCashOp(e) {
     amount: applied.applied,
     note: note || `Debitor ödəniş`,
     link: { kind: "debtor_payment", customerId },
-    meta: { allocations: applied.allocations },
+    meta: { allocations: applied.allocations, payKind: generalPayKind },
     accountId: accId,
   });
   logEvent("create", "cash", { type: "in", kind: "debtor_payment", amount: applied.applied, customerId });
