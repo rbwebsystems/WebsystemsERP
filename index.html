@@ -7,6 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='30' fill='%2310b981'/%3E%3Cpath d='M28 92V28H62 C79 28 90 37 90 52 C90 64 83 73 70 76 L91 92H72L54 78H43V92H28ZM43 65H60 C69 65 75 60 75 53 C75 45 69 41 60 41H43V65Z' fill='white'/%3E%3Cpath d='M66 28 C86 28 97 38 97 52 C97 61 92 68 83 72 C93 75 100 83 100 94 C100 110 87 120 66 120' fill='none' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'/%3E%3Ccircle cx='88' cy='26' r='5' fill='white'/%3E%3Ccircle cx='104' cy='38' r='5' fill='white'/%3E%3Cline x1='88' y1='26' x2='104' y2='38' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="login-open">
   <div id="appShell">
@@ -61,6 +64,7 @@
           <i class="fas fa-bars"></i>
         </button>
         <span class="app-header-title" id="appHeaderTitle"></span>
+        <nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb"></nav>
       </div>
       <div class="app-header-right">
         <span id="headerDateTime" class="header-datetime" title="Cari tarix və saat"></span>
@@ -82,12 +86,12 @@
   <main>
     <div id="dash" class="section active">
       <div class="content-header"><h1>Xülasə</h1></div>
-      <div class="stats-grid">
-        <div class="card stat-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
-        <div class="card stat-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
-        <div class="card stat-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
-        <div class="card stat-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
-        <div class="card stat-card"><small>Ümumi balans (bütün hesablar)</small><h2 id="st-cash">0.00</h2></div>
+      <div class="stats-grid kpi-grid">
+        <div class="card stat-card kpi-card"><small>Müştəri</small><h2 id="st-cust" class="kpi-value" data-kpi="0">0</h2></div>
+        <div class="card stat-card kpi-card"><small>Anbarda</small><h2 id="st-stock" class="kpi-value" data-kpi="0">0</h2></div>
+        <div class="card stat-card kpi-card"><small>Debitor borc (AZN)</small><h2 id="st-debts" class="kpi-value" data-kpi="0">0.00</h2></div>
+        <div class="card stat-card kpi-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor" class="kpi-value" data-kpi="0">0.00</h2></div>
+        <div class="card stat-card kpi-card"><small>Ümumi balans (bütün hesablar)</small><h2 id="st-cash" class="kpi-value" data-kpi="0">0.00</h2></div>
       </div>
       <div class="dash-charts">
         <div class="card dash-chart-card">
@@ -138,6 +142,8 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblCust', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
+          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('cust')"><i class="fas fa-file-pdf"></i></button>
+          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('cust')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openCust()"><i class="fas fa-plus"></i> Yeni Müştəri</button>
         </div>
       </div>
@@ -221,6 +227,8 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
+          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('purch')"><i class="fas fa-file-pdf"></i></button>
+          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('purch')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-cart-plus"></i> Yeni Alış</button>
         </div>
       </div>
@@ -303,6 +311,8 @@
             <input type="text" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
+          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('sales')"><i class="fas fa-file-pdf"></i></button>
+          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('sales')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-cash-register"></i> Yeni Satış</button>
         </div>
       </div>
@@ -696,7 +706,11 @@
             <option value="purch">Alışlar</option>
             <option value="expense">Xərclər</option>
             <option value="staff">Əməkdaş</option>
+            <option value="profitloss">Mənfəət/Zərər</option>
+            <option value="stockaging">Anbar yaşlanma</option>
           </select>
+          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('reports')"><i class="fas fa-file-pdf"></i> PDF</button>
+          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('reports')"><i class="fas fa-file-excel"></i> Excel</button>
           <div class="date-range">
             <input type="date" id="repFrom" onchange="renderAll()">
             <span>—</span>
@@ -730,6 +744,31 @@
         <table>
           <thead><tr><th>#</th><th>Əməkdaş</th><th>Satış sayı</th><th>Satış cəmi</th><th>Faiz</th><th>Komissiya</th><th>Baza maaş</th><th>Yekun</th><th>Əməliyyat</th></tr></thead>
           <tbody id="tblPayroll"></tbody>
+        </table>
+      </div>
+      <div id="repChartArea" class="card" style="margin-top:18px;display:none;">
+        <h3 style="margin-bottom:10px;">Qrafik Hesabat</h3>
+        <div class="chart-row">
+          <div class="chart-box"><canvas id="chartSalesTrend"></canvas></div>
+          <div class="chart-box"><canvas id="chartPurchTrend"></canvas></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-box"><canvas id="chartCategoryPie"></canvas></div>
+          <div class="chart-box"><canvas id="chartTopCustomers"></canvas></div>
+        </div>
+      </div>
+      <div id="repProfitLoss" class="card" style="margin-top:18px;display:none;">
+        <h3 style="margin-bottom:10px;">Mənfəət / Zərər Hesabatı</h3>
+        <table>
+          <thead><tr><th>Göstərici</th><th>Məbləğ (AZN)</th></tr></thead>
+          <tbody id="tblProfitLoss"></tbody>
+        </table>
+      </div>
+      <div id="repStockAging" class="card" style="margin-top:18px;display:none;">
+        <h3 style="margin-bottom:10px;">Anbar Yaşlanma Hesabatı</h3>
+        <table>
+          <thead><tr><th>Kateqoriya</th><th>0-30 gün</th><th>31-60 gün</th><th>61-90 gün</th><th>90+ gün</th><th>Cəmi</th></tr></thead>
+          <tbody id="tblStockAging"></tbody>
         </table>
       </div>
     </div>
@@ -1040,6 +1079,34 @@
         </button>
       </form>
       <small class="login-v3-hint" id="loginHint"></small>
+    </div>
+  </div>
+
+  <div id="sessionTimeoutOverlay" class="session-timeout-overlay" style="display:none;">
+    <div class="session-timeout-card">
+      <i class="fas fa-clock session-timeout-icon"></i>
+      <h3>Sessiya vaxtı bitir</h3>
+      <p id="sessionTimeoutMsg">5 dəqiqə hərəkətsizlik. Davam etmək istəyirsiniz?</p>
+      <div class="session-timeout-actions">
+        <button class="btn-main" type="button" onclick="resetSessionTimer()">Bəli, davam et</button>
+        <button class="btn-cancel" type="button" onclick="doSessionLogout()">Çıxış</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pinOverlay" class="pin-overlay" style="display:none;">
+    <div class="pin-card">
+      <h3 id="pinTitle">PIN təsdiqi</h3>
+      <p id="pinMsg">Əməliyyatı təsdiqləmək üçün PIN daxil edin</p>
+      <div class="pin-input-row">
+        <input type="password" maxlength="1" class="pin-digit" data-pin="0" oninput="onPinDigit(this,0)">
+        <input type="password" maxlength="1" class="pin-digit" data-pin="1" oninput="onPinDigit(this,1)">
+        <input type="password" maxlength="1" class="pin-digit" data-pin="2" oninput="onPinDigit(this,2)">
+        <input type="password" maxlength="1" class="pin-digit" data-pin="3" oninput="onPinDigit(this,3)">
+      </div>
+      <div class="pin-actions">
+        <button class="btn-cancel" type="button" onclick="cancelPin()">Ləğv et</button>
+      </div>
     </div>
   </div>
 

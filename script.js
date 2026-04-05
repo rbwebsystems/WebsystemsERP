@@ -471,18 +471,29 @@ function saveDB() {
   renderAll();
 }
 
-function logEvent(action, target, details = {}) {
+function logEvent(action, target, details = {}, diffData = null) {
   ensureAuditTrash();
   const u = currentUser();
-  db.audit.push({
+  const entry = {
     uid: genId(db.audit, 1),
     ts: nowISODateTimeLocal(),
     user: userDisplay(u),
     action,
     target,
     details,
-  });
+  };
+  if (diffData) entry.diff = diffData;
+  db.audit.push(entry);
   if (db.audit.length > 5000) db.audit = db.audit.slice(db.audit.length - 5000);
+}
+function buildDiff(oldObj, newObj, fields) {
+  const changes = [];
+  for (const f of fields) {
+    const o = String(oldObj[f] ?? "");
+    const n2 = String(newObj[f] ?? "");
+    if (o !== n2) changes.push({ field: f, from: o, to: n2 });
+  }
+  return changes.length ? changes : null;
 }
 
 function auditExplain(a) {
@@ -2053,6 +2064,13 @@ function updateHeaderDateTime() {
   el.textContent = dateStr + "  " + timeStr;
 }
 
+const sectionNames = {
+  dash: "Dashboard", cust: "Müştərilər", supp: "Təchizatçılar", prod: "Məhsullar",
+  purch: "Alışlar", stock: "Anbar", sales: "Satışlar", staff: "Əməkdaşlar",
+  debts: "Borclar", overdue: "Kreditlər", creditor: "Kreditor", users: "İstifadəçilər",
+  audit: "Audit", trash: "Səbət", companies: "Şirkətlər", tools: "Alətlər",
+  reports: "Hesabatlar", cash: "Kassa"
+};
 function showSec(id, el) {
   if (meta?.session && !userCanSection(id)) {
     alert("Bu bölməyə icazə yoxdur.");
@@ -2074,6 +2092,7 @@ function showSec(id, el) {
     updateDebtSectionVisibility();
   }
   refreshHeaderBar();
+  updateBreadcrumb(id);
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
 }
 
@@ -2145,15 +2164,17 @@ function renderModalWithNav(rawHtml) {
   const fwd = window.__modalForward || [];
   const canBack = hist.length > 0;
   const canForward = fwd.length > 0;
+  const isPopup = /pick-company-modal|modal-notif-popup|modal-dialog-popup/.test(String(rawHtml || ""));
   const backBtn = canBack
-    ? `<button class="btn-cancel" type="button" onclick="modalBack()"><i class="fas fa-arrow-left"></i> Geri</button>`
-    : "";
+    ? `<button class="btn-cancel btn-sm" type="button" onclick="modalBack()"><i class="fas fa-arrow-left"></i> Geri</button>`
+    : (!isPopup ? `<button class="btn-cancel btn-sm" type="button" onclick="closeMdl()"><i class="fas fa-arrow-left"></i> Geri</button>` : "");
   const fwdBtn = canForward
-    ? `<button class="btn-cancel" type="button" onclick="modalForward()">İrəli <i class="fas fa-arrow-right"></i></button>`
+    ? `<button class="btn-cancel btn-sm" type="button" onclick="modalForward()">İrəli <i class="fas fa-arrow-right"></i></button>`
     : "";
+  const closeBtn = !isPopup ? `<button class="btn-cancel btn-sm" type="button" onclick="closeMdl()" title="Bağla"><i class="fas fa-xmark"></i></button>` : "";
   const nav =
-    backBtn || fwdBtn
-      ? `<div class="modal-nav-top"><div class="modal-nav-left">${backBtn}</div><div class="modal-nav-right">${fwdBtn}</div></div>`
+    backBtn || fwdBtn || closeBtn
+      ? `<div class="modal-nav-top"><div class="modal-nav-left">${backBtn}${fwdBtn}</div><div class="modal-nav-right">${closeBtn}</div></div>`
       : "";
   return `${nav}${rawHtml}`;
 }
@@ -7912,6 +7933,7 @@ function renderAll() {
         <td>${escapeHtml(c.seriaNum)}</td>
         <td>${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name}`) : "-"}</td>
         <td class="tbl-actions">
+          <button class="icon-btn info" onclick="openCustomerProfile(${idx})" title="Profil"><i class="fas fa-id-card"></i></button>
           <button class="icon-btn info" onclick="openCustInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
           ${canE ? `<button class="icon-btn edit" onclick="openCust(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
           ${canD ? `<button class="icon-btn delete" onclick="delItem('cust', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
@@ -9048,11 +9070,11 @@ function renderAll() {
   const debtorSum = db.sales.reduce((a, s) => a + saleRemaining(s), 0);
   const creditorSum = db.purch.reduce((a, p) => a + purchRemaining(p), 0);
 
-  byId("st-cust").innerText = String(db.cust.length);
-  byId("st-stock").innerText = String(stockCount);
-  byId("st-debts").innerText = money(debtorSum);
-  byId("st-creditor").innerText = money(creditorSum);
-  byId("st-cash").innerText = money(totalAccountsBalance());
+  animateKPI("st-cust", db.cust.length, false);
+  animateKPI("st-stock", stockCount, false);
+  animateKPI("st-debts", debtorSum, true);
+  animateKPI("st-creditor", creditorSum, true);
+  animateKPI("st-cash", totalAccountsBalance(), true);
 
   // Dashboard charts: son 6 ay satış
   const monthNamesAz = ["Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"];
@@ -9517,4 +9539,614 @@ document.addEventListener("keydown", (e) => {
     openGlobalSearch();
   }
 });
+
+// ===== 1. KPI COUNT-UP ANIMATION =====
+function animateKPI(elId, targetVal, isMoney) {
+  const el = byId(elId);
+  if (!el) return;
+  const prev = parseFloat(el.getAttribute("data-kpi") || "0") || 0;
+  el.setAttribute("data-kpi", String(targetVal));
+  if (prev === targetVal) {
+    el.textContent = isMoney ? money(targetVal) : String(Math.round(targetVal));
+    return;
+  }
+  const duration = 600;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / duration);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const cur = prev + (targetVal - prev) * ease;
+    el.textContent = isMoney ? money(cur) : String(Math.round(cur));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ===== 2. BREADCRUMB =====
+function updateBreadcrumb(secId) {
+  const nav = byId("breadcrumbNav");
+  if (!nav) return;
+  const name = sectionNames[secId] || secId;
+  nav.innerHTML = `<a href="javascript:showSec('dash')">Ana səhifə</a><span class="bc-sep">/</span><span class="bc-current">${escapeHtml(name)}</span>`;
+}
+
+// ===== 3. COLUMN SORT =====
+function enableTableSort(tableId, renderFn) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const ths = table.querySelectorAll("thead th");
+  ths.forEach((th, idx) => {
+    if (th.textContent.trim() === "#" || th.textContent.trim() === "Əməliyyat" || th.textContent.trim() === "") return;
+    th.setAttribute("data-sort", idx);
+    th.onclick = () => {
+      const isAsc = th.classList.contains("sort-asc");
+      table.querySelectorAll("th[data-sort]").forEach((h) => { h.classList.remove("sort-asc","sort-desc"); });
+      th.classList.add(isAsc ? "sort-desc" : "sort-asc");
+      const dir = isAsc ? -1 : 1;
+      const tbody = table.querySelector("tbody");
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      rows.sort((a, b) => {
+        const aCell = a.cells[idx]?.textContent?.trim() || "";
+        const bCell = b.cells[idx]?.textContent?.trim() || "";
+        const aNum = parseFloat(aCell.replace(/[^\d.-]/g, ""));
+        const bNum = parseFloat(bCell.replace(/[^\d.-]/g, ""));
+        if (!isNaN(aNum) && !isNaN(bNum)) return (aNum - bNum) * dir;
+        return aCell.localeCompare(bCell, "az") * dir;
+      });
+      rows.forEach((r) => tbody.appendChild(r));
+    };
+  });
+}
+
+// ===== 4. SKELETON LOADING =====
+function showSkeleton(containerId, rows = 6) {
+  const el = byId(containerId);
+  if (!el) return;
+  let html = "";
+  for (let i = 0; i < rows; i++) {
+    html += `<div class="skeleton-row">${"<div class='skeleton skeleton-cell'></div>".repeat(5)}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ===== 5. THEME TRANSITION =====
+const _origToggleTheme = typeof toggleTheme === "function" ? toggleTheme : null;
+function toggleThemeSmooth() {
+  document.body.classList.add("theme-transitioning");
+  if (_origToggleTheme) _origToggleTheme();
+  else document.body.classList.toggle("theme-dark");
+  setTimeout(() => document.body.classList.remove("theme-transitioning"), 300);
+}
+
+// ===== 6. PDF / EXCEL EXPORT =====
+function getExportData(secId) {
+  const tableMap = {
+    cust: "tblCust", supp: "tblSupp", purch: "tblPurch",
+    sales: "tblSales", stock: "tblStock", reports: "tblRepList"
+  };
+  const tblId = tableMap[secId];
+  if (!tblId) return { headers: [], rows: [] };
+  const tbl = byId(tblId);
+  if (!tbl) return { headers: [], rows: [] };
+  const parent = tbl.closest("table");
+  const headers = [];
+  if (parent) {
+    parent.querySelectorAll("thead th").forEach((th) => {
+      const txt = th.textContent.trim();
+      if (txt !== "Əməliyyat") headers.push(txt);
+    });
+  }
+  const rows = [];
+  tbl.querySelectorAll("tr").forEach((tr) => {
+    if (tr.style.display === "none") return;
+    const row = [];
+    const cells = tr.querySelectorAll("td");
+    cells.forEach((td, i) => {
+      if (i < headers.length) row.push(td.textContent.trim());
+    });
+    if (row.length) rows.push(row);
+  });
+  return { headers, rows };
+}
+
+function exportTablePDF(secId) {
+  if (typeof window.jspdf === "undefined") { alert("jsPDF yüklənməyib"); return; }
+  const { headers, rows } = getExportData(secId);
+  const doc = new window.jspdf.jsPDF({ orientation: "landscape" });
+  const title = sectionNames[secId] || secId;
+  doc.setFontSize(14);
+  doc.text(title + " — " + new Date().toLocaleDateString("az-AZ"), 14, 16);
+  doc.autoTable({
+    head: [headers],
+    body: rows,
+    startY: 22,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [13, 148, 136] },
+  });
+  doc.save(`${secId}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+function exportTableExcel(secId) {
+  if (typeof XLSX === "undefined") { alert("SheetJS yüklənməyib"); return; }
+  const { headers, rows } = getExportData(secId);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, secId);
+  XLSX.writeFile(wb, `${secId}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ===== 7. DOCUMENT TEMPLATES (INVOICE PRINT) =====
+function printInvoice(type, idx) {
+  const companyName = getCurrentCompanyName();
+  let title = "", info = "", itemRows = "", total = 0;
+  if (type === "sale" && db.sales[idx]) {
+    const s = db.sales[idx];
+    title = "SATIŞ QAİMƏSİ";
+    info = `<tr><td><b>Müştəri:</b> ${escapeHtml(s.customerName || "")}</td><td><b>Tarix:</b> ${escapeHtml(String(s.date || "").slice(0,10))}</td></tr>
+            <tr><td><b>Qaimə №:</b> ${escapeHtml(s.invNo || "")}</td><td><b>Növ:</b> ${escapeHtml(s.saleType || "")}</td></tr>`;
+    itemRows = `<tr><td>1</td><td>${escapeHtml(s.productName || s.name || "")}</td><td>${s.qty || 1}</td><td>${money(s.amount)} AZN</td></tr>`;
+    total = n(s.amount);
+  } else if (type === "purch" && db.purch[idx]) {
+    const p = db.purch[idx];
+    title = "ALIŞ QAİMƏSİ";
+    info = `<tr><td><b>Təchizatçı:</b> ${escapeHtml(p.supp || "")}</td><td><b>Tarix:</b> ${escapeHtml(String(p.date || "").slice(0,10))}</td></tr>
+            <tr><td><b>Qaimə №:</b> ${escapeHtml(p.invNo || "")}</td><td><b>Ödəniş:</b> ${escapeHtml(p.payType || "")}</td></tr>`;
+    itemRows = `<tr><td>1</td><td>${escapeHtml(p.name || "")}</td><td>${p.qty || 1}</td><td>${money(p.amount)} AZN</td></tr>`;
+    total = n(p.amount);
+  }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+    <style>body{font-family:Arial,sans-serif;padding:30px;color:#111;}
+    table{width:100%;border-collapse:collapse;margin:12px 0;}
+    td,th{padding:8px 10px;border:1px solid #ccc;text-align:left;font-size:13px;}
+    th{background:#f3f4f6;}
+    .header{text-align:center;margin-bottom:20px;}
+    .header h2{margin:0;font-size:18px;}
+    .header p{margin:4px 0;color:#555;font-size:13px;}
+    .info-tbl td{border:none;padding:4px 8px;font-size:13px;}
+    .total{text-align:right;font-size:15px;font-weight:bold;margin-top:10px;}
+    .footer{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;color:#555;}
+    .sig{min-width:200px;border-top:1px solid #999;padding-top:6px;text-align:center;}
+    @media print{body{padding:0;} .no-print{display:none;}}</style></head><body>
+    <div class="header"><h2>${escapeHtml(companyName)}</h2><p>${title}</p></div>
+    <table class="info-tbl">${info}</table>
+    <table><thead><tr><th>#</th><th>Məhsul</th><th>Say</th><th>Məbləğ</th></tr></thead><tbody>${itemRows}</tbody></table>
+    <div class="total">Cəmi: ${money(total)} AZN</div>
+    <div class="footer"><div class="sig">Təhvil verən</div><div class="sig">Qəbul edən</div></div>
+    <script>window.print();<\/script></body></html>`;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); }
+}
+
+// ===== 8. PAYMENT SCHEDULE TIMELINE =====
+function openPaymentSchedule(saleIdx) {
+  const s = db.sales[saleIdx];
+  if (!s) return;
+  const sched = buildCreditSchedule(s);
+  if (!sched || !sched.rows || !sched.rows.length) return appAlert("Kredit cədvəli yoxdur.");
+  const today = new Date().toISOString().slice(0,10);
+  const items = sched.rows.map((r) => {
+    const isPaid = r.remaining <= 0.001;
+    const isOverdue = !isPaid && r.due < today;
+    const cls = isPaid ? "paid" : isOverdue ? "overdue" : "";
+    const statusTxt = isPaid ? '<span class="pill ok">Ödənilib</span>' : isOverdue ? '<span class="pill err">Gecikir</span>' : '<span class="pill warn">Gözləyir</span>';
+    return `<div class="pay-timeline-item">
+      <div class="pay-timeline-dot ${cls}"></div>
+      <span class="pay-timeline-date">${escapeHtml(r.due)}</span>
+      <span class="pay-timeline-amount">${money(r.amount)} AZN</span>
+      <span class="pay-timeline-status">${statusTxt}</span>
+    </div>`;
+  }).join("");
+  openModal(`
+    <h2>Kredit Ödəniş Cədvəli</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "")}</div></div>
+      <div class="info-row"><div class="info-label">Ümumi</div><div class="info-value">${money(s.amount)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Müddət</div><div class="info-value">${s.credit?.termMonths || "?"} ay</div></div>
+    </div>
+    <div class="pay-timeline" style="margin-top:16px;">${items}</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+// ===== 9. CUSTOMER/SUPPLIER PROFILE CARD =====
+function openCustomerProfile(custIdx) {
+  const c = db.cust[custIdx];
+  if (!c) return;
+  const fullName = `${c.sur || ""} ${c.name || ""} ${c.ata || ""}`.trim();
+  const initial = (c.sur || c.name || "?").charAt(0).toUpperCase();
+  const sales = db.sales.filter((s) => String(s.customerId) === String(c.uid) && !s.returnedAt);
+  const totalSales = sales.reduce((a, s) => a + n(s.amount), 0);
+  const totalPaid = sales.reduce((a, s) => a + n(s.paidTotal), 0);
+  const balance = totalSales - totalPaid;
+  const lastSale = sales.length ? sales.sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0] : null;
+  const recentRows = sales.slice(0, 10).map((s, i) => `<tr>
+    <td>${i + 1}</td><td>${escapeHtml(String(s.date || "").slice(0,10))}</td>
+    <td>${escapeHtml(s.productName || s.name || "")}</td>
+    <td>${money(s.amount)} AZN</td><td>${money(n(s.paidTotal))} AZN</td>
+    <td>${money(saleRemaining(s))} AZN</td>
+  </tr>`).join("");
+  openModal(`
+    <div class="profile-card-header">
+      <div class="profile-avatar">${initial}</div>
+      <div class="profile-meta">
+        <h3>${escapeHtml(fullName)}</h3>
+        <small>ID: ${c.uid} • ${escapeHtml(c.mob || "")}</small>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat"><small>Cəmi satış</small><strong>${money(totalSales)} AZN</strong></div>
+      <div class="profile-stat"><small>Ödənilən</small><strong>${money(totalPaid)} AZN</strong></div>
+      <div class="profile-stat"><small>Qalıq borc</small><strong style="color:${balance > 0.01 ? "var(--danger)" : "var(--accent)"}">${money(balance)} AZN</strong></div>
+      <div class="profile-stat"><small>Satış sayı</small><strong>${sales.length}</strong></div>
+    </div>
+    ${lastSale ? `<div class="info-block"><div class="info-row"><div class="info-label">Son satış</div><div class="info-value">${escapeHtml(String(lastSale.date || "").slice(0,10))} — ${money(lastSale.amount)} AZN</div></div></div>` : ""}
+    <h3 style="margin:14px 0 8px;">Son əməliyyatlar</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Tarix</th><th>Məhsul</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th></tr></thead>
+      <tbody>${recentRows || "<tr><td colspan='6'>Əməliyyat yoxdur</td></tr>"}</tbody>
+    </table></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function openSupplierProfile(suppIdx) {
+  const s = db.supp[suppIdx];
+  if (!s) return;
+  const initial = (s.co || "?").charAt(0).toUpperCase();
+  const purchases = db.purch.filter((p) => p.supp === s.co);
+  const totalPurch = purchases.reduce((a, p) => a + n(p.amount), 0);
+  const totalPaid = purchases.reduce((a, p) => a + n(p.paidTotal), 0);
+  const balance = totalPurch - totalPaid;
+  const recentRows = purchases.slice(0, 10).map((p, i) => `<tr>
+    <td>${i + 1}</td><td>${escapeHtml(String(p.date || "").slice(0,10))}</td>
+    <td>${escapeHtml(p.name || "")}</td><td>${money(p.amount)} AZN</td>
+    <td>${money(n(p.paidTotal))} AZN</td><td>${money(purchRemaining(p))} AZN</td>
+  </tr>`).join("");
+  openModal(`
+    <div class="profile-card-header">
+      <div class="profile-avatar">${initial}</div>
+      <div class="profile-meta">
+        <h3>${escapeHtml(s.co)}</h3>
+        <small>Məsul: ${escapeHtml(s.contact || "")} • ${escapeHtml(s.mob || "")}</small>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat"><small>Cəmi alış</small><strong>${money(totalPurch)} AZN</strong></div>
+      <div class="profile-stat"><small>Ödənilən</small><strong>${money(totalPaid)} AZN</strong></div>
+      <div class="profile-stat"><small>Qalıq borc</small><strong style="color:${balance > 0.01 ? "var(--danger)" : "var(--accent)"}">${money(balance)} AZN</strong></div>
+      <div class="profile-stat"><small>Alış sayı</small><strong>${purchases.length}</strong></div>
+    </div>
+    <h3 style="margin:14px 0 8px;">Son əməliyyatlar</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Tarix</th><th>Məhsul</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th></tr></thead>
+      <tbody>${recentRows || "<tr><td colspan='6'>Əməliyyat yoxdur</td></tr>"}</tbody>
+    </table></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+// ===== 10. WORKFLOW APPROVAL =====
+const WORKFLOW_THRESHOLD = 5000;
+window.__pendingWorkflows = window.__pendingWorkflows || [];
+
+function requireWorkflowApproval(amount, desc, onApprove) {
+  if (amount < WORKFLOW_THRESHOLD) { onApprove(); return; }
+  const u = currentUser();
+  if (u && (u.role === "admin" || u.role === "developer")) { onApprove(); return; }
+  const wf = { id: Date.now(), desc, amount, status: "pending", requestedBy: userDisplay(u), requestedAt: nowISODateTimeLocal() };
+  window.__pendingWorkflows.push(wf);
+  toast(`Əməliyyat (${money(amount)} AZN) admin təsdiqi gözləyir`, "warn");
+}
+
+function openWorkflowQueue() {
+  const list = window.__pendingWorkflows || [];
+  const rows = list.map((w, i) => `<tr>
+    <td>${i + 1}</td>
+    <td>${escapeHtml(w.desc)}</td>
+    <td>${money(w.amount)} AZN</td>
+    <td><span class="workflow-badge ${w.status}">${w.status === "pending" ? "Gözləyir" : w.status === "approved" ? "Təsdiqləndi" : "Rədd"}</span></td>
+    <td>${escapeHtml(w.requestedBy)}</td>
+    <td class="tbl-actions">
+      ${w.status === "pending" ? `<button class="btn-main btn-sm" onclick="approveWorkflow(${i})">Təsdiq</button><button class="btn-cancel btn-sm" onclick="rejectWorkflow(${i})">Rədd</button>` : "—"}
+    </td>
+  </tr>`).join("");
+  openModal(`
+    <h2>Təsdiq gözləyən əməliyyatlar</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Əməliyyat</th><th>Məbləğ</th><th>Status</th><th>Tələb edən</th><th>Əməliyyat</th></tr></thead>
+      <tbody>${rows || "<tr><td colspan='6'>Gözləyən yoxdur</td></tr>"}</tbody>
+    </table></div>
+    <div class="modal-footer"><button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button></div>
+  `);
+}
+function approveWorkflow(idx) {
+  const wf = window.__pendingWorkflows[idx];
+  if (wf) { wf.status = "approved"; toast("Təsdiqləndi", "ok"); }
+  openWorkflowQueue();
+}
+function rejectWorkflow(idx) {
+  const wf = window.__pendingWorkflows[idx];
+  if (wf) { wf.status = "rejected"; toast("Rədd edildi", "err"); }
+  openWorkflowQueue();
+}
+
+// ===== 11. SESSION TIMEOUT =====
+let __sessionTimer = null;
+let __sessionWarnTimer = null;
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const SESSION_WARN_MS = 25 * 60 * 1000;
+
+function resetSessionTimer() {
+  const overlay = byId("sessionTimeoutOverlay");
+  if (overlay) overlay.style.display = "none";
+  clearTimeout(__sessionTimer);
+  clearTimeout(__sessionWarnTimer);
+  if (!meta?.session) return;
+  __sessionWarnTimer = setTimeout(() => {
+    const overlay2 = byId("sessionTimeoutOverlay");
+    if (overlay2) overlay2.style.display = "flex";
+  }, SESSION_WARN_MS);
+  __sessionTimer = setTimeout(() => {
+    doSessionLogout();
+  }, SESSION_TIMEOUT_MS);
+}
+
+function doSessionLogout() {
+  const overlay = byId("sessionTimeoutOverlay");
+  if (overlay) overlay.style.display = "none";
+  if (typeof logout === "function") logout();
+  else location.reload();
+}
+
+["click", "keydown", "mousemove", "touchstart"].forEach((ev) => {
+  document.addEventListener(ev, () => {
+    if (meta?.session) resetSessionTimer();
+  }, { passive: true });
+});
+
+// ===== 12. PIN CONFIRMATION =====
+let __pinResolve = null;
+function requestPin(title, msg) {
+  return new Promise((resolve) => {
+    __pinResolve = resolve;
+    const overlay = byId("pinOverlay");
+    if (!overlay) { resolve(null); return; }
+    const titleEl = byId("pinTitle");
+    const msgEl = byId("pinMsg");
+    if (titleEl) titleEl.textContent = title || "PIN təsdiqi";
+    if (msgEl) msgEl.textContent = msg || "PIN daxil edin";
+    overlay.style.display = "flex";
+    document.querySelectorAll(".pin-digit").forEach((d) => { d.value = ""; });
+    const first = document.querySelector('.pin-digit[data-pin="0"]');
+    if (first) setTimeout(() => first.focus(), 100);
+  });
+}
+function onPinDigit(el, idx) {
+  if (el.value.length >= 1) {
+    const next = document.querySelector(`.pin-digit[data-pin="${idx + 1}"]`);
+    if (next) next.focus();
+    else {
+      const pin = Array.from(document.querySelectorAll(".pin-digit")).map((d) => d.value).join("");
+      if (pin.length === 4) {
+        const overlay = byId("pinOverlay");
+        if (overlay) overlay.style.display = "none";
+        if (__pinResolve) { __pinResolve(pin); __pinResolve = null; }
+      }
+    }
+  }
+}
+function cancelPin() {
+  const overlay = byId("pinOverlay");
+  if (overlay) overlay.style.display = "none";
+  if (__pinResolve) { __pinResolve(null); __pinResolve = null; }
+}
+
+async function confirmWithPin(title, msg) {
+  const pin = await requestPin(title, msg);
+  if (!pin) return false;
+  const u = currentUser();
+  const userPin = u?.pin || "1234";
+  if (pin !== String(userPin)) { toast("PIN yanlışdır!", "err"); return false; }
+  return true;
+}
+
+// ===== 13. AUDIT DIFF RENDERER =====
+function renderAuditDiff(diffArr) {
+  if (!diffArr || !Array.isArray(diffArr) || !diffArr.length) return "";
+  return `<div class="audit-diff">${diffArr.map((d) =>
+    `<div><b>${escapeHtml(d.field)}:</b> <span class="diff-del">${escapeHtml(d.from || "(boş)")}</span> → <span class="diff-add">${escapeHtml(d.to || "(boş)")}</span></div>`
+  ).join("")}</div>`;
+}
+
+// ===== 14. CHART.JS GRAPHS =====
+let __chartInstances = {};
+function destroyChart(key) {
+  if (__chartInstances[key]) { __chartInstances[key].destroy(); delete __chartInstances[key]; }
+}
+
+function renderReportCharts() {
+  if (typeof Chart === "undefined") return;
+  const area = byId("repChartArea");
+  if (!area) return;
+  area.style.display = "";
+
+  const monthNamesAz = ["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"];
+  const now = new Date();
+  const labels = [];
+  const salesData = [];
+  const purchData = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    labels.push(`${monthNamesAz[d.getMonth()]} ${d.getFullYear()}`);
+    salesData.push((db.sales||[]).filter((s)=>!s.returnedAt&&inMonth(s.date,key)).reduce((a,s)=>a+n(s.amount),0));
+    purchData.push((db.purch||[]).filter((p)=>inMonth(p.date,key)).reduce((a,p)=>a+n(p.amount),0));
+  }
+
+  const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } };
+
+  destroyChart("salesTrend");
+  const ctx1 = byId("chartSalesTrend");
+  if (ctx1) {
+    __chartInstances.salesTrend = new Chart(ctx1, {
+      type: "line",
+      data: { labels, datasets: [{ label: "Satış (AZN)", data: salesData, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.1)", fill: true, tension: .3 }] },
+      options: chartOpts
+    });
+  }
+
+  destroyChart("purchTrend");
+  const ctx2 = byId("chartPurchTrend");
+  if (ctx2) {
+    __chartInstances.purchTrend = new Chart(ctx2, {
+      type: "line",
+      data: { labels, datasets: [{ label: "Alış (AZN)", data: purchData, borderColor: "#3b82f6", backgroundColor: "rgba(59,130,246,.1)", fill: true, tension: .3 }] },
+      options: chartOpts
+    });
+  }
+
+  const catMap = new Map();
+  (db.sales||[]).filter((s) => !s.returnedAt).forEach((s) => {
+    const prod = db.prod.find((p) => p.name === (s.productName || s.name));
+    const cat = prod?.cat || "Digər";
+    catMap.set(cat, (catMap.get(cat) || 0) + n(s.amount));
+  });
+  const catLabels = Array.from(catMap.keys());
+  const catValues = Array.from(catMap.values());
+  const catColors = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899","#6366f1","#14b8a6"];
+
+  destroyChart("categoryPie");
+  const ctx3 = byId("chartCategoryPie");
+  if (ctx3) {
+    __chartInstances.categoryPie = new Chart(ctx3, {
+      type: "doughnut",
+      data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: catColors.slice(0, catLabels.length) }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right" } } }
+    });
+  }
+
+  const custMap = new Map();
+  (db.sales||[]).filter((s)=>!s.returnedAt).forEach((s)=>{
+    const name = s.customerName || String(s.customerId || "?");
+    custMap.set(name, (custMap.get(name)||0) + n(s.amount));
+  });
+  const top10 = Array.from(custMap.entries()).sort((a,b) => b[1]-a[1]).slice(0, 10);
+
+  destroyChart("topCustomers");
+  const ctx4 = byId("chartTopCustomers");
+  if (ctx4) {
+    __chartInstances.topCustomers = new Chart(ctx4, {
+      type: "bar",
+      data: { labels: top10.map((x) => x[0]), datasets: [{ label: "Satış (AZN)", data: top10.map((x) => x[1]), backgroundColor: "#0d9488" }] },
+      options: { ...chartOpts, indexAxis: "y" }
+    });
+  }
+}
+
+// ===== 15. PROFIT/LOSS REPORT =====
+function renderProfitLoss() {
+  const area = byId("repProfitLoss");
+  const tbody = byId("tblProfitLoss");
+  if (!area || !tbody) return;
+  area.style.display = "";
+  const now = new Date();
+  const from = byId("repFrom")?.value || "";
+  const to = byId("repTo")?.value || "";
+  const inRange = (d) => {
+    const ds = String(d || "").slice(0, 10);
+    if (from && ds < from) return false;
+    if (to && ds > to) return false;
+    return true;
+  };
+  const salesTotal = (db.sales||[]).filter((s) => !s.returnedAt && inRange(s.date)).reduce((a,s) => a + n(s.amount), 0);
+  const cogsTotal = (db.sales||[]).filter((s) => !s.returnedAt && inRange(s.date)).reduce((a,s) => a + n(s.costPrice || 0), 0);
+  const purchTotal = (db.purch||[]).filter((p) => inRange(p.date)).reduce((a,p) => a + n(p.amount), 0);
+  const expenseTotal = (db.cash||[]).filter((c) => c.type === "out" && inRange(c.date) && !/Alış|alış/.test(c.source || "")).reduce((a,c) => a + n(c.amount), 0);
+  const staffPay = (db.cash||[]).filter((c) => c.type === "out" && inRange(c.date) && /əməkhaqqı|salary/i.test(c.source || "")).reduce((a,c) => a + n(c.amount), 0);
+  const grossProfit = salesTotal - (cogsTotal || purchTotal);
+  const netProfit = grossProfit - expenseTotal - staffPay;
+  const cls = (v) => v >= 0 ? "color:var(--accent)" : "color:var(--danger)";
+  tbody.innerHTML = `
+    <tr><td>Satış gəliri</td><td style="font-weight:700">${money(salesTotal)} AZN</td></tr>
+    <tr><td>Maya dəyəri / Alış</td><td style="font-weight:700;color:var(--danger)">-${money(cogsTotal || purchTotal)} AZN</td></tr>
+    <tr style="border-top:2px solid var(--accent)"><td><b>Ümumi mənfəət</b></td><td style="font-weight:800;${cls(grossProfit)}">${money(grossProfit)} AZN</td></tr>
+    <tr><td>Xərclər</td><td style="color:var(--danger)">-${money(expenseTotal)} AZN</td></tr>
+    <tr><td>Əməkhaqqı</td><td style="color:var(--danger)">-${money(staffPay)} AZN</td></tr>
+    <tr style="border-top:2px solid var(--accent);background:var(--accent-light)"><td><b>Xalis mənfəət</b></td><td style="font-weight:900;font-size:1.1rem;${cls(netProfit)}">${money(netProfit)} AZN</td></tr>
+  `;
+}
+
+// ===== 16. STOCK AGING REPORT =====
+function renderStockAging() {
+  const area = byId("repStockAging");
+  const tbody = byId("tblStockAging");
+  if (!area || !tbody) return;
+  area.style.display = "";
+  const now = Date.now();
+  const dayMs = 86400000;
+  const buckets = { "0-30": {}, "31-60": {}, "61-90": {}, "90+": {} };
+  const totals = { "0-30": 0, "31-60": 0, "61-90": 0, "90+": 0 };
+  const catSet = new Set();
+
+  (db.purch || []).forEach((p) => {
+    const rem = purchRemainingQty(p);
+    if (rem <= 0) return;
+    const dMs = parseDateOnly(String(p.date || "").slice(0, 10));
+    const days = dMs ? Math.floor((now - dMs) / dayMs) : 999;
+    const prod = db.prod.find((x) => x.name === p.name);
+    const cat = prod?.cat || "Digər";
+    catSet.add(cat);
+    const bucket = days <= 30 ? "0-30" : days <= 60 ? "31-60" : days <= 90 ? "61-90" : "90+";
+    if (!buckets[bucket][cat]) buckets[bucket][cat] = 0;
+    buckets[bucket][cat] += rem;
+    totals[bucket] += rem;
+  });
+
+  const cats = Array.from(catSet).sort();
+  const catTotals = {};
+  cats.forEach((c) => { catTotals[c] = Object.values(buckets).reduce((a, b) => a + (b[c] || 0), 0); });
+
+  tbody.innerHTML = cats.map((cat) => `<tr>
+    <td><b>${escapeHtml(cat)}</b></td>
+    <td>${buckets["0-30"][cat] || 0}</td>
+    <td>${buckets["31-60"][cat] || 0}</td>
+    <td>${buckets["61-90"][cat] || 0}</td>
+    <td style="color:${(buckets["90+"][cat] || 0) > 0 ? "var(--danger)" : ""}">${buckets["90+"][cat] || 0}</td>
+    <td><b>${catTotals[cat] || 0}</b></td>
+  </tr>`).join("") + `<tr class="total-row">
+    <td><b>Cəmi</b></td>
+    <td><b>${totals["0-30"]}</b></td><td><b>${totals["31-60"]}</b></td>
+    <td><b>${totals["61-90"]}</b></td><td><b>${totals["90+"]}</b></td>
+    <td><b>${totals["0-30"]+totals["31-60"]+totals["61-90"]+totals["90+"]}</b></td>
+  </tr>`;
+}
+
+// Hook charts & reports into renderAll
+const _origRenderAll = renderAll;
+renderAll = function() {
+  _origRenderAll.apply(this, arguments);
+  if (!meta?.session) return;
+  const view = byId("repView")?.value;
+  const chartArea = byId("repChartArea");
+  const plArea = byId("repProfitLoss");
+  const saArea = byId("repStockAging");
+  if (chartArea) chartArea.style.display = "none";
+  if (plArea) plArea.style.display = "none";
+  if (saArea) saArea.style.display = "none";
+  try { renderReportCharts(); } catch(e) {}
+  if (view === "profitloss") { try { renderProfitLoss(); } catch(e) {} }
+  if (view === "stockaging") { try { renderStockAging(); } catch(e) {} }
+  enableTableSort("tblCust");
+  enableTableSort("tblPurch");
+  enableTableSort("tblSales");
+  enableTableSort("tblStock");
+  resetSessionTimer();
+};
 
