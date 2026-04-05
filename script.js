@@ -4718,6 +4718,7 @@ function salePaymentSourceLabel(src) {
   if (s === "monthly") return "Aylıq ödəniş";
   if (s === "cash_edit") return "Nağd ödəniş (kassa düzəlişi)";
   if (s === "sale_info" || s === "sales_form" || s === "regular" || s === "manual") return "Nağd ödəniş";
+  if (s === "cash_module_invoice" || s === "cash_module") return "Kassa ödənişi";
   return src ? String(src) : "-";
 }
 
@@ -5863,9 +5864,10 @@ function saveCashOp(e) {
     const rem = saleRemaining(s);
     const a = Math.min(rem, amount);
     if (a <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
-    addSalePaymentInternal(s, a, date, "cash_module_invoice");
-
-    const cashPayKind = val("cash_pay_kind") || "regular";
+    const isCreditSale = String(s.saleType || "").toLowerCase() === "kredit";
+    const cashPayKind = isCreditSale ? (val("cash_pay_kind") || "monthly") : "regular";
+    const paySource = cashPayKind === "down" ? "down" : cashPayKind === "monthly" ? "monthly" : "cash_module_invoice";
+    addSalePaymentInternal(s, a, date, paySource);
     addCashOp({
       type: "in",
       date,
