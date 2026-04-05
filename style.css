@@ -11,7 +11,7 @@
   --brand-green-hover:#059669;
   --text-main:#111827;
   --text-muted:#6b7280;
-  --border-color:#e5e7eb;
+  --border-color:#d1d5db;
   --radius:12px;
   --danger:#ef4444;
 
@@ -31,7 +31,7 @@ body.theme-dark{
   --sidebar-solid:#111827;
   --text-main:#f9fafb;
   --text-muted:#9ca3af;
-  --border-color:#374151;
+  --border-color:#4b5563;
   --accent:#0D9488;
   --accent-hover:#0b7a6f;
   --accent-light:#064e3b;
@@ -51,7 +51,7 @@ body.theme-dark input,
 body.theme-dark select,
 body.theme-dark textarea{background:#1f2937;border-color:#4b5563;color:#f9fafb;}
 body.theme-dark .table-wrap th,
-body.theme-dark .table-wrap td{border-color:#4b5563;}
+body.theme-dark .table-wrap td{border-color:#6b7280;}
 body.theme-dark .table-wrap tr:hover{background:#4b5563;}
 body.theme-dark .dash-bar-track{background:#374151;}
 body.theme-dark .icon-btn{background:#4b5563;color:#d1d5db;}
@@ -3548,13 +3548,13 @@ body.landing-login-open .lp-aurora{
 }
 table{width:100%;border-collapse:collapse;}
 th{
-  background:var(--sidebar-solid);padding:12px 12px;border-bottom:1px solid rgba(255,255,255,.18);
-  border-right:1px solid rgba(255,255,255,.15);text-align:left;font-size:.78rem;color:#fff;
+  background:var(--sidebar-solid);padding:7px 10px;border-bottom:1.5px solid rgba(255,255,255,.30);
+  border-right:1.5px solid rgba(255,255,255,.22);text-align:left;font-size:.78rem;color:#fff;
   font-weight:800;
   text-transform:uppercase;
 }
 td{
-  padding:12px 12px;border-bottom:1px solid var(--border-color);
+  padding:7px 10px;border-bottom:1px solid var(--border-color);
   border-right:1px solid var(--border-color);font-size:.88rem;
 }
 
@@ -3600,7 +3600,7 @@ th:last-child,td:last-child{border-right:none;width:140px;text-align:center;whit
 .dash-stat-mini-value{font-size:1.5rem;font-weight:800;color:var(--accent);}
 
 tr.total-row{background:var(--accent-light);border-top:2px solid var(--accent);}
-tr.total-row td{padding:10px 12px;}
+tr.total-row td{padding:7px 10px;}
 
 /* ===== MODAL (scroll + sticky footer) ===== */
 .modal{
@@ -3943,7 +3943,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
 
 .table-wrap{overflow:auto;margin-top:10px;}
 .table-wrap table{width:100%;border-collapse:collapse;}
-.table-wrap th,.table-wrap td{padding:10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);}
+.table-wrap th,.table-wrap td{padding:7px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);}
 .table-wrap th:last-child,.table-wrap td:last-child{border-right:none;width:auto;text-align:left;}
 
 /* Pills */
