@@ -86,7 +86,7 @@ body.theme-dark .last-saved{
   background:rgba(255,255,255,.06);
   border-color:rgba(255,255,255,.08);
 }
-body.theme-dark .nav-link{color:rgba(255,255,255,.7);background:transparent;border:none;box-shadow:none;}
+body.theme-dark .nav-link{color:rgba(255,255,255,.65);background:transparent;border:none;box-shadow:none;}
 body.theme-dark .nav-link:hover{
   background:#f8fafc;
   color:#0f172a;
@@ -184,8 +184,8 @@ body.offline-block #appShell{display:none;}
 /* Menyu başlıqdan aşağı — logo ayrıca ağ kart (birləşmir) */
 aside{
   width:260px;
-  background:var(--sidebar-solid);
-  border-right:1px solid rgba(0,0,0,.1);
+  background:linear-gradient(180deg,#0c7a71 0%,#075e57 60%,#054e48 100%);
+  border-right:none;
   position:fixed;
   padding:0;
   top:56px;
@@ -194,11 +194,26 @@ aside{
   overflow:hidden;
   border-top-right-radius:0;
   z-index:90;
+  display:flex;
+  flex-direction:column;
 }
+body.theme-dark aside{background:linear-gradient(180deg,#0f2027 0%,#0a1a1f 100%);}
 aside nav{
-  height:100%;
+  flex:1;
   overflow-y:auto;
-  padding:12px 10px 30px 10px;
+  overflow-x:hidden;
+  padding:16px 10px 12px 10px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;
+}
+aside nav::-webkit-scrollbar{width:4px;}
+aside nav::-webkit-scrollbar-track{background:transparent;}
+aside nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px;}
+.nav-group-label{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,.4);
+  padding:14px 10px 5px;
+  user-select:none;
 }
 .logo{margin:0;padding:0;width:100%;height:72px;display:flex;align-items:center;justify-content:center;background:transparent;}
 .logo-img{max-width:100%;max-height:72px;width:auto;height:auto;object-fit:contain;display:block;background:transparent;}
@@ -699,32 +714,38 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
   display:flex;
   align-items:center;
   gap:10px;
-  padding:8px 14px;
-  color:rgba(255,255,255,.75);
+  padding:8px 12px;
+  color:rgba(255,255,255,.70);
   cursor:pointer;
-  border-radius:6px;
-  margin-bottom:2px;
+  border-radius:7px;
+  margin-bottom:1px;
   background:transparent;
   border:none;
   position:relative;
-  font-size:.875rem;
+  font-size:.855rem;
   font-weight:500;
   width:100%;
   max-width:none;
   margin-left:0;
   margin-right:0;
-  transition:background .12s ease,color .12s ease;
+  transition:background .14s ease,color .14s ease;
 }
 .nav-link::before{content:none;}
-.dev-menu{margin-top:-2px;margin-bottom:4px;}
+.dev-menu{margin-top:-1px;margin-bottom:4px;}
 .nav-link.dev-sub{padding-left:34px;}
 .dev-toggle{justify-content:space-between;}
-.dev-caret{margin-left:auto;opacity:.7;}
+.dev-caret{margin-left:auto;opacity:.6;font-size:.7rem;}
 .nav-link:hover{
-  background:rgba(255,255,255,.10);
+  background:rgba(255,255,255,.12);
   color:#fff;
 }
 .nav-link:hover i{color:#fff;opacity:1;}
+.nav-link i{
+  width:18px;min-width:18px;text-align:center;
+  font-size:.88rem;
+  opacity:.85;
+  transition:opacity .12s;
+}
 /* Yığılmış sidebar: yalnız ikon tünd, mətn gizli qalır */
 body.sidebar-collapsed .nav-link:hover{
   color:transparent;
@@ -744,27 +765,26 @@ body.theme-dark.sidebar-collapsed .nav-link:hover i{
   color:#0f172a;
 }
 .nav-link.active{
-  background:rgba(255,255,255,.12);
+  background:rgba(255,255,255,.16);
   color:#fff;
   font-weight:600;
   border:none;
-  box-shadow:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 1px 3px rgba(0,0,0,.18);
 }
+.nav-link.active i{opacity:1;}
 .nav-link.active::after{
   content:"";
   position:absolute;
   left:0;
   top:50%;
   transform:translateY(-50%);
-  height:18px;
+  height:20px;
   width:3px;
   border-radius:0 3px 3px 0;
-  background:#fff;
+  background:rgba(255,255,255,.9);
   pointer-events:none;
 }
-.nav-link i{opacity:.92;width:18px;min-width:18px;text-align:center;}
-.nav-link.active i{opacity:1;}
-.nav-sep{height:1px;background:rgba(255,255,255,.22);margin:12px 8px;}
+.nav-sep{height:1px;background:rgba(255,255,255,.10);margin:10px 8px;}
 
 main{flex:1;padding:28px 32px;}
 .section{display:none;min-height:0;}
@@ -4167,6 +4187,34 @@ body.sidebar-collapsed .nav-link:hover::before{
   pointer-events:none;
 }
 
+/* ===================== Sidebar user info ===================== */
+.sidebar-user-info{
+  border-top:1px solid rgba(255,255,255,.12);
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  background:rgba(0,0,0,.15);
+  cursor:pointer;
+  transition:background .14s ease;
+  flex-shrink:0;
+}
+.sidebar-user-info:hover{background:rgba(0,0,0,.25);}
+.sidebar-user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.20);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;
+  border:1.5px solid rgba(255,255,255,.25);
+}
+.sidebar-user-name{font-size:.82rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-user-role{font-size:.72rem;color:rgba(255,255,255,.5);margin-top:1px;}
+.sidebar-user-caret{margin-left:auto;color:rgba(255,255,255,.4);font-size:.75rem;}
+/* collapsed state */
+body.sidebar-collapsed .sidebar-user-info{justify-content:center;padding:12px 8px;}
+body.sidebar-collapsed .sidebar-user-name,
+body.sidebar-collapsed .sidebar-user-role,
+body.sidebar-collapsed .sidebar-user-caret{display:none;}
+body.sidebar-collapsed .nav-group-label{display:none;}
+
 /* ===================== Empty state ===================== */
 .empty-state{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -4226,11 +4274,12 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   body.sidebar-collapsed aside{width:240px !important;}
   body.sidebar-collapsed aside.mobile-open{transform:translateX(0) !important;}
   body.sidebar-collapsed .nav-link{
-    color:#fff !important;font-size:.95rem !important;
+    color:#fff !important;font-size:.855rem !important;
     justify-content:flex-start !important;gap:10px !important;
-    padding:10px 12px !important;
+    padding:8px 12px !important;
   }
-  body.sidebar-collapsed .nav-link i{color:#fff !important;font-size:14px !important;}
+  body.sidebar-collapsed .nav-link i{color:#fff !important;font-size:.88rem !important;}
+  body.sidebar-collapsed .nav-group-label{display:block !important;}
 
   .main-area{margin-left:0 !important;min-width:0;max-width:100vw;overflow-x:hidden;}
   main{padding:12px !important;min-width:0;}

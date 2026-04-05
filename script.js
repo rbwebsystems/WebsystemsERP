@@ -9317,12 +9317,32 @@ Object.assign(window, {
   toggleDevMenu,
 });
 
+function renderSidebarUser() {
+  const el = byId("sidebarUserInfo");
+  if (!el) return;
+  if (!meta?.session) { el.innerHTML = ""; return; }
+  const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+  const name = u ? userDisplay(u) : "İstifadəçi";
+  const role = u?.role === "developer" ? "Developer" : u?.role === "admin" ? "Admin" : u?.role === "owner" ? "Sahibkar" : "İstifadəçi";
+  const initials = name.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
+  const cname = getCurrentCompanyName ? (getCurrentCompanyName() || "") : "";
+  el.innerHTML = `
+    <div class="sidebar-user-avatar">${escapeHtml(initials)}</div>
+    <div style="flex:1;min-width:0;">
+      <div class="sidebar-user-name">${escapeHtml(name)}</div>
+      <div class="sidebar-user-role">${escapeHtml(role)}${cname ? " · " + escapeHtml(cname) : ""}</div>
+    </div>
+    <i class="fas fa-ellipsis-vertical sidebar-user-caret"></i>`;
+  el.onclick = () => toggleProfileMenu({ currentTarget: byId("profileMenuBtn") });
+}
+
 function initApp() {
   applyAccessUI();
   applySidebarState();
   setupNavTooltips();
   initHeaderCompactSearch();
   initLang();
+  renderSidebarUser();
   setupLandingPage();
   if (!meta.session) {
     showLoginOverlay(true);

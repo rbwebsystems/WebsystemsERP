@@ -12,20 +12,30 @@
   <div id="appShell">
   <aside>
     <nav>
-      <div class="nav-link active" onclick="showSec('dash', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-      <div class="nav-link" onclick="showSec('cash', this)"><i class="fas fa-cash-register"></i> Kassa</div>
-      <div class="nav-link" onclick="showSec('cust', this)"><i class="fas fa-users"></i> Müştərilər</div>
-      <div class="nav-link" onclick="showSec('prod', this)"><i class="fas fa-tags"></i> Məhsullar</div>
-      <div class="nav-link" onclick="showSec('supp', this)"><i class="fas fa-truck"></i> Təchizatçılar</div>
-      <div class="nav-link" onclick="showSec('purch', this)"><i class="fas fa-shopping-cart"></i> Alışlar</div>
-      <div class="nav-link" onclick="showSec('stock', this)"><i class="fas fa-boxes"></i> Anbar</div>
-      <div class="nav-link" onclick="showSec('sales', this)"><i class="fas fa-receipt"></i> Satışlar</div>
-      <div class="nav-sep"></div>
-      <div class="nav-link" onclick="showSec('staff', this)"><i class="fas fa-user-tie"></i> Əməkdaşlar</div>
-      <div class="nav-link" onclick="showSec('debts', this)"><i class="fas fa-hand-holding-dollar"></i> Borclar</div>
-      <div class="nav-link admin-only" onclick="showSec('users', this)"><i class="fas fa-user-shield"></i> İstifadəçilər</div>
-      <div class="nav-link admin-only" onclick="showSec('audit', this)"><i class="fas fa-clipboard-list"></i> Audit</div>
-      <div class="nav-link admin-only" onclick="showSec('trash', this)"><i class="fas fa-trash-can"></i> Səbət</div>
+      <div class="nav-group-label">Əsas</div>
+      <div class="nav-link active" onclick="showSec('dash', this)" data-tip="Dashboard"><i class="fas fa-gauge"></i> Dashboard</div>
+      <div class="nav-link" onclick="showSec('cash', this)" data-tip="Kassa"><i class="fas fa-coins"></i> Kassa</div>
+
+      <div class="nav-group-label">Ticarət</div>
+      <div class="nav-link" onclick="showSec('sales', this)" data-tip="Satışlar"><i class="fas fa-receipt"></i> Satışlar</div>
+      <div class="nav-link" onclick="showSec('purch', this)" data-tip="Alışlar"><i class="fas fa-cart-flatbed"></i> Alışlar</div>
+      <div class="nav-link" onclick="showSec('stock', this)" data-tip="Anbar"><i class="fas fa-warehouse"></i> Anbar</div>
+
+      <div class="nav-group-label">Kontragentlər</div>
+      <div class="nav-link" onclick="showSec('cust', this)" data-tip="Müştərilər"><i class="fas fa-users"></i> Müştərilər</div>
+      <div class="nav-link" onclick="showSec('supp', this)" data-tip="Təchizatçılar"><i class="fas fa-truck"></i> Təchizatçılar</div>
+      <div class="nav-link" onclick="showSec('prod', this)" data-tip="Məhsullar"><i class="fas fa-box-open"></i> Məhsullar</div>
+
+      <div class="nav-group-label">Maliyyə</div>
+      <div class="nav-link" onclick="showSec('debts', this)" data-tip="Borclar"><i class="fas fa-file-invoice-dollar"></i> Borclar</div>
+      <div class="nav-link" onclick="showSec('staff', this)" data-tip="Əməkdaşlar"><i class="fas fa-id-badge"></i> Əməkdaşlar</div>
+      <div class="nav-link" onclick="showSec('reports', this)" data-tip="Hesabatlar"><i class="fas fa-chart-bar"></i> Hesabatlar</div>
+
+      <div class="nav-group-label admin-only">İdarəetmə</div>
+      <div class="nav-link admin-only" onclick="showSec('users', this)" data-tip="İstifadəçilər"><i class="fas fa-user-shield"></i> İstifadəçilər</div>
+      <div class="nav-link admin-only" onclick="showSec('audit', this)" data-tip="Audit"><i class="fas fa-shield-halved"></i> Audit</div>
+      <div class="nav-link admin-only" onclick="showSec('trash', this)" data-tip="Səbət"><i class="fas fa-trash-can"></i> Səbət</div>
+
       <div class="nav-link dev-only dev-toggle" onclick="toggleDevMenu()"><i class="fas fa-user-gear"></i> Developer <span class="dev-caret"><i class="fas fa-chevron-down"></i></span></div>
       <div id="devMenu" class="dev-only dev-menu" style="display:none;">
         <div class="nav-link dev-sub" onclick="showSec('companies', this)"><i class="fas fa-city"></i> Şirkətlər</div>
@@ -34,8 +44,8 @@
         <div class="nav-link dev-sub" onclick="showSec('trash', this)"><i class="fas fa-trash-can"></i> Səbət</div>
         <div class="nav-link dev-sub" onclick="showSec('tools', this)"><i class="fas fa-screwdriver-wrench"></i> Alətlər</div>
       </div>
-      <div class="nav-link" onclick="showSec('reports', this)"><i class="fas fa-chart-line"></i> Hesabatlar</div>
     </nav>
+    <div class="sidebar-user-info" id="sidebarUserInfo"></div>
   </aside>
 
   <div class="main-area">
