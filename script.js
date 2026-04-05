@@ -1605,23 +1605,10 @@ function login(e) {
   if (u.pass !== pass) return alert("Şifrə yanlışdır.");
   window.__pendingLogin = { u, pass };
   if (u.role === "developer") {
-    const list = (meta.companies || [])
-      .map(
-        (c) =>
-          `<button type="button" class="dev-company-item" onclick="closeMdl();window.__developerCompanyCallback('${escapeAttr(c.id)}');"><span class="dev-co-name">${escapeHtml(c.name)}</span><span class="dev-co-id">${escapeHtml(c.id)}</span></button>`
-      )
-      .join("");
-    const html = `
-      <div class="pick-company-modal">
-        <h2 class="pick-company-title">Şirkət seçin</h2>
-        <p class="pick-company-sub">Davam etmək üçün şirkət seçin.</p>
-        <div class="pick-company-list">${list || "<p class=\"muted\">Şirkət yoxdur.</p>"}</div>
-      </div>`;
-    window.__developerCompanyCallback = (companyId) => {
-      doLoginWithCompany(companyId);
-    };
+    const devCompany = meta.companies.find((x) => x.id === "devtest") || meta.companies[0];
+    if (!devCompany) return alert("Developer şirkəti tapılmadı.");
     closeLoginModal();
-    openModal(html);
+    doLoginWithCompany(devCompany.id);
     return;
   }
   const norm = (s) => (s == null || s === "" ? "" : String(s).trim().toLowerCase());
