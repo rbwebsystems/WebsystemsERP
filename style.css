@@ -184,7 +184,7 @@ body.offline-block #appShell{display:none;}
 /* Menyu başlıqdan aşağı — logo ayrıca ağ kart (birləşmir) */
 aside{
   width:260px;
-  background:linear-gradient(180deg,#0c7a71 0%,#075e57 60%,#054e48 100%);
+  background:var(--sidebar-solid);
   border-right:none;
   position:fixed;
   padding:0;
@@ -197,7 +197,7 @@ aside{
   display:flex;
   flex-direction:column;
 }
-body.theme-dark aside{background:linear-gradient(180deg,#0f2027 0%,#0a1a1f 100%);}
+body.theme-dark aside{background:var(--sidebar-solid);}
 aside nav{
   flex:1;
   overflow-y:auto;
