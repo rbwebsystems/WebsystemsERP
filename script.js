@@ -3596,7 +3596,7 @@ function openCustStatement(idx) {
     <div class="table-wrap">
       <table>
         <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Qaimə</th><th>Qeyd</th><th>Məbləğ</th><th>Ödəniş</th><th>Balans</th></tr></thead>
-        <tbody>${tr || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`}</tbody>
+        <tbody>${tr || emptyRow(8)}</tbody>
       </table>
     </div>
     <div class="modal-footer">
@@ -3683,7 +3683,7 @@ function openSuppStatement(idx) {
     <div class="table-wrap">
       <table>
         <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Qaimə</th><th>Qeyd</th><th>Məbləğ</th><th>Ödəniş</th><th>Balans</th></tr></thead>
-        <tbody>${tr || `<tr><td colspan="8">Məlumat yoxdur</td></tr>`}</tbody>
+        <tbody>${tr || emptyRow(8)}</tbody>
       </table>
     </div>
     <div class="modal-footer">
@@ -8364,7 +8364,7 @@ function renderAll() {
           </tr>`;
         })
         .join("")
-      || `<tr><td colspan="12">Məlumat yoxdur</td></tr>`;
+      || emptyRow(12);
     if (rows.length) {
       const overdueFullTotal = rows.reduce((a, x) => a + n(x.dueFullAmount), 0);
       const overduePaidTotal = rows.reduce((a, x) => a + n(x.duePaidAmount), 0);
@@ -8775,7 +8775,7 @@ function renderAll() {
             </tr>`;
           })
           .join("");
-        body.innerHTML = rows || `<tr><td colspan="7">Məlumat yoxdur</td></tr>`;
+        body.innerHTML = rows || emptyRow(7);
       } else if (repView === "purch") {
         const purchInRange = db.purch
           .filter((p) => (useMonth ? inMonth(p.date, repMonth) : inDateRange(p.date, "repFrom", "repTo")))
@@ -8796,7 +8796,7 @@ function renderAll() {
                 <td>${money(p.amount)} AZN</td>
               </tr>`;
             })
-            .join("") || `<tr><td colspan="6">Məlumat yoxdur</td></tr>`;
+            .join("") || emptyRow(6);
       } else if (repView === "expense") {
         const expRows = db.cash
           .filter((c) => c.type === "out")
@@ -8817,7 +8817,7 @@ function renderAll() {
               <td>${escapeHtml(c.note || "")}</td>
             </tr>`
             )
-            .join("") || `<tr><td colspan="5">Məlumat yoxdur</td></tr>`;
+            .join("") || emptyRow(5);
       } else if (repView === "monthly") {
         const monthsList = [];
         if (repMonth) {
@@ -8931,7 +8931,7 @@ function renderAll() {
                 <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(empId)}')" title="Satış siyahısı"><i class="fas fa-list"></i> Bax</button></td>
               </tr>`;
             })
-            .join("") || `<tr><td colspan="9">Məlumat yoxdur</td></tr>`;
+            .join("") || emptyRow(9);
       } else {
         head.innerHTML = `<tr><th>Göstəriş</th><th>Dəyər</th></tr>`;
         body.innerHTML = `
@@ -8982,7 +8982,7 @@ function renderAll() {
           </tr>`;
         })
         .join("");
-      payBody.innerHTML = rows || `<tr><td colspan="9">Məlumat yoxdur</td></tr>`;
+      payBody.innerHTML = rows || emptyRow(9);
     }
   }
 
@@ -9178,6 +9178,16 @@ function byId(id) {
 }
 function val(id) {
   return (byId(id)?.value ?? "").toString();
+}
+
+function emptyRow(colspan, icon = "fa-inbox", msg = "Məlumat yoxdur") {
+  return `<tr><td colspan="${colspan}" style="padding:0;border:none;">
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fas ${icon}"></i></div>
+      <div class="empty-state-title">${msg}</div>
+      <div class="empty-state-sub">Hələ ki məlumat əlavə edilməyib</div>
+    </div>
+  </td></tr>`;
 }
 
 function escapeHtml(s) {
