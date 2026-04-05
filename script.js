@@ -5122,7 +5122,7 @@ function saveDebtorPayment(e, customerId) {
 
 // ========= Cash =========
 function addCashOp(op, opts = {}) {
-  const actor = userDisplay(currentUser());
+  const actor = userDisplay(currentUser()) || op.actor || "-";
   const data = {
     uid: genId(db.cash, 1),
     type: op.type, // in | out
@@ -8464,7 +8464,8 @@ function renderAll() {
       const accountName = (db.accounts || []).find((a) => Number(a.uid) === Number(c.accountId || 1))?.name || `#${Number(c.accountId || 1)}`;
       let invNo = "-";
       let customer = "-";
-      let employee = c.actor || "-";
+      // Always show the person who PERFORMED the cash operation
+      const employee = c.actor || "-";
       let payType = "-";
 
       if (kind === "sale" || kind === "sale_payment" || kind === "return_refund") {
@@ -8472,7 +8473,6 @@ function renderAll() {
         if (s) {
           invNo = s.invNo || invFallback("sales", s.uid);
           customer = s.customerName || "-";
-          employee = operationActorName(s, s.employeeName || getStaffName(s.employeeId) || "-");
         }
         const pk = c.meta?.payKind || "";
         payType =
@@ -8487,7 +8487,6 @@ function renderAll() {
         if (s) {
           invNo = s.invNo || invFallback("sales", s.uid);
           customer = s.customerName || "-";
-          employee = operationActorName(s, s.employeeName || getStaffName(s.employeeId) || "-");
         } else {
           customer = c.source || "-";
         }
@@ -8498,7 +8497,6 @@ function renderAll() {
         if (p) {
           invNo = p.invNo || invFallback("purch", p.uid);
           customer = p.supp || "-";
-          employee = operationActorName(p, getStaffName(p.employeeId) || "-");
         }
         payType = "Alış";
       } else if (kind === "creditor_payment") {
@@ -8507,13 +8505,11 @@ function renderAll() {
         const p = firstPurchUid ? db.purch.find((x) => Number(x.uid) === Number(firstPurchUid)) : null;
         if (p) {
           invNo = p.invNo || invFallback("purch", p.uid);
-          employee = operationActorName(p, getStaffName(p.employeeId) || "-");
         }
         customer = c.link?.supp || c.source || "-";
         payType = "Alış";
       } else if (kind === "staff_salary") {
         customer = c.link?.staffName || "-";
-        employee = c.link?.staffName || "-";
         payType = c.link?.payType ? String(c.link.payType).charAt(0).toUpperCase() + String(c.link.payType).slice(1) : "Əməkhaqqı";
       } else if (kind === "transfer") {
         customer = "Hesablar arası";
