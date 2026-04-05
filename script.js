@@ -9467,14 +9467,7 @@ document.addEventListener("visibilitychange", () => {
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
-    openSpotlight();
-    return;
-  }
-  if (e.key === "Escape") closeSpotlight();
-  if (byId("spotlightOverlay")?.classList.contains("open")) {
-    if (e.key === "ArrowDown") { e.preventDefault(); spotlightMove(1); }
-    if (e.key === "ArrowUp")   { e.preventDefault(); spotlightMove(-1); }
-    if (e.key === "Enter")     { e.preventDefault(); spotlightConfirm(); }
+    openGlobalSearch();
   }
 });
 
