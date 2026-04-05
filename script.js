@@ -1298,7 +1298,7 @@ function applyAccessUI() {
   const dev = isDeveloper();
   const admin = isAdmin();
   document.querySelectorAll(".dev-only").forEach((el) => {
-    if (el.id === "devMenu") el.style.display = dev ? (el.style.display || "none") : "none";
+    if (el.id === "devMenu") el.style.display = dev ? (el.style.display === "flex" ? "flex" : "none") : "none";
     else el.style.display = dev ? "flex" : "none";
   });
   document.querySelectorAll(".admin-only").forEach((el) => {
@@ -1335,7 +1335,7 @@ function toggleDevMenu() {
   const menu = byId("devMenu");
   if (!menu) return;
   const open = menu.style.display !== "none";
-  menu.style.display = open ? "none" : "block";
+  menu.style.display = open ? "none" : "flex";
 }
 
 function sectionLabelAz(id) {
@@ -1794,10 +1794,10 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "teal", name: "Teal (sistem)", accent: "#0D9488", accentHover: "#0b7a6f", accentLight: "#ccfbf1", sidebarLight: "#0D9488", sidebarDark: "#111827" },
+  { id: "teal", name: "Navy Teal (sistem)", accent: "#1a4754", accentHover: "#16404f", accentLight: "#e8f4f8", sidebarLight: "#1a4754", sidebarDark: "#0a1929" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
-  { id: "slate", name: "Slate", accent: "#0f172a", accentHover: "#111827", accentLight: "#e2e8f0", sidebarLight: "#0f172a", sidebarDark: "#0b1220" },
+  { id: "slate", name: "Slate", accent: "#334155", accentHover: "#1e293b", accentLight: "#e2e8f0", sidebarLight: "#1e293b", sidebarDark: "#0b1220" },
   { id: "rose", name: "Rose", accent: "#e11d48", accentHover: "#be123c", accentLight: "#ffe4e6", sidebarLight: "#9f1239", sidebarDark: "#2b0b16" },
 ];
 
@@ -1906,7 +1906,16 @@ function getCurrentCompanyName() {
 
 function refreshHeaderBar() {
   const titleEl = byId("appHeaderTitle");
-  if (titleEl) titleEl.textContent = getCurrentCompanyName();
+  if (titleEl) {
+    if (!meta?.session) {
+      titleEl.textContent = "";
+    } else {
+      const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+      const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
+      const cname = getCurrentCompanyName();
+      titleEl.textContent = firstName ? "Xoş gəldiniz, " + firstName + "!" : (cname || "");
+    }
+  }
   updateHeaderDateTime();
   updateNotificationsIndicator();
 }
@@ -3489,7 +3498,7 @@ function openPrintWindow(title, html) {
       th{background:#f9fafb;text-align:left;}
       .right{text-align:right;}
       .neg{color:#b91c1c;}
-      .pos{color:#0D9488;}
+      .pos{color:#1a4754;}
       @media print{button{display:none !important;} body{margin:0;}}
     </style>
   `;
@@ -6575,6 +6584,7 @@ function openProfile() {
     </div>
     <div class="modal-footer modal-footer-actions">
       <button class="btn-main" type="button" onclick="openChangePassword()"><i class="fas fa-key"></i> Şifrəni dəyiş</button>
+      <button class="btn-cancel" type="button" onclick="triggerProfilePhotoUpload()"><i class="fas fa-camera"></i> Şəkil yüklə</button>
       <button class="btn-cancel" type="button" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Çıxış</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
@@ -9002,15 +9012,33 @@ function renderAll() {
     return sum;
   });
   const maxSales = Math.max(1, ...salesByMonth);
+  // Qısa ay adları
+  const shortMonths = ["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"];
+  function fmtChartVal(v) {
+    if (v >= 1000000) return (v/1000000).toFixed(1).replace(/\.0$/,"") + "M";
+    if (v >= 1000) return (v/1000).toFixed(1).replace(/\.0$/,"") + "k";
+    return money(v);
+  }
+  function buildVBarHtml(dataArr, labelsArr, barClass) {
+    const maxV = Math.max(1, ...dataArr);
+    const cols = dataArr.map((val, i) => {
+      const pct = maxV ? (val / maxV) * 100 : 0;
+      const lbl = labelsArr[i];
+      return `<div class="dash-vbar-col">
+        <div class="dash-vbar-inner">
+          <span class="dash-vbar-val${barClass ? " "+barClass : ""}">${fmtChartVal(val)}</span>
+          <div class="dash-vbar-bar${barClass ? " "+barClass : ""}" style="height:${Math.max(2,pct)}%"></div>
+        </div>
+        <span class="dash-vbar-lbl">${escapeHtml(lbl)}</span>
+      </div>`;
+    }).join("");
+    return `<div class="dash-vbar-wrap">${cols}<div class="dash-vbar-baseline"></div></div>`;
+  }
+
   const salesChartEl = byId("dashChartSales");
   if (salesChartEl) {
-    salesChartEl.innerHTML = last6
-      .map(({ label }, i) => {
-        const val = salesByMonth[i];
-        const pct = maxSales ? (val / maxSales) * 100 : 0;
-        return `<div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(label)}</span><div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct}%"></div><span class="dash-bar-value">${money(val)}</span></div></div>`;
-      })
-      .join("");
+    const shortLabels = last6.map(({key}) => { const [,m] = key.split("-"); return shortMonths[+m-1]||m; });
+    salesChartEl.innerHTML = buildVBarHtml(salesByMonth, shortLabels, "");
   }
 
   // Alış vs Satış (bu ay)
@@ -9018,40 +9046,30 @@ function renderAll() {
   const purchThisMonth = (db.purch || []).filter((p) => inMonth(p.date, currentMonthKey)).reduce((a, p) => a + n(p.amount), 0);
   const salesThisMonth = (db.sales || []).filter((s) => !s.returnedAt && inMonth(s.date, currentMonthKey)).reduce((a, s) => a + n(s.amount), 0);
   const maxPVS = Math.max(1, purchThisMonth, salesThisMonth);
-  const pctPurch = (purchThisMonth / maxPVS) * 100;
-  const pctSales = (salesThisMonth / maxPVS) * 100;
   const pvsEl = byId("dashChartPurchVsSales");
   if (pvsEl) {
-    pvsEl.innerHTML = `
-      <div class="dash-bar-row"><span class="dash-bar-label">Alış</span><div class="dash-bar-track"><div class="dash-bar-fill dash-bar-fill-purch" style="width:${pctPurch}%"></div><span class="dash-bar-value">${money(purchThisMonth)} AZN</span></div></div>
-      <div class="dash-bar-row"><span class="dash-bar-label">Satış</span><div class="dash-bar-track"><div class="dash-bar-fill dash-bar-fill-sales" style="width:${pctSales}%"></div><span class="dash-bar-value">${money(salesThisMonth)} AZN</span></div></div>
-    `;
+    pvsEl.innerHTML = `<div class="dash-hbar-wrap">
+      <div class="dash-bar-row"><span class="dash-bar-label">Alış</span><div class="dash-bar-track"><div class="dash-bar-fill purch" style="width:${(purchThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(purchThisMonth)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">Satış</span><div class="dash-bar-track"><div class="dash-bar-fill sales" style="width:${(salesThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(salesThisMonth)} AZN</span></div>
+    </div>`;
   }
 
   // Son 6 ay alış (AZN)
   const purchByMonth = last6.map(({ key }) => (db.purch || []).filter((p) => inMonth(p.date, key)).reduce((a, p) => a + n(p.amount), 0));
-  const maxPurch = Math.max(1, ...purchByMonth);
   const purchChartEl = byId("dashChartPurch");
   if (purchChartEl) {
-    purchChartEl.innerHTML = last6
-      .map(({ label }, i) => {
-        const val = purchByMonth[i];
-        const pct = maxPurch ? (val / maxPurch) * 100 : 0;
-        return `<div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(label)}</span><div class="dash-bar-track"><div class="dash-bar-fill dash-bar-fill-purch" style="width:${pct}%"></div><span class="dash-bar-value">${money(val)}</span></div></div>`;
-      })
-      .join("");
+    const shortLabels2 = last6.map(({key}) => { const [,m] = key.split("-"); return shortMonths[+m-1]||m; });
+    purchChartEl.innerHTML = buildVBarHtml(purchByMonth, shortLabels2, "purch");
   }
 
   // Debitor vs Kreditor borclar
   const maxDebt = Math.max(1, debtorSum, creditorSum);
-  const pctDebt = (debtorSum / maxDebt) * 100;
-  const pctCred = (creditorSum / maxDebt) * 100;
   const debtCredEl = byId("dashChartDebtVsCredit");
   if (debtCredEl) {
-    debtCredEl.innerHTML = `
-      <div class="dash-bar-row"><span class="dash-bar-label">Debitor</span><div class="dash-bar-track"><div class="dash-bar-fill dash-bar-fill-debt" style="width:${pctDebt}%"></div><span class="dash-bar-value">${money(debtorSum)} AZN</span></div></div>
-      <div class="dash-bar-row"><span class="dash-bar-label">Kreditor</span><div class="dash-bar-track"><div class="dash-bar-fill dash-bar-fill-credit" style="width:${pctCred}%"></div><span class="dash-bar-value">${money(creditorSum)} AZN</span></div></div>
-    `;
+    debtCredEl.innerHTML = `<div class="dash-hbar-wrap">
+      <div class="dash-bar-row"><span class="dash-bar-label">Debitor</span><div class="dash-bar-track"><div class="dash-bar-fill debt" style="width:${(debtorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(debtorSum)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">Kreditor</span><div class="dash-bar-track"><div class="dash-bar-fill credit" style="width:${(creditorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(creditorSum)} AZN</span></div>
+    </div>`;
   }
 
   // Aşağı statistik sətiri: bu il cəmi, anbar sayı
@@ -9275,6 +9293,9 @@ Object.assign(window, {
   openChangePassword,
   changePassword,
   openProfile,
+  triggerProfilePhotoUpload,
+  onProfilePhotoSelected,
+  renderSidebarBrand,
   openSettings,
   saveSettings,
   openSkins,
@@ -9317,6 +9338,35 @@ Object.assign(window, {
   toggleDevMenu,
 });
 
+/* ── Profil foto helpers ── */
+function getProfilePhoto(uid) {
+  try { return localStorage.getItem("profilePhoto_" + uid) || ""; } catch { return ""; }
+}
+function setProfilePhoto(uid, dataUrl) {
+  try { localStorage.setItem("profilePhoto_" + uid, dataUrl); } catch {}
+}
+function removeProfilePhoto(uid) {
+  try { localStorage.removeItem("profilePhoto_" + uid); } catch {}
+}
+function triggerProfilePhotoUpload() {
+  const inp = byId("profilePhotoFileInput");
+  if (inp) inp.click();
+}
+function onProfilePhotoSelected(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) return alert("Yalnız şəkil faylı seçin.");
+  if (file.size > 2 * 1024 * 1024) return alert("Şəkil 2MB-dan böyük olmamalıdır.");
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const u = currentUser();
+    if (!u) return;
+    setProfilePhoto(u.uid, ev.target.result);
+    renderSidebarUser();
+  };
+  reader.readAsDataURL(file);
+}
+
 function renderSidebarUser() {
   const el = byId("sidebarUserInfo");
   if (!el) return;
@@ -9325,15 +9375,48 @@ function renderSidebarUser() {
   const name = u ? userDisplay(u) : "İstifadəçi";
   const role = u?.role === "developer" ? "Developer" : u?.role === "admin" ? "Admin" : u?.role === "owner" ? "Sahibkar" : "İstifadəçi";
   const initials = name.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
-  const cname = getCurrentCompanyName ? (getCurrentCompanyName() || "") : "";
+  const email = u?.email || "";
+  const photo = u ? getProfilePhoto(u.uid) : "";
+  const avatarInner = photo
+    ? `<img src="${escapeAttr(photo)}" class="sidebar-user-avatar-img" alt="${escapeAttr(initials)}">`
+    : escapeHtml(initials);
   el.innerHTML = `
-    <div class="sidebar-user-avatar">${escapeHtml(initials)}</div>
-    <div style="flex:1;min-width:0;">
-      <div class="sidebar-user-name">${escapeHtml(name)}</div>
-      <div class="sidebar-user-role">${escapeHtml(role)}${cname ? " · " + escapeHtml(cname) : ""}</div>
-    </div>
-    <i class="fas fa-ellipsis-vertical sidebar-user-caret"></i>`;
-  el.onclick = () => toggleProfileMenu({ currentTarget: byId("profileMenuBtn") });
+    <div class="sidebar-user-avatar" title="Şəkil yüklə" onclick="triggerProfilePhotoUpload()">${avatarInner}<span class="sidebar-avatar-cam"><i class="fas fa-camera"></i></span></div>
+    <input type="file" id="profilePhotoFileInput" accept="image/*" style="display:none" onchange="onProfilePhotoSelected(event)">
+    <div class="sidebar-user-name">${escapeHtml(name)}</div>
+    <div class="sidebar-user-role">${escapeHtml(email || role)}</div>`;
+  el.onclick = (ev) => {
+    if (ev.target.closest(".sidebar-user-avatar")) return;
+    toggleProfileMenu({ currentTarget: byId("profileMenuBtn") });
+  };
+}
+
+function renderSidebarBrand() {
+  const nameEl = byId("sidebarBrandName");
+  const logoEl = byId("sidebarBrandLogo");
+  if (!nameEl) return;
+  const compId = meta?.session?.companyId || "";
+  const comp = meta?.companies?.find((c) => c.id === compId);
+  nameEl.textContent = "rbsoft.az";
+  if (logoEl) {
+    const logo = comp?.logo || "";
+    if (logo) {
+      logoEl.innerHTML = `<img src="${escapeAttr(logo)}" alt="${escapeAttr(compName)}" style="max-height:32px;max-width:100%;object-fit:contain;">`;
+      logoEl.style.display = "";
+    } else {
+      logoEl.innerHTML = "";
+      logoEl.style.display = "none";
+    }
+  }
+}
+
+function updateHeaderWelcome() {
+  const titleEl = byId("appHeaderTitle");
+  if (!titleEl) return;
+  if (!meta?.session) return;
+  const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+  const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
+  if (firstName) titleEl.textContent = "Xoş gəldiniz, " + firstName + "!";
 }
 
 function initApp() {
@@ -9343,6 +9426,8 @@ function initApp() {
   initHeaderCompactSearch();
   initLang();
   renderSidebarUser();
+  renderSidebarBrand();
+  updateHeaderWelcome();
   setupLandingPage();
   if (!meta.session) {
     showLoginOverlay(true);

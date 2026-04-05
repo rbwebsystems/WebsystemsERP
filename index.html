@@ -11,6 +11,7 @@
 <body class="login-open">
   <div id="appShell">
   <aside>
+    <div class="sidebar-user-info" id="sidebarUserInfo"></div>
     <nav>
       <div class="nav-link active" onclick="showSec('dash', this)" data-tip="Dashboard"><i class="fas fa-gauge"></i><span class="nav-text">Dashboard</span></div>
       <div class="nav-link" onclick="showSec('cash', this)" data-tip="Kassa"><i class="fas fa-coins"></i><span class="nav-text">Kassa</span></div>
@@ -36,7 +37,10 @@
         <div class="nav-link dev-sub" onclick="showSec('tools', this)"><i class="fas fa-screwdriver-wrench"></i><span class="nav-text">Alətlər</span></div>
       </div>
     </nav>
-    <div class="sidebar-user-info" id="sidebarUserInfo"></div>
+    <div class="sidebar-brand" id="sidebarBrand">
+      <div class="sidebar-brand-logo" id="sidebarBrandLogo"></div>
+      <div class="sidebar-brand-name" id="sidebarBrandName">rbsoft</div>
+    </div>
   </aside>
 
   <div class="main-area">
@@ -61,12 +65,14 @@
         <button class="mobile-menu-btn header-btn header-btn-icon" type="button" onclick="toggleMobileSidebar()" title="Menyu">
           <i class="fas fa-bars"></i>
         </button>
-        <button class="header-btn header-btn-icon" type="button" onclick="toggleSidebar()" title="Sidebar gizlət/göstər" id="desktopSidebarBtn">
-          <i class="fas fa-bars"></i>
-        </button>
         <span class="app-header-title" id="appHeaderTitle"></span>
       </div>
       <div class="app-header-right">
+        <div class="header-search-wrap">
+          <i class="fas fa-magnifying-glass header-search-icon"></i>
+          <input type="text" class="header-search-input" placeholder="Axtarış..." onclick="openGlobalSearch()" readonly />
+          <span class="header-search-hint">Ctrl+K</span>
+        </div>
         <span id="headerDateTime" class="header-datetime" title="Cari tarix və saat"></span>
         <span id="realtimeIndicator" class="realtime-indicator hidden" title="Realtime: məlumat bütün cihazlarda sinxron olunur"></span>
         <span id="lastSavedEl" class="last-saved" title="Son saxlanma vaxtı"></span>
@@ -75,9 +81,6 @@
           <button class="lang-btn" onclick="setLang('ru')" data-lang="ru">RU</button>
           <button class="lang-btn" onclick="setLang('en')" data-lang="en">EN</button>
         </div>
-        <button class="header-btn header-btn-icon" type="button" onclick="openGlobalSearch()" title="Axtarış (Ctrl+K)">
-          <i class="fas fa-magnifying-glass"></i>
-        </button>
         <button class="header-btn header-btn-icon" type="button" onclick="openNotifications()" title="Bildirişlər">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge hidden">0</span>
@@ -124,16 +127,25 @@
       </div>
       <div class="dash-stats-row">
         <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Bu il satış cəmi (AZN)</span>
-          <span id="dashStatSalesYear" class="dash-stat-mini-value">0.00</span>
+          <div class="dash-stat-mini-icon sales"><i class="fas fa-arrow-trend-up"></i></div>
+          <div class="dash-stat-mini-body">
+            <span class="dash-stat-mini-label">Bu il satış cəmi (AZN)</span>
+            <span id="dashStatSalesYear" class="dash-stat-mini-value">0.00</span>
+          </div>
         </div>
         <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Bu il alış cəmi (AZN)</span>
-          <span id="dashStatPurchYear" class="dash-stat-mini-value">0.00</span>
+          <div class="dash-stat-mini-icon purch"><i class="fas fa-cart-flatbed"></i></div>
+          <div class="dash-stat-mini-body">
+            <span class="dash-stat-mini-label">Bu il alış cəmi (AZN)</span>
+            <span id="dashStatPurchYear" class="dash-stat-mini-value">0.00</span>
+          </div>
         </div>
         <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Anbarda məhsul sayı</span>
-          <span id="dashStatStockCount" class="dash-stat-mini-value">0</span>
+          <div class="dash-stat-mini-icon stock"><i class="fas fa-warehouse"></i></div>
+          <div class="dash-stat-mini-body">
+            <span class="dash-stat-mini-label">Anbarda məhsul sayı</span>
+            <span id="dashStatStockCount" class="dash-stat-mini-value">0</span>
+          </div>
         </div>
       </div>
     </div>
