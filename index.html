@@ -3,20 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Websystems</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='30' fill='%2310b981'/%3E%3Cpath d='M28 92V28H62 C79 28 90 37 90 52 C90 64 83 73 70 76 L91 92H72L54 78H43V92H28ZM43 65H60 C69 65 75 60 75 53 C75 45 69 41 60 41H43V65Z' fill='white'/%3E%3Cpath d='M66 28 C86 28 97 38 97 52 C97 61 92 68 83 72 C93 75 100 83 100 94 C100 110 87 120 66 120' fill='none' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'/%3E%3Ccircle cx='88' cy='26' r='5' fill='white'/%3E%3Ccircle cx='104' cy='38' r='5' fill='white'/%3E%3Cline x1='88' y1='26' x2='104' y2='38' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <title>Bakfon ERP</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="login-open">
+<body>
   <div id="appShell">
   <aside>
+    <div class="logo">BAKFON ERP</div>
     <nav>
       <div class="nav-link active" onclick="showSec('dash', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-      <div class="nav-link" onclick="showSec('cash', this)"><i class="fas fa-cash-register"></i> Kassa</div>
       <div class="nav-link" onclick="showSec('cust', this)"><i class="fas fa-users"></i> Müştərilər</div>
       <div class="nav-link" onclick="showSec('prod', this)"><i class="fas fa-tags"></i> Məhsullar</div>
       <div class="nav-link" onclick="showSec('supp', this)"><i class="fas fa-truck"></i> Təchizatçılar</div>
@@ -25,10 +21,10 @@
       <div class="nav-link" onclick="showSec('sales', this)"><i class="fas fa-receipt"></i> Satışlar</div>
       <div class="nav-sep"></div>
       <div class="nav-link" onclick="showSec('staff', this)"><i class="fas fa-user-tie"></i> Əməkdaşlar</div>
-      <div class="nav-link" onclick="showSec('debts', this)"><i class="fas fa-hand-holding-dollar"></i> Borclar</div>
-      <div class="nav-link admin-only" onclick="showSec('users', this)"><i class="fas fa-user-shield"></i> İstifadəçilər</div>
-      <div class="nav-link admin-only" onclick="showSec('audit', this)"><i class="fas fa-clipboard-list"></i> Audit</div>
-      <div class="nav-link admin-only" onclick="showSec('trash', this)"><i class="fas fa-trash-can"></i> Səbət</div>
+      <div class="nav-link" onclick="showSec('debts', this)"><i class="fas fa-hand-holding-dollar"></i> Debitor borclar</div>
+      <div class="nav-link" onclick="showSec('creditor', this)"><i class="fas fa-file-invoice-dollar"></i> Kreditor borclar</div>
+      <div class="nav-link" onclick="showSec('cash', this)"><i class="fas fa-cash-register"></i> Kassa</div>
+      <div class="nav-link" onclick="showSec('accounts', this)"><i class="fas fa-building-columns"></i> Hesablar</div>
       <div class="nav-link dev-only dev-toggle" onclick="toggleDevMenu()"><i class="fas fa-user-gear"></i> Developer <span class="dev-caret"><i class="fas fa-chevron-down"></i></span></div>
       <div id="devMenu" class="dev-only dev-menu" style="display:none;">
         <div class="nav-link dev-sub" onclick="showSec('companies', this)"><i class="fas fa-city"></i> Şirkətlər</div>
@@ -43,89 +39,28 @@
 
   <div class="main-area">
     <header class="app-header">
-      <div class="header-logo" aria-label="RBSoft logo">
-        <div class="logo rbsoft rbsoft--compact">
-          <div class="rbsoft-digital rbsoft-digital--compact" aria-hidden="true">
-            <div class="rbsoft-digital__a"></div>
-            <div class="rbsoft-digital__mid">
-              <span></span><span></span>
-            </div>
-            <div class="rbsoft-digital__end"><span></span></div>
-          </div>
-          <div class="rbsoft-brand-text">
-            <div class="rbsoft-brand-title"><span class="rb-low">rb</span><span class="soft">soft</span></div>
-            <div class="rbsoft-brand-track rbsoft-brand-track--header"><div class="rbsoft-brand-track-fill"></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="header-rest">
       <div class="app-header-left">
-        <button class="header-btn header-btn-icon" type="button" onclick="toggleSidebar()" title="Sidebar gizlət/göstər">
-          <i class="fas fa-bars"></i>
-        </button>
-        <span class="app-header-title" id="appHeaderTitle"></span>
-        <nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb"></nav>
+        <span class="app-header-title" id="appHeaderTitle">Dashboard</span>
       </div>
       <div class="app-header-right">
-        <span id="headerDateTime" class="header-datetime" title="Cari tarix və saat"></span>
-        <span id="realtimeIndicator" class="realtime-indicator hidden" title="Realtime: məlumat bütün cihazlarda sinxron olunur"></span>
         <span id="lastSavedEl" class="last-saved" title="Son saxlanma vaxtı"></span>
-        <button class="header-btn header-btn-icon" type="button" onclick="openGlobalSearch()" title="Axtarış (Ctrl+K)">
-          <i class="fas fa-magnifying-glass"></i>
+        <button class="header-btn" type="button" onclick="openGlobalSearch()" title="Axtarış (Ctrl+K)">
+          <i class="fas fa-magnifying-glass"></i><span>Axtarış</span>
         </button>
-        <button class="header-btn header-btn-icon" type="button" onclick="openNotifications()" title="Bildirişlər">
-          <i class="fas fa-bell"></i>
-          <span id="notifBadge" class="notif-badge hidden">0</span>
+        <button class="header-btn" type="button" onclick="openProfile()" title="Profil">
+          <i class="fas fa-user"></i><span>Profil</span>
         </button>
-        <button class="header-btn header-btn-icon" type="button" id="profileMenuBtn" onclick="toggleProfileMenu(event)" title="Profil">
-          <i class="fas fa-user"></i>
-        </button>
-      </div>
       </div>
     </header>
   <main>
     <div id="dash" class="section active">
       <div class="content-header"><h1>Xülasə</h1></div>
-      <div class="stats-grid kpi-grid">
-        <div class="card stat-card kpi-card"><small>Müştəri</small><h2 id="st-cust" class="kpi-value" data-kpi="0">0</h2></div>
-        <div class="card stat-card kpi-card"><small>Anbarda</small><h2 id="st-stock" class="kpi-value" data-kpi="0">0</h2></div>
-        <div class="card stat-card kpi-card"><small>Debitor borc (AZN)</small><h2 id="st-debts" class="kpi-value" data-kpi="0">0.00</h2></div>
-        <div class="card stat-card kpi-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor" class="kpi-value" data-kpi="0">0.00</h2></div>
-        <div class="card stat-card kpi-card"><small>Ümumi balans (bütün hesablar)</small><h2 id="st-cash" class="kpi-value" data-kpi="0">0.00</h2></div>
-      </div>
-      <div class="dash-charts">
-        <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Son 6 ay satış (AZN)</h3>
-          <div id="dashChartSales" class="dash-bar-chart"></div>
-        </div>
-        <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Alış vs Satış (bu ay)</h3>
-          <div id="dashChartPurchVsSales" class="dash-donut-wrap"></div>
-        </div>
-      </div>
-      <div class="dash-charts">
-        <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Son 6 ay alış (AZN)</h3>
-          <div id="dashChartPurch" class="dash-bar-chart"></div>
-        </div>
-        <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Debitor vs Kreditor borclar</h3>
-          <div id="dashChartDebtVsCredit" class="dash-donut-wrap"></div>
-        </div>
-      </div>
-      <div class="dash-stats-row">
-        <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Bu il satış cəmi (AZN)</span>
-          <span id="dashStatSalesYear" class="dash-stat-mini-value">0.00</span>
-        </div>
-        <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Bu il alış cəmi (AZN)</span>
-          <span id="dashStatPurchYear" class="dash-stat-mini-value">0.00</span>
-        </div>
-        <div class="card dash-stat-mini">
-          <span class="dash-stat-mini-label">Anbarda məhsul sayı</span>
-          <span id="dashStatStockCount" class="dash-stat-mini-value">0</span>
-        </div>
+      <div class="stats-grid">
+        <div class="card stat-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
+        <div class="card stat-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
+        <div class="card stat-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
+        <div class="card stat-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
+        <div class="card stat-card"><small>Kassa qalığı (Nəğd)</small><h2 id="st-cash">0.00</h2></div>
       </div>
     </div>
 
@@ -142,8 +77,6 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblCust', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('cust')"><i class="fas fa-file-pdf"></i></button>
-          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('cust')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openCust()"><i class="fas fa-plus"></i> Yeni Müştəri</button>
         </div>
       </div>
@@ -213,11 +146,6 @@
       <div class="content-header">
         <h1>Alışlar</h1>
         <div class="header-actions">
-          <select id="purchStatus" class="select-small" onchange="renderAll()">
-            <option value="active" selected>Aktiv</option>
-            <option value="returned">Qaytarılanlar</option>
-            <option value="all">Hamısı</option>
-          </select>
           <div class="date-range">
             <input type="date" id="purchFrom" onchange="renderAll()">
             <span>—</span>
@@ -227,18 +155,15 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('purch')"><i class="fas fa-file-pdf"></i></button>
-          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('purch')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-cart-plus"></i> Yeni Alış</button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Təchizatçı</th><th>Əməkdaş</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
+            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Təchizatçı</th><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya №</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
           </thead>
           <tbody id="tblPurch"></tbody>
-          <tfoot id="tblPurchFoot"></tfoot>
         </table>
       </div>
       <div class="pager">
@@ -259,23 +184,6 @@
       <div class="content-header">
         <h1>Anbar</h1>
         <div class="header-actions">
-          <select id="stockStatus" class="select-small" onchange="renderAll()">
-            <option value="all">Hamısı</option>
-            <option value="stock" selected>Anbardadır</option>
-            <option value="sold">Satılıb</option>
-            <option value="returned">Qaytarılıb</option>
-          </select>
-          <div class="date-range">
-            <input type="date" id="stockFrom" onchange="renderAll()">
-            <span>—</span>
-            <input type="date" id="stockTo" onchange="renderAll()">
-          </div>
-          <select id="stockCat" class="select-small" onchange="onStockCatChange()">
-            <option value="" selected>Kateqoriya (hamısı)</option>
-          </select>
-          <select id="stockSubcat" class="select-small" onchange="renderAll()">
-            <option value="" selected>Alt kateqoriya (hamısı)</option>
-          </select>
           <div class="search-container">
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblStock', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
@@ -288,7 +196,6 @@
             <tr><th>#</th><th>Status</th><th>Alış tarixi</th><th>Təchizatçı</th><th>Məhsul</th><th>Kod</th><th>Qalıq say</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya №</th><th>Qiymət</th></tr>
           </thead>
           <tbody id="tblStock"></tbody>
-          <tfoot id="tblStockFoot"></tfoot>
         </table>
       </div>
     </div>
@@ -297,11 +204,6 @@
       <div class="content-header">
         <h1>Satışlar</h1>
         <div class="header-actions">
-          <select id="salesStatus" class="select-small" onchange="renderAll()">
-            <option value="active" selected>Aktiv</option>
-            <option value="returned">Qaytarılanlar</option>
-            <option value="all">Hamısı</option>
-          </select>
           <div class="date-range">
             <input type="date" id="salesFrom" onchange="renderAll()">
             <span>—</span>
@@ -311,18 +213,15 @@
             <input type="text" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('sales')"><i class="fas fa-file-pdf"></i></button>
-          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('sales')"><i class="fas fa-file-excel"></i></button>
           <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-cash-register"></i> Yeni Satış</button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Müştəri</th><th>Məhsul</th><th>Say</th><th>Növ</th><th>Əməkdaş</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
+            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Müştəri</th><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya №</th><th>Növ</th><th>Əməkdaş</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
           </thead>
           <tbody id="tblSales"></tbody>
-          <tfoot id="tblSalesFoot"></tfoot>
         </table>
       </div>
       <div class="pager">
@@ -367,44 +266,29 @@
 
     <div id="debts" class="section">
       <div class="content-header">
-        <h1>Borclar - Debitor</h1>
-        <div class="header-actions debt-header-actions">
-          <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-              <option value="" selected>Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor">Kreditor</option>
-              <option value="overdue">Kreditlər</option>
-            </select>
+        <h1>Debitor borclar</h1>
+        <div class="header-actions">
+          <select id="debtsStatus" class="select-small" onchange="renderAll()">
+            <option value="all">Hamısı</option>
+            <option value="paid">Tam ödənilmiş</option>
+            <option value="partial">Qismən</option>
+            <option value="unpaid">Ödənilməmiş</option>
+          </select>
+          <div class="date-range">
+            <input type="date" id="debtsFrom" onchange="renderAll()">
+            <span>—</span>
+            <input type="date" id="debtsTo" onchange="renderAll()">
           </div>
-          <div class="filter-field">
-            <label>Alt seçim</label>
-            <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
-              <option value="" selected>Seçin</option>
-              <option value="all">Hamısı</option>
-              <option value="paid">Tam ödənilmiş</option>
-              <option value="partial">Qismən ödənilmiş</option>
-              <option value="unpaid">Ödənilməmiş</option>
-            </select>
+          <div class="search-container">
+            <input type="text" id="srcDebts" placeholder="Axtar..." onkeyup="filterDebts()">
+            <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <div class="filter-field">
-            <label>Tarix aralığı</label>
-            <div class="date-range">
-              <input type="date" id="debtsFrom" onchange="renderAll()">
-              <span>—</span>
-              <input type="date" id="debtsTo" onchange="renderAll()">
-            </div>
-          </div>
-          <div class="filter-field">
-            <label>Axtarış</label>
-            <div class="search-container search-plain">
-              <input type="text" id="srcDebts" placeholder="" onkeyup="filterDebts()">
-            </div>
+          <div class="search-container">
+            <input type="text" id="srcCreditOnly" placeholder="Yalnız kredit (IMEI/Seriya)" onkeyup="filterCreditOnly()">
+            <button class="search-btn" type="button"><i class="fas fa-magnifying-glass"></i></button>
           </div>
         </div>
       </div>
-      <div id="debtsContent">
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Müştəri</th><th>Cəmi borc</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
@@ -423,97 +307,30 @@
           </select>
         </div>
       </div>
-      </div>
-    </div>
-
-    <div id="overdue" class="section">
-      <div class="content-header">
-        <h1>Borclar - Kreditlər</h1>
-        <div class="header-actions debt-header-actions">
-          <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-              <option value="">Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor">Kreditor</option>
-              <option value="overdue" selected>Kreditlər</option>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label>Alt seçim</label>
-            <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
-              <option value="" selected>Seçin</option>
-              <option value="all">Ümumi kreditlər</option>
-              <option value="overdue">Vaxtı keçmiş kreditlər</option>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label>Gecikmə gün aralığı</label>
-            <div class="date-range">
-              <input type="number" id="overdueDaysFrom" class="select-small" placeholder="" min="0" onchange="renderAll()">
-              <span>—</span>
-              <input type="number" id="overdueDaysTo" class="select-small" placeholder="" min="0" onchange="renderAll()">
-            </div>
-          </div>
-          <div class="filter-field">
-            <label>Axtarış</label>
-            <div class="search-container search-plain">
-              <input type="text" id="srcOverdue" placeholder="" onkeyup="filterTable('tblOverdue', this.value)">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="overdueContent">
-      <div class="card">
-        <table>
-          <thead><tr><th>#</th><th>Müştəri (Ad Soyad Ata)</th><th>Mobil</th><th>Qaimə №</th><th>Cədvəl üzrə</th><th>Ödənilmiş</th><th>Ödənilməli</th><th>Qalıq</th><th>Ödəmə tarixi</th><th>Gecikmə günü</th><th>Zamin</th><th>Info</th></tr></thead>
-          <tbody id="tblOverdue"></tbody>
-        </table>
-      </div>
-      </div>
     </div>
 
     <div id="creditor" class="section">
       <div class="content-header">
-        <h1>Borclar - Kreditor</h1>
-        <div class="header-actions debt-header-actions">
-          <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
-              <option value="">Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor" selected>Kreditor</option>
-              <option value="overdue">Kreditlər</option>
-            </select>
+        <h1>Kreditor borclar</h1>
+        <div class="header-actions">
+          <select id="credStatus" class="select-small" onchange="renderAll()">
+            <option value="open" selected>Ödənilməmiş / Qismən</option>
+            <option value="all">Hamısı</option>
+            <option value="paid">Tam ödənilmiş</option>
+            <option value="partial">Qismən</option>
+            <option value="unpaid">Ödənilməmiş</option>
+          </select>
+          <div class="date-range">
+            <input type="date" id="credFrom" onchange="renderAll()">
+            <span>—</span>
+            <input type="date" id="credTo" onchange="renderAll()">
           </div>
-          <div class="filter-field">
-            <label>Alt seçim</label>
-            <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
-              <option value="" selected>Seçin</option>
-              <option value="open">Ödənilməmiş / Qismən</option>
-              <option value="all">Hamısı</option>
-              <option value="paid">Tam ödənilmiş</option>
-              <option value="partial">Qismən</option>
-              <option value="unpaid">Ödənilməmiş</option>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label>Tarix aralığı</label>
-            <div class="date-range">
-              <input type="date" id="credFrom" onchange="renderAll()">
-              <span>—</span>
-              <input type="date" id="credTo" onchange="renderAll()">
-            </div>
-          </div>
-          <div class="filter-field">
-            <label>Axtarış</label>
-            <div class="search-container search-plain">
-              <input type="text" id="srcCred" placeholder="" onkeyup="filterCreditor()">
-            </div>
+          <div class="search-container">
+            <input type="text" id="srcCred" placeholder="Axtar..." onkeyup="filterCreditor()">
+            <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
         </div>
       </div>
-      <div id="creditorContent">
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Təchizatçı</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
@@ -531,7 +348,6 @@
             <option value="150">150</option>
           </select>
         </div>
-      </div>
       </div>
     </div>
 
@@ -554,11 +370,6 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblCash', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-cancel" type="button" onclick="openReturnedSalesCreditReport()"><i class="fas fa-receipt"></i> Qaytarma avansları</button>
-          <button class="btn-cancel" type="button" onclick="openCashReconcile()"><i class="fas fa-scale-balanced"></i> Kassa sayımı</button>
-          <button class="btn-cancel" type="button" onclick="openDayClose()"><i class="fas fa-calendar-check"></i> Gün sonu</button>
-          <button class="btn-cancel" type="button" onclick="openCashDiffAnalysis()"><i class="fas fa-circle-exclamation"></i> Artıq/Əskik</button>
-          <button id="cashAccountsBtn" class="btn-cancel" type="button" onclick="openAccountsManager()"><i class="fas fa-building-columns"></i> Hesablar</button>
           <button class="btn-main" type="button" onclick="openCashOp()"><i class="fas fa-plus"></i> Yeni əməliyyat</button>
         </div>
       </div>
@@ -566,13 +377,12 @@
       <div class="stats-grid">
         <div class="card stat-card"><small>Gəlir (Nəğd)</small><h2 id="cashIn">0.00</h2></div>
         <div class="card stat-card"><small>Xərc (Nəğd)</small><h2 id="cashOut">0.00</h2></div>
-        <div class="card stat-card"><small>Balans</small><h2 id="cashBal">0.00</h2></div>
-        <div class="card stat-card"><small>Qaytarma avansı</small><h2 id="cashAdv">0.00</h2></div>
+        <div class="card stat-card"><small>Qalıq (Nəğd)</small><h2 id="cashBal">0.00</h2></div>
       </div>
 
       <div class="card" style="margin-top:18px;">
         <table>
-          <thead><tr><th>#</th><th>Qaimə №</th><th>Müştəri</th><th>Tip</th><th>Ödəniş məbləği</th><th>Hesab</th><th>Əməkdaş</th><th>Tarix</th><th>Ödəniş növü</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th>#</th><th>Tip</th><th>Tarix</th><th>Mənbə</th><th>Məbləğ</th><th>Qeyd</th><th>Əməliyyat</th></tr></thead>
           <tbody id="tblCash"></tbody>
         </table>
       </div>
@@ -587,6 +397,21 @@
             <option value="150">150</option>
           </select>
         </div>
+      </div>
+    </div>
+
+    <div id="accounts" class="section">
+      <div class="content-header">
+        <h1>Hesablar</h1>
+        <div class="header-actions">
+          <button class="btn-main" type="button" onclick="openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>
+        </div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>#</th><th>Ad</th><th>Tip</th><th>Balans</th><th>Əməliyyat</th></tr></thead>
+          <tbody id="tblAccounts"></tbody>
+        </table>
       </div>
     </div>
 
@@ -613,7 +438,6 @@
           <button class="btn-main" type="button" onclick="openUser()"><i class="fas fa-user-plus"></i> Yeni istifadəçi</button>
         </div>
       </div>
-      <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;">Rolları (user / admin / developer) və icazələri bu siyahıda istifadəçi üzərində <strong>Redaktə</strong> ilə dəyişə bilərsiniz.</p>
       <div class="card">
         <table>
           <thead><tr><th>#</th><th>Ad Soyad</th><th>İstifadəçi adı</th><th>Əməkdaş</th><th>Rol</th><th>Aktiv</th><th>Əməliyyat</th></tr></thead>
@@ -676,21 +500,14 @@
           </label>
           <button class="btn-cancel" type="button" onclick="exportCsvCurrent()"><i class="fas fa-file-csv"></i> CSV</button>
           <button class="btn-cancel" type="button" onclick="recalcAll()"><i class="fas fa-calculator"></i> Recalculate</button>
-          <button class="btn-cancel" type="button" onclick="openSkins()"><i class="fas fa-palette"></i> Skinlər</button>
           <button class="btn-cancel" type="button" onclick="openQrTool()"><i class="fas fa-qrcode"></i> QR</button>
           <button class="btn-cancel" type="button" onclick="openSettings()"><i class="fas fa-gear"></i> Ayarlar</button>
-          <button class="btn-cancel dev-only" type="button" onclick="seedDevTestData()"><i class="fas fa-flask"></i> Test baza yüklə</button>
         </div>
       </div>
       <div class="card">
         <div class="info-block">
           <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">Export/Import yalnız cari şirkət datasına aiddir.</div></div>
         </div>
-      </div>
-      <div class="card" style="margin-top:16px;">
-        <h3 class="card-title" style="margin:0 0 12px 0;font-size:1rem;">Baza import</h3>
-        <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;">Excel-də müştəri bazası (Ad, Soyad, FİN, Mobil və s.) hazırlayıb import etdikdə həmin müştərilər <strong>Müştərilər</strong> siyahısına düşər. Siyahıda cədvəl sütunları, ətraflı məlumat isə hər müştərinin <strong>Info</strong> pəncərəsində görünər.</p>
-        <button class="btn-main" type="button" onclick="openCustImport()"><i class="fas fa-file-import"></i> Müştəri bazası (Excel/CSV) import</button>
       </div>
     </div>
 
@@ -706,11 +523,7 @@
             <option value="purch">Alışlar</option>
             <option value="expense">Xərclər</option>
             <option value="staff">Əməkdaş</option>
-            <option value="profitloss">Mənfəət/Zərər</option>
-            <option value="stockaging">Anbar yaşlanma</option>
           </select>
-          <button class="btn-main btn-sm" type="button" onclick="exportTablePDF('reports')"><i class="fas fa-file-pdf"></i> PDF</button>
-          <button class="btn-main btn-sm" type="button" onclick="exportTableExcel('reports')"><i class="fas fa-file-excel"></i> Excel</button>
           <div class="date-range">
             <input type="date" id="repFrom" onchange="renderAll()">
             <span>—</span>
@@ -720,12 +533,10 @@
       </div>
       <div class="grid-5">
         <div class="card stat-card"><small>Satış</small><h2 id="repSales">0.00</h2></div>
-        <div class="card stat-card"><small>Satış (ödənilən)</small><h2 id="repSalesPaid">0.00</h2></div>
         <div class="card stat-card"><small>Alış</small><h2 id="repCogs">0.00</h2></div>
         <div class="card stat-card"><small>Xərc</small><h2 id="repExp">0.00</h2></div>
         <div class="card stat-card"><small>Əməkhaqqı (ay üzrə)</small><h2 id="repPayroll">0.00</h2></div>
         <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="repPL">0.00</h2></div>
-        <div class="card stat-card"><small>Nağdlaşan mənfəət</small><h2 id="repPLCash">0.00</h2></div>
       </div>
 
       <div class="card" style="margin-top:18px;">
@@ -746,367 +557,30 @@
           <tbody id="tblPayroll"></tbody>
         </table>
       </div>
-      <div id="repChartArea" class="card" style="margin-top:18px;display:none;">
-        <h3 style="margin-bottom:10px;">Qrafik Hesabat</h3>
-        <div class="chart-row">
-          <div class="chart-box"><canvas id="chartSalesTrend"></canvas></div>
-          <div class="chart-box"><canvas id="chartPurchTrend"></canvas></div>
-        </div>
-        <div class="chart-row">
-          <div class="chart-box"><canvas id="chartCategoryPie"></canvas></div>
-          <div class="chart-box"><canvas id="chartTopCustomers"></canvas></div>
-        </div>
-      </div>
-      <div id="repProfitLoss" class="card" style="margin-top:18px;display:none;">
-        <h3 style="margin-bottom:10px;">Mənfəət / Zərər Hesabatı</h3>
-        <table>
-          <thead><tr><th>Göstərici</th><th>Məbləğ (AZN)</th></tr></thead>
-          <tbody id="tblProfitLoss"></tbody>
-        </table>
-      </div>
-      <div id="repStockAging" class="card" style="margin-top:18px;display:none;">
-        <h3 style="margin-bottom:10px;">Anbar Yaşlanma Hesabatı</h3>
-        <table>
-          <thead><tr><th>Kateqoriya</th><th>0-30 gün</th><th>31-60 gün</th><th>61-90 gün</th><th>90+ gün</th><th>Cəmi</th></tr></thead>
-          <tbody id="tblStockAging"></tbody>
-        </table>
-      </div>
     </div>
 
   </main>
   </div>
   </div>
 
-  <div id="publicLanding" class="public-landing lp-home">
-    <div class="lp-aurora" aria-hidden="true">
-      <div class="lp-aurora-blob lp-aurora-blob-a"></div>
-      <div class="lp-aurora-blob lp-aurora-blob-b"></div>
-      <div class="lp-aurora-dots"></div>
-      <div class="lp-aurora-fade"></div>
-    </div>
-
-    <div class="lp-main" id="lpMainContent">
-      <nav class="lp-nav" id="lpNav">
-        <div class="lp-nav-inner">
-          <div class="lp-nav-desktop">
-            <a href="#lp-features" class="lp-nav-link">Haqqımızda</a>
-            <a href="#lp-footer" class="lp-nav-link">Əlaqə</a>
-            <button type="button" class="lp-nav-cta" onclick="openLoginModal()">
-              Daxil ol <i class="fas fa-arrow-right"></i>
-            </button>
-          </div>
-          <button type="button" class="lp-nav-burger" id="lpBurger" onclick="toggleLpMenu()" aria-label="Menyu">
-            <i class="fas fa-bars" id="lpBurgerIcon"></i>
-          </button>
-        </div>
-        <div class="lp-nav-mobile" id="lpNavMobile" style="display:none">
-          <a href="#lp-features" class="lp-nav-mobile-link" onclick="closeLpMenu()">Haqqımızda</a>
-          <a href="#lp-footer" class="lp-nav-mobile-link" onclick="closeLpMenu()">Əlaqə</a>
-          <button type="button" class="lp-nav-mobile-cta" onclick="openLoginModal(); closeLpMenu();">Daxil ol</button>
-        </div>
-      </nav>
-
-      <section class="lp-hero">
-        <div class="lp-hero-grid">
-          <div class="lp-hero-left">
-            <div class="lp-hero-brand">
-              <div class="rbsoft rbsoft--hero">
-                <div class="rbsoft-digital rbsoft-digital--hero" aria-hidden="true">
-                  <div class="rbsoft-digital__a"></div>
-                  <div class="rbsoft-digital__mid">
-                    <span></span><span></span>
-                  </div>
-                  <div class="rbsoft-digital__end"><span></span></div>
-                </div>
-                <div class="rbsoft-brand-text">
-                  <div class="rbsoft-brand-title"><span class="rb-low">rb</span><span class="soft">soft</span></div>
-                  <div class="rbsoft-brand-track"><div class="rbsoft-brand-track-fill"></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="lp-hero-copy">
-              <h1 class="lp-hero-title lp-hero-title--typewriter" id="lpHeroTitle" aria-label="Müəssisənizi Ağıllı idarə edin.">
-                <span id="lpTypeTitle" class="lp-type-title-out"></span><span class="lp-type-cursor" id="lpTypeTitleCursor" aria-hidden="true"></span>
-              </h1>
-              <p class="lp-hero-lead lp-hero-lead--typewriter" id="lpHeroLeadWrap">
-                <span id="lpTypeLead" class="lp-type-lead-out"></span><span class="lp-type-cursor lp-type-cursor--lead" id="lpTypeLeadCursor" aria-hidden="true"></span>
-              </p>
-            </div>
-          </div>
-          <div class="lp-hero-right">
-            <div class="lp-dash-scene" aria-hidden="true">
-              <div class="lp-dash-bg-blur lp-dash-bg-blur--emerald"></div>
-              <div class="lp-dash-bg-blur lp-dash-bg-blur--blue"></div>
-              <div class="lp-dash-bg-dots"></div>
-              <div class="lp-dash-float">
-                <div class="lp-dash-stage">
-                  <div class="lp-dash-3d">
-                    <div class="lp-dash-card">
-                      <div class="lp-dash-inner">
-                      <aside class="lp-dash-sidebar">
-                        <div class="lp-dash-logo">
-                          <span class="lp-dash-logo-rb">rb</span><span class="lp-dash-logo-soft">soft</span><span class="lp-dash-logo-dot"></span>
-                        </div>
-                        <nav class="lp-dash-nav">
-                          <div class="lp-dash-nav-item lp-dash-nav-item--active"><i class="fas fa-th-large"></i><span>Əsas Panel</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-dollar-sign"></i><span>Maliyyə</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-cart-shopping"></i><span>Satışlar</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-box"></i><span>Anbar</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-users"></i><span>İşçilər</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-chart-column"></i><span>Hesabatlar</span></div>
-                        </nav>
-                        <div class="lp-dash-user">
-                          <div class="lp-dash-user-avatar"><span>AD</span></div>
-                          <div class="lp-dash-user-meta">
-                            <p class="lp-dash-user-name">Admin User</p>
-                            <p class="lp-dash-user-role">İdarəedici</p>
-                          </div>
-                        </div>
-                      </aside>
-                      <div class="lp-dash-main">
-                        <div class="lp-dash-header">
-                          <div class="lp-dash-search">
-                            <i class="fas fa-magnifying-glass"></i>
-                            <input type="text" placeholder="Sistemdə axtar..." disabled tabindex="-1" />
-                          </div>
-                          <div class="lp-dash-bell">
-                            <i class="fas fa-bell"></i>
-                            <span class="lp-dash-bell-dot"></span>
-                          </div>
-                        </div>
-                        <div class="lp-dash-stats">
-                          <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--em"><i class="fas fa-dollar-sign"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up-right"></i> +14.5%</span>
-                            </div>
-                            <p class="lp-dash-stat-lbl">Ümumi Gəlir</p>
-                            <h3 class="lp-dash-stat-val">124,500 ₼</h3>
-                          </div>
-                          <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--bl"><i class="fas fa-cart-shopping"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up-right"></i> +5.2%</span>
-                            </div>
-                            <p class="lp-dash-stat-lbl">Aktiv Sifarişlər</p>
-                            <h3 class="lp-dash-stat-val">842</h3>
-                          </div>
-                          <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--rs"><i class="fas fa-chart-line"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--dn"><i class="fas fa-arrow-down-right"></i> -2.4%</span>
-                            </div>
-                            <p class="lp-dash-stat-lbl">Xərclər</p>
-                            <h3 class="lp-dash-stat-val">32,400 ₼</h3>
-                          </div>
-                        </div>
-                        <div class="lp-dash-bottom">
-                          <div class="lp-dash-chart">
-                            <div class="lp-dash-chart-head">
-                              <h3>Aylıq Satış Qrafiki</h3>
-                              <span class="lp-dash-chart-pill">2024</span>
-                            </div>
-                            <div class="lp-dash-chart-bars">
-                              <span style="height:40%"></span><span style="height:65%"></span><span style="height:45%"></span><span style="height:80%"></span><span style="height:55%"></span><span style="height:90%"></span><span style="height:75%"></span><span style="height:100%"></span><span style="height:60%"></span><span style="height:85%"></span><span style="height:50%"></span><span style="height:70%"></span>
-                            </div>
-                          </div>
-                          <div class="lp-dash-feed">
-                            <h3 class="lp-dash-feed-title">Son Əməliyyatlar</h3>
-                            <ul class="lp-dash-feed-list">
-                              <li><i class="fas fa-circle-check lp-dash-ic--ok"></i><div><p class="lp-dash-feed-t">Yeni Sifariş #1042</p><p class="lp-dash-feed-time">10 dəq əvvəl</p></div></li>
-                              <li><i class="fas fa-circle-check lp-dash-ic--info"></i><div><p class="lp-dash-feed-t">Mədaxil qeydə alındı</p><p class="lp-dash-feed-time">1 saat əvvəl</p></div></li>
-                              <li><i class="fas fa-circle-check lp-dash-ic--warn"></i><div><p class="lp-dash-feed-t">Sistem ehtiyat nüsxəsi</p><p class="lp-dash-feed-time">3 saat əvvəl</p></div></li>
-                              <li><i class="fas fa-circle-check lp-dash-ic--info"></i><div><p class="lp-dash-feed-t">Yeni istifadəçi əlavə edildi</p><p class="lp-dash-feed-time">5 saat əvvəl</p></div></li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="lp-dash-glass"></div>
-                    </div>
-                  </div>
-                </div>
-              <div class="lp-dash-float-badge lp-dash-float-badge--right">
-                <div class="lp-dash-fb-ico"><i class="fas fa-arrow-up-right"></i></div>
-                <div>
-                  <p class="lp-dash-fb-lbl">Səmərəlilik</p>
-                  <p class="lp-dash-fb-val">98.5%</p>
-                </div>
-              </div>
-              <div class="lp-dash-float-badge lp-dash-float-badge--left">
-                <span class="lp-dash-live-dot"></span>
-                <p>Sistem Aktivdir</p>
-              </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="lp-stats">
-        <div class="lp-stats-grid">
-          <div class="lp-stat"><div class="lp-stat-val">10k+</div><div class="lp-stat-lbl">İstifadəçi</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">500+</div><div class="lp-stat-lbl">Müəssisə</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">24/7</div><div class="lp-stat-lbl">Dəstək</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">SSL</div><div class="lp-stat-lbl">Təhlükəsizlik</div></div>
-        </div>
-      </section>
-
-      <section class="lp-features" id="lp-features">
-        <div class="lp-features-inner">
-          <div class="lp-features-head">
-            <h2>Mükəmməllik üçün dizayn edilib</h2>
-            <p class="lp-features-quote">«Mürəkkəb proseslərə minimalist yanaşma.»</p>
-          </div>
-          <div class="lp-features-grid">
-            <article class="lp-fcard">
-              <div class="lp-fcard-icon"><i class="fas fa-chart-column"></i></div>
-              <h3>Maliyyə nəzarəti</h3>
-              <p>Bütün gəlir və xərclərinizi anlıq qrafiklərlə izləyin, hesabatları saniyələr içində hazırlayın.</p>
-            </article>
-            <article class="lp-fcard">
-              <div class="lp-fcard-icon"><i class="fas fa-table-cells-large"></i></div>
-              <h3>Anbar idarəetməsi</h3>
-              <p>Məhsul dövriyyəsini, qalıqları və tədarük zəncirini avtomatlaşdırılmış şəkildə idarə edin.</p>
-            </article>
-            <article class="lp-fcard">
-              <div class="lp-fcard-icon"><i class="fas fa-shield-halved"></i></div>
-              <h3>Məlumat təhlükəsizliyi</h3>
-              <p>Müəssisənizin kritik məlumatları ən yüksək səviyyədə qorunur.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <footer class="lp-footer" id="lp-footer">
-        <div class="lp-footer-grid">
-          <div class="lp-footer-brand">
-            <div class="rbsoft rbsoft--footer">
-              <div class="rbsoft-digital rbsoft-digital--footer" aria-hidden="true">
-                <div class="rbsoft-digital__a"></div>
-                <div class="rbsoft-digital__mid">
-                  <span></span><span></span>
-                </div>
-                <div class="rbsoft-digital__end"><span></span></div>
-              </div>
-              <div class="rbsoft-brand-text">
-                <div class="rbsoft-brand-title lp-footer-logo"><span class="rb-low">rb</span><span class="soft">soft</span></div>
-                <div class="rbsoft-brand-track rbsoft-brand-track--footer"><div class="rbsoft-brand-track-fill"></div></div>
-              </div>
-            </div>
-            <p>Azərbaycanın biznes mühitini rəqəmsal gələcəyə hazırlayırıq. Çevik, müasir və etibarlı.</p>
-          </div>
-          <div>
-            <h4 class="lp-footer-h">Naviqasiya</h4>
-            <ul class="lp-footer-ul">
-              <li><a href="#lp-features">Haqqımızda</a></li>
-              <li><a href="#lp-footer">Əlaqə</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="lp-footer-h">Hüquqi</h4>
-            <ul class="lp-footer-ul">
-              <li><a href="javascript:void(0)" onclick="appAlert('Məxfilik siyasəti tezliklə əlavə olunacaq.'); return false;">Məxfilik</a></li>
-              <li><a href="javascript:void(0)" onclick="appAlert('İstifadə şərtləri tezliklə əlavə olunacaq.'); return false;">Şərtlər</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="lp-footer-bottom">
-          <span>© 2026 RBSoft</span>
-        </div>
-      </footer>
-    </div>
-  </div>
-
   <div class="modal" id="mdlMain">
     <div class="modal-body" id="modalContent"></div>
   </div>
 
-  <div class="login-overlay login-v3" id="loginOverlay">
-    <div class="login-v3-backdrop" onclick="closeLoginModal()" aria-hidden="true"></div>
-    <div class="login-v3-card" role="dialog" aria-modal="true" aria-labelledby="loginV3Title" onclick="event.stopPropagation()">
-      <button type="button" class="login-v3-x" onclick="closeLoginModal()" aria-label="Bağla"><i class="fas fa-xmark"></i></button>
-      <div class="login-v3-brand">
-        <div class="rbsoft rbsoft--login">
-          <div class="rbsoft-digital rbsoft-digital--login" aria-hidden="true">
-            <div class="rbsoft-digital__a"></div>
-            <div class="rbsoft-digital__mid">
-              <span></span><span></span>
-            </div>
-            <div class="rbsoft-digital__end"><span></span></div>
-          </div>
-          <div class="rbsoft-brand-text">
-            <div class="rbsoft-brand-title"><span class="rb-low">rb</span><span class="soft">soft</span></div>
-            <div class="rbsoft-brand-track"><div class="rbsoft-brand-track-fill"></div></div>
-          </div>
+  <div class="login-overlay" id="loginOverlay" style="display:none;">
+    <div class="login-card">
+      <h2>Giriş</h2>
+      <form onsubmit="login(event)">
+        <div class="grid-3">
+          <select id="loginCompany" class="span-3" required></select>
+          <input id="loginUser" class="span-3" placeholder="İstifadəçi adı" autocomplete="username" required>
+          <input id="loginPass" class="span-3" placeholder="Şifrə" type="password" autocomplete="current-password" required>
         </div>
-      </div>
-      <div class="login-v3-welcome">
-        <h1 id="loginV3Title">Xoş gəlmisiniz!</h1>
-        <p>Sistemə daxil olun</p>
-      </div>
-      <form class="login-form-v3" onsubmit="login(event)">
-        <div id="loginCompanyWrap" class="login-company-wrap login-v3-company hidden">
-          <label class="login-v3-lbl" for="loginCompany">Şirkət</label>
-          <select id="loginCompany" class="login-v3-select"></select>
+        <div class="modal-footer" style="justify-content:flex-end;">
+          <button class="btn-main" type="submit">Daxil ol</button>
         </div>
-        <div class="login-v3-field">
-          <label class="login-v3-lbl" for="loginUser">İstifadəçi adı</label>
-          <div class="login-v3-input-wrap">
-            <span class="login-v3-ico" aria-hidden="true"><i class="fas fa-user"></i></span>
-            <input id="loginUser" placeholder="istifadəçi_adı" autocomplete="username" required>
-          </div>
-        </div>
-        <div class="login-v3-field">
-          <label class="login-v3-lbl" for="loginPass">Şifrə</label>
-          <div class="login-v3-input-wrap">
-            <span class="login-v3-ico" aria-hidden="true"><i class="fas fa-lock"></i></span>
-            <input id="loginPass" placeholder="••••••••" type="password" autocomplete="current-password" required>
-            <button type="button" class="login-v3-eye" id="loginPassToggle" onclick="toggleLoginPassword()" aria-label="Şifrəni göstər">
-              <i class="fas fa-eye"></i>
-            </button>
-          </div>
-        </div>
-        <div class="login-v3-row">
-          <label class="login-v3-check">
-            <input type="checkbox" id="loginRemember">
-            <span>Məni xatırla</span>
-          </label>
-          <a href="javascript:void(0)" class="login-v3-forgot" onclick="appAlert('Şifrə bərpası üçün administratorla əlaqə saxlayın.'); return false;">Şifrə bərpası</a>
-        </div>
-        <button class="login-v3-submit" type="submit">
-          Daxil ol <i class="fas fa-arrow-right"></i>
-        </button>
       </form>
-      <small class="login-v3-hint" id="loginHint"></small>
-    </div>
-  </div>
-
-  <div id="sessionTimeoutOverlay" class="session-timeout-overlay" style="display:none;">
-    <div class="session-timeout-card">
-      <i class="fas fa-clock session-timeout-icon"></i>
-      <h3>Sessiya vaxtı bitir</h3>
-      <p id="sessionTimeoutMsg">5 dəqiqə hərəkətsizlik. Davam etmək istəyirsiniz?</p>
-      <div class="session-timeout-actions">
-        <button class="btn-main" type="button" onclick="resetSessionTimer()">Bəli, davam et</button>
-        <button class="btn-cancel" type="button" onclick="doSessionLogout()">Çıxış</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="pinOverlay" class="pin-overlay" style="display:none;">
-    <div class="pin-card">
-      <h3 id="pinTitle">PIN təsdiqi</h3>
-      <p id="pinMsg">Əməliyyatı təsdiqləmək üçün PIN daxil edin</p>
-      <div class="pin-input-row">
-        <input type="password" maxlength="1" class="pin-digit" data-pin="0" oninput="onPinDigit(this,0)">
-        <input type="password" maxlength="1" class="pin-digit" data-pin="1" oninput="onPinDigit(this,1)">
-        <input type="password" maxlength="1" class="pin-digit" data-pin="2" oninput="onPinDigit(this,2)">
-        <input type="password" maxlength="1" class="pin-digit" data-pin="3" oninput="onPinDigit(this,3)">
-      </div>
-      <div class="pin-actions">
-        <button class="btn-cancel" type="button" onclick="cancelPin()">Ləğv et</button>
-      </div>
+      <small class="muted" id="loginHint"></small>
     </div>
   </div>
 
@@ -1120,10 +594,8 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>
