@@ -182,7 +182,7 @@ body.offline-block #appShell{display:none;}
 
 /* Menyu başlıqdan aşağı — teal + düymə görünüşlü nav */
 aside{
-  width:260px;
+  width:82px;
   background:var(--sidebar-solid);
   border-right:none;
   position:fixed;
@@ -201,20 +201,11 @@ aside nav{
   flex:1;
   overflow-y:auto;
   overflow-x:hidden;
-  padding:16px 12px 12px 12px;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(255,255,255,.18) transparent;
+  padding:10px 6px 12px 6px;
+  scrollbar-width:none;
 }
-aside nav::-webkit-scrollbar{width:4px;}
-aside nav::-webkit-scrollbar-track{background:transparent;}
-aside nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px;}
-.nav-group-label{
-  font-size:.67rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:rgba(255,255,255,.45);
-  padding:14px 10px 5px;
-  user-select:none;
-}
-body.theme-dark .nav-group-label{color:rgba(255,255,255,.3);}
+aside nav::-webkit-scrollbar{display:none;}
+.nav-group-label{display:none;}
 .logo{margin:0;padding:0;width:100%;height:72px;display:flex;align-items:center;justify-content:center;background:transparent;}
 .logo-img{max-width:100%;max-height:72px;width:auto;height:auto;object-fit:contain;display:block;background:transparent;}
 .logo-svg{display:block;object-fit:contain;}
@@ -521,7 +512,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 
 /* Top header bar – full width, logo hissə ilə eyni səviyyədə boşluq qalmaz */
 .main-area{
-  flex:1;margin-left:260px;min-height:100vh;display:flex;flex-direction:column;padding-top:56px;
+  flex:1;margin-left:82px;min-height:100vh;display:flex;flex-direction:column;padding-top:56px;
 }
 .app-header{
   position:fixed;
@@ -537,7 +528,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 }
 /* Ağ logo kartı — sidebar ilə vahid sütun deyil, ayrıca “plakat” */
 .header-logo{
-  width:260px;
+  width:82px;
   flex-shrink:0;
   background:#fff;
   display:flex;
@@ -712,29 +703,38 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
 }
 .nav-link{
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  color:#fff;
+  justify-content:center;
+  gap:5px;
+  padding:10px 4px 9px;
+  color:rgba(255,255,255,.80);
   cursor:pointer;
   border-radius:10px;
-  margin-bottom:6px;
+  margin-bottom:4px;
   background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.10);
   position:relative;
-  font-size:.9rem;
-  font-weight:500;
+  font-size:.6rem;
+  font-weight:600;
+  letter-spacing:.01em;
   width:100%;
-  max-width:none;
-  margin-left:0;
-  margin-right:0;
-  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,color .15s ease;
 }
 .nav-link::before{content:none;}
-.dev-menu{margin-top:-4px;margin-bottom:4px;}
-.nav-link.dev-sub{padding-left:34px;}
-.dev-toggle{justify-content:space-between;}
-.dev-caret{margin-left:auto;opacity:.7;font-size:.75rem;}
+.nav-link .nav-text{
+  font-size:.6rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:68px;
+}
+.dev-menu{margin-top:0;margin-bottom:4px;}
+.nav-link.dev-sub{font-size:.58rem;}
+.dev-toggle{flex-direction:row;justify-content:center;}
+.dev-caret{display:none;}
 .nav-link:hover{
   background:rgba(255,255,255,.16);
   border-color:rgba(255,255,255,.25);
@@ -742,8 +742,11 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
   box-shadow:0 2px 8px rgba(0,0,0,.12);
 }
 .nav-link i{
-  width:18px;min-width:18px;text-align:center;
-  font-size:.9rem;opacity:.9;
+  font-size:1.05rem;
+  width:auto;min-width:auto;
+  text-align:center;
+  opacity:.9;
+  line-height:1;
 }
 /* Yığılmış sidebar: yalnız ikon tünd, mətn gizli qalır */
 body.sidebar-collapsed .nav-link:hover{
@@ -764,11 +767,11 @@ body.theme-dark.sidebar-collapsed .nav-link:hover i{
   color:#0f172a;
 }
 .nav-link.active{
-  background:rgba(255,255,255,.16);
+  background:rgba(255,255,255,.18);
   color:#fff;
-  font-weight:600;
-  border-color:rgba(255,255,255,.28);
-  box-shadow:0 4px 14px rgba(0,0,0,.15);
+  font-weight:700;
+  border-color:rgba(255,255,255,.30);
+  box-shadow:0 3px 10px rgba(0,0,0,.18);
 }
 .nav-link.active i{opacity:1;}
 .nav-link.active::after{
@@ -777,18 +780,18 @@ body.theme-dark.sidebar-collapsed .nav-link:hover i{
   left:0;
   top:50%;
   transform:translateY(-50%);
-  height:20px;
+  height:24px;
   width:3px;
   border-radius:0 3px 3px 0;
   background:rgba(255,255,255,.9);
   pointer-events:none;
 }
-.nav-sep{height:1px;background:rgba(255,255,255,.15);margin:10px 6px;}
+.nav-sep{height:1px;background:rgba(255,255,255,.12);margin:6px 4px;}
 
-/* Dark mode nav */
-body.theme-dark .nav-link{color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);}
-body.theme-dark .nav-link:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);}
-body.theme-dark .nav-link.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);}
+/* Dark mode nav — same teal bg so no change needed */
+body.theme-dark .nav-link{color:rgba(255,255,255,.80);}
+body.theme-dark .nav-link:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);color:#fff;}
+body.theme-dark .nav-link.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.30);color:#fff;}
 
 main{flex:1;padding:28px 32px;}
 .section{display:none;min-height:0;}
@@ -4197,8 +4200,8 @@ body.sidebar-collapsed .nav-link:hover::before{
 /* ===================== Sidebar user info ===================== */
 .sidebar-user-info{
   border-top:1px solid rgba(255,255,255,.12);
-  padding:12px 14px;
-  display:flex;align-items:center;gap:10px;
+  padding:10px 6px;
+  display:flex;align-items:center;justify-content:center;gap:0;
   background:rgba(0,0,0,.12);
   cursor:pointer;
   transition:background .14s ease;
@@ -4212,9 +4215,7 @@ body.sidebar-collapsed .nav-link:hover::before{
   font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;
   border:1.5px solid rgba(255,255,255,.3);
 }
-.sidebar-user-name{font-size:.82rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.sidebar-user-role{font-size:.72rem;color:rgba(255,255,255,.55);margin-top:1px;}
-.sidebar-user-caret{margin-left:auto;color:rgba(255,255,255,.4);font-size:.75rem;}
+.sidebar-user-name,.sidebar-user-role,.sidebar-user-caret{display:none;}
 /* collapsed state */
 body.sidebar-collapsed .sidebar-user-info{justify-content:center;padding:12px 8px;}
 body.sidebar-collapsed .sidebar-user-name,
