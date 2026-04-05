@@ -4124,4 +4124,99 @@ body.sidebar-collapsed .nav-link:hover::before{
   pointer-events:none;
 }
 
+/* ===================== #17 Bildiriş mərkəzi ===================== */
+.notif-panel{display:flex;flex-direction:column;gap:0;max-height:70vh;overflow-y:auto;}
+.notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-color);cursor:default;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item:hover{background:var(--accent-light, rgba(13,148,136,.07));}
+.notif-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+.notif-icon.neg{background:#fee2e2;color:#dc2626;}
+.notif-icon.overdue{background:#fef3c7;color:#d97706;}
+.notif-icon.stock{background:#dbeafe;color:#2563eb;}
+.notif-icon.info{background:#f3f4f6;color:#6b7280;}
+body.theme-dark .notif-icon.neg{background:#450a0a;color:#f87171;}
+body.theme-dark .notif-icon.overdue{background:#451a03;color:#fbbf24;}
+body.theme-dark .notif-icon.stock{background:#1e3a5f;color:#60a5fa;}
+body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-weight:700;font-size:.88rem;color:var(--text-main);}
+.notif-text{font-size:.80rem;color:var(--text-muted);margin-top:2px;}
+.notif-action{margin-top:6px;}
+.notif-action button{font-size:.75rem;padding:3px 10px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:600;}
+.notif-action button:hover{background:var(--accent);color:#fff;}
+.notif-empty{padding:28px 16px;text-align:center;color:var(--text-muted);font-size:.92rem;}
+.notif-header-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border-color);background:var(--bg-main);}
+.notif-header-bar h3{font-size:.95rem;font-weight:700;color:var(--text-main);margin:0;}
+.notif-count-badge{background:var(--accent);color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 8px;}
+
+/* ===================== #18 Mobil uyğunluq ===================== */
+.mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;color:inherit;padding:6px;font-size:1.1rem;}
+.mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1199;}
+.mobile-sidebar-overlay.open{display:block;}
+
+@media(max-width:768px){
+  aside{
+    position:fixed;left:0;top:0;bottom:0;z-index:1200;
+    transform:translateX(-100%);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+    width:240px !important;
+    overflow-y:auto;
+  }
+  aside.mobile-open{transform:translateX(0);}
+  .main-area{margin-left:0 !important;}
+  .header-logo{width:0 !important;overflow:hidden;padding:0;border:none;}
+  #desktopSidebarBtn{display:none !important;}
+  .mobile-menu-btn{display:flex;align-items:center;justify-content:center;}
+  .header-datetime,.last-saved,.realtime-indicator{display:none !important;}
+  .lang-switcher{display:none !important;}
+  .stats-grid{grid-template-columns:repeat(2,1fr) !important;}
+  .grid-3{grid-template-columns:1fr !important;}
+  .grid-3 .span-2,.grid-3 .span-3{grid-column:span 1 !important;}
+  .dash-charts{grid-template-columns:1fr !important;}
+  .content-header{flex-wrap:wrap;gap:8px;}
+  .content-header-actions{flex-wrap:wrap;gap:6px;}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .card{border-radius:10px;}
+  th,td{white-space:nowrap;}
+  .modal-body{max-width:100vw;border-radius:0 0 16px 16px;}
+  .section.active{padding:12px !important;}
+}
+@media(min-width:769px){
+  .mobile-menu-btn{display:none !important;}
+}
+
+/* ===================== #19 Qlobal axtarış (command palette) ===================== */
+.spotlight-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;
+  display:none;align-items:flex-start;justify-content:center;padding-top:80px;
+}
+.spotlight-overlay.open{display:flex;}
+.spotlight-box{
+  background:var(--bg-main);border:1px solid var(--border-color);
+  border-radius:16px;width:100%;max-width:600px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+}
+.spotlight-input-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border-color);}
+.spotlight-input-row i{color:var(--text-muted);font-size:1rem;}
+.spotlight-input-row input{flex:1;border:none;background:transparent;font-size:1rem;outline:none;color:var(--text-main);}
+.spotlight-input-row kbd{font-size:.72rem;padding:2px 6px;border-radius:5px;border:1px solid var(--border-color);color:var(--text-muted);background:var(--bg-main);}
+.spotlight-results{max-height:400px;overflow-y:auto;}
+.spotlight-group{padding:8px 0 2px;}
+.spotlight-group-label{padding:4px 16px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+.spotlight-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-radius:0;}
+.spotlight-item:hover,.spotlight-item.active{background:var(--accent-light,rgba(13,148,136,.1));}
+.spotlight-item i{width:20px;text-align:center;color:var(--accent);font-size:.9rem;}
+.spotlight-item-main{flex:1;min-width:0;}
+.spotlight-item-name{font-size:.88rem;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.spotlight-item-sub{font-size:.76rem;color:var(--text-muted);}
+.spotlight-item-tag{font-size:.72rem;padding:2px 7px;border-radius:6px;background:var(--accent-light,#e0fdf4);color:var(--accent);font-weight:700;}
+.spotlight-footer{padding:8px 16px;border-top:1px solid var(--border-color);display:flex;gap:14px;color:var(--text-muted);font-size:.74rem;}
+.spotlight-footer kbd{font-size:.70rem;padding:1px 5px;border-radius:4px;border:1px solid var(--border-color);}
+.spotlight-empty{padding:28px 16px;text-align:center;color:var(--text-muted);font-size:.88rem;}
+
+/* ===================== #20 Çoxdilli dəstək ===================== */
+.lang-switcher{display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:8px;border:1px solid var(--border-color);background:transparent;cursor:pointer;}
+.lang-btn{padding:3px 7px;border-radius:6px;font-size:.75rem;font-weight:700;border:none;background:transparent;cursor:pointer;color:var(--text-muted);}
+.lang-btn.active{background:var(--accent);color:#fff;}
+.lang-btn:hover:not(.active){background:var(--accent-light,rgba(13,148,136,.1));color:var(--accent);}
 

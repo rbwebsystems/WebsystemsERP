@@ -57,7 +57,10 @@
       </div>
       <div class="header-rest">
       <div class="app-header-left">
-        <button class="header-btn header-btn-icon" type="button" onclick="toggleSidebar()" title="Sidebar gizlət/göstər">
+        <button class="mobile-menu-btn header-btn header-btn-icon" type="button" onclick="toggleMobileSidebar()" title="Menyu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <button class="header-btn header-btn-icon" type="button" onclick="toggleSidebar()" title="Sidebar gizlət/göstər" id="desktopSidebarBtn">
           <i class="fas fa-bars"></i>
         </button>
         <span class="app-header-title" id="appHeaderTitle"></span>
@@ -66,7 +69,12 @@
         <span id="headerDateTime" class="header-datetime" title="Cari tarix və saat"></span>
         <span id="realtimeIndicator" class="realtime-indicator hidden" title="Realtime: məlumat bütün cihazlarda sinxron olunur"></span>
         <span id="lastSavedEl" class="last-saved" title="Son saxlanma vaxtı"></span>
-        <button class="header-btn header-btn-icon" type="button" onclick="openGlobalSearch()" title="Axtarış (Ctrl+K)">
+        <div class="lang-switcher" id="langSwitcher">
+          <button class="lang-btn active" onclick="setLang('az')" data-lang="az">AZ</button>
+          <button class="lang-btn" onclick="setLang('ru')" data-lang="ru">RU</button>
+          <button class="lang-btn" onclick="setLang('en')" data-lang="en">EN</button>
+        </div>
+        <button class="header-btn header-btn-icon" type="button" onclick="openSpotlight()" title="Axtarış (Ctrl+K)">
           <i class="fas fa-magnifying-glass"></i>
         </button>
         <button class="header-btn header-btn-icon" type="button" onclick="openNotifications()" title="Bildirişlər">
@@ -79,6 +87,26 @@
       </div>
       </div>
     </header>
+
+    <!-- Mobile sidebar overlay -->
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+    <!-- Spotlight / Command palette -->
+    <div class="spotlight-overlay" id="spotlightOverlay" onclick="closeSpotlightIfOutside(event)">
+      <div class="spotlight-box" id="spotlightBox">
+        <div class="spotlight-input-row">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" id="spotlightInput" placeholder="Axtar: müştəri, məhsul, qaimə, bölmə..." oninput="runSpotlight()" autocomplete="off" spellcheck="false">
+          <kbd>Esc</kbd>
+        </div>
+        <div class="spotlight-results" id="spotlightResults"></div>
+        <div class="spotlight-footer">
+          <span><kbd>↑↓</kbd> gəz</span>
+          <span><kbd>Enter</kbd> aç</span>
+          <span><kbd>Esc</kbd> bağla</span>
+        </div>
+      </div>
+    </div>
   <main>
     <div id="dash" class="section active">
       <div class="content-header"><h1>Xülasə</h1></div>

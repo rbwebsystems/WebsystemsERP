@@ -2019,29 +2019,6 @@ function updateNotificationsIndicator() {
   badge.classList.toggle("hidden", n0 <= 0);
 }
 
-function openNotifications() {
-  if (!meta?.session) return showLoginOverlay(true);
-  const list = getNotifications();
-  const rows = list
-    .map((x) => {
-      const cls = x.kind === "neg" ? "pill err" : x.kind === "overdue" ? "pill warn" : "pill ok";
-      return `<div class="info-row" style="align-items:flex-start;">
-        <div class="info-label"><span class="${cls}">${escapeHtml(x.kind)}</span></div>
-        <div class="info-value"><strong>${escapeHtml(x.title)}</strong><div class="muted">${escapeHtml(x.text || "")}</div></div>
-      </div>`;
-    })
-    .join("");
-  openModal(`
-    <h2>Bildirişlər</h2>
-    <div class="info-block">
-      ${rows || `<div class="info-row"><div class="info-label">Status</div><div class="info-value">Bildiriş yoxdur</div></div>`}
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
-    </div>
-  `);
-}
-
 function updateHeaderDateTime() {
   const el = byId("headerDateTime");
   if (!el) return;
@@ -9314,6 +9291,14 @@ Object.assign(window, {
   openAuditDetails,
   openGlobalSearch,
   runGlobalSearch,
+  openSpotlight,
+  closeSpotlight,
+  closeSpotlightIfOutside,
+  runSpotlight,
+  spotlightRunIdx,
+  toggleMobileSidebar,
+  closeMobileSidebar,
+  setLang,
   exportCompany,
   importCompany,
   exportCsvCurrent,
@@ -9340,6 +9325,7 @@ function initApp() {
   applySidebarState();
   setupNavTooltips();
   initHeaderCompactSearch();
+  initLang();
   setupLandingPage();
   if (!meta.session) {
     showLoginOverlay(true);
@@ -9481,7 +9467,309 @@ document.addEventListener("visibilitychange", () => {
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
-    openGlobalSearch();
+    openSpotlight();
+    return;
+  }
+  if (e.key === "Escape") closeSpotlight();
+  if (byId("spotlightOverlay")?.classList.contains("open")) {
+    if (e.key === "ArrowDown") { e.preventDefault(); spotlightMove(1); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); spotlightMove(-1); }
+    if (e.key === "Enter")     { e.preventDefault(); spotlightConfirm(); }
   }
 });
+
+// ===================== #17 Bildiriş mərkəzi =====================
+function openNotifications() {
+  if (!meta?.session) return showLoginOverlay(true);
+  const list = getNotifications();
+  const iconMap = { neg: "fa-circle-exclamation", overdue: "fa-clock", stock: "fa-box", info: "fa-circle-info" };
+  const rows = list.map((x) => {
+    const icon = iconMap[x.kind] || "fa-circle-info";
+    const secMap = { neg: "cash", overdue: "overdue", stock: "stock" };
+    const secId = secMap[x.kind];
+    const actionBtn = secId
+      ? `<div class="notif-action"><button onclick="closeMdl();showSec('${secId}',null)">Bölməyə keç →</button></div>`
+      : "";
+    return `<div class="notif-item">
+      <div class="notif-icon ${x.kind}"><i class="fas ${icon}"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">${escapeHtml(x.title)}</div>
+        <div class="notif-text">${escapeHtml(x.text || "")}</div>
+        ${actionBtn}
+      </div>
+    </div>`;
+  }).join("");
+
+  openModal(`
+    <div class="notif-header-bar">
+      <h3>${t("notifications")}</h3>
+      ${list.length ? `<span class="notif-count-badge">${list.length}</span>` : ""}
+    </div>
+    <div class="notif-panel">
+      ${rows || `<div class="notif-empty"><i class="fas fa-check-circle" style="color:var(--accent);font-size:1.5rem;margin-bottom:8px;display:block;"></i>${t("no_notifications")}</div>`}
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">${t("close")}</button>
+    </div>
+  `);
+}
+
+// ===================== #18 Mobil uyğunluq =====================
+function toggleMobileSidebar() {
+  const aside = document.querySelector("aside");
+  const overlay = byId("mobileSidebarOverlay");
+  if (!aside || !overlay) return;
+  aside.classList.toggle("mobile-open");
+  overlay.classList.toggle("open");
+}
+function closeMobileSidebar() {
+  const aside = document.querySelector("aside");
+  const overlay = byId("mobileSidebarOverlay");
+  if (!aside || !overlay) return;
+  aside.classList.remove("mobile-open");
+  overlay.classList.remove("open");
+}
+// close mobile sidebar when nav link is clicked
+document.addEventListener("click", (e) => {
+  if (window.innerWidth <= 768 && e.target.closest(".nav-link")) {
+    closeMobileSidebar();
+  }
+});
+
+// ===================== #19 Spotlight / Command palette =====================
+let _spotlightIdx = -1;
+
+function openSpotlight() {
+  if (!meta?.session) return showLoginOverlay(true);
+  const overlay = byId("spotlightOverlay");
+  if (!overlay) return;
+  overlay.classList.add("open");
+  const input = byId("spotlightInput");
+  if (input) { input.value = ""; input.focus(); }
+  _spotlightIdx = -1;
+  runSpotlight();
+}
+function closeSpotlight() {
+  byId("spotlightOverlay")?.classList.remove("open");
+  _spotlightIdx = -1;
+}
+function closeSpotlightIfOutside(e) {
+  if (e.target === byId("spotlightOverlay")) closeSpotlight();
+}
+
+function runSpotlight() {
+  const q = (byId("spotlightInput")?.value || "").trim().toLowerCase();
+  const el = byId("spotlightResults");
+  if (!el) return;
+  _spotlightIdx = -1;
+
+  const sections = [
+    { id: "dash",      label: t("nav_dash"),      icon: "fa-gauge" },
+    { id: "cust",      label: t("nav_cust"),      icon: "fa-users" },
+    { id: "supp",      label: t("nav_supp"),      icon: "fa-truck" },
+    { id: "prod",      label: t("nav_prod"),      icon: "fa-box-open" },
+    { id: "purch",     label: t("nav_purch"),     icon: "fa-cart-flatbed" },
+    { id: "stock",     label: t("nav_stock"),     icon: "fa-warehouse" },
+    { id: "sales",     label: t("nav_sales"),     icon: "fa-cash-register" },
+    { id: "staff",     label: t("nav_staff"),     icon: "fa-id-badge" },
+    { id: "debts",     label: t("nav_debts"),     icon: "fa-file-invoice-dollar" },
+    { id: "creditor",  label: t("nav_creditor"),  icon: "fa-hand-holding-dollar" },
+    { id: "cash",      label: t("nav_cash"),      icon: "fa-coins" },
+    { id: "reports",   label: t("nav_reports"),   icon: "fa-chart-bar" },
+    { id: "audit",     label: t("nav_audit"),     icon: "fa-shield-halved" },
+  ];
+
+  const groups = [];
+
+  // Quick section navigation
+  const secMatches = !q ? sections.slice(0, 5) : sections.filter((s) => s.label.toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
+  if (secMatches.length) {
+    groups.push({
+      label: t("sections"),
+      items: secMatches.slice(0, 6).map((s) => ({
+        icon: s.icon, name: s.label, sub: "", tag: t("section"),
+        action: () => { closeSpotlight(); showSec(s.id, null); }
+      }))
+    });
+  }
+
+  if (q.length >= 2) {
+    // Customers
+    const custs = (db.cust || []).filter((c) => `${c.sur} ${c.name} ${c.phone || ""} ${c.uid}`.toLowerCase().includes(q)).slice(0, 5);
+    if (custs.length) groups.push({
+      label: t("nav_cust"),
+      items: custs.map((c, i) => ({
+        icon: "fa-user", name: `${c.sur} ${c.name}`, sub: c.phone || "",  tag: t("customer"),
+        action: () => { closeSpotlight(); showSec("cust", null); }
+      }))
+    });
+
+    // Products
+    const prods = (db.prod || []).filter((p) => `${p.name} ${p.code || ""} ${p.uid}`.toLowerCase().includes(q)).slice(0, 5);
+    if (prods.length) groups.push({
+      label: t("nav_prod"),
+      items: prods.map((p) => ({
+        icon: "fa-box-open", name: p.name, sub: `${t("code")}: ${p.code || "-"} • ${money(p.price)} AZN`, tag: t("product"),
+        action: () => { closeSpotlight(); showSec("prod", null); }
+      }))
+    });
+
+    // Sales invoices
+    const sales = (db.sales || []).filter((s) => `${s.invNo || ""} ${s.customerName || ""} ${s.uid}`.toLowerCase().includes(q)).slice(0, 4);
+    if (sales.length) groups.push({
+      label: t("nav_sales"),
+      items: sales.map((s, i) => {
+        const idx = db.sales.indexOf(s);
+        return {
+          icon: "fa-receipt", name: `#${s.invNo || s.uid} — ${s.customerName || ""}`,
+          sub: `${money(s.amount)} AZN • ${fmtDT(s.date)}`, tag: t("sale"),
+          action: () => { closeSpotlight(); showSec("sales", null); setTimeout(() => openSaleInfo && openSaleInfo(idx >= 0 ? idx : 0), 150); }
+        };
+      })
+    });
+
+    // Suppliers
+    const supps = (db.supp || []).filter((s) => `${s.co} ${s.contact || ""}`.toLowerCase().includes(q)).slice(0, 4);
+    if (supps.length) groups.push({
+      label: t("nav_supp"),
+      items: supps.map((s) => ({
+        icon: "fa-truck", name: s.co, sub: s.contact || "", tag: t("supplier"),
+        action: () => { closeSpotlight(); showSec("supp", null); }
+      }))
+    });
+  }
+
+  if (!groups.length) {
+    el.innerHTML = `<div class="spotlight-empty"><i class="fas fa-magnifying-glass" style="font-size:1.4rem;margin-bottom:8px;display:block;"></i>${q ? t("no_results") : t("spotlight_hint")}</div>`;
+    return;
+  }
+
+  el.innerHTML = groups.map((g) => `
+    <div class="spotlight-group">
+      <div class="spotlight-group-label">${escapeHtml(g.label)}</div>
+      ${g.items.map((it, i) => `
+        <div class="spotlight-item" data-action-idx="${_buildSpotlightActions(it.action)}" onclick="spotlightRunIdx(this)">
+          <i class="fas ${it.icon}"></i>
+          <div class="spotlight-item-main">
+            <div class="spotlight-item-name">${escapeHtml(it.name)}</div>
+            ${it.sub ? `<div class="spotlight-item-sub">${escapeHtml(it.sub)}</div>` : ""}
+          </div>
+          <span class="spotlight-item-tag">${escapeHtml(it.tag)}</span>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+const _spotlightActionStore = [];
+function _buildSpotlightActions(fn) {
+  _spotlightActionStore.push(fn);
+  return _spotlightActionStore.length - 1;
+}
+function spotlightRunIdx(el) {
+  const idx = Number(el.getAttribute("data-action-idx"));
+  if (_spotlightActionStore[idx]) _spotlightActionStore[idx]();
+}
+function spotlightMove(dir) {
+  const items = byId("spotlightResults")?.querySelectorAll(".spotlight-item") || [];
+  if (!items.length) return;
+  items[_spotlightIdx]?.classList.remove("active");
+  _spotlightIdx = Math.max(0, Math.min(items.length - 1, _spotlightIdx + dir));
+  items[_spotlightIdx]?.classList.add("active");
+  items[_spotlightIdx]?.scrollIntoView({ block: "nearest" });
+}
+function spotlightConfirm() {
+  const items = byId("spotlightResults")?.querySelectorAll(".spotlight-item") || [];
+  if (_spotlightIdx >= 0 && items[_spotlightIdx]) spotlightRunIdx(items[_spotlightIdx]);
+}
+
+// ===================== #20 Çoxdilli dəstək =====================
+const LANGS = {
+  az: {
+    notifications: "Bildirişlər", no_notifications: "Bildiriş yoxdur", close: "Bağla",
+    sections: "Bölmələr", section: "Bölmə", customer: "Müştəri", product: "Məhsul",
+    sale: "Satış", supplier: "Təchizatçı", no_results: "Nəticə tapılmadı",
+    spotlight_hint: "Axtar: müştəri, məhsul, qaimə, bölmə...", code: "Kod",
+    nav_dash: "Xülasə", nav_cust: "Müştərilər", nav_supp: "Təchizatçılar",
+    nav_prod: "Məhsullar", nav_purch: "Alışlar", nav_stock: "Anbar",
+    nav_sales: "Satışlar", nav_staff: "Əməkdaşlar", nav_debts: "Debitor borclar",
+    nav_creditor: "Kreditor borclar", nav_cash: "Kassa", nav_reports: "Hesabatlar",
+    nav_audit: "Audit log",
+  },
+  ru: {
+    notifications: "Уведомления", no_notifications: "Нет уведомлений", close: "Закрыть",
+    sections: "Разделы", section: "Раздел", customer: "Клиент", product: "Товар",
+    sale: "Продажа", supplier: "Поставщик", no_results: "Не найдено",
+    spotlight_hint: "Поиск: клиент, товар, накладная, раздел...", code: "Код",
+    nav_dash: "Главная", nav_cust: "Клиенты", nav_supp: "Поставщики",
+    nav_prod: "Товары", nav_purch: "Закупки", nav_stock: "Склад",
+    nav_sales: "Продажи", nav_staff: "Сотрудники", nav_debts: "Дебиторы",
+    nav_creditor: "Кредиторы", nav_cash: "Касса", nav_reports: "Отчёты",
+    nav_audit: "Журнал аудита",
+  },
+  en: {
+    notifications: "Notifications", no_notifications: "No notifications", close: "Close",
+    sections: "Sections", section: "Section", customer: "Customer", product: "Product",
+    sale: "Sale", supplier: "Supplier", no_results: "No results found",
+    spotlight_hint: "Search: customer, product, invoice, section...", code: "Code",
+    nav_dash: "Dashboard", nav_cust: "Customers", nav_supp: "Suppliers",
+    nav_prod: "Products", nav_purch: "Purchases", nav_stock: "Warehouse",
+    nav_sales: "Sales", nav_staff: "Staff", nav_debts: "Receivables",
+    nav_creditor: "Payables", nav_cash: "Cash", nav_reports: "Reports",
+    nav_audit: "Audit log",
+  },
+};
+
+let _currentLang = localStorage.getItem("erp_lang") || "az";
+function t(key) {
+  return (LANGS[_currentLang] || LANGS.az)[key] || (LANGS.az[key] || key);
+}
+function setLang(lang) {
+  if (!LANGS[lang]) return;
+  _currentLang = lang;
+  localStorage.setItem("erp_lang", lang);
+  document.querySelectorAll(".lang-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-lang") === lang));
+  applyLangToNav();
+  toast(`${lang.toUpperCase()} dili seçildi`);
+}
+function applyLangToNav() {
+  const map = {
+    "showSec('dash'":   t("nav_dash"),
+    "showSec('cust'":   t("nav_cust"),
+    "showSec('supp'":   t("nav_supp"),
+    "showSec('prod'":   t("nav_prod"),
+    "showSec('purch'":  t("nav_purch"),
+    "showSec('stock'":  t("nav_stock"),
+    "showSec('sales'":  t("nav_sales"),
+    "showSec('staff'":  t("nav_staff"),
+    "showSec('debts'":  t("nav_debts"),
+    "showSec('overdue'":t("nav_debts") + " (vaxtı keçmiş)",
+    "showSec('creditor'":t("nav_creditor"),
+    "showSec('cash'":   t("nav_cash"),
+    "showSec('reports'":t("nav_reports"),
+    "showSec('audit'":  t("nav_audit"),
+  };
+  document.querySelectorAll(".nav-link[onclick]").forEach((el) => {
+    const oc = el.getAttribute("onclick") || "";
+    for (const [key, label] of Object.entries(map)) {
+      if (oc.includes(key)) {
+        const icon = el.querySelector("i");
+        if (icon) {
+          el.childNodes.forEach((n) => { if (n.nodeType === 3) n.textContent = " " + label; });
+        }
+        break;
+      }
+    }
+  });
+  // Update content-header h1 for active section
+  const activeH1 = document.querySelector(".section.active .content-header h1");
+  if (activeH1) {
+    const activeId = document.querySelector(".section.active")?.id;
+    const secKey = `nav_${activeId}`;
+    if (t(secKey) !== secKey) activeH1.textContent = t(secKey);
+  }
+}
+function initLang() {
+  const saved = localStorage.getItem("erp_lang") || "az";
+  _currentLang = saved;
+  document.querySelectorAll(".lang-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-lang") === saved));
+}
 

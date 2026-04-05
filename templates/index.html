@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini ERP</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="app">
+    <header class="app-header">
+        <h1>Mini ERP</h1>
+        <p>Sadə məhsul, müştəri və sifariş idarəetmə paneli</p>
+    </header>
+
+    <main class="app-main">
+        <section class="card">
+            <h2>Məhsullar</h2>
+            <form class="form-grid" method="post" action="/quick-add/product">
+                <input name="name" placeholder="Ad" required>
+                <input name="sku" placeholder="SKU" required>
+                <input name="price" type="number" step="0.01" min="0" placeholder="Qiymət" required>
+                <input name="stock" type="number" min="0" placeholder="Anbar say">
+                <button type="submit">Əlavə et</button>
+            </form>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ad</th>
+                    <th>SKU</th>
+                    <th>Qiymət</th>
+                    <th>Anbar</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in products %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.sku }}</td>
+                        <td>{{ "%.2f"|format(p.price) }}</td>
+                        <td>{{ p.stock }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="empty">Hələ məhsul yoxdur</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Müştərilər</h2>
+            <form class="form-grid" method="post" action="/quick-add/customer">
+                <input name="name" placeholder="Ad Soyad" required>
+                <input name="email" type="email" placeholder="Email" required>
+                <button type="submit">Əlavə et</button>
+            </form>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ad</th>
+                    <th>Email</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for c in customers %}
+                    <tr>
+                        <td>{{ c.id }}</td>
+                        <td>{{ c.name }}</td>
+                        <td>{{ c.email }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="3" class="empty">Hələ müştəri yoxdur</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Sifarişlər</h2>
+            <form class="form-grid" method="post" action="/quick-add/order">
+                <select name="customer_id" required>
+                    <option value="">Müştəri seç</option>
+                    {% for c in customers %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="product_id" required>
+                    <option value="">Məhsul seç</option>
+                    {% for p in products %}
+                        <option value="{{ p.id }}">{{ p.name }} ({{ p.stock }} ədəd)</option>
+                    {% endfor %}
+                </select>
+                <input name="quantity" type="number" min="1" value="1" placeholder="Miqdar" required>
+                <button type="submit">Sifariş yarat</button>
+            </form>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Müştəri</th>
+                    <th>Tarix</th>
+                    <th>Cəm</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for o in orders %}
+                    <tr>
+                        <td>{{ o.id }}</td>
+                        <td>{{ o.customer_name }}</td>
+                        <td>{{ o.created_at }}</td>
+                        <td>{{ "%.2f"|format(o.total or 0) }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="empty">Hələ sifariş yoxdur</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <span>Mini ERP • FastAPI + SQLite</span>
+    </footer>
+</div>
+</body>
+</html>
+
