@@ -339,7 +339,7 @@ function openAccount(idx = null) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yarat"}</button>
-        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+        <button class="btn-cancel" type="button" onclick="accountFormDismiss()">Bağla</button>
       </div>
     </form>
   `);
@@ -360,12 +360,19 @@ function renderAccountsManagerTable() {
         <td>${escapeHtml(a.type)}</td>
         <td>${money(bal)} AZN</td>
         <td class="tbl-actions">
-          ${userCanEdit() ? `<button class="icon-btn edit" onclick="closeMdl();openAccount(${i})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
-          ${userCanDelete("accounts") ? `<button class="icon-btn delete" onclick="closeMdl();delAccount(${i})" title="Sil" ${delDisabled}><i class="fas fa-trash"></i></button>` : ""}
+          ${userCanEdit() ? `<button class="icon-btn edit" onclick="openAccount(${i})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          ${userCanDelete("accounts") ? `<button class="icon-btn delete" onclick="delAccount(${i})" title="Sil" ${delDisabled}><i class="fas fa-trash"></i></button>` : ""}
         </td>
       </tr>`;
     })
     .join("");
+}
+
+/** Hesab formundan çıxış: modal tarixçəsi varsa Geri ilə siyahıya qayıt, yoxsa bağla. */
+function accountFormDismiss() {
+  const h = window.__modalHistory || [];
+  if (h.length) modalBack();
+  else closeMdl();
 }
 
 function openAccountsManager() {
@@ -374,7 +381,7 @@ function openAccountsManager() {
     <h2>Hesablar</h2>
     <div class="modal-footer" style="justify-content:space-between; margin-bottom:10px;">
       <div class="muted">Hesab yarat, redaktə et, sil və qalıqlara bax.</div>
-      ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl();openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>` : ""}
+      ${userCanEdit() ? `<button class="btn-main" type="button" onclick="openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>` : ""}
     </div>
     <div class="table-wrap">
       <table>
@@ -406,8 +413,12 @@ function saveAccount(e, idx) {
     db.accounts[idx] = { uid: keepUid, name, type };
   }
   saveDB();
-  renderAccountsManagerTable();
-  closeMdl();
+  const h = window.__modalHistory || [];
+  if (h.length > 0) modalBack();
+  else {
+    renderAccountsManagerTable();
+    closeMdl();
+  }
 }
 
 function delAccount(idx) {
@@ -2249,6 +2260,10 @@ function modalBack() {
       syncSlideoverContentPad();
       requestAnimationFrame(() => syncSlideoverContentPad());
     });
+  }
+  // Tarixçədəki HTML boş tbody saxlaya bilər — hesablar siyahısını yenilə.
+  if (byId("mdlAccountsTbl")) {
+    requestAnimationFrame(() => renderAccountsManagerTable());
   }
 }
 function closeMdl() {
