@@ -319,13 +319,18 @@ function openAccount(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Hesab redaktə" : "Yeni hesab"}</h2>
     <form onsubmit="saveAccount(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-group span-2"><label>Hesab adı *</label><input id="acc_name" placeholder="məs: Əsas Kassa" value="${escapeHtml(a.name || "")}" required></div>
-        <div class="f-group"><label>Hesab növü</label><select id="acc_type">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Hesab</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Hesab adı *</label><input id="acc_name" placeholder="məs: Əsas Kassa" value="${escapeHtml(a.name || "")}" required></div>
+            <div class="f-group"><label>Hesab növü</label><select id="acc_type">
           <option value="cash" ${a.type === "cash" ? "selected" : ""}>kassa</option>
           <option value="bank" ${a.type === "bank" ? "selected" : ""}>bank</option>
           <option value="card" ${a.type === "card" ? "selected" : ""}>kart</option>
         </select></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yarat"}</button>
@@ -2222,8 +2227,13 @@ function appRequireNote(title = "Qeyd", message = "Qeyd daxil edin") {
       <div class="info-block">
         <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(message)}</div></div>
       </div>
-      <div class="grid-3">
-        <textarea id="appRequireNoteInput" class="span-3" placeholder="Qeyd yazın..." style="min-height:110px;"></textarea>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Qeyd mətni</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Qeyd *</label><textarea id="appRequireNoteInput" placeholder="Qeyd yazın…" style="min-height:110px;"></textarea></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="button" onclick="window.__appRequireNoteResolve && window.__appRequireNoteResolve()">Yadda saxla</button>
@@ -2506,26 +2516,34 @@ function openCust(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Müştəri Redaktə" : "Yeni Müştəri"}</h2>
     <form onsubmit="saveCust(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-section">Şəxsi məlumat</div>
-        <div class="f-group"><label>Soyad *</label><input id="f_sur" value="${escapeHtml(c.sur)}" placeholder="Soyad" required></div>
-        <div class="f-group"><label>Ad *</label><input id="f_name" value="${escapeHtml(c.name)}" placeholder="Ad" required></div>
-        <div class="f-group"><label>Ata adı</label><input id="f_father" value="${escapeHtml(c.father)}" placeholder="Ata adı"></div>
-
-        <div class="f-group"><label>FİN *</label><input id="f_fin" value="${escapeHtml(c.fin)}" placeholder="FİN" maxlength="7" required></div>
-        <div class="f-group span-2"><label>Şəxsiyyət seriya №</label><input id="f_ser" value="${escapeHtml(c.seriaNum)}" placeholder="AA1234567"></div>
-
-        <div class="f-section">Əlaqə</div>
-        <div class="f-group"><label>Mobil 1 *</label><input id="f_ph1" value="${escapeHtml(c.ph1)}" placeholder="+994 xx xxx xx xx" required></div>
-        <div class="f-group"><label>Mobil 2</label><input id="f_ph2" value="${escapeHtml(c.ph2 || "")}" placeholder="+994 xx xxx xx xx"></div>
-        <div class="f-group"><label>Mobil 3</label><input id="f_ph3" value="${escapeHtml(c.ph3 || "")}" placeholder="+994 xx xxx xx xx"></div>
-
-        <div class="f-group span-2"><label>İş yeri</label><input id="f_work" value="${escapeHtml(c.work || "")}" placeholder="Şirkət / müəssisə"></div>
-        <div class="f-group"><label>Ünvan</label><input id="f_addr" value="${escapeHtml(c.addr || "")}" placeholder="Yaşayış ünvanı"></div>
-
-        <div class="f-section">Digər</div>
-        <div class="f-group span-2"><label>Zamin</label><select id="f_zam">${guarantorOptions}</select></div>
-        <div class="f-group"><label>Kredit limit (AZN)</label><input type="number" step="0.01" id="f_climit" value="${escapeAttr(String(c.creditLimit ?? "0"))}" placeholder="0 = limitsiz"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şəxsi məlumat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Soyad *</label><input id="f_sur" value="${escapeHtml(c.sur)}" placeholder="Soyad" required></div>
+            <div class="f-group"><label>Ad *</label><input id="f_name" value="${escapeHtml(c.name)}" placeholder="Ad" required></div>
+            <div class="f-group"><label>Ata adı</label><input id="f_father" value="${escapeHtml(c.father)}" placeholder="Ata adı"></div>
+            <div class="f-group"><label>FİN *</label><input id="f_fin" value="${escapeHtml(c.fin)}" placeholder="FİN" maxlength="7" required></div>
+            <div class="f-group span-full"><label>Şəxsiyyət seriya №</label><input id="f_ser" value="${escapeHtml(c.seriaNum)}" placeholder="AA1234567"></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">Əlaqə</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Mobil 1 *</label><input id="f_ph1" value="${escapeHtml(c.ph1)}" placeholder="+994 xx xxx xx xx" required></div>
+            <div class="f-group"><label>Mobil 2</label><input id="f_ph2" value="${escapeHtml(c.ph2 || "")}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group"><label>Mobil 3</label><input id="f_ph3" value="${escapeHtml(c.ph3 || "")}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group"><label>İş yeri</label><input id="f_work" value="${escapeHtml(c.work || "")}" placeholder="Şirkət / müəssisə"></div>
+            <div class="f-group span-full"><label>Ünvan</label><textarea id="f_addr" rows="3" placeholder="Yaşayış ünvanı">${escapeHtml(c.addr || "")}</textarea></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">Digər</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Zamin</label><select id="f_zam">${guarantorOptions}</select></div>
+            <div class="f-group"><label>Kredit limit (AZN)</label><input type="number" step="0.01" id="f_climit" value="${escapeAttr(String(c.creditLimit ?? "0"))}" placeholder="0 = limitsiz"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda Saxla</button>
@@ -2727,11 +2745,16 @@ function openSupp(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Təchizatçı Redaktə" : "Yeni Təchizatçı"}</h2>
     <form onsubmit="saveSupp(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-group span-3"><label>Şirkət adı *</label><input id="f_co" value="${escapeHtml(s.co)}" placeholder="Şirkət / Fərdi sahibkar" required></div>
-        <div class="f-group span-2"><label>Məsul şəxs</label><input id="f_per" value="${escapeHtml(s.per)}" placeholder="Ad Soyad"></div>
-        <div class="f-group"><label>Mobil</label><input id="f_mob" value="${escapeHtml(s.mob)}" placeholder="+994 xx xxx xx xx"></div>
-        <div class="f-group span-3"><label>VÖEN</label><input id="f_voen" value="${escapeHtml(s.voen)}" placeholder="1234567890"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şirkət məlumatları</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Şirkət adı *</label><input id="f_co" value="${escapeHtml(s.co)}" placeholder="Şirkət / Fərdi sahibkar" required></div>
+            <div class="f-group"><label>Məsul şəxs</label><input id="f_per" value="${escapeHtml(s.per)}" placeholder="Ad Soyad"></div>
+            <div class="f-group"><label>Mobil</label><input id="f_mob" value="${escapeHtml(s.mob)}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group span-full"><label>VÖEN</label><input id="f_voen" value="${escapeHtml(s.voen)}" placeholder="1234567890"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda Saxla</button>
@@ -2769,10 +2792,15 @@ function openProd(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Məhsul Redaktə" : "Yeni Məhsul"}</h2>
     <form onsubmit="saveProd(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-group span-3"><label>Məhsul adı *</label><input id="f_p_name" value="${escapeHtml(p.name)}" placeholder="Məhsul Adı" required></div>
-        <div class="f-group span-2"><label>Kateqoriya</label><input id="f_p_cat" value="${escapeHtml(p.cat || "")}" placeholder="məs: Telefon, Aksessuar"></div>
-        <div class="f-group"><label>Alt kateqoriya</label><input id="f_p_subcat" value="${escapeHtml(p.subCat || "")}" placeholder="məs: iPhone, Samsung"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Məhsul</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Məhsul adı *</label><input id="f_p_name" value="${escapeHtml(p.name)}" placeholder="Məhsul Adı" required></div>
+            <div class="f-group"><label>Kateqoriya</label><input id="f_p_cat" value="${escapeHtml(p.cat || "")}" placeholder="məs: Telefon, Aksessuar"></div>
+            <div class="f-group"><label>Alt kateqoriya</label><input id="f_p_subcat" value="${escapeHtml(p.subCat || "")}" placeholder="məs: iPhone, Samsung"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda Saxla</button>
@@ -3012,11 +3040,16 @@ function openReturnPurch(idx) {
       <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value">${money(p.amount)} AZN</div></div>
     </div>
     <form onsubmit="saveReturnPurch(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="pret_date" value="${nowISODateTimeLocal()}" required></div>
-        <div class="f-group span-2"><label>Geri qaytarılan məbləğ (AZN)</label><input type="number" step="0.01" id="pret_refund" placeholder="0.00 — sıfır ola bilər"></div>
-        <div class="f-group span-3"><label>Hesab *</label><select id="pret_acc" required>${accountOptionsHtml(1)}</select></div>
-        <div class="f-group span-3"><label>Qeyd</label><input id="pret_note" placeholder="İstəyə bağlı"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Qaytarma</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="pret_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Geri qaytarılan məbləğ (AZN)</label><input type="number" step="0.01" id="pret_refund" placeholder="0.00 — sıfır ola bilər"></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="pret_acc" required>${accountOptionsHtml(1)}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="pret_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
@@ -3078,54 +3111,64 @@ function openPurch(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Alış Redaktə" : "Yeni Alış"}</h2>
     <form onsubmit="savePurch(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-section">Əsas məlumat</div>
-        <div class="f-group"><label>Qaimə №</label><input id="f_p_inv" value="${escapeAttr(invVal)}" placeholder="Auto" readonly required></div>
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required></div>
-        <div class="f-group"><label>Əməkdaş</label><select id="f_p_staff">${staffOptions}</select></div>
-
-        <div class="f-group span-2"><label>Təchizatçı *</label><select id="f_p_supp" required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Əsas məlumat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Qaimə №</label><input id="f_p_inv" value="${escapeAttr(invVal)}" placeholder="Auto" readonly required></div>
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required></div>
+            <div class="f-group span-full"><label>Əməkdaş</label><select id="f_p_staff">${staffOptions}</select></div>
+            <div class="f-group"><label>Təchizatçı *</label><select id="f_p_supp" required>
           <option value="">Seçin…</option>
           ${suppOptions}
         </select></div>
-        <div class="f-group"><label>Məhsul</label><select id="f_p_prod" ${idx !== null ? "required" : ""}>
+            <div class="f-group"><label>Məhsul</label><select id="f_p_prod" ${idx !== null ? "required" : ""}>
           <option value="">Seçin…</option>
           ${prodOptions}
         </select></div>
-
-        <div class="span-3 paybox">
+            <div class="paybox span-full">
           <label class="chk">
             <input type="checkbox" id="f_p_bulk" onchange="togglePurchBulk()" ${purchIsBulk(p) ? "checked" : ""}>
             <span>Say ilə alış (IMEI/Seriyasız)</span>
           </label>
         </div>
-
-        <div id="pBulkBox" class="grid-3 span-3" style="display:none;">
-          <div class="f-group span-2"><label>Məhsul kodu</label><input id="f_p_code" value="${escapeHtml(p.code || "")}" placeholder="məs: IP16PM-256"></div>
-          <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_p_qty" value="${escapeAttr(String(p.qty || 1))}" placeholder="Ədəd"></div>
+          </div>
         </div>
 
-        <div id="pSerialBox" class="grid-3 span-3" style="display:none;">
-          <div class="f-group"><label>IMEI 1</label><input id="f_p_i1" value="${escapeHtml(p.imei1 || "")}" placeholder="IMEI 1"></div>
-          <div class="f-group"><label>IMEI 2</label><input id="f_p_i2" value="${escapeHtml(p.imei2 || "")}" placeholder="IMEI 2"></div>
-          <div class="f-group"><label>Seriya №</label><input id="f_p_ser" value="${escapeHtml(p.seria || "")}" placeholder="Seriya №"></div>
+        <div id="pBulkBox" class="form-card" style="display:none;">
+          <div class="form-card-title">Kod və say</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Məhsul kodu</label><input id="f_p_code" value="${escapeHtml(p.code || "")}" placeholder="məs: IP16PM-256"></div>
+            <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_p_qty" value="${escapeAttr(String(p.qty || 1))}" placeholder="Ədəd"></div>
+          </div>
         </div>
 
-        <div class="f-section">Ödəniş</div>
-        <div class="f-group span-2"><label>${isBulk ? "1 ədəd qiymət (AZN)" : "Məbləğ (AZN)"}</label><input type="number" step="0.01" id="f_p_amount" value="${escapeAttr(isBulk ? String(prefUnit) : String(p.amount))}" placeholder="0.00" ${idx !== null ? "required" : ""}></div>
-        <div class="f-group"><label>Ödəniş növü</label><select id="f_p_payType">
+        <div id="pSerialBox" class="form-card" style="display:none;">
+          <div class="form-card-title">IMEI / Seriya</div>
+          <div class="grid-2">
+            <div class="f-group"><label>IMEI 1</label><input id="f_p_i1" value="${escapeHtml(p.imei1 || "")}" placeholder="IMEI 1"></div>
+            <div class="f-group"><label>IMEI 2</label><input id="f_p_i2" value="${escapeHtml(p.imei2 || "")}" placeholder="IMEI 2"></div>
+            <div class="f-group span-full"><label>Seriya №</label><input id="f_p_ser" value="${escapeHtml(p.seria || "")}" placeholder="Seriya №"></div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>${isBulk ? "1 ədəd qiymət (AZN)" : "Məbləğ (AZN)"}</label><input type="number" step="0.01" id="f_p_amount" value="${escapeAttr(isBulk ? String(prefUnit) : String(p.amount))}" placeholder="0.00" ${idx !== null ? "required" : ""}></div>
+            <div class="f-group"><label>Ödəniş növü</label><select id="f_p_payType">
           <option value="nagd" ${p.payType === "nagd" ? "selected" : ""}>nagd</option>
           <option value="kocurme" ${p.payType === "kocurme" ? "selected" : ""}>kocurme</option>
           <option value="kredit" ${p.payType === "kredit" ? "selected" : ""}>kredit</option>
         </select></div>
-
-        <div class="f-group span-2"><label>Ödəniş hesabı</label><select id="f_p_pay_acc">${payAccOptions}</select></div>
-        <div class="f-group"><label>Ödənilən (AZN)</label><input type="number" step="0.01" id="f_p_paid" value="${escapeAttr(p.paidTotal || "0")}" placeholder="0.00"></div>
-        <div id="pTotalHint" class="span-3 muted small" style="display:${isBulk ? "" : "none"}">Cəmi: —</div>
-        ${idx === null ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
-          <button class="btn-secondary" type="button" onclick="addPurchDraftItem()"><i class="fas fa-plus"></i> Əlavə et</button>
+            <div class="f-group"><label>Ödəniş hesabı</label><select id="f_p_pay_acc">${payAccOptions}</select></div>
+            <div class="f-group"><label>Ödənilən (AZN)</label><input type="number" step="0.01" id="f_p_paid" value="${escapeAttr(p.paidTotal || "0")}" placeholder="0.00"></div>
+            <div id="pTotalHint" class="span-full muted small" style="display:${isBulk ? "" : "none"}">Cəmi: —</div>
+          </div>
         </div>
-        <div class="span-3">
+        ${idx === null ? `<div class="form-card">
+          <div class="form-card-title">Alış siyahısı</div>
+          <p style="margin:0 0 12px;"><button class="btn-secondary" type="button" onclick="addPurchDraftItem()"><i class="fas fa-plus"></i> Siyahıya əlavə et</button></p>
           <div class="table-wrap">
             <table>
               <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Kod/IMEI</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
@@ -3762,15 +3805,22 @@ function openStaff(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
     <form onsubmit="saveStaff(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-section">Şəxsi məlumat</div>
-        <div class="f-group span-2"><label>Ad Soyad *</label><input id="f_st_name" value="${escapeHtml(s.name)}" placeholder="Ad Soyad" required></div>
-        <div class="f-group"><label>Telefon</label><input id="f_st_phone" value="${escapeHtml(s.phone || "")}" placeholder="+994 xx xxx xx xx"></div>
-        <div class="f-group span-3"><label>Vəzifə</label><input id="f_st_role" value="${escapeHtml(s.role || "")}" placeholder="Satıcı / Mühasib…"></div>
-
-        <div class="f-section">Maaş</div>
-        <div class="f-group span-2"><label>Standart maaş (AZN)</label><input type="number" step="0.01" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? "0"))}" placeholder="0.00"></div>
-        <div class="f-group"><label>Satışdan faiz (%)</label><input type="number" step="0.01" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? "0"))}" placeholder="0"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şəxsi məlumat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Ad Soyad *</label><input id="f_st_name" value="${escapeHtml(s.name)}" placeholder="Ad Soyad" required></div>
+            <div class="f-group"><label>Telefon</label><input id="f_st_phone" value="${escapeHtml(s.phone || "")}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group span-full"><label>Vəzifə</label><input id="f_st_role" value="${escapeHtml(s.role || "")}" placeholder="Satıcı / Mühasib…"></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">Maaş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Standart maaş (AZN)</label><input type="number" step="0.01" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Satışdan faiz (%)</label><input type="number" step="0.01" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? "0"))}" placeholder="0"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yadda saxla"}</button>
@@ -3809,11 +3859,13 @@ function openStaffPayrollCalc() {
   openModal(`
     <h2>Əməkhaqqı hesabı</h2>
     <p class="muted">Seçilmiş ay üçün hər əməkdaşın baza maaşı + satışdan faiz (bonus) ilə yekun məbləğ.</p>
-    <div class="grid-3" style="margin-bottom:14px;">
-      <label style="display:flex;align-items:center;gap:8px;">
-        <span>Ay:</span>
-        <input type="month" id="payrollCalcMonth" value="${currentMonth}" onchange="updateStaffPayrollTable()" class="select-small">
-      </label>
+    <div class="form-stack" style="margin-bottom:14px;">
+      <div class="form-card">
+        <div class="form-card-title">Filtr</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Ay</label><input type="month" id="payrollCalcMonth" value="${currentMonth}" onchange="updateStaffPayrollTable()" class="select-small"></div>
+        </div>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -3884,11 +3936,13 @@ function openStaffPay() {
   openModal(`
     <h2>Əməkhaqqı ödə</h2>
     <p class="muted">Ay seçin, sonra hər əməkdaş üçün "Rəsmi ödə" və ya "Nəğd ödə" ilə hesab seçib ödəniş edin. Ödəniş Kassa və Hesablar bölməsində əks olunacaq.</p>
-    <div class="grid-3" style="margin-bottom:14px;">
-      <label style="display:flex;align-items:center;gap:8px;">
-        <span>Ay:</span>
-        <input type="month" id="staffPayMonth" value="${currentMonth}" onchange="renderStaffPayList()" class="select-small">
-      </label>
+    <div class="form-stack" style="margin-bottom:14px;">
+      <div class="form-card">
+        <div class="form-card-title">Filtr</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Ay</label><input type="month" id="staffPayMonth" value="${currentMonth}" onchange="renderStaffPayList()" class="select-small"></div>
+        </div>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -3957,11 +4011,16 @@ function openStaffPayConfirm(staffUid, staffName, amount, monthKey, payType) {
   openModal(`
     <h2>Əməkhaqqı: ${escapeHtml(staffName)} — ${payLabel}</h2>
     <form onsubmit="submitStaffPay(event, ${escapeAttr(String(staffUid))}, ${escapeAttr(JSON.stringify(staffName))}, ${amt}, ${escapeAttr(JSON.stringify(monthKey))}, '${payType}')">
-      <div class="grid-3">
-        <div class="f-group span-2"><label>Hesab (ödənişin çıxılacağı) *</label><select id="staff_pay_acc" required>${accOptions}</select></div>
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="staff_pay_date" value="${dateVal}" required></div>
-        <div class="f-group span-2"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" min="0" id="staff_pay_amount" value="${amt}" required></div>
-        <div class="f-group span-3"><label>Qeyd</label><input type="text" id="staff_pay_note" placeholder="məs: 2024-01 əməkhaqqı"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Hesab *</label><select id="staff_pay_acc" required>${accOptions}</select></div>
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="staff_pay_date" value="${dateVal}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" min="0" id="staff_pay_amount" value="${amt}" required></div>
+            <div class="f-group span-full"><label>Qeyd</label><input type="text" id="staff_pay_note" placeholder="məs: 2024-01 əməkhaqqı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Ödəniş et</button>
@@ -4068,51 +4127,59 @@ function openSale(idx = null) {
   openModal(`
     <h2>${isEdit ? "Satış Redaktə" : "Yeni Satış"}</h2>
     <form onsubmit="saveSale(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-section">Əsas məlumat</div>
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
-        <div class="f-group span-2"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Əsas məlumat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
+            <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
           <option value="nagd">nagd</option>
           <option value="post">post</option>
           <option value="kredit">kredit</option>
           <option value="kocurme">kocurme</option>
         </select></div>
-
-        <div class="f-group span-2"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
-        <div class="f-group"><label>Əməkdaş *</label><select id="f_s_staff" required>${staffOptions}</select></div>
-
-        <div class="f-section">Məhsul</div>
-        <div class="f-group span-3"><label>Mal seçin</label><select id="f_s_item" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" ${isEdit ? "required" : ""}>
+            <div class="f-group"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
+            <div class="f-group"><label>Əməkdaş *</label><select id="f_s_staff" required>${staffOptions}</select></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">Məhsul</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Mal seçin</label><select id="f_s_item" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" ${isEdit ? "required" : ""}>
           ${fifoOptions ? `<optgroup label="AUTO FIFO">${fifoOptions}</optgroup>` : ""}
           <optgroup label="Anbar">${itemOptions}</optgroup>
         </select></div>
-
-        <div id="saleQtyBox" class="grid-3 span-3" style="display:none;">
-          <div class="f-group span-3"><label>Say</label><input type="number" step="1" min="1" id="f_s_qty" placeholder="Ədəd sayı"></div>
+            <div id="saleQtyBox" class="span-full" style="display:none;">
+              <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_s_qty" placeholder="Ədəd sayı"></div>
+            </div>
+          </div>
         </div>
-
-        <div class="f-section">Ödəniş</div>
-        <div class="f-group span-2"><label>Ümumi məbləğ (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="recalcCredit()"></div>
-        <div id="sTotalHint" class="span-3 muted small" style="display:none">Cəmi: —</div>
-        <div class="span-3 paybox">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Ümumi məbləğ (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="recalcCredit()"></div>
+            <div id="sTotalHint" class="span-full muted small" style="display:none">Cəmi: —</div>
+            <div class="paybox span-full">
           <label class="chk">
             <input type="checkbox" id="f_pay_now" onchange="togglePayNow()">
             <span>Ödəniş qəbul et</span>
           </label>
         </div>
-
-        <div id="payNowBox" class="grid-3 span-3" style="display:none;">
-          <div class="f-group"><label>Ödəniş məbləği (AZN)</label><input type="number" step="0.01" id="f_s_paid" placeholder="0.00" value="${escapeAttr(current?.lastPayAmount ?? "0")}"></div>
-          <div class="f-group span-2"><label>Ödəniş hesabı</label><select id="f_pay_acc">${accOptions}</select></div>
-          <label class="chk span-3">
-            <input type="checkbox" id="f_pay_initial">
-            <span>İlkin ödənişdir</span>
-          </label>
+            <div id="payNowBox" class="span-full" style="display:none;">
+              <div class="grid-2">
+                <div class="f-group"><label>Ödəniş məbləği (AZN)</label><input type="number" step="0.01" id="f_s_paid" placeholder="0.00" value="${escapeAttr(current?.lastPayAmount ?? "0")}"></div>
+                <div class="f-group"><label>Ödəniş hesabı</label><select id="f_pay_acc">${accOptions}</select></div>
+                <label class="chk span-full">
+                  <input type="checkbox" id="f_pay_initial">
+                  <span>İlkin ödənişdir</span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
-        ${!isEdit ? `<div class="span-3 modal-footer" style="padding:0;justify-content:flex-start;border-top:none;">
-          <button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button>
-        </div>
-        <div class="span-3">
+        ${!isEdit ? `<div class="form-card">
+          <div class="form-card-title">Satış siyahısı</div>
+          <p style="margin:0 0 12px;"><button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button></p>
           <div class="table-wrap">
             <table>
               <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
@@ -4123,12 +4190,13 @@ function openSale(idx = null) {
         </div>` : ""}
       </div>
 
-      <div id="creditBox" class="info-block" style="display:none; margin-top:14px;">
-        <div class="grid-3">
+      <div id="creditBox" class="form-card" style="display:none;">
+        <div class="form-card-title">Kredit şərtləri</div>
+        <div class="grid-2">
           <div class="f-group"><label>Kredit müddəti (ay)</label><input type="number" step="1" min="1" id="f_cr_term" placeholder="məs: 12" oninput="recalcCredit()"></div>
           <div class="f-group"><label>İlkin ödəniş (AZN)</label><input type="number" step="0.01" min="0" id="f_cr_down" placeholder="0.00" oninput="recalcCredit()"></div>
           <div class="f-group"><label>Aylıq ödəniş (auto)</label><input id="f_cr_monthly" placeholder="Hesablanır…" readonly></div>
-          <div class="f-group span-3"><label>Qalıq (ilkindən sonra)</label><input id="f_cr_rem" placeholder="Hesablanır…" readonly></div>
+          <div class="f-group span-full"><label>Qalıq (ilkindən sonra)</label><input id="f_cr_rem" placeholder="Hesablanır…" readonly></div>
         </div>
       </div>
 
@@ -4944,15 +5012,20 @@ function openSalePayment(idx) {
       <div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>
     </div>
     <form onsubmit="saveSalePayment(event, ${idx})">
-      <div class="grid-3">
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="pay_date" value="${nowISODateTimeLocal()}" required></div>
-        <div class="f-group span-2"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="pay_amount" placeholder="0.00" max="${escapeAttr(String(Math.max(0, rem)))}" required></div>
-        <div class="f-group span-3"><label>Hesab *</label><select id="pay_acc" required>${accountOptionsHtml(defAcc)}</select></div>
-        ${isCredit ? `<div class="f-group span-3"><label>Ödəniş növü *</label><select id="pay_kind" required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="pay_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="pay_amount" placeholder="0.00" max="${escapeAttr(String(Math.max(0, rem)))}" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="pay_acc" required>${accountOptionsHtml(defAcc)}</select></div>
+            ${isCredit ? `<div class="f-group span-full"><label>Ödəniş növü *</label><select id="pay_kind" required>
           <option value="monthly" selected>Aylıq ödəniş</option>
           <option value="down">İlkin ödəniş</option>
         </select></div>` : `<input type="hidden" id="pay_kind" value="regular">`}
-        <div class="f-group span-3"><label>Qeyd</label><input id="pay_note" placeholder="İstəyə bağlı"></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="pay_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -5073,11 +5146,16 @@ function openDebtorPayment(customerId) {
       <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
     </div>
     <form onsubmit="saveDebtorPayment(event, '${escapeAttr(customerId)}')">
-      <div class="grid-3">
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="deb_pay_date" value="${nowISODateTimeLocal()}" required></div>
-        <div class="f-group span-2"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="deb_pay_amount" placeholder="0.00" required></div>
-        <div class="f-group span-3"><label>Hesab *</label><select id="deb_pay_acc" required>${accountOptionsHtml(1)}</select></div>
-        <div class="f-group span-3"><label>Qeyd</label><input id="deb_pay_note" placeholder="İstəyə bağlı"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="deb_pay_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="deb_pay_amount" placeholder="0.00" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="deb_pay_acc" required>${accountOptionsHtml(1)}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="deb_pay_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -5157,13 +5235,18 @@ function openEditCashOp(uid) {
   openModal(`
     <h2>Əməliyyatı redaktə et</h2>
     <form onsubmit="saveEditCashOp(event, ${c.uid})">
-      <div class="grid-3">
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="edit_cash_date" value="${(c.date || "").slice(0, 16)}" required></div>
-        <div class="f-group span-2"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="edit_cash_amount" value="${n(c.amount)}" ${canEditAmount ? "" : "readonly"} required></div>
-        ${!canEditAmount ? "<p class=\"span-3 muted small\">Bu əməliyyat növündə məbləğ dəyişdirilə bilməz.</p>" : ""}
-        <div class="f-group span-2"><label>Mənbə / Açıqlama *</label><input type="text" id="edit_cash_source" value="${escapeHtml(c.source || "")}" required></div>
-        <div class="f-group"><label>Hesab *</label><select id="edit_cash_acc" required>${accOptions}</select></div>
-        <div class="f-group span-3"><label>Qeyd</label><input type="text" id="edit_cash_note" value="${escapeHtml(c.note || "")}" placeholder="İstəyə bağlı"></div>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Əməliyyat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="edit_cash_date" value="${(c.date || "").slice(0, 16)}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="edit_cash_amount" value="${n(c.amount)}" ${canEditAmount ? "" : "readonly"} required></div>
+            ${!canEditAmount ? "<p class=\"span-full muted small\">Bu əməliyyat növündə məbləğ dəyişdirilə bilməz.</p>" : ""}
+            <div class="f-group"><label>Mənbə / Açıqlama *</label><input type="text" id="edit_cash_source" value="${escapeHtml(c.source || "")}" required></div>
+            <div class="f-group"><label>Hesab *</label><select id="edit_cash_acc" required>${accOptions}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input type="text" id="edit_cash_note" value="${escapeHtml(c.note || "")}" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -5456,38 +5539,46 @@ function openCashOp() {
   openModal(`
     <h2>Yeni əməliyyat</h2>
     <form onsubmit="saveCashOp(event)">
-      <div class="grid-3">
-        <div class="f-section">Əməliyyat növü</div>
-        <div class="f-group span-3"><label>Əməliyyat növü</label><select id="cash_kind" onchange="toggleCashKind()">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Əməliyyat növü</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Növ</label><select id="cash_kind" onchange="toggleCashKind()">
           <option value="cust_pay">Müştəri ödənişi (Debitor)</option>
           <option value="supp_pay">Təchizatçı ödənişi (Kreditor)</option>
           <option value="transfer">Hesablar arası transfer</option>
           <option value="income">Mədaxil (digər)</option>
           <option value="expense">Xərc</option>
         </select></div>
-
-        <div class="f-section">Məbləğ və tarix</div>
-        <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cash_date" value="${nowISODateTimeLocal()}" required></div>
-        <div class="f-group span-2"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="cash_amount" placeholder="0.00" required></div>
-
-        <div id="cash_acc_box" class="span-3">
-          <div class="f-group span-3"><label>Hesab *</label><select id="cash_acc" required>${accOptions}</select></div>
+          </div>
         </div>
-
-        <div id="cash_transfer_box" class="span-3" style="display:none;">
-          <div class="grid-3">
-            <div class="f-group span-3"><label>Göndərən hesab *</label><select id="cash_from_acc" required>${accOptions}</select></div>
-            <div class="f-group span-3"><label>Alan hesab *</label><select id="cash_to_acc" required>${accOptions}</select></div>
+        <div class="form-card">
+          <div class="form-card-title">Məbləğ və tarix</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cash_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="cash_amount" placeholder="0.00" required></div>
+            <div id="cash_acc_box" class="span-full">
+              <div class="f-group"><label>Hesab *</label><select id="cash_acc" required>${accOptions}</select></div>
+            </div>
           </div>
         </div>
 
-        <div id="cash_customer_box" class="span-3">
-          <div class="grid-3">
-            <div class="f-group span-3"><label>Müştəri *</label><select id="cash_customer" onchange="refreshCustomerInvoices()" required>${custOptions}</select></div>
-            <div class="f-group span-3"><label>Qaimə</label><select id="cash_customer_invoice" onchange="refreshCashPayKind()">
+        <div id="cash_transfer_box" class="form-card" style="display:none;">
+          <div class="form-card-title">Transfer</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Göndərən hesab *</label><select id="cash_from_acc" required>${accOptions}</select></div>
+            <div class="f-group span-full"><label>Alan hesab *</label><select id="cash_to_acc" required>${accOptions}</select></div>
+          </div>
+        </div>
+
+        <div id="cash_customer_box" class="form-card">
+          <div class="form-card-title">Müştəri</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Müştəri *</label><select id="cash_customer" onchange="refreshCustomerInvoices()" required>${custOptions}</select></div>
+            <div class="f-group span-full"><label>Qaimə</label><select id="cash_customer_invoice" onchange="refreshCashPayKind()">
               <option value="">Bütün borclar üzrə bölüşdür</option>
             </select></div>
-            <div id="cash_pay_kind_box" class="f-group span-3" style="display:none;">
+            <div id="cash_pay_kind_box" class="f-group span-full" style="display:none;">
               <label>Ödəniş növü</label>
               <select id="cash_pay_kind">
                 <option value="monthly" selected>Aylıq ödəniş</option>
@@ -5497,31 +5588,34 @@ function openCashOp() {
           </div>
         </div>
 
-        <div id="cash_supplier_box" class="span-3" style="display:none;">
-          <div class="grid-3">
-            <div class="f-group span-3"><label>Təchizatçı</label><select id="cash_supplier" onchange="refreshSupplierInvoices()">${suppOptions}</select></div>
-            <div class="f-group span-3"><label>Qaimə</label><select id="cash_supplier_invoice">
+        <div id="cash_supplier_box" class="form-card" style="display:none;">
+          <div class="form-card-title">Təchizatçı</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Təchizatçı</label><select id="cash_supplier" onchange="refreshSupplierInvoices()">${suppOptions}</select></div>
+            <div class="f-group span-full"><label>Qaimə</label><select id="cash_supplier_invoice">
               <option value="">Qaimə seç (istəyə bağlı)</option>
             </select></div>
           </div>
         </div>
 
-        <div id="cash_income_box" class="span-3" style="display:none;">
-          <div class="grid-3">
-            <div class="f-group span-3"><label>Gəlir mənbəyi</label><select id="cash_income_from" onchange="toggleIncomeSourceBox()">
+        <div id="cash_income_box" class="form-card" style="display:none;">
+          <div class="form-card-title">Mədaxil</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Gəlir mənbəyi</label><select id="cash_income_from" onchange="toggleIncomeSourceBox()">
               <option value="">Seçin…</option>
               ${userCanOwnerIncome() ? '<option value="owner">Təsisçi / Sahibkar</option>' : ""}
               <option value="supplier">Təchizatçı</option>
               <option value="other">Digər</option>
             </select></div>
-            <div class="f-group span-3" id="cash_income_supplier_wrap" style="display:none;"><label>Təchizatçı</label><select id="cash_income_supplier">${suppOptions}</select></div>
-            <div class="f-group span-3"><label>Açıqlama</label><input id="cash_income_source" placeholder="məs: Təchizatçıdan qaytarma"></div>
+            <div class="f-group span-full" id="cash_income_supplier_wrap" style="display:none;"><label>Təchizatçı</label><select id="cash_income_supplier">${suppOptions}</select></div>
+            <div class="f-group span-full"><label>Açıqlama</label><input id="cash_income_source" placeholder="məs: Təchizatçıdan qaytarma"></div>
           </div>
         </div>
 
-        <div id="cash_expense_box" class="span-3" style="display:none;">
-          <div class="grid-3">
-            <div class="f-group span-2">
+        <div id="cash_expense_box" class="form-card" style="display:none;">
+          <div class="form-card-title">Xərc</div>
+          <div class="grid-2">
+            <div class="f-group">
               <label>Kateqoriya</label>
               <div class="select-plus">
                 <select id="exp_cat" onchange="refreshSubcats()">${catOptions}</select>
@@ -5538,7 +5632,12 @@ function openCashOp() {
           </div>
         </div>
 
-        <div class="f-group span-3"><label>Qeyd</label><input id="cash_note" placeholder="İstəyə bağlı"></div>
+        <div class="form-card">
+          <div class="form-card-title">Qeyd</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Əlavə qeyd</label><input id="cash_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -5983,11 +6082,16 @@ function openCreditorPayment(groupIdx) {
       <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
     </div>
     <form onsubmit="saveCreditorPayment(event, ${groupIdx})">
-      <div class="grid-3">
-        <input type="datetime-local" id="cred_pay_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="cred_pay_amount" class="span-2" placeholder="Məbləğ (AZN)" required>
-        <select id="cred_pay_acc" class="span-3" required>${accountOptionsHtml(1)}</select>
-        <input id="cred_pay_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cred_pay_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="cred_pay_amount" placeholder="0.00" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="cred_pay_acc" required>${accountOptionsHtml(1)}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="cred_pay_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -6102,11 +6206,16 @@ function openCreditorInvoicePayment(purchUid) {
       <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
     </div>
     <form onsubmit="saveCreditorInvoicePayment(event, ${p.uid})">
-      <div class="grid-3">
-        <input type="datetime-local" id="inv_pay_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="inv_pay_amount" class="span-2" placeholder="Məbləğ (AZN)" required>
-        <select id="inv_pay_acc" class="span-3" required>${accountOptionsHtml(1)}</select>
-        <input id="inv_pay_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="inv_pay_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="inv_pay_amount" placeholder="0.00" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="inv_pay_acc" required>${accountOptionsHtml(1)}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="inv_pay_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -6184,9 +6293,14 @@ function openCompany(idx = null) {
   openModal(`
     <h2>${idx !== null ? "Şirkət redaktə" : "Yeni şirkət"}</h2>
     <form onsubmit="saveCompany(event, ${idx})">
-      <div class="grid-3">
-        <input id="co_name" class="span-2" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required>
-        <input id="co_id" placeholder="Kod (unikal)" value="${escapeHtml(c.id || "")}" ${idx !== null ? "disabled" : ""} required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şirkət</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
+            <div class="f-group"><label>Kod (unikal) *</label><input id="co_id" placeholder="Kod" value="${escapeHtml(c.id || "")}" ${idx !== null ? "disabled" : ""} required></div>
+          </div>
+        </div>
       </div>
       <div class="info-block">
         <div class="info-row">
@@ -6410,21 +6524,26 @@ function openUser(uidOrNull = null) {
     <h2>${isNew ? "Yeni istifadəçi" : "İstifadəçi redaktə"}</h2>
     <form onsubmit="saveUser(event)">
       <input type="hidden" id="u_uid" value="${escapeAttr(isNew ? "" : String(editingUser.uid))}">
-      <div class="grid-3">
-        <input id="u_full" class="span-3" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" required>
-        <input id="u_name" class="span-2" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required>
-        <select id="u_staff" class="span-3" title="Əməkdaş">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">İstifadəçi</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" required></div>
+            <div class="f-group span-full"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required></div>
+            <div class="f-group span-full"><label>Əməkdaş</label><select id="u_staff" title="Əməkdaş">
           <option value="">— Əməkdaş seçin —</option>
           ${(db.staff || []).map((s) => `<option value="${s.uid}" ${String(editingUser.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("")}
-        </select>
-        <select id="u_role">
+        </select></div>
+            <div class="f-group"><label>Rol</label><select id="u_role">
           <option value="user" ${editingUser.role === "user" ? "selected" : ""}>user</option>
           <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>admin</option>
           <option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>developer</option>
-        </select>
-        <input id="u_pass" class="span-3" placeholder="Şifrə" type="password" value="${escapeHtml(editingUser.pass || "")}" required>
-        <label class="chk span-3"><input type="checkbox" id="u_active" ${editingUser.active ? "checked" : ""}><span>Aktiv</span></label>
-        <div class="span-3 info-block">
+        </select></div>
+            <div class="f-group span-full"><label>Şifrə *</label><input id="u_pass" placeholder="Şifrə" type="password" value="${escapeHtml(editingUser.pass || "")}" required autocomplete="new-password"></div>
+            <label class="chk span-full"><input type="checkbox" id="u_active" ${editingUser.active ? "checked" : ""}><span>Aktiv</span></label>
+          </div>
+        </div>
+        <div class="info-block">
           <div class="info-row">
             <div class="info-label">İcazələr</div>
             <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
@@ -6438,13 +6557,13 @@ function openUser(uidOrNull = null) {
             </div>
           </div>
         </div>
-        <div class="span-3 info-block">
+        <div class="info-block">
           <div class="info-row">
             <div class="info-label">Detallı icazələr</div>
             <div class="info-value">${actionMatrix}</div>
           </div>
         </div>
-        <div class="span-3 info-block">
+        <div class="info-block">
           <div class="info-row"><div class="info-label">Bölmələr</div><div class="info-value" style="display:flex;flex-wrap:wrap;gap:10px;">${checks}</div></div>
         </div>
       </div>
@@ -6632,11 +6751,16 @@ function openReturnSale(idx) {
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
     </div>
     <form onsubmit="saveReturnSale(event, ${idx})">
-      <div class="grid-3">
-        <input type="datetime-local" id="ret_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="ret_refund" class="span-2" placeholder="Geri qaytarılacaq məbləğ (AZN) (istəyə bağlı)" value="0">
-        <select id="ret_acc" class="span-3">${accOptions}</select>
-        <input id="ret_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Qaytarma</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="ret_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Geri qaytarılacaq məbləğ (AZN)</label><input type="number" step="0.01" id="ret_refund" placeholder="0 — istəyə bağlı" value="0"></div>
+            <div class="f-group span-full"><label>Hesab</label><select id="ret_acc">${accOptions}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="ret_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
@@ -6940,8 +7064,13 @@ function openGlobalSearch() {
   if (!meta?.session) return showLoginOverlay(true);
   openModal(`
     <h2>Qlobal axtarış</h2>
-    <div class="grid-3">
-      <input id="gs_q" class="span-3" placeholder="IMEI / Seriya / Kod / Qaimə / Ad ..." oninput="runGlobalSearch()">
+    <div class="form-stack">
+      <div class="form-card">
+        <div class="form-card-title">Axtarış</div>
+        <div class="grid-2">
+          <div class="f-group span-full"><label>Axtarış sözü</label><input id="gs_q" placeholder="IMEI / Seriya / Kod / Qaimə / Ad …" oninput="runGlobalSearch()"></div>
+        </div>
+      </div>
     </div>
     <h3 style="margin:20px 0 10px;font-size:1.1rem;">Məlumat</h3>
     <div id="gs_melumat" class="melumat-content">Axtarış sözü daxil edin.</div>
@@ -7061,8 +7190,13 @@ function recalcAll() {
 function openQrTool() {
   openModal(`
     <h2>QR</h2>
-    <div class="grid-3">
-      <input id="qr_txt" class="span-3" placeholder="Mətn / Kod / IMEI / Seriya...">
+    <div class="form-stack">
+      <div class="form-card">
+        <div class="form-card-title">Məzmun</div>
+        <div class="grid-2">
+          <div class="f-group span-full"><label>Mətn</label><input id="qr_txt" placeholder="Mətn / Kod / IMEI / Seriya…"></div>
+        </div>
+      </div>
     </div>
     <div class="info-block">
       <div class="info-row"><div class="info-label">QR</div><div class="info-value"><canvas id="qr_canvas"></canvas></div></div>
@@ -7081,12 +7215,17 @@ function openSettings() {
   openModal(`
     <h2>Ayarlar</h2>
     <form onsubmit="saveSettings(event)">
-      <div class="grid-3">
-        <input id="set_name" class="span-3" placeholder="Şirkət adı" value="${escapeHtml(s.companyName || "")}" required>
-        <input id="set_addr" class="span-3" placeholder="Ünvan" value="${escapeHtml(s.companyAddress || "")}">
-        <input id="set_phone" class="span-2" placeholder="Telefon" value="${escapeHtml(s.companyPhone || "")}">
-        <input id="set_curr" placeholder="Valyuta (AZN)" value="${escapeHtml(s.currency || "AZN")}">
-        <input id="set_sym" class="span-2" placeholder="Simvol (₼)" value="${escapeHtml(s.currencySymbol || "₼")}">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şirkət</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Şirkət adı *</label><input id="set_name" placeholder="Şirkət adı" value="${escapeHtml(s.companyName || "")}" required></div>
+            <div class="f-group span-full"><label>Ünvan</label><input id="set_addr" placeholder="Ünvan" value="${escapeHtml(s.companyAddress || "")}"></div>
+            <div class="f-group"><label>Telefon</label><input id="set_phone" placeholder="Telefon" value="${escapeHtml(s.companyPhone || "")}"></div>
+            <div class="f-group"><label>Valyuta</label><input id="set_curr" placeholder="AZN" value="${escapeHtml(s.currency || "AZN")}"></div>
+            <div class="f-group span-full"><label>Valyuta simvolu</label><input id="set_sym" placeholder="₼" value="${escapeHtml(s.currencySymbol || "₼")}"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -7152,11 +7291,16 @@ function openReturnAdvancePay(saleUid) {
       <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value"><strong>${money(left)} AZN</strong></div></div>
     </div>
     <form onsubmit="saveReturnAdvancePay(event, ${s.uid})">
-      <div class="grid-3">
-        <input type="datetime-local" id="ra_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="ra_amount" class="span-2" value="${escapeAttr(String(left))}" placeholder="Məbləğ (AZN)" required>
-        <select id="ra_acc" class="span-3" required>${accOptions}</select>
-        <input id="ra_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Ödəniş qaytarılması</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="ra_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="ra_amount" value="${escapeAttr(String(left))}" placeholder="0.00" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="ra_acc" required>${accOptions}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="ra_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
@@ -7289,11 +7433,16 @@ function openCashReconcile() {
       <div class="info-row"><div class="info-label">Sistem qalığı</div><div class="info-value"><strong>${money(sys)} AZN</strong></div></div>
     </div>
     <form onsubmit="saveCashReconcile(event)">
-      <div class="grid-3">
-        <input type="datetime-local" id="cc_date" value="${nowISODateTimeLocal()}" required>
-        <input type="number" step="0.01" id="cc_physical" class="span-2" placeholder="Faktiki sayım (AZN)" required>
-        <select id="cc_acc" class="span-3" required>${accountOptionsHtml(Number(accId))}</select>
-        <input id="cc_note" class="span-3" placeholder="Qeyd (istəyə bağlı)">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Sayım</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cc_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Faktiki sayım (AZN) *</label><input type="number" step="0.01" id="cc_physical" placeholder="0.00" required></div>
+            <div class="f-group span-full"><label>Hesab *</label><select id="cc_acc" required>${accountOptionsHtml(Number(accId))}</select></div>
+            <div class="f-group span-full"><label>Qeyd</label><input id="cc_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
       </div>
       <div class="info-block">
         <div class="info-row"><div class="info-label">Fərq (faktiki − sistem)</div><div class="info-value" id="cc_diff">0.00</div></div>
@@ -7393,9 +7542,14 @@ function openDayClose() {
   openModal(`
     <h2>Gün sonu</h2>
     <p class="muted" style="margin:0 0 12px 0;">Bu əməliyyat “snapshot” saxlayır (balansların şəkli). Kassa sayımındakı kimi düzəliş yazmır.</p>
-    <div class="grid-3">
-      <input type="datetime-local" id="dc_ts" value="${ts}" required>
-      <input id="dc_note" class="span-2" placeholder="Qeyd (istəyə bağlı)">
+    <div class="form-stack">
+      <div class="form-card">
+        <div class="form-card-title">Gün sonu</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Tarix / vaxt *</label><input type="datetime-local" id="dc_ts" value="${ts}" required></div>
+          <div class="f-group"><label>Qeyd</label><input id="dc_note" placeholder="İstəyə bağlı"></div>
+        </div>
+      </div>
     </div>
     <div class="info-block" style="margin-top:12px;">
       <div class="info-row"><div class="info-label">Ümumi balans</div><div class="info-value"><strong>${money(total)} AZN</strong></div></div>
@@ -7599,8 +7753,13 @@ function openOverdueInfo(saleUid) {
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeyd əlavə et</h3>
     <form onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}', '${escapeAttr(sale.uid)}')">
-      <div class="grid-3">
-        <input id="ov_note" class="span-3" placeholder="Qeyd..." required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Qeyd</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Mətn *</label><input id="ov_note" placeholder="Qeyd yazın…" required></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
@@ -7821,9 +7980,14 @@ function openChangePassword() {
   openModal(`
     <h2>Şifrəni dəyiş</h2>
     <form onsubmit="changePassword(event)">
-      <div class="grid-3">
-        <input id="pw_old" class="span-3" placeholder="Köhnə şifrə" type="password" required>
-        <input id="pw_new" class="span-3" placeholder="Yeni şifrə" type="password" required>
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Şifrə</div>
+          <div class="grid-2">
+            <div class="f-group span-full"><label>Köhnə şifrə *</label><input id="pw_old" placeholder="••••••••" type="password" required autocomplete="current-password"></div>
+            <div class="f-group span-full"><label>Yeni şifrə *</label><input id="pw_new" placeholder="••••••••" type="password" required autocomplete="new-password"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yenilə</button>
