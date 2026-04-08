@@ -1,4 +1,5 @@
 // Bakfon ERP - LocalStorage və ya Firestore (realtime)
+document.title = "RBSoft ERP";
 
 const BASE_STORAGE_KEY = "bakfon_erp_v1";
 const META_KEY = "bakfon_erp_meta_v1";
