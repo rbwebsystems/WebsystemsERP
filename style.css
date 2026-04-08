@@ -53,7 +53,7 @@ body.theme-dark{
   --table-head-border:#1e3d52;
   --table-head-cell-border:rgba(157,201,220,.22);
 }
-body.theme-dark .header-logo{background:#111827;border-color:#374151;}
+body.theme-dark .header-logo{background:#111827;border-right-color:#374151;}
 body.theme-dark .card,
 body.theme-dark .modal-body{background:#1e2d3d;border-color:#2d4a5e;}
 body.theme-dark .modal-footer{background:#374151;border-top-color:#4b5563;}
@@ -572,7 +572,19 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
   border-bottom:1px solid #e8ecf0;
   box-shadow:0 1px 6px rgba(0,0,0,.06);
 }
-.header-logo{display:none;}
+.header-logo{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  width:172px;
+  border-right:1px solid #e8ecf0;
+  padding:0 12px;
+  box-sizing:border-box;
+}
+@media (min-width:769px){
+  .header-logo{display:flex;}
+}
 .header-rest{
   flex:1;
   min-width:0;
@@ -1528,15 +1540,24 @@ body.landing-login-open .lp-aurora{
   padding:0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:space-between;
   gap:16px;
   box-sizing:border-box;
 }
+.lp-nav-brand{
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+  text-decoration:none;
+  color:inherit;
+}
+.lp-nav-brand-logo{margin:0;}
+.lp-nav-brand .rbsoft-brand-title{font-size:1.15rem;}
+.lp-nav-brand .rbsoft-digital--compact{box-shadow:none;}
 .lp-nav-desktop{
   display:none;
   align-items:center;
   gap:3rem;
-  margin-left:auto;
 }
 @media (min-width:768px){
   .lp-nav-desktop{display:flex;}
@@ -1648,10 +1669,6 @@ body.landing-login-open .lp-aurora{
 }
 @media (min-width:1200px){
   .public-landing.lp-home{overflow-x:visible;}
-}
-.lp-hero-brand{margin-bottom:2rem;text-align:center;}
-@media (min-width:768px){
-  .lp-hero-brand{text-align:left;}
 }
 .lp-hero-title{
   font-size:clamp(2.5rem,6vw,4.5rem);
@@ -5009,7 +5026,7 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   }
   .section.active{padding:0 !important;min-width:0;}
 
-  .header-logo{width:0 !important;overflow:hidden;padding:0;border:none;}
+  .header-logo{display:none !important;}
   #desktopSidebarBtn{display:none !important;}
   .mobile-menu-btn{display:flex !important;align-items:center;justify-content:center;}
   .header-datetime,.last-saved,.realtime-indicator{display:none !important;}
