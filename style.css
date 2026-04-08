@@ -5290,3 +5290,48 @@ body.theme-dark .header-search-wrap:hover{border-color:#3d5066;}
 body.theme-dark .header-search-input{color:#94a3b8;}
 body.theme-dark .header-search-hint{background:#2d3748;color:#64748b;}
 
+
+/* ===== Reports: menu cards ===== */
+.rep-menu-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:18px;
+  padding:24px 0;
+}
+.rep-menu-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  padding:36px 20px;
+  background:#fff;
+  border:2px solid #e2e8f0;
+  border-radius:14px;
+  cursor:pointer;
+  transition:border-color .18s,box-shadow .18s,transform .15s;
+  font-size:.95rem;
+  font-weight:600;
+  color:#1a4754;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.rep-menu-card i{
+  font-size:2.2rem;
+  color:#1a9bc0;
+}
+.rep-menu-card:hover{
+  border-color:#1a9bc0;
+  box-shadow:0 4px 16px rgba(26,155,192,.15);
+  transform:translateY(-2px);
+}
+.rep-menu-card:active{
+  transform:translateY(0);
+}
+body.theme-dark .rep-menu-card{
+  background:#1e2d3d;
+  border-color:#2d3748;
+  color:#e2e8f0;
+}
+body.theme-dark .rep-menu-card:hover{
+  border-color:#1a9bc0;
+}

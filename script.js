@@ -774,6 +774,171 @@ function onDebtTypeChange(sel) {
   showDebtSub(sectionId, value);
 }
 
+// ========= Reports: tab navigation & rendering =========
+function setRepView(view) {
+  const menu = byId("repMenu");
+  const content = byId("repContent");
+  if (!view) {
+    if (menu) menu.style.display = "";
+    if (content) content.style.display = "none";
+    ["sales", "purch", "staff", "expense"].forEach((v) => {
+      const s = byId(`repSec-${v}`); if (s) s.style.display = "none";
+    });
+    window.__repView = "";
+    return;
+  }
+  window.__repView = view;
+  if (menu) menu.style.display = "none";
+  if (content) content.style.display = "";
+  const titles = { sales: "Satış hesabatı", purch: "Alış hesabatı", staff: "Əmək haqqı hesabatı", expense: "Xərc hesabatı" };
+  const titleEl = byId("repContentTitle");
+  if (titleEl) titleEl.textContent = titles[view] || view;
+  ["sales", "purch", "staff", "expense"].forEach((v) => {
+    const s = byId(`repSec-${v}`); if (s) s.style.display = v === view ? "" : "none";
+  });
+  renderReports();
+}
+
+function syncRepFilters() {
+  const m = byId("repMonthVis")?.value || "";
+  const f = byId("repFromVis")?.value || "";
+  const t = byId("repToVis")?.value || "";
+  if (byId("repMonth")) byId("repMonth").value = m;
+  if (byId("repFrom")) byId("repFrom").value = f;
+  if (byId("repTo")) byId("repTo").value = t;
+  renderReports();
+}
+
+function renderReports() {
+  const view = window.__repView || "";
+  if (!view) return;
+  const repMonth = byId("repMonthVis")?.value || byId("repMonth")?.value || "";
+  const useMonth = !!repMonth;
+  const inRange = (d) => useMonth ? inMonth(d, repMonth) : inDateRange(d, "repFromVis", "repToVis");
+
+  if (view === "sales") {
+    const salesInRange = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => inRange(s.date));
+    const salesTotal = salesInRange.reduce((a, s) => a + n(s.amount), 0);
+    const salesPaid = salesInRange.reduce((a, s) => a + n(s.paidTotal || 0), 0);
+    const cogs = salesInRange.reduce((a, s) => {
+      if (s.bulkPurchUid) {
+        const p = (db.purch || []).find((x) => String(x.uid) === String(s.bulkPurchUid));
+        const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
+        return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
+      }
+      const p = (db.purch || []).find((x) => itemKeyFromPurch(x) === s.itemKey);
+      return a + (p ? n(p.amount) : 0);
+    }, 0);
+    const pl = salesTotal - cogs;
+    setText("rv-salesTotal", money(salesTotal) + " AZN");
+    setText("rv-salesPaid", money(salesPaid) + " AZN");
+    setText("rv-salesCogs", money(cogs) + " AZN");
+    setText("rv-salesPL", money(pl) + " AZN");
+    setText("rv-salesCount", String(salesInRange.length));
+    const saleTypeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
+    const body = byId("tblRepSales");
+    if (body) {
+      body.innerHTML = salesInRange.slice().sort((a, b) => (a.date > b.date ? -1 : 1)).map((s, i) => {
+        const idx = (db.sales || []).findIndex((x) => x.uid === s.uid);
+        const inv = s.invNo || invFallback("sales", s.uid);
+        const rem = saleRemaining(s);
+        const typeLabel = saleTypeMap[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase();
+        return `<tr>
+          <td>${i + 1}</td><td>${fmtDT(s.date)}</td>
+          <td>${escapeHtml(inv)}</td><td>${escapeHtml(s.customerName)}</td>
+          <td>${escapeHtml(s.productName)}</td><td>${escapeHtml(typeLabel)}</td>
+          <td>${money(s.amount)} AZN</td><td>${money(n(s.paidTotal || 0))} AZN</td>
+          <td>${money(rem)} AZN</td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
+        </tr>`;
+      }).join("") || emptyRow(10);
+    }
+  } else if (view === "purch") {
+    const purchInRange = (db.purch || []).filter((p) => inRange(p.date));
+    const purchTotal = purchInRange.reduce((a, p) => a + n(p.amount), 0);
+    const purchPaid = purchInRange.reduce((a, p) => a + n(p.paidTotal || 0), 0);
+    const purchRem = purchInRange.reduce((a, p) => a + purchRemaining(p), 0);
+    setText("rv-purchTotal", money(purchTotal) + " AZN");
+    setText("rv-purchPaid", money(purchPaid) + " AZN");
+    setText("rv-purchRem", money(purchRem) + " AZN");
+    setText("rv-purchCount", String(purchInRange.length));
+    const body = byId("tblRepPurch");
+    if (body) {
+      body.innerHTML = purchInRange.slice().sort((a, b) => (a.date > b.date ? -1 : 1)).map((p, i) => {
+        const inv = p.invNo || invFallback("purch", p.uid);
+        const rem = purchRemaining(p);
+        const purchIdx = (db.purch || []).findIndex((x) => x.uid === p.uid);
+        return `<tr>
+          <td>${i + 1}</td><td>${fmtDT(p.date)}</td>
+          <td>${escapeHtml(inv)}</td><td>${escapeHtml(p.supp || "-")}</td>
+          <td>${escapeHtml(p.name)}</td><td>${n(p.qty || 1)}</td>
+          <td>${money(p.amount)} AZN</td><td>${money(n(p.paidTotal || 0))} AZN</td>
+          <td>${money(rem)} AZN</td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("purch","purchInfo",purchIdx)}" onclick="openPurchInfo(${purchIdx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
+        </tr>`;
+      }).join("") || emptyRow(10);
+    }
+  } else if (view === "staff") {
+    const salesInRange = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => inRange(s.date));
+    const byEmp = new Map();
+    for (const s of salesInRange) {
+      const empId = String(s.employeeId || ""); if (!empId) continue;
+      if (!byEmp.has(empId)) byEmp.set(empId, { count: 0, sum: 0 });
+      byEmp.get(empId).count++;
+      byEmp.get(empId).sum += n(s.amount);
+    }
+    let totalBase = 0, totalComm = 0, totalSales = 0;
+    const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+    const body = byId("tblRepStaff");
+    if (body) {
+      body.innerHTML = staffSorted.map((st, i) => {
+        const o = byEmp.get(String(st.uid)) || { count: 0, sum: 0 };
+        const pct = Math.max(0, n(st.commPct || 0));
+        const base = Math.max(0, n(st.baseSalary || 0));
+        const comm = o.sum * (pct / 100);
+        const total = base + comm;
+        totalBase += base; totalComm += comm; totalSales += o.sum;
+        return `<tr>
+          <td>${i + 1}</td><td>${escapeHtml(st.name)}</td>
+          <td>${o.count}</td><td>${money(o.sum)} AZN</td>
+          <td>${money(pct)}%</td><td>${money(comm)} AZN</td>
+          <td>${money(base)} AZN</td><td><strong>${money(total)} AZN</strong></td>
+          <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(String(st.uid))}')" title="Satış siyahısı"><i class="fas fa-list"></i> Bax</button></td>
+        </tr>`;
+      }).join("") || emptyRow(9);
+    }
+    setText("rv-staffTotal", money(totalBase + totalComm) + " AZN");
+    setText("rv-staffBase", money(totalBase) + " AZN");
+    setText("rv-staffComm", money(totalComm) + " AZN");
+    setText("rv-staffSales", money(totalSales) + " AZN");
+  } else if (view === "expense") {
+    const expRows = (db.cash || [])
+      .filter((c) => c.type === "out" && c.link?.kind === "expense")
+      .filter((c) => inRange(c.date))
+      .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const expTotal = expRows.reduce((a, c) => a + n(c.amount), 0);
+    setText("rv-expTotal", money(expTotal) + " AZN");
+    setText("rv-expCount", String(expRows.length));
+    const body = byId("tblRepExp");
+    if (body) {
+      body.innerHTML = expRows.map((c, i) => {
+        const accName = (db.accounts || []).find((a) => a.id === Number(c.accountId || 1))?.name || "Kassa";
+        return `<tr>
+          <td>${i + 1}</td><td>${fmtDT(c.date)}</td>
+          <td>${escapeHtml(c.source || "-")}</td>
+          <td class="amt-out">-${money(c.amount)} AZN</td>
+          <td>${escapeHtml(accName)}</td>
+          <td>${escapeHtml(c.note || "")}</td>
+        </tr>`;
+      }).join("") || emptyRow(6);
+    }
+  }
+}
+
+function setText(id, val) {
+  const el = byId(id); if (el) el.innerText = val;
+}
+
 function seedDevTestData() {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   if (!isTestCompany()) return alert("Bu funksiya yalnız test şirkətində aktivdir.");
@@ -9813,6 +9978,8 @@ function renderAll() {
   renderProfile();
 
   // reports (P&L)
+  renderReports();
+
   const repSalesEl = byId("repSales");
   if (repSalesEl) {
     const repMonth = byId("repMonth")?.value || "";
@@ -10405,6 +10572,9 @@ Object.assign(window, {
   openDebtorInfo,
   openDebtorPayment,
   debPayInvChanged,
+  setRepView,
+  syncRepFilters,
+  renderReports,
   saveDebtorPayment,
   syncAutoUserIdentity,
   toggleUserManualMode,

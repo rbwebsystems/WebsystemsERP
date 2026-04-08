@@ -763,52 +763,131 @@
     </div>
 
     <div id="reports" class="section">
-      <div class="content-header">
-        <h1 data-i18n="nav_reports">Hesabatlar</h1>
-        <div class="header-actions">
-          <input type="month" id="repMonth" class="select-small" onchange="renderAll()">
-          <select id="repView" class="select-small" onchange="renderAll()">
-            <option value="summary" selected>Xülasə</option>
-            <option value="monthly">Aylar üzrə</option>
-            <option value="sales">Satışlar</option>
-            <option value="purch">Alışlar</option>
-            <option value="expense">Xərclər</option>
-            <option value="staff">Əməkdaş</option>
-          </select>
-          <div class="date-range">
-            <input type="date" id="repFrom" onchange="renderAll()">
-            <span>—</span>
-            <input type="date" id="repTo" onchange="renderAll()">
-          </div>
+      <!-- Hidden inputs kept for JS compatibility -->
+      <select id="repView" style="display:none" onchange="renderAll()">
+        <option value="" selected></option>
+        <option value="sales">Satışlar</option>
+        <option value="purch">Alışlar</option>
+        <option value="staff">Əməkdaş</option>
+        <option value="expense">Xərclər</option>
+      </select>
+      <input type="month" id="repMonth" style="display:none" onchange="renderAll()">
+      <input type="date" id="repFrom" style="display:none" onchange="renderAll()">
+      <input type="date" id="repTo" style="display:none" onchange="renderAll()">
+      <!-- Hidden stat IDs kept for JS compat -->
+      <span id="repSales" style="display:none"></span>
+      <span id="repSalesPaid" style="display:none"></span>
+      <span id="repCogs" style="display:none"></span>
+      <span id="repExp" style="display:none"></span>
+      <span id="repPayroll" style="display:none"></span>
+      <span id="repPL" style="display:none"></span>
+      <span id="repPLCash" style="display:none"></span>
+      <thead id="repListHead" style="display:none"></thead>
+      <tbody id="tblRepList" style="display:none"></tbody>
+      <tbody id="tblPayroll" style="display:none"></tbody>
+
+      <!-- Report menu (shown when no sub-view active) -->
+      <div id="repMenu">
+        <div class="content-header">
+          <h1>Hesabatlar</h1>
         </div>
-      </div>
-      <div class="grid-5">
-        <div class="card stat-card"><small data-i18n="rep_stat_sales">Satış</small><h2 id="repSales">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_sales_paid">Satış (ödənilən)</small><h2 id="repSalesPaid">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_purch">Alış</small><h2 id="repCogs">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_exp">Xərc</small><h2 id="repExp">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_payroll">Əməkhaqqı (ay üzrə)</small><h2 id="repPayroll">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_pl">Mənfəət/Zərər</small><h2 id="repPL">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="rep_stat_pl_cash">Nağdlaşan mənfəət</small><h2 id="repPLCash">0.00</h2></div>
+        <div class="rep-menu-grid">
+          <button type="button" class="rep-menu-card" onclick="setRepView('sales')">
+            <i class="fas fa-chart-line"></i>
+            <span>Satış hesabatı</span>
+          </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('purch')">
+            <i class="fas fa-truck"></i>
+            <span>Alış hesabatı</span>
+          </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('staff')">
+            <i class="fas fa-users"></i>
+            <span>Əmək haqqı hesabatı</span>
+          </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('expense')">
+            <i class="fas fa-receipt"></i>
+            <span>Xərc hesabatı</span>
+          </button>
+        </div>
       </div>
 
-      <div class="card" style="margin-top:18px;">
-        <div class="content-header" style="margin-bottom:10px;">
-          <h1 style="font-size:1.1rem;" data-i18n="rep_hdr_monthly">Ay üzrə detallı</h1>
+      <!-- Sub-report content (shown when a view is active) -->
+      <div id="repContent" style="display:none">
+        <div class="content-header">
+          <h1 id="repContentTitle">Hesabat</h1>
+          <div class="header-actions">
+            <input type="month" id="repMonthVis" class="select-small" onchange="syncRepFilters()" placeholder="Ay">
+            <div class="date-range">
+              <input type="date" id="repFromVis" onchange="syncRepFilters()">
+              <span>—</span>
+              <input type="date" id="repToVis" onchange="syncRepFilters()">
+            </div>
+            <button type="button" class="btn-cancel" onclick="setRepView('')" style="white-space:nowrap"><i class="fas fa-arrow-left"></i> Geri</button>
+          </div>
         </div>
-        <table>
-          <thead id="repListHead"></thead>
-          <tbody id="tblRepList"></tbody>
-        </table>
-      </div>
-      <div class="card" style="margin-top:18px;">
-        <div class="content-header" style="margin-bottom:10px;">
-          <h1 style="font-size:1.1rem;" data-i18n="rep_hdr_staff">Əməkdaş hesabatı / Əməkhaqqı</h1>
+
+        <!-- Satış hesabatı -->
+        <div id="repSec-sales" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-salesTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-salesPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Maya dəyəri</small><h2 id="rv-salesCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="rv-salesPL">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-salesCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Qaimə</th><th>Müştəri</th><th>Məhsul</th><th>Növ</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Info</th></tr></thead>
+              <tbody id="tblRepSales"></tbody>
+            </table>
+          </div>
         </div>
-        <table>
-          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_sale_count">Satış sayı</th><th data-i18n="th_sale_sum">Satış cəmi</th><th data-i18n="rep_col_pct">Faiz</th><th data-i18n="th_comm">Komissiya</th><th data-i18n="th_base_sal">Baza maaş</th><th data-i18n="th_total">Yekun</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
-          <tbody id="tblPayroll"></tbody>
-        </table>
+
+        <!-- Alış hesabatı -->
+        <div id="repSec-purch" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Alış cəmi</small><h2 id="rv-purchTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-purchPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-purchRem">0.00</h2></div>
+            <div class="card stat-card"><small>Alış sayı</small><h2 id="rv-purchCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Qaimə</th><th>Təchizatçı</th><th>Məhsul</th><th>Miqdar</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Info</th></tr></thead>
+              <tbody id="tblRepPurch"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Əmək haqqı hesabatı -->
+        <div id="repSec-staff" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Cəmi əməkhaqqı</small><h2 id="rv-staffTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Baza maaş cəmi</small><h2 id="rv-staffBase">0.00</h2></div>
+            <div class="card stat-card"><small>Komissiya cəmi</small><h2 id="rv-staffComm">0.00</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-staffSales">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Əməkdaş</th><th>Satış sayı</th><th>Satış cəmi</th><th>Faiz (%)</th><th>Komissiya</th><th>Baza maaş</th><th>Yekun</th><th>Əməliyyat</th></tr></thead>
+              <tbody id="tblRepStaff"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Xərc hesabatı -->
+        <div id="repSec-expense" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Xərc cəmi</small><h2 id="rv-expTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc sayı</small><h2 id="rv-expCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Mənbə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
+              <tbody id="tblRepExp"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
