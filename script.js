@@ -3571,7 +3571,8 @@ function openPurch(idx = null) {
 
   const suppOptions = db.supp.map((s) => `<option value="${escapeAttr(s.co)}" ${p.supp === s.co ? "selected" : ""}>${escapeHtml(s.co)}</option>`).join("");
   const prodOptions = db.prod.map((x) => `<option value="${escapeAttr(x.name)}" ${p.name === x.name ? "selected" : ""}>${escapeHtml(x.name)}</option>`).join("");
-  const staffOptions = `<option value="">— Əməkdaş seçin —</option>` + (db.staff || []).map((s) => `<option value="${s.uid}" ${String(p.employeeId || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " – " + escapeHtml(s.role) : ""}</option>`).join("");
+  const defaultPurchStaffId = String(idx !== null ? (p.employeeId || "") : currentUserStaffId());
+  const staffOptions = `<option value="">— Əməkdaş seçin —</option>` + (db.staff || []).map((s) => `<option value="${s.uid}" ${defaultPurchStaffId === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " – " + escapeHtml(s.role) : ""}</option>`).join("");
   ensureAccounts();
   const payAccOptions = accountOptionsHtml(Number(p.paymentAccountId || 1));
   const invVal = idx !== null ? (p.invNo || invFallback("purch", p.uid)) : previewInvNo("purch");
@@ -3588,7 +3589,7 @@ function openPurch(idx = null) {
           <div class="grid-2">
             <div class="f-group"><label>Qaimə №</label><input id="f_p_inv" value="${escapeAttr(invVal)}" placeholder="Auto" readonly required></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required></div>
-            <div class="f-group"><label>Əməkdaş</label><select id="f_p_staff">${staffOptions}</select></div>
+            <div class="f-group"><label>Əməkdaş</label><select id="f_p_staff" ${canChangeSaleStaff() ? "" : "disabled"}>${staffOptions}</select></div>
             <div class="f-group"><label>Təchizatçı *</label><select id="f_p_supp" required>
           <option value="">Seçin…</option>
           ${suppOptions}
@@ -3761,7 +3762,7 @@ async function savePurch(e, idx) {
     if (!supp) return alert("Təchizatçı seçin.");
     const invNo = nextInvNo("purch");
     const date = val("f_p_date");
-    const employeeId = (val("f_p_staff") || "").trim() || undefined;
+    const employeeId = (canChangeSaleStaff() ? (val("f_p_staff") || "").trim() : currentUserStaffId()) || undefined;
     const actorName = currentActorName();
     const payType = val("f_p_payType");
     const paidTotal = Math.max(0, n(val("f_p_paid")));
@@ -3876,7 +3877,7 @@ async function savePurch(e, idx) {
       }
     }
   }
-  const employeeId = (val("f_p_staff") || "").trim() || undefined;
+  const employeeId = (canChangeSaleStaff() ? (val("f_p_staff") || "").trim() : currentUserStaffId()) || undefined;
   const actorName = currentActorName();
   const unitPrice = isBulk ? Math.max(0, n(val("f_p_amount"))) : null;
   const totalAmount = isBulk ? unitPrice * qty : Math.max(0, n(val("f_p_amount")));
