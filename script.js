@@ -775,28 +775,29 @@ function onDebtTypeChange(sel) {
 }
 
 // ========= Reports: tab navigation & rendering =========
+const REP_VIEWS = ["sales", "purch", "staff", "expense", "stock", "pl", "cash"];
+const REP_TITLES = {
+  sales: "Satış hesabatı", purch: "Alış hesabatı", staff: "Əmək haqqı hesabatı",
+  expense: "Xərc hesabatı", stock: "Anbar hesabatı", pl: "Mənfəət/Zərər hesabatı", cash: "Kassa hesabatı"
+};
+
 function setRepView(view) {
   const menu = byId("repMenu");
   const content = byId("repContent");
   if (!view) {
     if (menu) menu.style.display = "";
     if (content) content.style.display = "none";
-    ["sales", "purch", "staff", "expense"].forEach((v) => {
-      const s = byId(`repSec-${v}`); if (s) s.style.display = "none";
-    });
+    REP_VIEWS.forEach((v) => { const s = byId(`repSec-${v}`); if (s) s.style.display = "none"; });
     window.__repView = "";
     return;
   }
   window.__repView = view;
   if (menu) menu.style.display = "none";
   if (content) content.style.display = "";
-  const titles = { sales: "Satış hesabatı", purch: "Alış hesabatı", staff: "Əmək haqqı hesabatı", expense: "Xərc hesabatı" };
   const titleEl = byId("repContentTitle");
-  if (titleEl) titleEl.textContent = titles[view] || view;
-  ["sales", "purch", "staff", "expense"].forEach((v) => {
-    const s = byId(`repSec-${v}`); if (s) s.style.display = v === view ? "" : "none";
-  });
-  renderReports();
+  if (titleEl) titleEl.textContent = REP_TITLES[view] || view;
+  REP_VIEWS.forEach((v) => { const s = byId(`repSec-${v}`); if (s) s.style.display = v === view ? "" : "none"; });
+  withSectionLoading(() => renderReports());
 }
 
 function syncRepFilters() {
@@ -806,7 +807,7 @@ function syncRepFilters() {
   if (byId("repMonth")) byId("repMonth").value = m;
   if (byId("repFrom")) byId("repFrom").value = f;
   if (byId("repTo")) byId("repTo").value = t;
-  renderReports();
+  withSectionLoading(() => renderReports());
 }
 
 function renderReports() {
@@ -815,12 +816,16 @@ function renderReports() {
   const repMonth = byId("repMonthVis")?.value || byId("repMonth")?.value || "";
   const useMonth = !!repMonth;
   const inRange = (d) => useMonth ? inMonth(d, repMonth) : inDateRange(d, "repFromVis", "repToVis");
+  const hasPeriod = useMonth || (byId("repFromVis")?.value || "").trim() || (byId("repToVis")?.value || "").trim();
+  const saleTypeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
 
   if (view === "sales") {
-    const salesInRange = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => inRange(s.date));
-    const salesTotal = salesInRange.reduce((a, s) => a + n(s.amount), 0);
-    const salesPaid = salesInRange.reduce((a, s) => a + n(s.paidTotal || 0), 0);
-    const cogs = salesInRange.reduce((a, s) => {
+    const rows = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date))
+      .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const salesTotal = rows.reduce((a, s) => a + n(s.amount), 0);
+    const salesPaid = rows.reduce((a, s) => a + n(s.paidTotal || 0), 0);
+    const salesRem = rows.reduce((a, s) => a + saleRemaining(s), 0);
+    const cogs = rows.reduce((a, s) => {
       if (s.bulkPurchUid) {
         const p = (db.purch || []).find((x) => String(x.uid) === String(s.bulkPurchUid));
         const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
@@ -829,16 +834,14 @@ function renderReports() {
       const p = (db.purch || []).find((x) => itemKeyFromPurch(x) === s.itemKey);
       return a + (p ? n(p.amount) : 0);
     }, 0);
-    const pl = salesTotal - cogs;
     setText("rv-salesTotal", money(salesTotal) + " AZN");
     setText("rv-salesPaid", money(salesPaid) + " AZN");
     setText("rv-salesCogs", money(cogs) + " AZN");
-    setText("rv-salesPL", money(pl) + " AZN");
-    setText("rv-salesCount", String(salesInRange.length));
-    const saleTypeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
+    setText("rv-salesPL", money(salesTotal - cogs) + " AZN");
+    setText("rv-salesCount", String(rows.length));
     const body = byId("tblRepSales");
     if (body) {
-      body.innerHTML = salesInRange.slice().sort((a, b) => (a.date > b.date ? -1 : 1)).map((s, i) => {
+      body.innerHTML = rows.map((s, i) => {
         const idx = (db.sales || []).findIndex((x) => x.uid === s.uid);
         const inv = s.invNo || invFallback("sales", s.uid);
         const rem = saleRemaining(s);
@@ -851,20 +854,27 @@ function renderReports() {
           <td>${money(rem)} AZN</td>
           <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
         </tr>`;
-      }).join("") || emptyRow(10);
+      }).join("") + (rows.length ? `<tr class="total-row">
+        <td colspan="6"><strong>Cəmi (${rows.length} satış)</strong></td>
+        <td><strong>${money(salesTotal)} AZN</strong></td>
+        <td><strong>${money(salesPaid)} AZN</strong></td>
+        <td><strong>${money(salesRem)} AZN</strong></td>
+        <td></td></tr>` : emptyRow(10));
     }
+
   } else if (view === "purch") {
-    const purchInRange = (db.purch || []).filter((p) => inRange(p.date));
-    const purchTotal = purchInRange.reduce((a, p) => a + n(p.amount), 0);
-    const purchPaid = purchInRange.reduce((a, p) => a + n(p.paidTotal || 0), 0);
-    const purchRem = purchInRange.reduce((a, p) => a + purchRemaining(p), 0);
+    const rows = (db.purch || []).filter((p) => !hasPeriod || inRange(p.date))
+      .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const purchTotal = rows.reduce((a, p) => a + n(p.amount), 0);
+    const purchPaid = rows.reduce((a, p) => a + n(p.paidTotal || 0), 0);
+    const purchRem = rows.reduce((a, p) => a + purchRemaining(p), 0);
     setText("rv-purchTotal", money(purchTotal) + " AZN");
     setText("rv-purchPaid", money(purchPaid) + " AZN");
     setText("rv-purchRem", money(purchRem) + " AZN");
-    setText("rv-purchCount", String(purchInRange.length));
+    setText("rv-purchCount", String(rows.length));
     const body = byId("tblRepPurch");
     if (body) {
-      body.innerHTML = purchInRange.slice().sort((a, b) => (a.date > b.date ? -1 : 1)).map((p, i) => {
+      body.innerHTML = rows.map((p, i) => {
         const inv = p.invNo || invFallback("purch", p.uid);
         const rem = purchRemaining(p);
         const purchIdx = (db.purch || []).findIndex((x) => x.uid === p.uid);
@@ -876,10 +886,16 @@ function renderReports() {
           <td>${money(rem)} AZN</td>
           <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("purch","purchInfo",purchIdx)}" onclick="openPurchInfo(${purchIdx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
         </tr>`;
-      }).join("") || emptyRow(10);
+      }).join("") + (rows.length ? `<tr class="total-row">
+        <td colspan="6"><strong>Cəmi (${rows.length} alış)</strong></td>
+        <td><strong>${money(purchTotal)} AZN</strong></td>
+        <td><strong>${money(purchPaid)} AZN</strong></td>
+        <td><strong>${money(purchRem)} AZN</strong></td>
+        <td></td></tr>` : emptyRow(10));
     }
+
   } else if (view === "staff") {
-    const salesInRange = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => inRange(s.date));
+    const salesInRange = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
     const byEmp = new Map();
     for (const s of salesInRange) {
       const empId = String(s.employeeId || ""); if (!empId) continue;
@@ -887,17 +903,17 @@ function renderReports() {
       byEmp.get(empId).count++;
       byEmp.get(empId).sum += n(s.amount);
     }
-    let totalBase = 0, totalComm = 0, totalSales = 0;
+    let totalBase = 0, totalComm = 0, totalSales = 0, totalPayroll = 0;
     const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
     const body = byId("tblRepStaff");
     if (body) {
-      body.innerHTML = staffSorted.map((st, i) => {
+      const staffRows = staffSorted.map((st, i) => {
         const o = byEmp.get(String(st.uid)) || { count: 0, sum: 0 };
         const pct = Math.max(0, n(st.commPct || 0));
         const base = Math.max(0, n(st.baseSalary || 0));
         const comm = o.sum * (pct / 100);
         const total = base + comm;
-        totalBase += base; totalComm += comm; totalSales += o.sum;
+        totalBase += base; totalComm += comm; totalSales += o.sum; totalPayroll += total;
         return `<tr>
           <td>${i + 1}</td><td>${escapeHtml(st.name)}</td>
           <td>${o.count}</td><td>${money(o.sum)} AZN</td>
@@ -905,23 +921,32 @@ function renderReports() {
           <td>${money(base)} AZN</td><td><strong>${money(total)} AZN</strong></td>
           <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(String(st.uid))}')" title="Satış siyahısı"><i class="fas fa-list"></i> Bax</button></td>
         </tr>`;
-      }).join("") || emptyRow(9);
+      });
+      body.innerHTML = staffRows.join("") + (staffSorted.length ? `<tr class="total-row">
+        <td colspan="3"><strong>Cəmi</strong></td>
+        <td><strong>${money(totalSales)} AZN</strong></td>
+        <td></td>
+        <td><strong>${money(totalComm)} AZN</strong></td>
+        <td><strong>${money(totalBase)} AZN</strong></td>
+        <td><strong>${money(totalPayroll)} AZN</strong></td>
+        <td></td></tr>` : emptyRow(9));
     }
-    setText("rv-staffTotal", money(totalBase + totalComm) + " AZN");
+    setText("rv-staffTotal", money(totalPayroll) + " AZN");
     setText("rv-staffBase", money(totalBase) + " AZN");
     setText("rv-staffComm", money(totalComm) + " AZN");
     setText("rv-staffSales", money(totalSales) + " AZN");
+
   } else if (view === "expense") {
-    const expRows = (db.cash || [])
+    const rows = (db.cash || [])
       .filter((c) => c.type === "out" && c.link?.kind === "expense")
-      .filter((c) => inRange(c.date))
+      .filter((c) => !hasPeriod || inRange(c.date))
       .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
-    const expTotal = expRows.reduce((a, c) => a + n(c.amount), 0);
+    const expTotal = rows.reduce((a, c) => a + n(c.amount), 0);
     setText("rv-expTotal", money(expTotal) + " AZN");
-    setText("rv-expCount", String(expRows.length));
+    setText("rv-expCount", String(rows.length));
     const body = byId("tblRepExp");
     if (body) {
-      body.innerHTML = expRows.map((c, i) => {
+      body.innerHTML = rows.map((c, i) => {
         const accName = (db.accounts || []).find((a) => a.id === Number(c.accountId || 1))?.name || "Kassa";
         return `<tr>
           <td>${i + 1}</td><td>${fmtDT(c.date)}</td>
@@ -930,7 +955,151 @@ function renderReports() {
           <td>${escapeHtml(accName)}</td>
           <td>${escapeHtml(c.note || "")}</td>
         </tr>`;
-      }).join("") || emptyRow(6);
+      }).join("") + (rows.length ? `<tr class="total-row">
+        <td colspan="3"><strong>Cəmi (${rows.length} əməliyyat)</strong></td>
+        <td><strong>-${money(expTotal)} AZN</strong></td>
+        <td colspan="2"></td></tr>` : emptyRow(6));
+    }
+
+  } else if (view === "stock") {
+    // Anbardakı bütün məhsullar (remaining qty > 0)
+    const stockItems = (db.purch || [])
+      .filter((p) => purchRemainingQty(p) > 0)
+      .slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+    let totalQty = 0, totalVal = 0;
+    const body = byId("tblRepStock");
+    if (body) {
+      body.innerHTML = stockItems.map((p, i) => {
+        const qty = purchRemainingQty(p);
+        const unitPrice = n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1)));
+        const val = unitPrice * qty;
+        totalQty += qty; totalVal += val;
+        const imeiParts = [p.imei1, p.imei2].filter(Boolean);
+        const key = (imeiParts.length ? imeiParts.join("/") : (p.seria || p.code || "")).trim();
+        const isSerial = !purchIsBulk(p);
+        return `<tr>
+          <td>${i + 1}</td><td>${escapeHtml(p.name)}</td>
+          <td>${isSerial ? "Seriyalı" : "Ədədi"}</td>
+          <td>${escapeHtml(key || "-")}</td>
+          <td>${qty}</td>
+          <td>${money(unitPrice)} AZN</td>
+          <td>${money(val)} AZN</td>
+          <td>${fmtDT(p.date)}</td>
+        </tr>`;
+      }).join("") + (stockItems.length ? `<tr class="total-row">
+        <td colspan="4"><strong>Cəmi (${stockItems.length} məhsul növü)</strong></td>
+        <td><strong>${totalQty}</strong></td>
+        <td></td>
+        <td><strong>${money(totalVal)} AZN</strong></td>
+        <td></td></tr>` : emptyRow(8));
+    }
+    setText("rv-stockQty", String(totalQty));
+    setText("rv-stockVal", money(totalVal) + " AZN");
+    setText("rv-stockItems", String(stockItems.length));
+
+  } else if (view === "pl") {
+    // Mənfəət/Zərər — aylara görə siyahı (əgər tarix verilsə) və ya ümumi
+    const calcCogs = (salesList) => salesList.reduce((a, s) => {
+      if (s.bulkPurchUid) {
+        const p = (db.purch || []).find((x) => String(x.uid) === String(s.bulkPurchUid));
+        const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
+        return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
+      }
+      const p = (db.purch || []).find((x) => itemKeyFromPurch(x) === s.itemKey);
+      return a + (p ? n(p.amount) : 0);
+    }, 0);
+    const calcPayroll = (salesList) => {
+      const byEmpM = new Map();
+      for (const s of salesList) {
+        const empId = String(s.employeeId || ""); if (!empId) continue;
+        byEmpM.set(empId, (byEmpM.get(empId) || 0) + n(s.amount));
+      }
+      return (db.staff || []).reduce((a, st) => {
+        const salesEmp = byEmpM.get(String(st.uid)) || 0;
+        return a + Math.max(0, n(st.baseSalary || 0)) + salesEmp * (Math.max(0, n(st.commPct || 0)) / 100);
+      }, 0);
+    };
+    // Build month list
+    const monthsList = [];
+    if (repMonth) {
+      monthsList.push(repMonth);
+    } else {
+      const fromMs = parseDateOnly(byId("repFromVis")?.value);
+      const toMs = parseDateOnly(byId("repToVis")?.value);
+      if (fromMs && toMs) {
+        const from = new Date(fromMs); const to = new Date(toMs);
+        let y = from.getFullYear(); let m = from.getMonth() + 1;
+        while (y < to.getFullYear() || (y === to.getFullYear() && m <= to.getMonth() + 1)) {
+          monthsList.push(`${y}-${String(m).padStart(2, "0")}`);
+          m++; if (m > 12) { m = 1; y++; }
+        }
+      }
+    }
+    let totSales = 0, totCogs = 0, totExp = 0, totPay = 0;
+    const body = byId("tblRepPL");
+    if (body) {
+      if (!monthsList.length) {
+        body.innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center">Ay və ya tarix aralığı seçin</td></tr>`;
+      } else {
+        body.innerHTML = monthsList.map((mk, i) => {
+          const salesM = (db.sales || []).filter((s) => !s.returnedAt && inMonth(s.date, mk));
+          const purchM = (db.purch || []).filter((p) => inMonth(p.date, mk));
+          const expM = (db.cash || []).filter((c) => c.type === "out" && c.link?.kind === "expense" && inMonth(c.date, mk)).reduce((a, c) => a + n(c.amount), 0);
+          const salesSum = salesM.reduce((a, s) => a + n(s.amount), 0);
+          const cogsM = calcCogs(salesM);
+          const payM = calcPayroll(salesM);
+          const pl = salesSum - cogsM - expM - payM;
+          totSales += salesSum; totCogs += cogsM; totExp += expM; totPay += payM;
+          const [y, m] = mk.split("-");
+          return `<tr>
+            <td>${i + 1}</td><td>${y}-${m}</td>
+            <td>${money(salesSum)} AZN</td><td>${money(cogsM)} AZN</td>
+            <td>${money(expM)} AZN</td><td>${money(payM)} AZN</td>
+            <td class="${pl >= 0 ? "amt-in" : "amt-out"}"><strong>${money(pl)} AZN</strong></td>
+          </tr>`;
+        }).join("") + `<tr class="total-row">
+          <td colspan="2"><strong>Cəmi</strong></td>
+          <td><strong>${money(totSales)} AZN</strong></td>
+          <td><strong>${money(totCogs)} AZN</strong></td>
+          <td><strong>${money(totExp)} AZN</strong></td>
+          <td><strong>${money(totPay)} AZN</strong></td>
+          <td class="${(totSales-totCogs-totExp-totPay)>=0?"amt-in":"amt-out"}"><strong>${money(totSales-totCogs-totExp-totPay)} AZN</strong></td>
+        </tr>`;
+      }
+    }
+    setText("rv-plSales", money(totSales) + " AZN");
+    setText("rv-plCogs", money(totCogs) + " AZN");
+    setText("rv-plExp", money(totExp) + " AZN");
+    setText("rv-plPayroll", money(totPay) + " AZN");
+    setText("rv-plNet", money(totSales - totCogs - totExp - totPay) + " AZN");
+
+  } else if (view === "cash") {
+    const rows = (db.cash || [])
+      .filter((c) => !hasPeriod || inRange(c.date))
+      .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const cashIn = rows.filter((c) => c.type === "in").reduce((a, c) => a + n(c.amount), 0);
+    const cashOut = rows.filter((c) => c.type === "out").reduce((a, c) => a + n(c.amount), 0);
+    setText("rv-cashIn", money(cashIn) + " AZN");
+    setText("rv-cashOut", money(cashOut) + " AZN");
+    setText("rv-cashNet", money(cashIn - cashOut) + " AZN");
+    setText("rv-cashCount", String(rows.length));
+    const body = byId("tblRepCash");
+    if (body) {
+      body.innerHTML = rows.map((c, i) => {
+        const accName = (db.accounts || []).find((a) => a.id === Number(c.accountId || 1))?.name || "Kassa";
+        const isIn = c.type === "in";
+        return `<tr>
+          <td>${i + 1}</td><td>${fmtDT(c.date)}</td>
+          <td><span class="pill ${isIn ? "paid" : "overdue"}">${isIn ? "Giriş" : "Çıxış"}</span></td>
+          <td>${escapeHtml(c.source || "-")}</td>
+          <td class="${isIn ? "amt-in" : "amt-out"}">${isIn ? "+" : "-"}${money(c.amount)} AZN</td>
+          <td>${escapeHtml(accName)}</td>
+          <td>${escapeHtml(c.note || "")}</td>
+        </tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row">
+        <td colspan="4"><strong>Cəmi (${rows.length} əməliyyat)</strong></td>
+        <td><strong class="${(cashIn-cashOut)>=0?"amt-in":"amt-out"}">${money(cashIn-cashOut)} AZN</strong></td>
+        <td colspan="2"></td></tr>` : emptyRow(7));
     }
   }
 }

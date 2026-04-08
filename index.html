@@ -808,6 +808,18 @@
             <i class="fas fa-receipt"></i>
             <span>Xərc hesabatı</span>
           </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('stock')">
+            <i class="fas fa-boxes-stacked"></i>
+            <span>Anbar hesabatı</span>
+          </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('pl')">
+            <i class="fas fa-scale-balanced"></i>
+            <span>Mənfəət/Zərər</span>
+          </button>
+          <button type="button" class="rep-menu-card" onclick="setRepView('cash')">
+            <i class="fas fa-cash-register"></i>
+            <span>Kassa hesabatı</span>
+          </button>
         </div>
       </div>
 
@@ -885,6 +897,54 @@
             <table>
               <thead><tr><th>#</th><th>Tarix</th><th>Mənbə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
               <tbody id="tblRepExp"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Anbar hesabatı -->
+        <div id="repSec-stock" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Anbardakı miqdar</small><h2 id="rv-stockQty">0</h2></div>
+            <div class="card stat-card"><small>Cəmi maya dəyəri</small><h2 id="rv-stockVal">0.00</h2></div>
+            <div class="card stat-card"><small>Məhsul növü sayı</small><h2 id="rv-stockItems">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>IMEI/Seriya/Kod</th><th>Miqdar</th><th>Maya qiyməti</th><th>Cəmi dəyər</th><th>Giriş tarixi</th></tr></thead>
+              <tbody id="tblRepStock"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mənfəət/Zərər hesabatı -->
+        <div id="repSec-pl" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-plSales">0.00</h2></div>
+            <div class="card stat-card"><small>Maya dəyəri</small><h2 id="rv-plCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc</small><h2 id="rv-plExp">0.00</h2></div>
+            <div class="card stat-card"><small>Əməkhaqqı</small><h2 id="rv-plPayroll">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="rv-plNet">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Ay</th><th>Satış</th><th>Maya</th><th>Xərc</th><th>Əməkhaqqı</th><th>Mənfəət/Zərər</th></tr></thead>
+              <tbody id="tblRepPL"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kassa hesabatı -->
+        <div id="repSec-cash" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Cəmi giriş</small><h2 id="rv-cashIn">0.00</h2></div>
+            <div class="card stat-card"><small>Cəmi çıxış</small><h2 id="rv-cashOut">0.00</h2></div>
+            <div class="card stat-card"><small>Saldo</small><h2 id="rv-cashNet">0.00</h2></div>
+            <div class="card stat-card"><small>Əməliyyat sayı</small><h2 id="rv-cashCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Mənbə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
+              <tbody id="tblRepCash"></tbody>
             </table>
           </div>
         </div>
