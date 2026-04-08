@@ -2651,6 +2651,11 @@ function forceCloseModal() {
   window.__modalJustClosedAt = Date.now();
 }
 
+function popupDismiss() {
+  if ((window.__modalHistory || []).length) modalBack();
+  else closeMdl();
+}
+
 function appAlert(msg, title = "Bildiriş") {
   const text = msg == null ? "" : String(msg);
   openModal(`
@@ -2659,7 +2664,7 @@ function appAlert(msg, title = "Bildiriş") {
       <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
     </div>
     <div class="modal-footer">
-      <button class="btn-main" type="button" onclick="closeMdl()">Bağla</button>
+      <button class="btn-main" type="button" onclick="popupDismiss()">Bağla</button>
     </div>
   `, { popup: true });
   return false;
@@ -2677,7 +2682,7 @@ function appConfirm(msg, title = "Təsdiq") {
     const cleanup = () => document.removeEventListener("keydown", onKey);
     const resolveAndClose = (v) => {
       cleanup();
-      closeMdl();
+      popupDismiss();
       resolve(v);
     };
     document.addEventListener("keydown", onKey);
@@ -10231,6 +10236,7 @@ Object.assign(window, {
   filterTable,
   formatDateInput,
   closeMdl,
+  popupDismiss,
   modalBack,
   login,
   logout,
