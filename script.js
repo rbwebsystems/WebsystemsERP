@@ -2547,8 +2547,11 @@ function openModal(html, opts = {}) {
     if ((alreadyOpen || justClosed) && curRaw) {
       window.__modalHistory = window.__modalHistory || [];
       window.__modalHistory.push(curRaw);
+      window.__modalClassHistory = window.__modalClassHistory || [];
+      window.__modalClassHistory.push(modal.classList.contains("modal--slideover") ? "slideover" : "popup");
     } else if (!alreadyOpen) {
       window.__modalHistory = [];
+      window.__modalClassHistory = [];
     }
     window.__currentModalRaw = html;
     body.innerHTML = renderModalWithNav(html);
@@ -2583,17 +2586,27 @@ function modalBack() {
   const body = document.getElementById("modalContent");
   const hist = window.__modalHistory || [];
   if (!body || !hist.length) return;
-  const slideover = modal.classList.contains("modal--slideover");
-  const slideBackT0 = slideover ? Date.now() : 0;
-  if (slideover) softLoadingBegin(true);
+  const prevRaw = hist.pop();
+  const prevClass = (window.__modalClassHistory || []).pop() || "slideover";
+  const prevIsSlideover = prevClass === "slideover";
+  const slideBackT0 = prevIsSlideover ? Date.now() : 0;
+  if (prevIsSlideover) softLoadingBegin(true);
   try {
-    const prevRaw = hist.pop();
     window.__currentModalRaw = prevRaw;
     body.innerHTML = renderModalWithNav(prevRaw);
     layoutModalScrollShell(body);
+    // əvvəlki modal-ın class-ını bərpa et
+    if (prevIsSlideover) {
+      modal.classList.add("modal--slideover");
+      modal.classList.remove("modal--popup");
+    } else {
+      modal.classList.add("modal--popup");
+      modal.classList.remove("modal--slideover");
+    }
     modal.style.display = "flex";
+    modal.classList.add("modal--open");
   } finally {
-    if (slideover) {
+    if (prevIsSlideover) {
       requestAnimationFrame(() => {
         syncSlideoverContentPad();
         requestAnimationFrame(() => {
@@ -2603,7 +2616,6 @@ function modalBack() {
       });
     }
   }
-  // Tarixçədəki HTML boş tbody saxlaya bilər — hesablar siyahısını yenilə.
   if (byId("mdlAccountsTbl")) {
     requestAnimationFrame(() => renderAccountsManagerTable());
   }
@@ -2620,6 +2632,7 @@ function closeMdl() {
     }
     if (stillClosed && window.__modalJustClosedAt && Date.now() - window.__modalJustClosedAt >= 320) {
       window.__modalHistory = [];
+      window.__modalClassHistory = [];
       window.__currentModalRaw = "";
     }
   }, 300);
@@ -2633,6 +2646,7 @@ function forceCloseModal() {
   m.style.display = "none";
   document.getElementById("modalContent")?.style.removeProperty("--slideover-pad-left");
   window.__modalHistory = [];
+  window.__modalClassHistory = [];
   window.__currentModalRaw = "";
   window.__modalJustClosedAt = Date.now();
 }
