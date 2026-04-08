@@ -692,22 +692,38 @@ function setOverdueView(status) {
   renderAll();
 }
 
-function showDebtSub(sectionId) {
+function showDebtSub(sectionId, debtType) {
   if (!sectionId) {
+    window.__debtsSaleType = "";
     updateDebtSubSelectVisibility("");
     updateDebtSubEnabled();
     updateDebtSectionVisibility();
     return;
   }
+  // nagd/korporativ → #debts section, set sale type filter
+  const isDebtsSec = sectionId === "debts" || sectionId === "nagd" || sectionId === "korporativ";
+  const realSection = isDebtsSec ? "debts" : sectionId;
+  const typeVal = debtType !== undefined ? debtType : sectionId;
+  if (typeVal === "nagd" || typeVal === "korporativ") {
+    window.__debtsSaleType = typeVal;
+  } else {
+    window.__debtsSaleType = "";
+  }
   const debtNav = findNavLinkForSection("debts");
   withSectionLoading(() => {
-    showSec(sectionId, debtNav || null);
+    showSec(realSection, debtNav || null);
     document.querySelectorAll(".debt-type-select").forEach((s) => {
-      s.value = sectionId;
+      s.value = typeVal;
     });
-    updateDebtSubSelectVisibility(sectionId);
+    updateDebtSubSelectVisibility(realSection);
     updateDebtSubEnabled();
     updateDebtSectionVisibility();
+    // Update section title
+    const h1 = byId(realSection)?.querySelector("h1");
+    if (h1) {
+      const titles = { nagd: "Borclar - Nağd satış", korporativ: "Borclar - Korporativ satış", debts: "Borclar - Debitor", creditor: "Borclar - Kreditor", overdue: "Borclar - Kreditlər" };
+      h1.textContent = titles[typeVal] || titles[realSection] || h1.textContent;
+    }
     renderAll();
   });
 }
@@ -720,9 +736,13 @@ function updateDebtSubSelectVisibility(sectionId) {
 
 function updateDebtSubEnabled() {
   const activeType = document.querySelector(".debt-type-select")?.value || "";
+  const isDebtsType = activeType === "nagd" || activeType === "korporativ";
   document.querySelectorAll(".debt-sub-select").forEach((el) => {
     const forSec = el.getAttribute("data-debt-sub-for") || "";
-    const enabled = !!activeType && activeType === forSec;
+    let enabled = false;
+    if (forSec === "debts") enabled = isDebtsType;
+    else if (forSec === "creditor") enabled = activeType === "creditor";
+    else if (forSec === "overdue") enabled = activeType === "overdue";
     el.disabled = !enabled;
     if (!enabled) el.value = "";
   });
@@ -735,7 +755,8 @@ function updateDebtSectionVisibility() {
     byId("overdue")?.classList.contains("active") ? "overdue" :
     "";
   const activeType = document.querySelector(".debt-type-select")?.value || "";
-  const showDebts = activeSec === "debts" && activeType === "debts" && !!(byId("debtsStatus")?.value || "");
+  const isDebtsType = activeType === "nagd" || activeType === "korporativ";
+  const showDebts = activeSec === "debts" && isDebtsType && !!(byId("debtsStatus")?.value || "");
   const showCred = activeSec === "creditor" && activeType === "creditor" && !!(byId("credStatus")?.value || "");
   const showOver = activeSec === "overdue" && activeType === "overdue" && !!(byId("overdueView")?.value || "");
   const d = byId("debtsContent"); if (d) d.style.display = showDebts ? "" : "none";
@@ -744,11 +765,12 @@ function updateDebtSectionVisibility() {
 }
 
 function onDebtTypeChange(sel) {
-  const sectionId = String(sel?.value || "");
+  const value = String(sel?.value || "");
   if (byId("debtsStatus")) byId("debtsStatus").value = "";
   if (byId("credStatus")) byId("credStatus").value = "";
   if (byId("overdueView")) byId("overdueView").value = "";
-  showDebtSub(sectionId);
+  const sectionId = (value === "nagd" || value === "korporativ") ? "debts" : value;
+  showDebtSub(sectionId, value);
 }
 
 function seedDevTestData() {
@@ -5786,20 +5808,23 @@ function amountAppliedToSaleLast(sale) {
   return last ? n(last.amount) : 0;
 }
 
-function openDebtorInfo(customerId) {
+function openDebtorInfo(customerId, saleTypeFilter) {
   const cid = String(customerId);
-  // Yalnız qeyri-kredit satışlar debitor bölməsindədir
+  const stf = String(saleTypeFilter || window.__debtsSaleType || "").toLowerCase();
+  // Qeyri-kredit satışlar; əgər saleTypeFilter verilib — yalnız həmin növ
   const items = (db.sales || [])
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => String(s.customerId) === cid)
     .filter(({ s }) => !s.returnedAt)
     .filter(({ s }) => String(s.saleType || "").toLowerCase() !== "kredit")
+    .filter(({ s }) => !stf || String(s.saleType || "").toLowerCase() === stf)
     .sort((a, b) => String(a.s.date).localeCompare(String(b.s.date)) * -1);
 
   const custName = items[0]?.s.customerName || customerId;
   const totalRem = items.reduce((a, { s }) => a + saleRemaining(s), 0);
   const footPayDis = totalRem <= 0.000001 ? "disabled" : "";
   const saleTypeLabel = { nagd: "Nağd", post: "Post", korporativ: "Korporativ", kocurme: "Köçürmə" };
+  const typeTitle = stf ? (saleTypeLabel[stf] || stf) + " satış" : "Debitor";
 
   const rows = items
     .map(({ s, idx }, i) => {
@@ -5831,7 +5856,7 @@ function openDebtorInfo(customerId) {
     .join("");
 
   openModal(`
-    <h2>Debitor detalları</h2>
+    <h2>${escapeHtml(typeTitle)} detalları</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}</div></div>
       <div class="info-row"><div class="info-label">Cəmi qalıq borc</div><div class="info-value"><strong>${money(totalRem)} AZN</strong></div></div>
@@ -5843,21 +5868,23 @@ function openDebtorInfo(customerId) {
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn-main" type="button" onclick="openDebtorPayment('${escapeAttr(cid)}')" ${footPayDis}>Ödəniş et</button>
+      <button class="btn-main" type="button" onclick="openDebtorPayment('${escapeAttr(cid)}','${escapeAttr(stf)}')" ${footPayDis}>Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
 }
 
-function openDebtorPayment(customerId) {
+function openDebtorPayment(customerId, saleTypeFilter) {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const cid = String(customerId);
-  // Yalnız qeyri-kredit borclar
+  const stf = String(saleTypeFilter || window.__debtsSaleType || "").toLowerCase();
+  // Yalnız qeyri-kredit borclar, istəyə görə növ filtri
   const unpaidSales = db.sales
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => String(s.customerId) === cid)
     .filter(({ s }) => !s.returnedAt)
     .filter(({ s }) => String(s.saleType || "").toLowerCase() !== "kredit")
+    .filter(({ s }) => !stf || String(s.saleType || "").toLowerCase() === stf)
     .filter(({ s }) => saleRemaining(s) > 0.000001)
     .sort((a, b) => (a.s.date > b.s.date ? 1 : -1));
 
@@ -5881,7 +5908,7 @@ function openDebtorPayment(customerId) {
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custLabel)}</div></div>
       <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value"><strong>${money(totalRem)} AZN</strong></div></div>
     </div>
-    <form onsubmit="saveDebtorPayment(event, '${escapeAttr(cid)}')">
+    <form onsubmit="saveDebtorPayment(event, '${escapeAttr(cid)}', '${escapeAttr(stf)}')">
       <div class="form-stack">
         <div class="form-card">
           <div class="form-card-title">Ödəniş</div>
@@ -5916,9 +5943,10 @@ function debPayInvChanged(sel) {
   if (amtEl && rem > 0) amtEl.value = money(rem).replace(/[^\d.]/g, "");
 }
 
-function saveDebtorPayment(e, customerId) {
+function saveDebtorPayment(e, customerId, saleTypeFilter) {
   e.preventDefault();
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  const stf = String(saleTypeFilter || "").toLowerCase();
   const date = val("deb_pay_date");
   const amount = Math.max(0, n(val("deb_pay_amount")));
   const accId = Number(val("deb_pay_acc") || 1);
@@ -5934,9 +5962,12 @@ function saveDebtorPayment(e, customerId) {
   let noteDefault = "Debitor ödəniş";
 
   if (invUid === "__all__") {
-    // Bütün qeyri-kredit borclar — köhnəsi əvvəl
-    const result = applyCustomerPaymentToDebts(customerId, amount, date, "debts_module",
-      (s) => String(s.saleType || "").toLowerCase() !== "kredit");
+    // Filtrdə olan növün bütün borcları — köhnəsi əvvəl
+    const result = applyCustomerPaymentToDebts(customerId, amount, date, "debts_module", (s) => {
+      if (String(s.saleType || "").toLowerCase() === "kredit") return false;
+      if (stf) return String(s.saleType || "").toLowerCase() === stf;
+      return true;
+    });
     if (result.applied <= 0.000001) return alert("Borc yoxdur.");
     appliedAmount = result.applied;
     allocations = result.allocations;
@@ -5970,7 +6001,7 @@ function saveDebtorPayment(e, customerId) {
 
   logEvent("create", "cash", { type: "in", kind: "debtor_payment", amount: appliedAmount, customerId, allocations });
   saveDB();
-  openDebtorInfo(customerId);
+  openDebtorInfo(customerId, stf);
 }
 
 // ========= Cash =========
@@ -9258,11 +9289,13 @@ function renderAll() {
     )
     .join("");
 
-  // debts (debitor) grouped by customer + date filter + pagination
+  // debts (debitor) grouped by customer + date filter + sale type filter + pagination
   const debtsStatus = byId("debtsStatus")?.value || "";
+  const debtsSaleTypeFilter = window.__debtsSaleType || "";
   const debtsAllRaw = db.sales
     .filter((s) => !s.returnedAt)
     .filter((s) => String(s.saleType || "").toLowerCase() !== "kredit")
+    .filter((s) => !debtsSaleTypeFilter || String(s.saleType || "").toLowerCase() === debtsSaleTypeFilter)
     .filter((s) => debtsStatus ? inDateRange(s.date, "debtsFrom", "debtsTo") : false)
     .map((s, saleIdx) => {
       const total = n(s.amount);
@@ -9271,7 +9304,12 @@ function renderAll() {
       return { s, saleIdx, total, rem, st };
     });
 
-  const debtsAll = debtsAllRaw.filter((x) => (debtsStatus === "all" ? true : debtsStatus ? x.st === debtsStatus : false));
+  const debtsAll = debtsAllRaw.filter((x) => {
+    if (!debtsStatus) return false;
+    if (debtsStatus === "all") return true;
+    if (debtsStatus === "open") return x.st === "partial" || x.st === "unpaid";
+    return x.st === debtsStatus;
+  });
 
   const groupMap = new Map();
   for (const x of debtsAll) {
@@ -9300,6 +9338,7 @@ function renderAll() {
   byId("tblDebts").innerHTML = groupsPage
     .map((g, i) => {
       const payDisabled = g.rem <= 0.000001 ? "disabled" : "";
+      const stf = escapeAttr(debtsSaleTypeFilter);
       return `
       <tr>
         <td>${i + 1}</td>
@@ -9309,8 +9348,8 @@ function renderAll() {
         <td>${money(g.rem)} AZN</td>
         <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
         <td class="tbl-actions">
-          <a class="icon-btn info" href="${erpOpHref("debts", "debtorInfo", g.customerId)}" onclick="openDebtorInfo('${escapeAttr(g.customerId)}');return false;" title="Info"><i class="fas fa-circle-info"></i></a>
-          <button class="btn-mini-pay" type="button" onclick="openDebtorPayment('${escapeAttr(g.customerId)}')" ${payDisabled}>Ödəniş et</button>
+          <a class="icon-btn info" href="${erpOpHref("debts", "debtorInfo", g.customerId)}" onclick="openDebtorInfo('${escapeAttr(g.customerId)}','${stf}');return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+          <button class="btn-mini-pay" type="button" onclick="openDebtorPayment('${escapeAttr(g.customerId)}','${stf}')" ${payDisabled}>Ödəniş et</button>
         </td>
       </tr>`;
     })

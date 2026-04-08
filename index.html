@@ -435,19 +435,20 @@
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="" selected>Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor">Kreditor</option>
-              <option value="overdue">Kreditlər</option>
+              <option value="nagd">Nağd satış borcları</option>
+              <option value="korporativ">Korporativ satış borcları</option>
+              <option value="creditor">Təchizatçı borcları</option>
+              <option value="overdue">Kredit borcları</option>
             </select>
           </div>
           <div class="filter-field">
             <label data-i18n="lbl_subselect">Alt seçim</label>
             <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
               <option value="" selected>Seçin</option>
-              <option value="all">Hamısı</option>
-              <option value="paid">Tam ödənilmiş</option>
+              <option value="open">Qismən + Ödənilməmiş</option>
               <option value="partial">Qismən ödənilmiş</option>
               <option value="unpaid">Ödənilməmiş</option>
+              <option value="all">Hamısı</option>
             </select>
           </div>
           <div class="filter-field">
@@ -496,9 +497,10 @@
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="">Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor">Kreditor</option>
-              <option value="overdue" selected>Kreditlər</option>
+              <option value="nagd">Nağd satış borcları</option>
+              <option value="korporativ">Korporativ satış borcları</option>
+              <option value="creditor">Təchizatçı borcları</option>
+              <option value="overdue" selected>Kredit borcları</option>
             </select>
           </div>
           <div class="filter-field">
@@ -543,9 +545,10 @@
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="">Seçin</option>
-              <option value="debts">Debitor</option>
-              <option value="creditor" selected>Kreditor</option>
-              <option value="overdue">Kreditlər</option>
+              <option value="nagd">Nağd satış borcları</option>
+              <option value="korporativ">Korporativ satış borcları</option>
+              <option value="creditor" selected>Təchizatçı borcları</option>
+              <option value="overdue">Kredit borcları</option>
             </select>
           </div>
           <div class="filter-field">
