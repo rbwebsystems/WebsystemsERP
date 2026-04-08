@@ -189,6 +189,10 @@ function subscribeRealtime() {
           meta.companies = next.companies || meta.companies;
           meta.users = next.users || meta.users;
           applyAccessUI();
+          if (meta.session) {
+            renderSidebarUser();
+            refreshHeaderBar();
+          }
         }
       },
       (err) => console.warn("Firestore meta listener:", err)
@@ -1580,6 +1584,8 @@ function doLoginWithCompany(companyId) {
       showLoginOverlay(false);
       applyAccessUI();
       logEvent("login", "auth", { companyId: c.id });
+      renderSidebarUser();
+      refreshHeaderBar();
       renderAll();
     });
   } else {
@@ -1587,6 +1593,8 @@ function doLoginWithCompany(companyId) {
     showLoginOverlay(false);
     applyAccessUI();
     logEvent("login", "auth", { companyId: c.id });
+    renderSidebarUser();
+    refreshHeaderBar();
     renderAll();
   }
 }
@@ -1917,7 +1925,7 @@ function refreshHeaderBar() {
     if (!meta?.session) {
       titleEl.textContent = "";
     } else {
-      const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+      const u = currentUser();
       const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
       const cname = getCurrentCompanyName();
       titleEl.textContent = firstName ? "Xoş gəldiniz, " + firstName + "!" : (cname || "");
@@ -8123,6 +8131,7 @@ function renderAll() {
   runInvNoMigrationIfNeeded();
   applyAccessUI();
   refreshHeaderBar();
+  renderSidebarUser();
   startHeaderClock();
   const sold = soldKeySet();
 
@@ -9624,15 +9633,62 @@ Object.assign(window, {
   toggleDevMenu,
 });
 
-/* ── Profil foto helpers ── */
+/* ── Profil foto: meta.users.profilePhotoDataUrl → Firestore (saveMeta); localStorage yalnız köhnə ehtiyat ── */
+function compressProfilePhotoDataUrl(dataUrl, maxEdge = 400, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) return resolve(dataUrl);
+        const scale = Math.min(1, maxEdge / Math.max(w, h));
+        const tw = Math.round(w * scale);
+        const th = Math.round(h * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, tw, th);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
 function getProfilePhoto(uid) {
-  try { return localStorage.getItem("profilePhoto_" + uid) || ""; } catch { return ""; }
+  const u = meta.users?.find((x) => Number(x.uid) === Number(uid));
+  if (u?.profilePhotoDataUrl) return u.profilePhotoDataUrl;
+  try {
+    return localStorage.getItem("profilePhoto_" + uid) || "";
+  } catch {
+    return "";
+  }
 }
 function setProfilePhoto(uid, dataUrl) {
-  try { localStorage.setItem("profilePhoto_" + uid, dataUrl); } catch {}
+  const idx = meta.users.findIndex((x) => Number(x.uid) === Number(uid));
+  if (idx >= 0) {
+    meta.users[idx] = { ...meta.users[idx], profilePhotoDataUrl: dataUrl };
+    saveMeta();
+  }
+  try {
+    localStorage.setItem("profilePhoto_" + uid, dataUrl);
+  } catch {}
 }
 function removeProfilePhoto(uid) {
-  try { localStorage.removeItem("profilePhoto_" + uid); } catch {}
+  const idx = meta.users.findIndex((x) => Number(x.uid) === Number(uid));
+  if (idx >= 0) {
+    const u = { ...meta.users[idx] };
+    delete u.profilePhotoDataUrl;
+    meta.users[idx] = u;
+    saveMeta();
+  }
+  try {
+    localStorage.removeItem("profilePhoto_" + uid);
+  } catch {}
 }
 function triggerProfilePhotoUpload() {
   const inp = byId("profilePhotoFileInput");
@@ -9644,10 +9700,12 @@ function onProfilePhotoSelected(e) {
   if (!file.type.startsWith("image/")) return alert("Yalnız şəkil faylı seçin.");
   if (file.size > 2 * 1024 * 1024) return alert("Şəkil 2MB-dan böyük olmamalıdır.");
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = async (ev) => {
     const u = currentUser();
     if (!u) return;
-    setProfilePhoto(u.uid, ev.target.result);
+    const raw = ev.target.result;
+    const dataUrl = await compressProfilePhotoDataUrl(String(raw || ""));
+    setProfilePhoto(u.uid, dataUrl);
     renderSidebarUser();
   };
   reader.readAsDataURL(file);
@@ -9657,7 +9715,7 @@ function renderSidebarUser() {
   const el = byId("sidebarUserInfo");
   if (!el) return;
   if (!meta?.session) { el.innerHTML = ""; return; }
-  const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+  const u = currentUser();
   const name = u ? userDisplay(u) : "İstifadəçi";
   const role = u?.role === "developer" ? "Developer" : u?.role === "admin" ? "Admin" : u?.role === "owner" ? "Sahibkar" : "İstifadəçi";
   const initials = name.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
@@ -9700,7 +9758,7 @@ function updateHeaderWelcome() {
   const titleEl = byId("appHeaderTitle");
   if (!titleEl) return;
   if (!meta?.session) return;
-  const u = meta.users?.find((x) => x.uid === meta.session.userUid);
+  const u = currentUser();
   const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
   if (firstName) titleEl.textContent = "Xoş gəldiniz, " + firstName + "!";
 }
