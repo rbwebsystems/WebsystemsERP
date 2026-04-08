@@ -4037,6 +4037,15 @@ function searchSaleItem() {
   handleSaleItemChange(false);
 }
 
+function trySaleAutoAddOnPrice() {
+  if (!window.__saleAutoAddEnabled) return;
+  const selected = byId("f_s_item")?.value || "";
+  if (!selected) return;
+  const amt = n(byId("f_s_amount")?.value);
+  if (amt <= 0) return;
+  addSaleDraftItem(true);
+}
+
 function syncSalePaymentInputState() {
   const payNow = !!byId("f_pay_now")?.checked;
   const isCredit = String(byId("f_s_type")?.value || "") === "kredit";
@@ -4741,7 +4750,7 @@ function openSale(idx = null) {
             <div id="saleQtyBox" style="display:none;">
               <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_s_qty" placeholder="Ədəd sayı"></div>
             </div>
-            <div class="f-group"><label>Qiymət (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="if(window.__saleUpdateHint)window.__saleUpdateHint();recalcCredit()"></div>
+            <div class="f-group"><label>Qiymət (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="if(window.__saleUpdateHint)window.__saleUpdateHint();recalcCredit();trySaleAutoAddOnPrice()"></div>
             <div id="sTotalHint" class="hint-line grid-span-2 muted small" style="display:none">Cəmi: —</div>
           </div>
         </div>
@@ -10258,6 +10267,7 @@ Object.assign(window, {
   delItem,
   searchSaleItem,
   handleSaleItemChange,
+  trySaleAutoAddOnPrice,
   toggleSaleInitialPayment,
   toggleCreditBox,
   recalcCredit,
