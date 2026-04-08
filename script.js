@@ -3333,7 +3333,8 @@ function openPurchInfo(idx) {
   if (!p) return;
   const invNo = p.invNo || invFallback("purch", p.uid);
   const staff = p.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(p.employeeId)) : null;
-  const staffName = staff ? staff.name : "-";
+  const staffName = staff ? staff.name : (p.employeeName || "");
+  const actorLabel = operationActorName(p, staffName) || "-";
   const payTypeLabel = { nagd: "Nəğd", kocurme: "Köçürmə", kredit: "Kredit" }[String(p.payType || "").toLowerCase()] || (p.payType || "-");
   openModal(`
     <h2>Alış – Məlumat</h2>
@@ -3350,7 +3351,7 @@ function openPurchInfo(idx) {
       <div class="info-row"><div class="info-label">Məbləğ (AZN)</div><div class="info-value">${money(p.amount)}</div></div>
       <div class="info-row"><div class="info-label">Ödəniş növü</div><div class="info-value">${escapeHtml(payTypeLabel)}</div></div>
       <div class="info-row"><div class="info-label">Ödənilən (AZN)</div><div class="info-value">${money(p.paidTotal)}</div></div>
-      <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(staffName)}</div></div>
+      <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(actorLabel)}</div></div>
     </div>
     <div class="modal-footer">
       ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl();openPurch(${idx})">Redaktə</button>` : ""}
@@ -3371,7 +3372,7 @@ function openPurchInfoByInv(invNoRaw) {
   const head = rows[0];
   const supp = head.supp || "-";
   const staff = head.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(head.employeeId)) : null;
-  const staffName = staff ? staff.name : "-";
+  const staffName = operationActorName(head, staff ? staff.name : (head.employeeName || "")) || "-";
   const totalAmount = rows.reduce((a, p) => a + n(p.amount), 0);
   const totalPaid = rows.reduce((a, p) => a + n(p.paidTotal), 0);
   const totalRem = Math.max(0, totalAmount - totalPaid);
