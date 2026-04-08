@@ -5753,7 +5753,8 @@ function openDebtorInfo(customerId) {
       const rem = saleRemaining(s);
       const st = debtStatus(n(s.amount), rem);
       const invNo = s.invNo || invFallback("sales", s.uid);
-      const key = (s.imei1 || s.imei2 || s.seria || "").trim();
+      const imeiParts = [s.imei1, s.imei2].filter(Boolean);
+      const key = (imeiParts.length ? imeiParts.join("/") : (s.seria || s.code || "")).trim();
       const payDisabled = rem <= 0.000001 ? "disabled" : "";
       return `
       <tr>
@@ -8499,6 +8500,9 @@ function openOverdueInfo(saleUid) {
       <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-")}</div></div>
       <div class="info-row"><div class="info-label">Qaimə</div><div class="info-value">${escapeHtml(inv)}</div></div>
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(sale.productName || "-")}</div></div>
+      ${(sale.imei1 || sale.imei2) ? `<div class="info-row"><div class="info-label">IMEI</div><div class="info-value">${escapeHtml([sale.imei1, sale.imei2].filter(Boolean).join(" / "))}</div></div>` : ""}
+      ${sale.seria ? `<div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(sale.seria)}</div></div>` : ""}
+      ${sale.code ? `<div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(sale.code)}</div></div>` : ""}
       <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(sale.date)}</div></div>
       <div class="info-row"><div class="info-label">İlk ödəniş günü</div><div class="info-value">${escapeHtml(dueStart)}</div></div>
       <div class="info-row"><div class="info-label">Müddət</div><div class="info-value">${credit.term} ay</div></div>
