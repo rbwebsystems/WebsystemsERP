@@ -4768,7 +4768,7 @@ function openSale(idx = null) {
         </div>
             <div id="payNowBox" class="grid-span-2" style="display:none;">
               <div class="grid-2">
-                <div class="f-group"><label>Ödəniş məbləği (AZN)</label><input type="number" step="0.01" id="f_s_paid" placeholder="0.00" value="${escapeAttr(current?.lastPayAmount ?? "0")}"></div>
+                <div class="f-group"><label>Ödəniş məbləği (AZN)</label><input type="number" step="0.01" id="f_s_paid" placeholder="0.00" value="${escapeAttr(current?.lastPayAmount || "")}"></div>
                 <div class="f-group"><label>Ödəniş hesabı</label><select id="f_pay_acc">${accOptions}</select></div>
                 <label class="chk grid-span-2">
                   <input type="checkbox" id="f_pay_initial" onchange="toggleSaleInitialPayment()">
@@ -4915,6 +4915,7 @@ function renderSaleDraftItems() {
     </tr>`)
     .join("");
   totalEl.textContent = `${money(total)} AZN`;
+  recalcCredit();
 }
 
 function addSaleDraftItem(skipAlert) {
@@ -4967,7 +4968,7 @@ function togglePayNow(noRender) {
   if (!box || !chk) return;
   box.style.display = chk.checked ? "" : "none";
   if (!chk.checked) {
-    byId("f_s_paid").value = "0";
+    byId("f_s_paid").value = "";
     if (byId("f_pay_initial")) byId("f_pay_initial").checked = false;
   } else {
     // if credit, default to down payment
@@ -4996,23 +4997,24 @@ function recalcCredit() {
     syncSalePaymentInputState();
     return;
   }
-  const total = Math.max(0, n(byId("f_s_amount")?.value));
+  const draftTotal = (window.__saleDraftItems || []).reduce((s, x) => s + n(x.amount), 0);
+  const fallback = Math.max(0, n(byId("f_s_amount")?.value));
+  const total = draftTotal > 0 ? draftTotal : fallback;
   const term = Math.max(1, Math.floor(n(byId("f_cr_term")?.value || 0)));
   let down = Math.max(0, n(byId("f_cr_down")?.value || 0));
   if (down > total) down = total;
   const rem = Math.max(0, total - down);
   const monthly = term > 0 ? rem / term : 0;
-  byId("f_cr_monthly").value = money(monthly);
-  byId("f_cr_rem").value = money(rem);
+  byId("f_cr_monthly").value = monthly > 0 ? money(monthly) : "";
+  byId("f_cr_rem").value = rem > 0 ? money(rem) : "";
 
-  // paid default to down payment if empty/0
   const paidEl = byId("f_s_paid");
   if (paidEl) {
     const shouldLockToDown = !!byId("f_pay_now")?.checked && !!byId("f_pay_initial")?.checked;
     const cur = n(paidEl.value);
     const auto = n(paidEl.getAttribute("data-autofill"));
     if (shouldLockToDown || cur === 0 || cur === auto) {
-      paidEl.value = money(down);
+      paidEl.value = down > 0 ? money(down) : "";
       paidEl.setAttribute("data-autofill", String(down));
     }
   }
