@@ -4018,6 +4018,8 @@ function handleSaleItemChange(skipAutoAdd) {
   if (!skipAutoAdd && window.__saleAutoAddEnabled) {
     const selected = byId("f_s_item")?.value || "";
     if (!selected) return;
+    const amt = n(byId("f_s_amount")?.value);
+    if (amt <= 0) return;
     addSaleDraftItem();
   }
 }
