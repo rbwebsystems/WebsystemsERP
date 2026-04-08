@@ -5788,15 +5788,18 @@ function amountAppliedToSaleLast(sale) {
 
 function openDebtorInfo(customerId) {
   const cid = String(customerId);
+  // Yalnız qeyri-kredit satışlar debitor bölməsindədir
   const items = (db.sales || [])
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => String(s.customerId) === cid)
     .filter(({ s }) => !s.returnedAt)
+    .filter(({ s }) => String(s.saleType || "").toLowerCase() !== "kredit")
     .sort((a, b) => String(a.s.date).localeCompare(String(b.s.date)) * -1);
 
   const custName = items[0]?.s.customerName || customerId;
   const totalRem = items.reduce((a, { s }) => a + saleRemaining(s), 0);
   const footPayDis = totalRem <= 0.000001 ? "disabled" : "";
+  const saleTypeLabel = { nagd: "Nağd", post: "Post", korporativ: "Korporativ", kocurme: "Köçürmə" };
 
   const rows = items
     .map(({ s, idx }, i) => {
@@ -5806,6 +5809,7 @@ function openDebtorInfo(customerId) {
       const imeiParts = [s.imei1, s.imei2].filter(Boolean);
       const key = (imeiParts.length ? imeiParts.join("/") : (s.seria || s.code || "")).trim();
       const payDisabled = rem <= 0.000001 ? "disabled" : "";
+      const typeLabel = saleTypeLabel[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase();
       return `
       <tr>
         <td>${i + 1}</td>
@@ -5813,6 +5817,7 @@ function openDebtorInfo(customerId) {
         <td>${fmtDT(s.date)}</td>
         <td>${escapeHtml(s.productName)}</td>
         <td>${escapeHtml(key || "-")}</td>
+        <td>${escapeHtml(typeLabel)}</td>
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal)} AZN</td>
         <td>${money(rem)} AZN</td>
@@ -5829,11 +5834,12 @@ function openDebtorInfo(customerId) {
     <h2>Debitor detalları</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}</div></div>
+      <div class="info-row"><div class="info-label">Cəmi qalıq borc</div><div class="info-value"><strong>${money(totalRem)} AZN</strong></div></div>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Məhsul</th><th>IMEI/Seriya</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="10">Satış yoxdur</td></tr>`}</tbody>
+        <thead><tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Məhsul</th><th>IMEI/Seriya</th><th>Növ</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="11">Borc yoxdur</td></tr>`}</tbody>
       </table>
     </div>
     <div class="modal-footer">
@@ -5845,27 +5851,48 @@ function openDebtorInfo(customerId) {
 
 function openDebtorPayment(customerId) {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
-  const rem = db.sales
-    .filter((s) => String(s.customerId) === String(customerId))
-    .filter((s) => !s.returnedAt)
-    .reduce((a, s) => a + saleRemaining(s), 0);
-  if (rem <= 0.000001) {
+  const cid = String(customerId);
+  // Yalnız qeyri-kredit borclar
+  const unpaidSales = db.sales
+    .map((s, idx) => ({ s, idx }))
+    .filter(({ s }) => String(s.customerId) === cid)
+    .filter(({ s }) => !s.returnedAt)
+    .filter(({ s }) => String(s.saleType || "").toLowerCase() !== "kredit")
+    .filter(({ s }) => saleRemaining(s) > 0.000001)
+    .sort((a, b) => (a.s.date > b.s.date ? 1 : -1));
+
+  const totalRem = unpaidSales.reduce((a, { s }) => a + saleRemaining(s), 0);
+  if (totalRem <= 0.000001) {
     alert("Borc yoxdur.");
     return;
   }
-  // pick first sale idx for existing payment UI; we'll apply across debts by customer
-  const cust = db.cust.find((c) => String(c.uid) === String(customerId));
+  const cust = db.cust.find((c) => String(c.uid) === cid);
+  const custLabel = cust ? `${cust.sur} ${cust.name}` : customerId;
+
+  const invOptions = unpaidSales.map(({ s }) => {
+    const inv = s.invNo || invFallback("sales", s.uid);
+    const rem = saleRemaining(s);
+    return `<option value="${escapeAttr(String(s.uid))}" data-rem="${rem}">${escapeHtml(inv)} — ${escapeHtml(s.productName)} (qalıq: ${money(rem)} AZN)</option>`;
+  }).join("");
+
   openModal(`
     <h2>Debitor ödəniş</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(cust ? `${cust.sur} ${cust.name}` : customerId)}</div></div>
-      <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custLabel)}</div></div>
+      <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value"><strong>${money(totalRem)} AZN</strong></div></div>
     </div>
-    <form onsubmit="saveDebtorPayment(event, '${escapeAttr(customerId)}')">
+    <form onsubmit="saveDebtorPayment(event, '${escapeAttr(cid)}')">
       <div class="form-stack">
         <div class="form-card">
           <div class="form-card-title">Ödəniş</div>
           <div class="grid-2">
+            <div class="f-group" style="grid-column:1/-1"><label>Qaimə *</label>
+              <select id="deb_pay_inv" required onchange="debPayInvChanged(this)">
+                <option value="">— Seçin —</option>
+                <option value="__all__" data-rem="${totalRem}">Bütün borclar (köhnəsi əvvəl) — ${money(totalRem)} AZN</option>
+                ${invOptions}
+              </select>
+            </div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="deb_pay_date" value="${nowISODateTimeLocal()}" required></div>
             <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="deb_pay_amount" placeholder="0.00" required></div>
             <div class="f-group"><label>Hesab *</label><select id="deb_pay_acc" required>${accountOptionsHtml(1)}</select></div>
@@ -5875,10 +5902,18 @@ function openDebtorPayment(customerId) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="modalBack()">Geri</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
   `);
+}
+
+function debPayInvChanged(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const rem = opt ? parseFloat(opt.getAttribute("data-rem") || "0") : 0;
+  const amtEl = byId("deb_pay_amount");
+  if (amtEl && rem > 0) amtEl.value = money(rem).replace(/[^\d.]/g, "");
 }
 
 function saveDebtorPayment(e, customerId) {
@@ -5887,29 +5922,55 @@ function saveDebtorPayment(e, customerId) {
   const date = val("deb_pay_date");
   const amount = Math.max(0, n(val("deb_pay_amount")));
   const accId = Number(val("deb_pay_acc") || 1);
-  if (amount <= 0) return;
+  const invUid = val("deb_pay_inv") || "";
+  if (!invUid) return alert("Qaimə seçin.");
+  if (amount <= 0) return alert("Məbləğ daxil edin.");
 
-  const applied = applyCustomerPaymentToDebts(customerId, amount, date, "debts_module");
-  if (applied.applied <= 0.000001) {
-    alert("Borc yoxdur.");
-    return;
+  const cust = db.cust.find((c) => String(c.uid) === String(customerId));
+  const custLabel = cust ? `${cust.sur} ${cust.name}` : customerId;
+
+  let appliedAmount = 0;
+  let allocations = [];
+  let noteDefault = "Debitor ödəniş";
+
+  if (invUid === "__all__") {
+    // Bütün qeyri-kredit borclar — köhnəsi əvvəl
+    const result = applyCustomerPaymentToDebts(customerId, amount, date, "debts_module",
+      (s) => String(s.saleType || "").toLowerCase() !== "kredit");
+    if (result.applied <= 0.000001) return alert("Borc yoxdur.");
+    appliedAmount = result.applied;
+    allocations = result.allocations;
+    noteDefault = "Debitor ödəniş (bütün borclar)";
+  } else {
+    // Konkret qaimə
+    const saleIdx = db.sales.findIndex((s) => String(s.uid) === String(invUid));
+    if (saleIdx < 0) return alert("Qaimə tapılmadı.");
+    const sale = db.sales[saleIdx];
+    const rem = saleRemaining(sale);
+    if (rem <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
+    if (amount - rem > 0.000001) return alert(`Məbləğ qalıq borcdan çox ola bilməz. Qalıq: ${money(rem)} AZN`);
+    const paid = addSalePaymentInternal(sale, amount, date, "debts_module");
+    if (paid <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
+    appliedAmount = paid;
+    allocations = [{ saleUid: sale.uid, amount: paid }];
+    const inv = sale.invNo || invFallback("sales", sale.uid);
+    noteDefault = `Ödəniş — ${inv}`;
   }
 
-  // cash in
-  const cust = db.cust.find((c) => String(c.uid) === String(customerId));
   addCashOp({
     type: "in",
     date,
-    source: `Müştəri ödənişi (${cust ? `${cust.sur} ${cust.name}` : customerId})`,
-    amount: applied.applied,
-    note: val("deb_pay_note") || "Debitor ödəniş",
+    source: `Müştəri ödənişi (${custLabel})`,
+    amount: appliedAmount,
+    note: val("deb_pay_note") || noteDefault,
     link: { kind: "debtor_payment", customerId },
-    meta: { allocations: applied.allocations },
+    meta: { allocations },
     accountId: accId,
   });
 
+  logEvent("create", "cash", { type: "in", kind: "debtor_payment", amount: appliedAmount, customerId, allocations });
   saveDB();
-  closeMdl();
+  openDebtorInfo(customerId);
 }
 
 // ========= Cash =========
@@ -10302,6 +10363,7 @@ Object.assign(window, {
   openSupplierPaymentHistory,
   openDebtorInfo,
   openDebtorPayment,
+  debPayInvChanged,
   saveDebtorPayment,
   syncAutoUserIdentity,
   toggleUserManualMode,
