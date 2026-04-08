@@ -1883,19 +1883,26 @@ function ensureAuditTrash() {
   if (!db.overdueNotes || !Array.isArray(db.overdueNotes)) db.overdueNotes = [];
 }
 
-function nextInvNo(kind) {
+function saleInvPrefix(saleType) {
+  const map = { nagd: "NS", post: "PS", korporativ: "KPS", kredit: "KS", kocurme: "NS" };
+  return map[String(saleType || "").toLowerCase()] || "NS";
+}
+
+function nextInvNo(kind, saleType) {
   ensureCounters();
   if (kind === "purch") {
     const n0 = db.counters.purchInv++;
     return "AL-" + String(n0).padStart(3, "0");
   }
+  const prefix = saleInvPrefix(saleType);
   const n0 = db.counters.salesInv++;
-  return "ST-" + String(n0).padStart(3, "0");
+  return prefix + "-" + String(n0).padStart(3, "0");
 }
-function previewInvNo(kind) {
+function previewInvNo(kind, saleType) {
   ensureCounters();
   if (kind === "purch") return "AL-" + String(db.counters.purchInv || 1).padStart(3, "0");
-  return "ST-" + String(db.counters.salesInv || 1).padStart(3, "0");
+  const prefix = saleInvPrefix(saleType);
+  return prefix + "-" + String(db.counters.salesInv || 1).padStart(3, "0");
 }
 
 function invFallback(kind, uid) {
@@ -1927,8 +1934,8 @@ function ensureInvNoFormat() {
 
 function runInvNoMigrationIfNeeded() {
   if (!db) return;
-  const needsPurch = (db.purch || []).some((p) => !/^AL-\d+$/.test(String(p.invNo || "").trim()));
-  const needsSales = (db.sales || []).some((s) => !/^ST-\d+$/.test(String(s.invNo || "").trim()));
+  const needsPurch = (db.purch || []).some((p) => !/^[A-Z]+-\d+$/.test(String(p.invNo || "").trim()));
+  const needsSales = (db.sales || []).some((s) => !/^[A-Z]+-\d+$/.test(String(s.invNo || "").trim()));
   if (needsPurch || needsSales) {
     ensureInvNoFormat();
     saveDB();
@@ -4759,10 +4766,10 @@ function openSale(idx = null) {
             <div class="f-group"><label>Əməkdaş${staffEditable ? "" : " *"}</label><select id="f_s_staff" ${staffEditable ? "" : "disabled"} ${staffEditable ? "" : "required"}>${staffOptions}</select></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
             <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
-          <option value="nagd">nagd</option>
-          <option value="post">post</option>
-          <option value="kredit">kredit</option>
-          <option value="kocurme">kocurme</option>
+          <option value="nagd">Nağd</option>
+          <option value="post">Post</option>
+          <option value="korporativ">Korporativ</option>
+          <option value="kredit">Kredit</option>
         </select></div>
           </div>
         </div>
@@ -4835,7 +4842,7 @@ function openSale(idx = null) {
 
   // Prefill select values
   if (current) {
-    byId("f_s_type").value = current.saleType || "nagd";
+    byId("f_s_type").value = current.saleType === "kocurme" ? "korporativ" : (current.saleType || "nagd");
     byId("f_s_customer").value = String(current.customerId || "");
     byId("f_s_staff").value = String(current.employeeId || defaultStaffId || "");
     // if bulk, show unit price in input; else show total
@@ -5108,7 +5115,7 @@ async function saveSale(e, idx) {
     const sold = soldKeySet();
     const usedByPurch = {};
     const created = [];
-    const invNo = nextInvNo("sales");
+    const invNo = nextInvNo("sales", saleType);
     let paidLeft = paid;
     const totalDown = saleType === "kredit" ? Math.max(0, n(val("f_cr_down"))) : 0;
     const termMonths = saleType === "kredit" ? Math.max(1, Math.floor(n(val("f_cr_term") || 1))) : 0;
@@ -5621,7 +5628,7 @@ function openSaleInfo(idx) {
         <div class="form-card-title">Əsas məlumat</div>
         <div class="grid-2">
           <div class="f-group"><label>Satış tarixi</label><div class="f-static">${fmtDT(s.date)}</div></div>
-          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml(String(s.saleType).toUpperCase())}</div></div>
+          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
           <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
           <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
@@ -9150,7 +9157,7 @@ function renderAll() {
         <td>${escapeHtml(s.customerName)}</td>
         <td>${escapeHtml(s.productName)}</td>
         <td>${String(Math.max(1, Math.floor(n(s.qty || 1))))}</td>
-        <td>${escapeHtml(String(s.saleType).toUpperCase())}</td>
+        <td>${escapeHtml({ nagd: "Nağd", post: "Post", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</td>
         <td>${escapeHtml(operationActorName(s, s.employeeName || ""))}</td>
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal)} AZN</td>
