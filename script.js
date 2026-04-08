@@ -101,6 +101,7 @@ function withSectionLoading(runSync) {
 
 /** Sidebar / spotlight / bildiriş: bölmə + cədvəllərin yenilənməsi bir yerdə yükləmə ilə. */
 function goSecWithLoad(id, el, opts) {
+  closeMdl();
   withSectionLoading(() => {
     showSec(id, el, opts);
     renderAll();
@@ -1188,10 +1189,20 @@ function currentActorName() {
 }
 
 function currentUserStaffId() {
-  const staffUid = currentUser()?.staffUid;
-  if (staffUid == null || staffUid === "") return "";
-  const staff = (db.staff || []).find((s) => String(s.uid) === String(staffUid));
-  return staff ? String(staff.uid) : "";
+  const user = currentUser();
+  if (!user) return "";
+  const staffUid = user.staffUid;
+  if (staffUid != null && staffUid !== "") {
+    const staff = (db.staff || []).find((s) => String(s.uid) === String(staffUid));
+    if (staff) return String(staff.uid);
+  }
+  // staffUid bağlı deyilsə, tam adla eşləşdirməyə cəhd et
+  const fullName = String(user.fullName || "").trim().toLowerCase();
+  if (fullName) {
+    const byName = (db.staff || []).find((s) => String(s.name || "").trim().toLowerCase() === fullName);
+    if (byName) return String(byName.uid);
+  }
+  return "";
 }
 
 function canChangeSaleStaff() {
