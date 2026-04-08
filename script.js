@@ -78,6 +78,35 @@ function softLoadingEnd() {
   byId("softLoadingBar")?.classList.add("hidden");
 }
 
+/** Bölmə keçidi + renderAll: zolaq dərhal görünsün; çox sürətli işlərdə ən azı ~minMs görünür. */
+const SECTION_LOAD_MIN_MS = 300;
+const MODAL_SLIDEOVER_LOAD_MIN_MS = 240;
+function withSectionLoading(runSync) {
+  if (!meta?.session) {
+    runSync();
+    return;
+  }
+  const t0 = Date.now();
+  softLoadingBegin(true);
+  try {
+    runSync();
+  } finally {
+    const finish = () => {
+      const wait = Math.max(0, SECTION_LOAD_MIN_MS - (Date.now() - t0));
+      setTimeout(() => softLoadingEnd(), wait);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(finish));
+  }
+}
+
+/** Sidebar / spotlight / bildiriş: bölmə + cədvəllərin yenilənməsi bir yerdə yükləmə ilə. */
+function goSecWithLoad(id, el, opts) {
+  withSectionLoading(() => {
+    showSec(id, el, opts);
+    renderAll();
+  });
+}
+
 function initFirestore() {
   if (!useFirestore() || firestoreInitialized) return;
   try {
@@ -661,14 +690,16 @@ function showDebtSub(sectionId) {
     return;
   }
   const debtNav = findNavLinkForSection("debts");
-  showSec(sectionId, debtNav || null);
-  document.querySelectorAll(".debt-type-select").forEach((s) => {
-    s.value = sectionId;
+  withSectionLoading(() => {
+    showSec(sectionId, debtNav || null);
+    document.querySelectorAll(".debt-type-select").forEach((s) => {
+      s.value = sectionId;
+    });
+    updateDebtSubSelectVisibility(sectionId);
+    updateDebtSubEnabled();
+    updateDebtSectionVisibility();
+    renderAll();
   });
-  updateDebtSubSelectVisibility(sectionId);
-  updateDebtSubEnabled();
-  updateDebtSectionVisibility();
-  renderAll();
 }
 
 function updateDebtSubSelectVisibility(sectionId) {
@@ -2058,7 +2089,7 @@ function getNotifications() {
       kind: "overdue",
       title: "Vaxtı keçmiş kredit",
       text: `${g.customer}: ${money(g.dueTotal)} AZN • ${g.maxLate} gün`,
-      action: () => showSec("overdue", null),
+      action: () => goSecWithLoad("overdue", null),
     });
   }
 
@@ -2085,7 +2116,7 @@ function getNotifications() {
       kind: "stock",
       title: "Anbar azalıb",
       text: `${low.length} məhsul • hədd ≤ ${thr}. Nümunə: ${top}`,
-      action: () => showSec("stock", findNavLinkForSection("stock")),
+      action: () => goSecWithLoad("stock", findNavLinkForSection("stock")),
     });
   }
 
@@ -2257,8 +2288,7 @@ function bindSidebarNavClicks() {
         alert("Bu bölməyə icazə yoxdur.");
         return;
       }
-      showSec(id, btn);
-      renderAll();
+      goSecWithLoad(id, btn);
     },
     true
   );
@@ -2298,14 +2328,19 @@ function onErpHashChange() {
   if (!userCanSection(id)) {
     alert("Bu bölməyə icazə yoxdur.");
     const dn = findNavLinkForSection("dash");
-    showSec("dash", dn || null, { skipHash: true });
-    syncAppSectionHash("dash");
+    withSectionLoading(() => {
+      showSec("dash", dn || null, { skipHash: true });
+      syncAppSectionHash("dash");
+      renderAll();
+    });
     return;
   }
   const nav = findNavLinkForSection(id);
-  showSec(id, nav || null, { skipHash: true });
-  renderAll();
-  consumeHashDeepLink();
+  withSectionLoading(() => {
+    showSec(id, nav || null, { skipHash: true });
+    renderAll();
+    consumeHashDeepLink();
+  });
 }
 
 function showSec(id, el, opts) {
@@ -2313,32 +2348,24 @@ function showSec(id, el, opts) {
     alert("Bu bölməyə icazə yoxdur.");
     return;
   }
-  const skipLoading = opts && opts.skipLoading;
-  if (!skipLoading && meta?.session) softLoadingBegin(false);
-  try {
-    document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
-    document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
-    const sec = document.getElementById(id);
-    if (sec) {
-      sec.classList.add("active");
-    }
-    if (el) el.classList.add("active");
-    if (id === "debts") {
-      document.querySelectorAll(".debt-type-select").forEach((s) => {
-        s.value = "";
-      });
-      updateDebtSubSelectVisibility("");
-      updateDebtSubEnabled();
-      updateDebtSectionVisibility();
-    }
-    refreshHeaderBar();
-    if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
-    if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
-  } finally {
-    if (!skipLoading && meta?.session) {
-      requestAnimationFrame(() => requestAnimationFrame(() => softLoadingEnd()));
-    }
+  document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
+  document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
+  const sec = document.getElementById(id);
+  if (sec) {
+    sec.classList.add("active");
   }
+  if (el) el.classList.add("active");
+  if (id === "debts") {
+    document.querySelectorAll(".debt-type-select").forEach((s) => {
+      s.value = "";
+    });
+    updateDebtSubSelectVisibility("");
+    updateDebtSubEnabled();
+    updateDebtSectionVisibility();
+  }
+  refreshHeaderBar();
+  if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
+  if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
 }
 
 function showDashboardAfterLogin() {
@@ -2347,7 +2374,7 @@ function showDashboardAfterLogin() {
   const fromHash = parseAppSectionFromHash();
   if (fromHash && isValidAppSection(fromHash) && userCanSection(fromHash)) {
     const nav = findNavLinkForSection(fromHash);
-    showSec(fromHash, nav || null, { skipHash: true, skipLoading: true });
+    showSec(fromHash, nav || null, { skipHash: true });
     try {
       sessionStorage.setItem("bakfon_lastSection", fromHash);
     } catch (e) {}
@@ -2358,7 +2385,7 @@ function showDashboardAfterLogin() {
     sessionStorage.setItem("bakfon_lastSection", "dash");
   } catch (e) {}
   const dashNav = findNavLinkForSection("dash");
-  showSec("dash", dashNav || null, { skipHash: true, skipLoading: true });
+  showSec("dash", dashNav || null, { skipHash: true });
   syncAppSectionHash("dash");
 }
 
@@ -2461,7 +2488,8 @@ function openModal(html, opts = {}) {
   const body = document.getElementById("modalContent");
   if (!body) return;
   const slideover = !opts.popup;
-  if (slideover) softLoadingBegin(false);
+  const slideLoadT0 = slideover ? Date.now() : 0;
+  if (slideover) softLoadingBegin(true);
   try {
     const now = Date.now();
     const alreadyOpen = modal.style.display === "flex";
@@ -2494,7 +2522,11 @@ function openModal(html, opts = {}) {
     window.__modalJustClosedAt = 0;
   } finally {
     if (slideover) {
-      requestAnimationFrame(() => requestAnimationFrame(() => softLoadingEnd()));
+      const finish = () => {
+        const wait = Math.max(0, MODAL_SLIDEOVER_LOAD_MIN_MS - (Date.now() - slideLoadT0));
+        setTimeout(() => softLoadingEnd(), wait);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(finish));
     }
   }
 }
@@ -2503,7 +2535,8 @@ function modalBack() {
   const hist = window.__modalHistory || [];
   if (!body || !hist.length) return;
   const slideover = modal.classList.contains("modal--slideover");
-  if (slideover) softLoadingBegin(false);
+  const slideBackT0 = slideover ? Date.now() : 0;
+  if (slideover) softLoadingBegin(true);
   try {
     const prevRaw = hist.pop();
     window.__currentModalRaw = prevRaw;
@@ -2514,7 +2547,10 @@ function modalBack() {
     if (slideover) {
       requestAnimationFrame(() => {
         syncSlideoverContentPad();
-        requestAnimationFrame(() => softLoadingEnd());
+        requestAnimationFrame(() => {
+          const wait = Math.max(0, MODAL_SLIDEOVER_LOAD_MIN_MS - (Date.now() - slideBackT0));
+          setTimeout(() => softLoadingEnd(), wait);
+        });
       });
     }
   }
@@ -10151,7 +10187,7 @@ function initApp() {
   }
   runMigrations();
   ensureOverdueTestPack();
-  if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash, skipLoading: true });
+  if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash });
   bindSidebarNavClicks();
   renderAll();
   requestAnimationFrame(() => consumeHashDeepLink());
@@ -10288,7 +10324,7 @@ function openNotifications() {
     const secMap = { neg: "cash", overdue: "overdue", stock: "stock" };
     const secId = secMap[x.kind];
     const actionBtn = secId
-      ? `<div class="notif-action"><button onclick="closeMdl();showSec('${secId}',null)">Bölməyə keç →</button></div>`
+      ? `<div class="notif-action"><button onclick="closeMdl();goSecWithLoad('${secId}',null)">Bölməyə keç →</button></div>`
       : "";
     return `<div class="notif-item">
       <div class="notif-icon ${x.kind}"><i class="fas ${icon}"></i></div>
@@ -10389,7 +10425,7 @@ function runSpotlight() {
       label: t("sections"),
       items: secMatches.slice(0, 6).map((s) => ({
         icon: s.icon, name: s.label, sub: "", tag: t("section"),
-        action: () => { closeSpotlight(); showSec(s.id, null); }
+        action: () => { closeSpotlight(); goSecWithLoad(s.id, findNavLinkForSection(s.id)); }
       }))
     });
   }
@@ -10401,7 +10437,7 @@ function runSpotlight() {
       label: t("nav_cust"),
       items: custs.map((c, i) => ({
         icon: "fa-user", name: `${c.sur} ${c.name}`, sub: c.phone || "",  tag: t("customer"),
-        action: () => { closeSpotlight(); showSec("cust", null); }
+        action: () => { closeSpotlight(); goSecWithLoad("cust", findNavLinkForSection("cust")); }
       }))
     });
 
@@ -10411,7 +10447,7 @@ function runSpotlight() {
       label: t("nav_prod"),
       items: prods.map((p) => ({
         icon: "fa-box-open", name: p.name, sub: `${t("code")}: ${p.code || "-"} • ${money(p.price)} AZN`, tag: t("product"),
-        action: () => { closeSpotlight(); showSec("prod", null); }
+        action: () => { closeSpotlight(); goSecWithLoad("prod", findNavLinkForSection("prod")); }
       }))
     });
 
@@ -10424,7 +10460,11 @@ function runSpotlight() {
         return {
           icon: "fa-receipt", name: `#${s.invNo || s.uid} — ${s.customerName || ""}`,
           sub: `${money(s.amount)} AZN • ${fmtDT(s.date)}`, tag: t("sale"),
-          action: () => { closeSpotlight(); showSec("sales", null); setTimeout(() => openSaleInfo && openSaleInfo(idx >= 0 ? idx : 0), 150); }
+          action: () => {
+            closeSpotlight();
+            goSecWithLoad("sales", findNavLinkForSection("sales"));
+            setTimeout(() => openSaleInfo && openSaleInfo(idx >= 0 ? idx : 0), 200);
+          }
         };
       })
     });
@@ -10435,7 +10475,7 @@ function runSpotlight() {
       label: t("nav_supp"),
       items: supps.map((s) => ({
         icon: "fa-truck", name: s.co, sub: s.contact || "", tag: t("supplier"),
-        action: () => { closeSpotlight(); showSec("supp", null); }
+        action: () => { closeSpotlight(); goSecWithLoad("supp", findNavLinkForSection("supp")); }
       }))
     });
   }
