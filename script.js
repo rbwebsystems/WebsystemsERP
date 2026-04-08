@@ -524,22 +524,30 @@ function loadCompanyDB() {
   }
 }
 
-function saveCompanyDB() {
+/** onDone: Firestore .set bitdikdən sonra (və ya LS yazıldıqdan dərhal sonra) çağırılır — UI “saxlanıldı” əvvəl yükləmə, sonra gəlsin. */
+function saveCompanyDB(onDone) {
   const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
+  const finish = () => {
+    if (typeof onDone === "function") onDone();
+  };
   if (useFirestore()) {
     lastFirestoreWriteAt = Date.now();
     const ref = getCompanyRef(cid);
     if (ref) {
       const data = JSON.parse(JSON.stringify(db));
-      softLoadingBegin(false);
+      softLoadingBegin(true);
       ref
         .set(data)
         .catch((e) => console.warn("Firestore company yazma xətası:", e))
-        .finally(() => softLoadingEnd());
+        .finally(() => {
+          softLoadingEnd();
+          finish();
+        });
+      return;
     }
-  } else {
-    localStorage.setItem(companyDBKey(cid), JSON.stringify(db));
   }
+  localStorage.setItem(companyDBKey(cid), JSON.stringify(db));
+  finish();
 }
 
 let lastSavedAt = 0;
@@ -562,9 +570,10 @@ function updateLastSavedEl() {
 
 function saveDB() {
   ensureAuditTrash();
-  saveCompanyDB();
-  updateLastSavedEl();
-  renderAll();
+  saveCompanyDB(() => {
+    updateLastSavedEl();
+    renderAll();
+  });
 }
 
 function logEvent(action, target, details = {}) {
@@ -1095,13 +1104,17 @@ function saveMeta() {
     if (ref) {
       const { session, ...rest } = meta || {};
       const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
-      softLoadingBegin(false);
+      softLoadingBegin(true);
       ref
         .set(data)
         .catch((e) => console.warn("Firestore meta yazma xətası:", e))
-        .finally(() => softLoadingEnd());
+        .finally(() => {
+          softLoadingEnd();
+          updateLastSavedEl();
+        });
     }
     localStorage.setItem(META_KEY, JSON.stringify(meta));
+    if (ref) return;
   } else {
     localStorage.setItem(META_KEY, JSON.stringify(meta));
   }
