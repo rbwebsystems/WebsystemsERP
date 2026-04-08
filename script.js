@@ -1187,6 +1187,17 @@ function currentActorName() {
   return userDisplay(currentUser()) || "-";
 }
 
+function currentUserStaffId() {
+  const staffUid = currentUser()?.staffUid;
+  if (staffUid == null || staffUid === "") return "";
+  const staff = (db.staff || []).find((s) => String(s.uid) === String(staffUid));
+  return staff ? String(staff.uid) : "";
+}
+
+function canChangeSaleStaff() {
+  return isAdmin() || isDeveloper();
+}
+
 function operationActorName(rec, fallback = "-") {
   if (rec && String(rec.actor || "").trim()) return String(rec.actor).trim();
   if (rec && String(rec.actorName || "").trim()) return String(rec.actorName).trim();
@@ -3933,6 +3944,118 @@ function toggleSaleQty() {
   }
 }
 
+function saleItemUnitPriceFromPurch(p) {
+  if (!p) return 0;
+  if (!purchIsBulk(p)) return Math.max(0, n(p.amount));
+  const explicit = Math.max(0, n(p.unitPrice || 0));
+  if (explicit > 0.000001) return explicit;
+  const qty = Math.max(1, Math.floor(n(p.qty || 1)));
+  return Math.max(0, n(p.amount)) / qty;
+}
+
+function getSaleItemCatalog() {
+  return Array.isArray(window.__saleItemCatalog) ? window.__saleItemCatalog : [];
+}
+
+function renderSaleItemOptions(filterText = "", preferredValue = "") {
+  const sel = byId("f_s_item");
+  if (!sel) return;
+  const q = String(filterText || "").trim().toLowerCase();
+  const items = getSaleItemCatalog().filter((item) => !q || item.searchText.includes(q));
+  const fifoOptions = items
+    .filter((item) => item.group === "fifo")
+    .map((item) => `<option value="${escapeAttr(item.value)}">${escapeHtml(item.optionLabel)}</option>`)
+    .join("");
+  const stockOptions = items
+    .filter((item) => item.group === "stock")
+    .map((item) => `<option value="${escapeAttr(item.value)}">${escapeHtml(item.optionLabel)}</option>`)
+    .join("");
+  sel.innerHTML =
+    `<option value="">Mal seçin</option>` +
+    (fifoOptions ? `<optgroup label="AUTO FIFO">${fifoOptions}</optgroup>` : "") +
+    (stockOptions ? `<optgroup label="Anbar">${stockOptions}</optgroup>` : "");
+  sel.disabled = items.length === 0;
+  const nextValue = preferredValue && items.some((item) => item.value === preferredValue) ? preferredValue : "";
+  sel.value = nextValue;
+}
+
+function fillSaleAmountFromSelectedItem() {
+  const sel = byId("f_s_item")?.value || "";
+  const item = getSaleItemCatalog().find((x) => x.value === sel);
+  const amtEl = byId("f_s_amount");
+  if (!item || !amtEl) return;
+  const auto = n(amtEl.getAttribute("data-autofill"));
+  const current = n(amtEl.value);
+  const defaultAmount = Math.max(0, n(item.defaultAmount));
+  if (!String(amtEl.value || "").trim() || current === 0 || current === auto) {
+    amtEl.value = defaultAmount > 0 ? money(defaultAmount) : "";
+  }
+  amtEl.setAttribute("data-autofill", String(defaultAmount));
+}
+
+function clearSalePickerFields() {
+  const searchEl = byId("f_s_lookup");
+  if (searchEl) searchEl.value = "";
+  renderSaleItemOptions("", "");
+  const amountEl = byId("f_s_amount");
+  if (amountEl) {
+    amountEl.value = "";
+    amountEl.setAttribute("data-autofill", "0");
+  }
+  if (byId("f_s_qty")) byId("f_s_qty").value = "1";
+  toggleSaleQty();
+}
+
+function handleSaleItemChange(skipAutoAdd) {
+  fillSaleAmountFromSelectedItem();
+  toggleSaleQty();
+  if (typeof window.__saleUpdateHint === "function") window.__saleUpdateHint();
+  recalcCredit();
+  if (!skipAutoAdd && window.__saleAutoAddEnabled) {
+    const selected = byId("f_s_item")?.value || "";
+    if (!selected) return;
+    addSaleDraftItem();
+  }
+}
+
+function searchSaleItem() {
+  const input = byId("f_s_lookup");
+  const q = String(input?.value || "").trim();
+  const normalized = q.toLowerCase();
+  const currentValue = byId("f_s_item")?.value || "";
+  renderSaleItemOptions(q, currentValue);
+  if (!window.__saleAutoAddEnabled || !normalized) return;
+  const exactMatches = getSaleItemCatalog().filter((item) => Array.isArray(item.autoTokens) && item.autoTokens.includes(normalized));
+  if (exactMatches.length !== 1) return;
+  renderSaleItemOptions(q, exactMatches[0].value);
+  handleSaleItemChange(false);
+}
+
+function syncSalePaymentInputState() {
+  const payNow = !!byId("f_pay_now")?.checked;
+  const isCredit = String(byId("f_s_type")?.value || "") === "kredit";
+  const isInitial = !!byId("f_pay_initial")?.checked;
+  const paidEl = byId("f_s_paid");
+  if (!paidEl) return;
+  if (!payNow) {
+    paidEl.disabled = true;
+    return;
+  }
+  if (isCredit && isInitial) {
+    paidEl.disabled = true;
+    const down = Math.max(0, n(byId("f_cr_down")?.value || 0));
+    paidEl.value = money(down);
+    paidEl.setAttribute("data-autofill", String(down));
+    return;
+  }
+  paidEl.disabled = false;
+}
+
+function toggleSaleInitialPayment() {
+  syncSalePaymentInputState();
+  recalcCredit();
+}
+
 // ========= Customer/Supplier Info =========
 function openCustInfo(idx) {
   const c = db.cust[idx];
@@ -4525,7 +4648,7 @@ function openSale(idx = null) {
       const code = String(x.p.code || "").trim();
       const name = String(x.p.name || "").trim();
       const key = (code || name || "-").replace(/:/g, "_");
-      if (!fifoGroups.has(key)) fifoGroups.set(key, { key, code, name, rem: 0 });
+      if (!fifoGroups.has(key)) fifoGroups.set(key, { key, code, name, rem: 0, unitPrice: saleItemUnitPriceFromPurch(x.p) });
       const g = fifoGroups.get(key);
       g.rem += Math.max(0, n(x.rem));
     });
@@ -4533,28 +4656,53 @@ function openSale(idx = null) {
   const custOptions =
     `<option value="">Müştəri seç</option>` +
     db.cust.map((c) => `<option value="${c.uid}">${escapeHtml(c.sur)} ${escapeHtml(c.name)} (${c.uid})</option>`).join("");
+  const defaultStaffId = String(isEdit ? (current?.employeeId || "") : currentUserStaffId());
+  const staffEditable = canChangeSaleStaff();
   const staffOptions =
     `<option value="">Əməkdaş seç</option>` +
-    db.staff.map((s) => `<option value="${s.uid}">${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("");
+    db.staff.map((s) => `<option value="${s.uid}" ${String(defaultStaffId) === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("");
 
-  const fifoOptions = Array.from(fifoGroups.values())
-    .filter((g) => g.rem > 0)
-    .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-    .map((g) => `<option value="fifo:${escapeAttr(g.key)}">AUTO FIFO | ${escapeHtml(g.name || "-")} | KOD:${escapeHtml(g.code || "-")} | QALIQ:${Math.floor(g.rem)}</option>`)
-    .join("");
-
-  const itemOptions = stockItems.length
-    ? stockItems
-        .map((x) => {
-          const base = `${x.p.name} | ${x.p.supp} | ${x.p.date}`;
-          const extra =
-            x.type === "bulk"
-              ? ` | KOD:${x.p.code || "-"} | QALIQ:${x.rem}`
-              : ` | IMEI1:${x.p.imei1 || "-"} IMEI2:${x.p.imei2 || "-"} SER:${x.p.seria || "-"}`;
-          return `<option value="${x.type}:${x.p.uid}">${escapeHtml(base + extra)}</option>`;
-        })
-        .join("")
-    : `<option value="">Anbarda satılmamış mal yoxdur</option>`;
+  const itemCatalog = [
+    ...Array.from(fifoGroups.values())
+      .filter((g) => g.rem > 0)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+      .map((g) => {
+        const autoTokens = [g.name, g.code]
+          .map((v) => String(v || "").trim().toLowerCase())
+          .filter(Boolean);
+        return {
+          group: "fifo",
+          value: `fifo:${g.key}`,
+          label: `${g.name || "-"}${g.code ? ` | KOD:${g.code}` : ""}`,
+          optionLabel: `AUTO FIFO | ${g.name || "-"} | KOD:${g.code || "-"} | QALIQ:${Math.floor(g.rem)}`,
+          defaultAmount: Math.max(0, n(g.unitPrice)),
+          searchText: `${g.name || ""} ${g.code || ""}`.toLowerCase(),
+          autoTokens,
+        };
+      }),
+    ...stockItems.map((x) => {
+      const price = saleItemUnitPriceFromPurch(x.p);
+      const base = `${x.p.name} | ${x.p.supp} | ${x.p.date}`;
+      const extra =
+        x.type === "bulk"
+          ? ` | KOD:${x.p.code || "-"} | QALIQ:${x.rem}`
+          : ` | IMEI1:${x.p.imei1 || "-"} IMEI2:${x.p.imei2 || "-"} SER:${x.p.seria || "-"}`;
+      const autoTokens = [x.p.name, x.p.code, x.p.imei1, x.p.imei2, x.p.seria]
+        .map((v) => String(v || "").trim().toLowerCase())
+        .filter(Boolean);
+      return {
+        group: "stock",
+        value: `${x.type}:${x.p.uid}`,
+        label: x.type === "bulk"
+          ? `${x.p.name || "-"}${x.p.code ? ` | KOD:${x.p.code}` : ""}`
+          : `${x.p.name || "-"}${x.p.imei1 ? ` | IMEI:${x.p.imei1}` : x.p.seria ? ` | SER:${x.p.seria}` : ""}`,
+        optionLabel: `${base}${extra}`,
+        defaultAmount: Math.max(0, n(price)),
+        searchText: `${x.p.name || ""} ${x.p.code || ""} ${x.p.imei1 || ""} ${x.p.imei2 || ""} ${x.p.seria || ""}`.toLowerCase(),
+        autoTokens,
+      };
+    }),
+  ];
 
   ensureAccounts();
   const accOptions = accountOptionsHtml(current?.paymentAccountId || 1);
@@ -4566,6 +4714,8 @@ function openSale(idx = null) {
         <div class="form-card">
           <div class="form-card-title">Əsas məlumat</div>
           <div class="grid-2">
+            <div class="f-group"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
+            <div class="f-group"><label>Əməkdaş *</label><select id="f_s_staff" ${staffEditable ? "" : "disabled"} required>${staffOptions}</select></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
             <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
           <option value="nagd">nagd</option>
@@ -4573,27 +4723,44 @@ function openSale(idx = null) {
           <option value="kredit">kredit</option>
           <option value="kocurme">kocurme</option>
         </select></div>
-            <div class="f-group"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
-            <div class="f-group"><label>Əməkdaş *</label><select id="f_s_staff" required>${staffOptions}</select></div>
           </div>
         </div>
         <div class="form-card">
           <div class="form-card-title">Məhsul</div>
           <div class="grid-2">
-            <div class="f-group"><label>Mal seçin</label><select id="f_s_item" ${(stockItems.length || fifoOptions) ? "" : "disabled"} onchange="toggleSaleQty()" ${isEdit ? "required" : ""}>
-          ${fifoOptions ? `<optgroup label="AUTO FIFO">${fifoOptions}</optgroup>` : ""}
-          <optgroup label="Anbar">${itemOptions}</optgroup>
+            <div class="f-group"><label>Axtarış</label><input type="text" id="f_s_lookup" placeholder="Ad, IMEI, seriya və ya kod yazın" oninput="searchSaleItem()"></div>
+            <div class="f-group"><label>Mal seçin</label><select id="f_s_item" ${itemCatalog.length ? "" : "disabled"} onchange="handleSaleItemChange()" ${isEdit ? "required" : ""}>
+          <option value="">Mal seçin</option>
         </select></div>
             <div id="saleQtyBox" style="display:none;">
               <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_s_qty" placeholder="Ədəd sayı"></div>
             </div>
+            <div class="f-group"><label>Qiymət (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="if(window.__saleUpdateHint)window.__saleUpdateHint();recalcCredit()"></div>
+            <div id="sTotalHint" class="hint-line grid-span-2 muted small" style="display:none">Cəmi: —</div>
+          </div>
+        </div>
+        ${!isEdit ? `<div class="form-card">
+          <div class="form-card-title">Satış siyahısı</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul</th><th>Qiymət</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
+              <tbody id="saleDraftList"><tr><td colspan="7">Məhsul əlavə edilməyib</td></tr></tbody>
+              <tfoot><tr class="total-row"><td colspan="5">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>` : ""}
+        <div id="creditBox" class="form-card" style="display:none;">
+          <div class="form-card-title">Kredit şərtləri</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Kredit müddəti (ay)</label><input type="number" step="1" min="1" id="f_cr_term" placeholder="məs: 12" oninput="recalcCredit()"></div>
+            <div class="f-group"><label>İlkin ödəniş (AZN)</label><input type="number" step="0.01" min="0" id="f_cr_down" placeholder="0.00" oninput="recalcCredit()"></div>
+            <div class="f-group"><label>Aylıq ödəniş (auto)</label><input id="f_cr_monthly" placeholder="Hesablanır…" readonly></div>
+            <div class="f-group"><label>Qalıq (ilkindən sonra)</label><input id="f_cr_rem" placeholder="Hesablanır…" readonly></div>
           </div>
         </div>
         <div class="form-card">
           <div class="form-card-title">Ödəniş</div>
           <div class="grid-2">
-            <div class="f-group"><label>Ümumi məbləğ (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="recalcCredit()"></div>
-            <div id="sTotalHint" class="hint-line grid-span-2 muted small" style="display:none">Cəmi: —</div>
             <div class="paybox paybox--row">
           <label class="chk">
             <input type="checkbox" id="f_pay_now" onchange="togglePayNow()">
@@ -4605,33 +4772,12 @@ function openSale(idx = null) {
                 <div class="f-group"><label>Ödəniş məbləği (AZN)</label><input type="number" step="0.01" id="f_s_paid" placeholder="0.00" value="${escapeAttr(current?.lastPayAmount ?? "0")}"></div>
                 <div class="f-group"><label>Ödəniş hesabı</label><select id="f_pay_acc">${accOptions}</select></div>
                 <label class="chk grid-span-2">
-                  <input type="checkbox" id="f_pay_initial">
+                  <input type="checkbox" id="f_pay_initial" onchange="toggleSaleInitialPayment()">
                   <span>İlkin ödənişdir</span>
                 </label>
               </div>
             </div>
           </div>
-        </div>
-        ${!isEdit ? `<div class="form-card">
-          <div class="form-card-title">Satış siyahısı</div>
-          <p style="margin:0 0 12px;"><button class="btn-secondary" type="button" onclick="addSaleDraftItem()"><i class="fas fa-plus"></i> Məhsul əlavə et</button></p>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>Məhsul</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
-              <tbody id="saleDraftList"><tr><td colspan="6">Məhsul əlavə edilməyib</td></tr></tbody>
-              <tfoot><tr class="total-row"><td colspan="4">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
-            </table>
-          </div>
-        </div>` : ""}
-      </div>
-
-      <div id="creditBox" class="form-card" style="display:none;">
-        <div class="form-card-title">Kredit şərtləri</div>
-        <div class="grid-2">
-          <div class="f-group"><label>Kredit müddəti (ay)</label><input type="number" step="1" min="1" id="f_cr_term" placeholder="məs: 12" oninput="recalcCredit()"></div>
-          <div class="f-group"><label>İlkin ödəniş (AZN)</label><input type="number" step="0.01" min="0" id="f_cr_down" placeholder="0.00" oninput="recalcCredit()"></div>
-          <div class="f-group"><label>Aylıq ödəniş (auto)</label><input id="f_cr_monthly" placeholder="Hesablanır…" readonly></div>
-          <div class="f-group"><label>Qalıq (ilkindən sonra)</label><input id="f_cr_rem" placeholder="Hesablanır…" readonly></div>
         </div>
       </div>
 
@@ -4642,31 +4788,40 @@ function openSale(idx = null) {
     </form>
   `);
 
+  window.__saleItemCatalog = itemCatalog;
+  window.__saleAutoAddEnabled = !isEdit;
+  renderSaleItemOptions();
+
   // Prefill select values
   if (current) {
     byId("f_s_type").value = current.saleType || "nagd";
     byId("f_s_customer").value = String(current.customerId || "");
-    byId("f_s_staff").value = String(current.employeeId || "");
+    byId("f_s_staff").value = String(current.employeeId || defaultStaffId || "");
     // if bulk, show unit price in input; else show total
     if (current.bulkPurchUid || (Array.isArray(current.bulkAllocations) && current.bulkAllocations.length)) {
       const q = Math.max(1, Math.floor(n(current.qty || 1)));
       const unit = current.unitPrice != null && current.unitPrice !== "" ? n(current.unitPrice) : (n(current.amount) / q);
       byId("f_s_amount").value = String(unit);
+      byId("f_s_amount").setAttribute("data-autofill", String(unit));
     } else {
       byId("f_s_amount").value = String(current.amount || "");
+      byId("f_s_amount").setAttribute("data-autofill", String(current.amount || ""));
     }
 
+    let currentItemValue = "";
     if (current.bulkPurchUid) {
-      byId("f_s_item").value = `bulk:${current.bulkPurchUid}`;
+      currentItemValue = `bulk:${current.bulkPurchUid}`;
       if (byId("f_s_qty")) byId("f_s_qty").value = String(current.qty || 1);
     } else if (Array.isArray(current.bulkAllocations) && current.bulkAllocations.length) {
       const token = String(current.code || current.productName || "-").trim().replace(/:/g, "_");
-      byId("f_s_item").value = `fifo:${token}`;
+      currentItemValue = `fifo:${token}`;
       if (byId("f_s_qty")) byId("f_s_qty").value = String(current.qty || 1);
     } else {
       const purch = db.purch.find((p) => itemKeyFromPurch(p) === current.itemKey);
-      if (purch) byId("f_s_item").value = `serial:${purch.uid}`;
+      if (purch) currentItemValue = `serial:${purch.uid}`;
     }
+    renderSaleItemOptions("", currentItemValue);
+    if (currentItemValue) byId("f_s_item").value = currentItemValue;
 
     if (current.saleType === "kredit") {
       toggleCreditBox(true);
@@ -4681,8 +4836,16 @@ function openSale(idx = null) {
     byId("f_pay_now").checked = paidTotal > 0.000001;
     togglePayNow(true);
     byId("f_s_paid").value = money(current.lastPayAmount ?? paidTotal);
+    if (current.saleType === "kredit") {
+      const downPayment = Math.max(0, n(current.credit?.downPayment || 0));
+      const lastPaid = Math.max(0, n(current.lastPayAmount ?? paidTotal));
+      if (Math.abs(lastPaid - downPayment) < 0.01 && lastPaid > 0) {
+        byId("f_pay_initial").checked = true;
+      }
+    }
   } else {
     byId("f_s_type").value = "nagd";
+    byId("f_s_staff").value = defaultStaffId;
     toggleCreditBox(false);
     byId("f_pay_now").checked = false;
     togglePayNow(true);
@@ -4693,9 +4856,10 @@ function openSale(idx = null) {
   const upd = () => {
     const sel = byId("f_s_item")?.value || "";
     const isBulk = String(sel).startsWith("bulk:");
+    const isFifo = String(sel).startsWith("fifo:");
     const hint = byId("sTotalHint");
     if (!hint) return;
-    if (!isBulk) {
+    if (!isBulk && !isFifo) {
       hint.style.display = "none";
       return;
     }
@@ -4704,12 +4868,14 @@ function openSale(idx = null) {
     const unit = Math.max(0, n(val("f_s_amount") || 0));
     hint.textContent = `Cəmi: ${money(unit * qty)} AZN`;
   };
+  window.__saleUpdateHint = upd;
   const qtyEl = byId("f_s_qty");
   const amtEl = byId("f_s_amount");
   qtyEl && (qtyEl.oninput = () => { upd(); recalcCredit(); });
   amtEl && (amtEl.oninput = () => { upd(); recalcCredit(); });
-  byId("f_s_item") && (byId("f_s_item").onchange = () => { toggleSaleQty(); upd(); recalcCredit(); });
+  byId("f_s_item") && (byId("f_s_item").onchange = () => handleSaleItemChange());
   upd();
+  syncSalePaymentInputState();
 }
 
 function readSaleDraftFromForm() {
@@ -4721,9 +4887,10 @@ function readSaleDraftFromForm() {
   const unitOrTotal = Math.max(0, n(val("f_s_amount") || 0));
   if (unitOrTotal <= 0) return { error: "Məbləğ düzgün deyil." };
   const amount = (kind === "bulk" || kind === "fifo") ? unitOrTotal * qty : unitOrTotal;
+  const catalogItem = getSaleItemCatalog().find((x) => x.value === sel);
   const opt = byId("f_s_item")?.selectedOptions?.[0];
-  const label = (opt?.textContent || "").trim();
-  return { item: { kind, purchUid, qty, unitOrTotal, amount, label } };
+  const label = (catalogItem?.label || opt?.textContent || "").trim();
+  return { item: { kind, purchUid, qty, unitOrTotal, amount, label, price: unitOrTotal } };
 }
 
 function renderSaleDraftItems() {
@@ -4732,7 +4899,7 @@ function renderSaleDraftItems() {
   if (!tb || !totalEl) return;
   const arr = window.__saleDraftItems || [];
   if (!arr.length) {
-    tb.innerHTML = `<tr><td colspan="6">Məhsul əlavə edilməyib</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7">Məhsul əlavə edilməyib</td></tr>`;
     totalEl.textContent = "0.00 AZN";
     return;
   }
@@ -4741,6 +4908,7 @@ function renderSaleDraftItems() {
     .map((x, i) => `<tr>
       <td>${i + 1}</td>
       <td>${escapeHtml(x.label || x.purchUid)}</td>
+      <td>${money(x.price != null ? x.price : x.unitOrTotal)} AZN</td>
       <td>${x.kind === "bulk" ? "Sayla" : (x.kind === "fifo" ? "FIFO" : "Seriyalı")}</td>
       <td>${x.qty}</td>
       <td>${money(x.amount)} AZN</td>
@@ -4750,15 +4918,18 @@ function renderSaleDraftItems() {
   totalEl.textContent = `${money(total)} AZN`;
 }
 
-function addSaleDraftItem() {
+function addSaleDraftItem(skipAlert) {
   const r = readSaleDraftFromForm();
-  if (r.error) return alert(r.error);
+  if (r.error) {
+    if (!skipAlert) alert(r.error);
+    return false;
+  }
   const arr = window.__saleDraftItems || [];
   arr.push(r.item);
   window.__saleDraftItems = arr;
   renderSaleDraftItems();
-  byId("f_s_amount").value = "";
-  if (byId("f_s_qty")) byId("f_s_qty").value = "1";
+  clearSalePickerFields();
+  return true;
 }
 
 function removeSaleDraftItem(i) {
@@ -4783,6 +4954,7 @@ function togglePayNow(noRender) {
       recalcCredit();
     }
   }
+  syncSalePaymentInputState();
   if (!noRender) return;
 }
 
@@ -4792,12 +4964,17 @@ function toggleCreditBox(force) {
   const box = byId("creditBox");
   if (!box) return;
   box.style.display = show ? "" : "none";
+  if (!show && byId("f_pay_initial")) byId("f_pay_initial").checked = false;
   recalcCredit();
+  syncSalePaymentInputState();
 }
 
 function recalcCredit() {
   const type = byId("f_s_type")?.value;
-  if (type !== "kredit") return;
+  if (type !== "kredit") {
+    syncSalePaymentInputState();
+    return;
+  }
   const total = Math.max(0, n(byId("f_s_amount")?.value));
   const term = Math.max(1, Math.floor(n(byId("f_cr_term")?.value || 0)));
   let down = Math.max(0, n(byId("f_cr_down")?.value || 0));
@@ -4810,13 +4987,15 @@ function recalcCredit() {
   // paid default to down payment if empty/0
   const paidEl = byId("f_s_paid");
   if (paidEl) {
+    const shouldLockToDown = !!byId("f_pay_now")?.checked && !!byId("f_pay_initial")?.checked;
     const cur = n(paidEl.value);
     const auto = n(paidEl.getAttribute("data-autofill"));
-    if (cur === 0 || cur === auto) {
+    if (shouldLockToDown || cur === 0 || cur === auto) {
       paidEl.value = money(down);
       paidEl.setAttribute("data-autofill", String(down));
     }
   }
+  syncSalePaymentInputState();
 }
 
 async function saveSale(e, idx) {
@@ -4829,7 +5008,7 @@ async function saveSale(e, idx) {
     const draft = window.__saleDraftItems || [];
     if (!draft.length) return alert("Ən azı bir məhsul əlavə edin.");
     const customerId = val("f_s_customer");
-    const employeeId = val("f_s_staff");
+    const employeeId = canChangeSaleStaff() ? val("f_s_staff") : currentUserStaffId();
     const saleType = val("f_s_type");
     const date = val("f_s_date");
     const cust = db.cust.find((c) => String(c.uid) === String(customerId));
@@ -4867,6 +5046,10 @@ async function saveSale(e, idx) {
     let paidLeft = paid;
     const totalDown = saleType === "kredit" ? Math.max(0, n(val("f_cr_down"))) : 0;
     const termMonths = saleType === "kredit" ? Math.max(1, Math.floor(n(val("f_cr_term") || 1))) : 0;
+    if (saleType === "kredit" && payNow && isInitialPayment) {
+      paid = Math.min(totalAmount, totalDown);
+      paidLeft = paid;
+    }
 
     for (const it of draft) {
       const kind = it.kind;
@@ -5024,7 +5207,7 @@ async function saveSale(e, idx) {
   }
 
   const customerId = val("f_s_customer");
-  const employeeId = val("f_s_staff");
+  const employeeId = isEdit ? val("f_s_staff") : (canChangeSaleStaff() ? val("f_s_staff") : currentUserStaffId());
   const sel = val("f_s_item");
   const [kind, purchUid] = String(sel || "").split(":");
   const purch = kind === "fifo" ? null : db.purch.find((p) => String(p.uid) === String(purchUid));
@@ -5147,6 +5330,7 @@ async function saveSale(e, idx) {
     const termMonths = Math.max(1, Math.floor(n(val("f_cr_term"))));
     let downPayment = Math.max(0, n(val("f_cr_down")));
     if (downPayment > amount) downPayment = amount;
+    if (payNow && isInitialPayment) paid = downPayment;
     const rem = Math.max(0, amount - downPayment);
     const monthlyPayment = termMonths > 0 ? rem / termMonths : 0;
     base.credit = {
@@ -9936,6 +10120,9 @@ Object.assign(window, {
   saveDebtorPayment,
   refreshFromCloud,
   delItem,
+  searchSaleItem,
+  handleSaleItemChange,
+  toggleSaleInitialPayment,
   toggleCreditBox,
   recalcCredit,
   togglePurchBulk,
