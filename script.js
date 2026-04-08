@@ -10231,10 +10231,10 @@ async function init() {
   window.addEventListener("offline", () => showOfflineBlock(true));
   window.addEventListener("online", () => location.reload());
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
-  const loadingEl = byId("loadingOverlay");
-  if (loadingEl) loadingEl.classList.remove("hidden");
-  const loadingTxt = byId("loadingText");
-  if (loadingTxt) loadingTxt.textContent = "Yüklənir...";
+  /* Böyük overlay əvəzinə yalnız mərkəzi yumşaq yükləmə (təkrarlanan iki fərqli ölçü olmasın). */
+  softLoadingBegin(true);
+  const softTxt = byId("softLoadingCenterText");
+  if (softTxt) softTxt.textContent = "Yüklənir...";
 
   var loadingHidden = false;
   var timeoutId = setTimeout(function () {
