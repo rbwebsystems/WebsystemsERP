@@ -10198,7 +10198,7 @@ const LANGS = {
     sections: "Bölmələr", section: "Bölmə", customer: "Müştəri", product: "Məhsul",
     sale: "Satış", supplier: "Təchizatçı", no_results: "Nəticə tapılmadı",
     spotlight_hint: "Axtar: müştəri, məhsul, qaimə, bölmə...", code: "Kod",
-    nav_dash: "Xülasə", nav_cust: "Müştərilər", nav_supp: "Təchizatçılar",
+    nav_dash: "Nəzarət paneli", nav_cust: "Müştərilər", nav_supp: "Təchizatçılar",
     nav_prod: "Məhsullar", nav_purch: "Alışlar", nav_stock: "Anbar",
     nav_sales: "Satışlar", nav_staff: "Əməkdaşlar", nav_debts: "Debitor borclar",
     nav_creditor: "Kreditor borclar", nav_cash: "Kassa", nav_reports: "Hesabatlar",
