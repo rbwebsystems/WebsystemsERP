@@ -10251,7 +10251,6 @@ Object.assign(window, {
   delItem,
   searchSaleItem,
   handleSaleItemChange,
-  trySaleAutoAddOnPrice,
   toggleSaleInitialPayment,
   toggleCreditBox,
   recalcCredit,
