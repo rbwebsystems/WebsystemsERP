@@ -48,21 +48,21 @@ function setLoading(text) {
 let _softOpDepth = 0;
 let _softOpTimer = null;
 
-/** Yumşaq yükləmə zolağı: immediate=true dərhal; false ≈260ms gecikmə (tez Firestore yazılarında parıltı olmasın). */
+/** Yumşaq yükləmə: səhifə mərkəzində kart; immediate=true dərhal; false ≈260ms (tez Firestore əməliyyatlarında parıltı az olsun). */
 function softLoadingBegin(immediate) {
   _softOpDepth++;
   if (_softOpDepth > 1) {
     if (immediate && _softOpTimer) {
       clearTimeout(_softOpTimer);
       _softOpTimer = null;
-      byId("softLoadingBar")?.classList.remove("hidden");
+      byId("softLoadingCenter")?.classList.remove("hidden");
     }
     return;
   }
-  const bar = byId("softLoadingBar");
+  const center = byId("softLoadingCenter");
   const show = () => {
     _softOpTimer = null;
-    if (_softOpDepth > 0) bar?.classList.remove("hidden");
+    if (_softOpDepth > 0) center?.classList.remove("hidden");
   };
   if (immediate) show();
   else _softOpTimer = setTimeout(show, 260);
@@ -75,7 +75,7 @@ function softLoadingEnd() {
     clearTimeout(_softOpTimer);
     _softOpTimer = null;
   }
-  byId("softLoadingBar")?.classList.add("hidden");
+  byId("softLoadingCenter")?.classList.add("hidden");
 }
 
 /** Bölmə keçidi + renderAll: zolaq dərhal görünsün; çox sürətli işlərdə ən azı ~minMs görünür. */
@@ -10201,7 +10201,7 @@ function hideLoading() {
     _softOpTimer = null;
   }
   _softOpDepth = 0;
-  byId("softLoadingBar")?.classList.add("hidden");
+  byId("softLoadingCenter")?.classList.add("hidden");
 }
 
 function getLoginCompanyFromUrl() {

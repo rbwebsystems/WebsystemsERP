@@ -1163,9 +1163,11 @@
     </div>
   </div>
 
-  <div id="softLoadingBar" class="soft-loading-bar hidden" role="status" aria-live="polite" aria-label="Yüklənir">
-    <div class="soft-loading-bar__track" aria-hidden="true"></div>
-    <div class="soft-loading-bar__indeterminate" aria-hidden="true"></div>
+  <div id="softLoadingCenter" class="soft-loading-center hidden" role="status" aria-live="polite" aria-label="Yüklənir">
+    <div class="soft-loading-center__card">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p id="softLoadingCenterText" class="soft-loading-center__text">Yüklənir...</p>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
