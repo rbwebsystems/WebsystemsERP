@@ -1867,6 +1867,7 @@ function toggleSidebar() {
   try {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
   } catch (e) {}
+  requestAnimationFrame(() => syncSlideoverContentPad());
 }
 
 function expandSidebarIfCollapsed() {
@@ -2118,6 +2119,59 @@ function renderModalWithNav(rawHtml) {
     : "";
   return `${nav}${rawHtml}`;
 }
+/** Məzmunu scroll olunan qatda saxlayır, footer həmişə panelin altında, mətnin üstünə çıxmır */
+function layoutModalScrollShell(root) {
+  if (!root || root.querySelector(":scope > .modal-body-inner")) return;
+  const directFooter = root.querySelector(":scope > .modal-footer");
+  const form = root.querySelector(":scope > form");
+  const formFooter = form && form.querySelector(":scope > .modal-footer");
+  const footer = directFooter || formFooter;
+  const host = directFooter ? root : form;
+  if (!footer || !host) return;
+  const inner = document.createElement("div");
+  inner.className = "modal-body-inner";
+  let n = host.firstChild;
+  while (n && n !== footer) {
+    const next = n.nextSibling;
+    const leaveNavTop =
+      host === root &&
+      n.nodeType === 1 &&
+      n.classList &&
+      n.classList.contains("modal-nav-top");
+    if (!leaveNavTop) inner.appendChild(n);
+    n = next;
+  }
+  if (inner.childNodes.length) host.insertBefore(inner, footer);
+}
+
+/** Slide-over məzmununun sol boşluğu: #appHeaderTitle ilə eyni piksel xətti (CSS-dən asılı olmayaraq). */
+function syncSlideoverContentPad() {
+  const panel = document.getElementById("modalContent");
+  const mdl = document.getElementById("mdlMain");
+  if (!panel || !mdl || !mdl.classList.contains("modal--slideover") || mdl.style.display === "none") {
+    panel?.style.removeProperty("--slideover-pad-left");
+    return;
+  }
+  const ref = document.getElementById("appHeaderTitle");
+  if (!ref || ref.offsetParent === null) {
+    panel.style.removeProperty("--slideover-pad-left");
+    return;
+  }
+  const tl = ref.getBoundingClientRect().left;
+  const main = document.querySelector("#appShell .main-area");
+  let pad;
+  if (main && main.offsetParent !== null) {
+    pad = Math.round(tl - main.getBoundingClientRect().left);
+  } else {
+    pad = Math.round(tl - panel.getBoundingClientRect().left);
+  }
+  if (Number.isFinite(pad) && pad >= 8) {
+    panel.style.setProperty("--slideover-pad-left", pad + "px");
+  } else {
+    panel.style.removeProperty("--slideover-pad-left");
+  }
+}
+
 function openModal(html, opts = {}) {
   const body = document.getElementById("modalContent");
   if (!body) return;
@@ -2133,17 +2187,25 @@ function openModal(html, opts = {}) {
   }
   window.__currentModalRaw = html;
   body.innerHTML = renderModalWithNav(html);
+  layoutModalScrollShell(body);
   // popup (xəbərdarlıq) vs slide-over
   if (opts.popup) {
     modal.classList.add("modal--popup");
     modal.classList.remove("modal--slideover");
+    body.style.removeProperty("--slideover-pad-left");
   } else {
     modal.classList.add("modal--slideover");
     modal.classList.remove("modal--popup");
   }
   modal.style.display = "flex";
-  // slide-in animasiya trigger
-  requestAnimationFrame(() => { modal.classList.add("modal--open"); });
+  // slide-in animasiya trigger + başlıq xətti (main-area / header ilə sinxron)
+  requestAnimationFrame(() => {
+    modal.classList.add("modal--open");
+    if (!opts.popup) {
+      syncSlideoverContentPad();
+      requestAnimationFrame(() => syncSlideoverContentPad());
+    }
+  });
   window.__modalJustClosedAt = 0;
 }
 function modalBack() {
@@ -2153,7 +2215,14 @@ function modalBack() {
   const prevRaw = hist.pop();
   window.__currentModalRaw = prevRaw;
   body.innerHTML = renderModalWithNav(prevRaw);
+  layoutModalScrollShell(body);
   modal.style.display = "flex";
+  if (modal.classList.contains("modal--slideover")) {
+    requestAnimationFrame(() => {
+      syncSlideoverContentPad();
+      requestAnimationFrame(() => syncSlideoverContentPad());
+    });
+  }
 }
 function closeMdl() {
   modal.classList.remove("modal--open");
@@ -2163,6 +2232,7 @@ function closeMdl() {
     if (stillClosed) {
       modal.style.display = "none";
       modal.classList.remove("modal--slideover", "modal--popup");
+      document.getElementById("modalContent")?.style.removeProperty("--slideover-pad-left");
     }
     if (stillClosed && window.__modalJustClosedAt && Date.now() - window.__modalJustClosedAt >= 320) {
       window.__modalHistory = [];
@@ -4892,11 +4962,14 @@ function openSaleInfo(idx) {
   if (s.saleType === "kredit" && s.credit) {
     const sch = buildCreditSchedule(s);
     creditHtml = `
-      <div class="info-block">
-        <div class="info-row"><div class="info-label">Kredit müddəti</div><div class="info-value">${sch.term} ay</div></div>
-        <div class="info-row"><div class="info-label">İlkin ödəniş</div><div class="info-value">${money(s.credit.downPayment)} AZN</div></div>
-        <div class="info-row"><div class="info-label">Aylıq ödəniş</div><div class="info-value">${money(s.credit.monthlyPayment)} AZN</div></div>
-        <div class="info-row"><div class="info-label">Qalıq (ilkindən sonra)</div><div class="info-value">${money(sch.remAfterDown)} AZN</div></div>
+      <div class="form-card">
+        <div class="form-card-title">Kredit şərtləri</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Kredit müddəti (ay)</label><div class="f-static">${sch.term} ay</div></div>
+          <div class="f-group"><label>İlkin ödəniş (AZN)</label><div class="f-static">${money(s.credit.downPayment)} AZN</div></div>
+          <div class="f-group"><label>Aylıq ödəniş (AZN)</label><div class="f-static">${money(s.credit.monthlyPayment)} AZN</div></div>
+          <div class="f-group"><label>Qalıq (ilkindən sonra)</label><div class="f-static">${money(sch.remAfterDown)} AZN</div></div>
+        </div>
       </div>
     `;
     const rows = sch.rows
@@ -4913,8 +4986,8 @@ function openSaleInfo(idx) {
       )
       .join("");
     scheduleHtml = `
-      <div class="info-block">
-        <div class="info-row"><div class="info-label">Ödəniş cədvəli</div><div class="info-value">Aylıq plan</div></div>
+      <div class="form-card">
+        <div class="form-card-title">Ödəniş cədvəli</div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>#</th><th>Tarix</th><th>Aylıq</th><th>Ödənən</th><th>Qalıq</th><th>Status</th></tr></thead>
@@ -4927,22 +5000,37 @@ function openSaleInfo(idx) {
 
   openModal(`
     <h2>Satış məlumatı</h2>
-    <div class="info-block">
-      <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(s.date)}</div></div>
-      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
-      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
-      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
-      <div class="info-row"><div class="info-label">Kod</div><div class="info-value">${escapeHtml(s.code || "-")}</div></div>
-      <div class="info-row"><div class="info-label">Say</div><div class="info-value">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
-      <div class="info-row"><div class="info-label">IMEI 1</div><div class="info-value">${escapeHtml(s.imei1 || "-")}</div></div>
-      <div class="info-row"><div class="info-label">IMEI 2</div><div class="info-value">${escapeHtml(s.imei2 || "-")}</div></div>
-      <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(s.seria || "-")}</div></div>
-      <div class="info-row"><div class="info-label">Satış növü</div><div class="info-value">${escapeHtml(String(s.saleType).toUpperCase())}</div></div>
-      <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
-      <div class="info-row"><div class="info-label">Məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
-      <div class="info-row"><div class="info-label">Ödənilən</div><div class="info-value">${money(s.paidTotal)} AZN</div></div>
-      <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
-      <div class="info-row"><div class="info-label">Status</div><div class="info-value"><span class="pill ${st}">${debtLabel(st)}</span></div></div>
+    <div class="form-stack">
+      <div class="form-card">
+        <div class="form-card-title">Əsas məlumat</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Satış tarixi</label><div class="f-static">${fmtDT(s.date)}</div></div>
+          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml(String(s.saleType).toUpperCase())}</div></div>
+          <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
+          <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
+          <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">Məhsul</div>
+        <div class="grid-2">
+          <div class="f-group grid-span-2"><label>Məhsul</label><div class="f-static">${escapeHtml(s.productName)}</div></div>
+          <div class="f-group"><label>Kod</label><div class="f-static">${escapeHtml(s.code || "-")}</div></div>
+          <div class="f-group"><label>Say</label><div class="f-static">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
+          <div class="f-group"><label>IMEI 1</label><div class="f-static">${escapeHtml(s.imei1 || "-")}</div></div>
+          <div class="f-group"><label>IMEI 2</label><div class="f-static">${escapeHtml(s.imei2 || "-")}</div></div>
+          <div class="f-group"><label>Seriya №</label><div class="f-static">${escapeHtml(s.seria || "-")}</div></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">Ödəniş</div>
+        <div class="grid-2">
+          <div class="f-group"><label>Məbləğ (AZN)</label><div class="f-static">${money(s.amount)} AZN</div></div>
+          <div class="f-group"><label>Ödənilən (AZN)</label><div class="f-static">${money(s.paidTotal)} AZN</div></div>
+          <div class="f-group"><label>Qalıq (AZN)</label><div class="f-static">${money(rem)} AZN</div></div>
+          <div class="f-group"><label>Status</label><div class="f-static"><span class="pill ${st}">${debtLabel(st)}</span></div></div>
+        </div>
+      </div>
     </div>
     ${creditHtml}
     ${scheduleHtml}
@@ -5076,13 +5164,16 @@ function amountAppliedToSaleLast(sale) {
 }
 
 function openDebtorInfo(customerId) {
+  const cid = String(customerId);
   const items = (db.sales || [])
     .map((s, idx) => ({ s, idx }))
-    .filter(({ s }) => String(s.customerId) === String(customerId))
+    .filter(({ s }) => String(s.customerId) === cid)
     .filter(({ s }) => !s.returnedAt)
     .sort((a, b) => String(a.s.date).localeCompare(String(b.s.date)) * -1);
 
   const custName = items[0]?.s.customerName || customerId;
+  const totalRem = items.reduce((a, { s }) => a + saleRemaining(s), 0);
+  const footPayDis = totalRem <= 0.000001 ? "disabled" : "";
 
   const rows = items
     .map(({ s, idx }, i) => {
@@ -5122,6 +5213,7 @@ function openDebtorInfo(customerId) {
       </table>
     </div>
     <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="openDebtorPayment('${escapeAttr(cid)}')" ${footPayDis}>Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -5263,7 +5355,6 @@ function openCashInfo(uid) {
   const accountName = (db.accounts || []).find((a) => Number(a.uid) === Number(c.accountId || 1))?.name || `#${Number(c.accountId || 1)}`;
   const kind = c.link?.kind || (c.type === "in" ? "income" : "expense");
   const actor = operationActorName(c, "-");
-  const metaText = c.meta ? JSON.stringify(c.meta, null, 2) : "-";
   openModal(`
     <h2>Kassa əməliyyatı məlumatı</h2>
     <div class="info-block">
@@ -5276,10 +5367,6 @@ function openCashInfo(uid) {
       <div class="info-row"><div class="info-label">Mənbə</div><div class="info-value">${escapeHtml(c.source || "-")}</div></div>
       <div class="info-row"><div class="info-label">Əməkdaş</div><div class="info-value">${escapeHtml(actor)}</div></div>
       <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">${escapeHtml(c.note || "-")}</div></div>
-    </div>
-    <div class="card" style="padding:0;">
-      <div class="muted" style="padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.06);">Əlavə məlumat (meta)</div>
-      <pre style="margin:0;padding:14px;white-space:pre-wrap;word-break:break-word;">${escapeHtml(metaText)}</pre>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
@@ -7628,6 +7715,16 @@ function openDayCloseHistory() {
   `);
 }
 
+function lateDaysChipClass(daysLate) {
+  const d = Math.max(0, n(daysLate));
+  if (d >= 91) return "late-chip-91p";
+  if (d >= 61) return "late-chip-61-90";
+  if (d >= 31) return "late-chip-31-60";
+  if (d >= 16) return "late-chip-16-30";
+  if (d >= 1) return "late-chip-1-15";
+  return "late-chip-0";
+}
+
 function openOverdueInfo(saleUid) {
   ensureAuditTrash();
   const sale = (db.sales || []).find((s) => Number(s.uid) === Number(saleUid));
@@ -7668,7 +7765,8 @@ function openOverdueInfo(saleUid) {
       <td>${escapeHtml(x.due)}</td>
       <td>${money(x.monthly)} AZN</td>
       <td>${money(x.remaining)} AZN</td>
-      <td>${x.daysLate}</td>
+      <td><span class="pill unpaid">GECİKİR</span></td>
+      <td class="overdue-days-cell"><span class="late-chip ${lateDaysChipClass(x.daysLate)}">${x.daysLate}</span></td>
     </tr>`
     )
     .join("");
@@ -7728,8 +7826,8 @@ function openOverdueInfo(saleUid) {
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Gecikən aylıqlar</h3>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Qaimə</th><th>Ödəniş günü</th><th>Aylıq</th><th>Qalıq</th><th>Gecikmə (gün)</th></tr></thead>
-        <tbody>${rowsHtml || `<tr><td colspan="6">Gecikən aylıq yoxdur.</td></tr>`}</tbody>
+        <thead><tr><th>#</th><th>Qaimə</th><th>Ödəniş günü</th><th>Aylıq</th><th>Qalıq</th><th>Status</th><th>Gecikmə (gün)</th></tr></thead>
+        <tbody>${rowsHtml || `<tr><td colspan="7">Gecikən aylıq yoxdur.</td></tr>`}</tbody>
       </table>
     </div>
 
@@ -7738,7 +7836,7 @@ function openOverdueInfo(saleUid) {
       <table>
         <thead><tr><th>#</th><th>Ödəniş günü</th><th>Məbləğ</th><th>Ödənilib</th><th>Qalıq</th><th>Status</th></tr></thead>
         <tbody>
-          ${credit.rows.map((r) => `<tr><td>${r.idx}</td><td>${escapeHtml(r.due)}</td><td>${money(r.amount)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.remaining)} AZN</td><td>${escapeHtml(debtLabel(r.status))}</td></tr>`).join("") || `<tr><td colspan="6">Cədvəl yoxdur</td></tr>`}
+          ${credit.rows.map((r) => `<tr><td>${r.idx}</td><td>${escapeHtml(r.due)}</td><td>${money(r.amount)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.remaining)} AZN</td><td><span class="pill ${r.status}">${escapeHtml(debtLabel(r.status))}</span></td></tr>`).join("") || `<tr><td colspan="6">Cədvəl yoxdur</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -7752,24 +7850,25 @@ function openOverdueInfo(saleUid) {
     </div>
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeyd əlavə et</h3>
-    <form onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}', '${escapeAttr(sale.uid)}')">
+    <form id="ovNoteForm" onsubmit="saveOverdueNote(event, '${escapeAttr(cid)}', '${escapeAttr(sale.uid)}')">
       <div class="form-stack">
         <div class="form-card">
           <div class="form-card-title">Qeyd</div>
           <div class="grid-2">
-            <div class="f-group f-group--note"><label>Mətn *</label><input id="ov_note" placeholder="Qeyd yazın…" required></div>
+            <div class="f-group f-group--note"><label>Mətn *</label><input id="ov_note" name="ov_note" placeholder="Qeyd yazın…" required></div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
-        <button class="btn-main" type="submit">Yadda saxla</button>
-        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
 
     <h3 style="margin:16px 0 10px;font-size:1.05rem;">Qeydlər</h3>
     ${notesHtml || `<p class="muted">Qeyd yoxdur.</p>`}
+
+    <div class="modal-footer">
+      <button class="btn-main" type="button" onclick="openOverduePayment('${escapeAttr(sale.uid)}')">Ödəniş et</button>
+      <button class="btn-main" type="submit" form="ovNoteForm">Yadda saxla</button>
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
   `);
 }
 
@@ -8203,6 +8302,9 @@ function renderAll() {
       if (sub && meta.subCat !== sub) return false;
       return true;
     });
+  const stockSorted = stockFiltered.slice().sort((a, b) => String(b.p.date || "").localeCompare(String(a.p.date || "")));
+  const stockPageSize = getPageSize("stockPageSize", 50);
+  const stockListPaged = paginate(stockSorted, "stock", stockPageSize, "stockPageInfo");
   const stockAmountTotal = stockFiltered.reduce((a, { p }) => a + n(p.amount), 0);
   const stockRemainingValue = stockFiltered.reduce((a, { p }) => {
     const remQty = purchRemainingQty(p);
@@ -8225,23 +8327,20 @@ function renderAll() {
     </tr>`;
   }
 
-  byId("tblStock").innerHTML = stockFiltered
-    .slice(0, 2000) /* safety */
+  byId("tblStock").innerHTML = stockListPaged
     .map(({ p }, i) => {
-      const key = itemKeyFromPurch(p);
       const remQty = purchRemainingQty(p);
       const isReturned = !!p.returnedAt;
       const isSold = !isReturned && remQty <= 0;
       const statusText = isReturned ? "QAYTARILIB" : isSold ? "SATILIB" : "ANBARDA";
-      const rowClass = isReturned ? "row-sold" : isSold ? "row-sold" : "row-stock";
-      const badgeClass = isReturned ? "badge-sold" : isSold ? "badge-sold" : "badge-stock";
+      const badgeClass = isReturned ? "badge-returned" : isSold ? "badge-sold" : "badge-stock";
       const qtyAll = Math.max(1, Math.floor(n(p.qty || 1)));
       const unit = purchIsBulk(p) ? (p.unitPrice != null && p.unitPrice !== "" ? n(p.unitPrice) : (n(p.amount) / qtyAll)) : n(p.amount);
       const priceHtml = purchIsBulk(p)
         ? `${money(unit)} AZN <small class="muted">(cəmi ${money(p.amount)} AZN)</small>`
         : `${money(p.amount)} AZN`;
       return `
-      <tr class="${rowClass}">
+      <tr>
         <td>${i + 1}</td>
         <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
         <td>${fmtDT(p.date)}</td>
@@ -8527,11 +8626,7 @@ function renderAll() {
     overdueBody.innerHTML =
       rows
         .map((x, i) => {
-          const lateCellClass =
-            x.daysLate >= 91 ? "late-cell-91p" :
-            x.daysLate >= 61 ? "late-cell-61-90" :
-            x.daysLate >= 31 ? "late-cell-31-60" :
-            x.daysLate >= 1 ? "late-cell-1-30" : "";
+          const chipClass = lateDaysChipClass(x.daysLate);
           return `
           <tr>
             <td>${i + 1}</td>
@@ -8543,7 +8638,7 @@ function renderAll() {
             <td class="overdue-num-cell">${money(x.dueAmount)} AZN</td>
             <td class="overdue-num-cell">${money(x.invoiceRemaining)} AZN</td>
             <td>${escapeHtml(x.dueDate || "-")}</td>
-            <td class="${lateCellClass} overdue-days-cell">${x.daysLate}</td>
+            <td class="overdue-days-cell"><span class="late-chip ${chipClass}">${x.daysLate}</span></td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions overdue-actions-cell">
               <button class="icon-btn info overdue-info-btn" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')" title="Info"><i class="fas fa-circle-info"></i></button>
@@ -9610,6 +9705,16 @@ function updateHeaderWelcome() {
 }
 
 function initApp() {
+  if (!window.__slideoverPadResizeInit) {
+    window.__slideoverPadResizeInit = true;
+    let slideoverPadResizeT;
+    window.addEventListener("resize", () => {
+      const m = document.getElementById("mdlMain");
+      if (!m?.classList.contains("modal--open") || !m.classList.contains("modal--slideover")) return;
+      clearTimeout(slideoverPadResizeT);
+      slideoverPadResizeT = setTimeout(() => syncSlideoverContentPad(), 120);
+    });
+  }
   applyAccessUI();
   applySidebarState();
   setupNavTooltips();

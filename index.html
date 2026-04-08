@@ -246,7 +246,7 @@
             <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-cart-plus"></i> Yeni Alış</button>
+          <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-plus"></i> Yeni Alış</button>
         </div>
       </div>
       <div class="card">
@@ -308,6 +308,18 @@
           <tfoot id="tblStockFoot"></tfoot>
         </table>
       </div>
+      <div class="pager">
+        <button type="button" class="btn-pager" onclick="pagePrev('stock')">Prev</button>
+        <span id="stockPageInfo" class="pager-info"></span>
+        <button type="button" class="btn-pager" onclick="pageNext('stock')">Next</button>
+        <div class="pager-size-wrap">
+          <select id="stockPageSize" class="select-tiny" onchange="renderAll()">
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="150">150</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div id="sales" class="section">
@@ -328,7 +340,7 @@
             <input type="text" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-cash-register"></i> Yeni Satış</button>
+          <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-plus"></i> Yeni Satış</button>
         </div>
       </div>
       <div class="card">

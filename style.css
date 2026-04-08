@@ -12,6 +12,7 @@
   --border-color:#e2e8f0;
   --radius:6px;
   --btn-radius:8px;
+  --status-chip-radius:5px;
   --danger:#ef4444;
 
   --stock-bg:#f0fdf4;
@@ -21,6 +22,12 @@
   --sold-bg:#fef2f2;
   --sold-border:#fecaca;
   --sold-text:#991b1b;
+
+  /* Cədvəl başlıqları — sətir fonundan aydın seçilsin */
+  --table-head-bg:#1a4754;
+  --table-head-text:#f1f5f9;
+  --table-head-border:#0f2f38;
+  --table-head-cell-border:rgba(255,255,255,.14);
 }
 
 /* Dark theme */
@@ -40,6 +47,11 @@ body.theme-dark{
   --sold-bg:#450a0a;
   --sold-border:#991b1b;
   --sold-text:#fecaca;
+
+  --table-head-bg:#0a1520;
+  --table-head-text:#9dc9dc;
+  --table-head-border:#1e3d52;
+  --table-head-cell-border:rgba(157,201,220,.22);
 }
 body.theme-dark .header-logo{background:#111827;border-color:#374151;}
 body.theme-dark .card,
@@ -160,6 +172,8 @@ body{
   width:100%;
   max-width:100vw;
   overflow-x:hidden;
+  /* Slide-over panel əsas sahə ilə eyni yerdən başlasın (aside eni) */
+  --app-sidebar-w:190px;
 }
 body.login-open{
   overflow-y:auto;
@@ -168,7 +182,14 @@ body.login-open{
   min-height:100dvh;
   min-height:-webkit-fill-available;
 }
-#appShell{width:100%;display:flex;min-width:0;}
+#appShell{
+  width:100%;
+  display:flex;
+  min-width:0;
+  min-height:100vh;
+  min-height:100dvh;
+  flex:1;
+}
 body.login-open #appShell{display:none;}
 body.login-open #publicLanding{
   display:flex;
@@ -525,7 +546,17 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 
 /* Top header bar — ağ, sidebar-ın yanından başlayır */
 .main-area{
-  flex:1;margin-left:190px;min-height:100vh;display:flex;flex-direction:column;padding-top:68px;
+  flex:1;
+  margin-left:190px;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  padding-top:68px;
+  height:100vh;
+  height:100dvh;
+  max-height:100vh;
+  max-height:100dvh;
 }
 .app-header{
   position:fixed;
@@ -800,7 +831,15 @@ body.theme-dark .nav-link.active i{color:#93c5fd;}
 body.theme-dark .nav-link.active::before{background:#0a1929;border-bottom-left-radius:24px;border-bottom-right-radius:24px;}
 body.theme-dark .nav-link.active::after{background:#0a1929;border-top-left-radius:24px;border-top-right-radius:24px;}
 
-main{flex:1;padding:28px 32px;}
+main{
+  flex:1;
+  min-height:0;
+  min-width:0;
+  padding:28px 32px;
+  overflow-y:auto;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
 .section{display:none;min-height:0;}
 .section.active{display:block;}
 
@@ -902,44 +941,71 @@ body.theme-dark .content-header{border-bottom-color:#374151;}
   border:1px solid transparent;
 }
 .late-1-30{
-  color:#0c2a3a;
-  background:rgba(26,71,84,.18);
-  border-color:rgba(26,71,84,.35);
+  color:#78350f;
+  background:#F39C12;
+  border-color:rgba(0,0,0,.12);
 }
 .late-31-60{
-  color:#9a3412;
-  background:rgba(249,115,22,.20);
-  border-color:rgba(249,115,22,.38);
+  color:#fff;
+  background:#E74C3C;
+  border-color:rgba(0,0,0,.12);
 }
 .late-61-90{
-  color:#b91c1c;
-  background:rgba(239,68,68,.22);
-  border-color:rgba(239,68,68,.42);
+  color:#fff;
+  background:#B71C1C;
+  border-color:rgba(0,0,0,.15);
 }
 .late-91p{
   color:#fff;
-  background:rgba(127,29,29,.92);
-  border-color:rgba(127,29,29,.98);
+  background:#8B0000;
+  border-color:#5c0000;
 }
-.late-cell-1-30{
-  background:rgba(26,71,84,.14);
-  color:#0c2a3a;
+/* Gecikmə günləri — kart/badge (istifadəçi rəngləri, xana fonu dəyişmir) */
+.late-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:44px;
+  padding:6px 10px;
+  border-radius:var(--btn-radius,8px);
   font-weight:700;
+  font-size:.82rem;
+  line-height:1.2;
+  box-shadow:0 1px 2px rgba(0,0,0,.08);
+  border:1px solid rgba(0,0,0,.1);
 }
-.late-cell-31-60{
-  background:rgba(249,115,22,.18);
-  color:#9a3412;
-  font-weight:700;
+.late-chip-0{
+  background:transparent;
+  color:inherit;
+  font-weight:600;
+  box-shadow:none;
+  border-color:transparent;
 }
-.late-cell-61-90{
-  background:rgba(239,68,68,.18);
-  color:#b91c1c;
-  font-weight:700;
+.late-chip-1-15{
+  background:#BBF7D0;
+  color:#14532d;
+  border-color:rgba(20,83,45,.2);
 }
-.late-cell-91p{
-  background:rgba(127,29,29,.92);
+.late-chip-16-30{
+  background:#166534;
+  color:#ecfdf5;
+  border-color:rgba(0,0,0,.15);
+}
+.late-chip-31-60{
+  background:#FECACA;
+  color:#7f1d1d;
+  border-color:rgba(127,29,29,.2);
+}
+.late-chip-61-90{
+  background:#991B1B;
   color:#fff;
+  border-color:rgba(0,0,0,.15);
+}
+.late-chip-91p{
+  background:#5c1a2e;
+  color:#fce7f3;
   font-weight:800;
+  border-color:#3d0f1f;
 }
 .overdue-days-cell{
   text-align:center;
@@ -1029,7 +1095,9 @@ body.theme-dark .content-header{border-bottom-color:#374151;}
 #overdue .card table th:nth-child(8),
 #overdue .card table td:nth-child(8),
 #overdue .card table th:nth-child(9),
-#overdue .card table td:nth-child(9){
+#overdue .card table td:nth-child(9),
+#overdue .card table th:nth-child(10),
+#overdue .card table td:nth-child(10){
   white-space:nowrap;
 }
 /* Əməliyyat sütunu dar */
@@ -3586,7 +3654,7 @@ body.theme-dark .btn-cancel:hover{background:#4b5563;}
 
 .card{
   background:#fff;border-radius:14px;border:1px solid #e8ecf0;
-  overflow:hidden;
+  overflow:visible;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
   transition:box-shadow .18s ease, transform .18s ease;
 }
@@ -3600,10 +3668,10 @@ body.theme-dark .stat-card:hover,body.theme-dark .dash-chart-card:hover,body.the
 }
 table{width:100%;border-collapse:collapse;border:1px solid #c8d3de;}
 th{
-  background:#eef2f7;padding:11px 14px;
-  border-bottom:2px solid #b0bdd0;
-  border-right:1px solid #c8d3de;
-  text-align:left;font-size:.72rem;color:#3d5166;
+  background:var(--table-head-bg);padding:11px 14px;
+  border-bottom:2px solid var(--table-head-border);
+  border-right:1px solid var(--table-head-cell-border);
+  text-align:left;font-size:.72rem;color:var(--table-head-text);
   font-weight:800;letter-spacing:.07em;text-transform:uppercase;
 }
 th:last-child{border-right:none;}
@@ -3617,19 +3685,34 @@ td:last-child{border-right:none;}
 tbody tr:nth-child(even){background:#f6f8fb;}
 tbody tr:hover{background:#e8f0fa !important;}
 body.theme-dark table{border-color:#253d52;}
-body.theme-dark th{background:#162231;border-bottom-color:#2d4a5e;border-right-color:#253d52;color:#7eb8d4;font-weight:800;}
+body.theme-dark th{
+  background:var(--table-head-bg);
+  border-bottom-color:var(--table-head-border);
+  border-right-color:var(--table-head-cell-border);
+  color:var(--table-head-text);
+  font-weight:800;
+}
 body.theme-dark td{border-bottom-color:#253d52;border-right-color:#253d52;color:#cbd5e0;}
 body.theme-dark tbody tr:nth-child(even){background:rgba(255,255,255,.03);}
 body.theme-dark tbody tr:hover{background:rgba(26,71,84,.15) !important;}
 
-/* Sticky table headers + table scroll container */
-.card{overflow:auto;max-width:100%;}
+/* Sticky thead — scroll tək main-da; kart ayrıca scroll etməsin */
+.card{max-width:100%;}
 .card table{width:100%;border:none;}
 .card table thead th{
   position:sticky;top:0;
-  background:#eef2f7;z-index:5;color:#3d5166;
+  background:var(--table-head-bg);
+  color:var(--table-head-text);
+  border-bottom-color:var(--table-head-border);
+  border-right-color:var(--table-head-cell-border);
+  z-index:5;
+  box-shadow:0 1px 0 rgba(0,0,0,.12);
 }
-body.theme-dark .card table thead th{background:#162231;color:#7eb8d4;}
+body.theme-dark .card table thead th{
+  background:var(--table-head-bg);
+  color:var(--table-head-text);
+  box-shadow:0 1px 0 rgba(0,0,0,.45);
+}
 th:last-child,td:last-child{border-right:none;width:140px;text-align:center;white-space:nowrap;}
 
 /* Non-list pages can keep natural document flow */
@@ -3637,7 +3720,7 @@ th:last-child,td:last-child{border-right:none;width:140px;text-align:center;whit
 #tools.section.active,
 #reports.section.active{
   display:block;
-  overflow:auto;
+  overflow:visible;
 }
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
@@ -3688,7 +3771,7 @@ th:last-child,td:last-child{border-right:none;width:140px;text-align:center;whit
 tr.total-row{background:var(--accent-light);border-top:2px solid var(--accent);}
 tr.total-row td{padding:7px 10px;}
 
-/* ===== MODAL (scroll + sticky footer) ===== */
+/* ===== MODAL (scroll: məzmun .modal-body-inner-də; footer altda, sticky örtünmə yoxdur) ===== */
 .modal{
   position:fixed;inset:0;
   background:rgba(0,0,0,.0);
@@ -3721,9 +3804,11 @@ body.theme-dark .modal.modal--popup.modal--open{
   padding:0;
   overflow:hidden;
   top:68px !important;
+  /* .header-rest ilə eyni — "Xoş gəldiniz" mətninin sol xətti */
+  --so-pad-x:28px;
 }
 .modal.modal--slideover .modal-body{
-  width:calc(100vw - 190px);
+  width:calc(100vw - var(--app-sidebar-w));
   min-width:unset;
   max-width:100vw;
   height:calc(100vh - 68px);
@@ -3732,12 +3817,60 @@ body.theme-dark .modal.modal--popup.modal--open{
   transform:translateX(100%);
   transition:transform .3s cubic-bezier(.4,0,.2,1);
   overflow-y:auto;
-  padding:28px 32px 36px;
+  padding:28px var(--so-pad-x) 36px;
+  padding-left:var(--slideover-pad-left, var(--so-pad-x));
   box-shadow:-12px 0 48px rgba(0,0,0,.25);
   margin:0;
   background:#f4f6f9 !important;
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
+}
+.modal.modal--slideover .modal-body:has(.modal-body-inner){
+  display:flex;
+  flex-direction:column;
+  padding:0;
+  overflow:hidden;
+  min-height:0;
+}
+.modal.modal--slideover .modal-body:has(.modal-body-inner) > form{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+}
+.modal.modal--slideover .modal-body-inner{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:auto;
+  padding:28px var(--so-pad-x) 8px;
+  padding-left:var(--slideover-pad-left, var(--so-pad-x));
+  -webkit-overflow-scrolling:touch;
+}
+/* Formlu slide-over: <h2> form-dan kənarda qalır — əvvəlki .modal-body padding itir */
+.modal.modal--slideover .modal-body:has(> form .modal-body-inner) > h2{
+  flex-shrink:0;
+  margin-top:0;
+  text-align:left;
+  padding-top:28px;
+  padding-right:var(--so-pad-x);
+  padding-bottom:0;
+  padding-left:var(--slideover-pad-left, var(--so-pad-x));
+  box-sizing:border-box;
+}
+.modal.modal--slideover .modal-body:has(> .modal-nav-top + h2):has(> form .modal-body-inner) > h2{
+  padding-top:12px;
+}
+/* h2 artıq yuxarı boşluğu alır; scroll məzmununda təkrar 28px olmasın */
+.modal.modal--slideover .modal-body:has(> form .modal-body-inner) > form > .modal-body-inner{
+  padding-top:8px;
+}
+.modal.modal--slideover .modal-nav-top{
+  flex-shrink:0;
+  padding:20px var(--so-pad-x) 0;
+  padding-left:var(--slideover-pad-left, var(--so-pad-x));
+  margin-bottom:0;
 }
 body.theme-dark .modal.modal--slideover .modal-body{
   background:#151f2b !important;
@@ -3745,22 +3878,34 @@ body.theme-dark .modal.modal--slideover .modal-body{
 .modal.modal--slideover .modal-footer{
   justify-content:center;
   gap:12px;
-  margin-top:8px;
-  padding-top:20px;
-  background:transparent !important;
+  flex-shrink:0;
+  margin-top:0;
+  padding:16px var(--so-pad-x) 28px;
+  padding-left:var(--slideover-pad-left, var(--so-pad-x));
+  background:#fff !important;
   border-top:1px solid #e2e8f0;
+  position:static;
 }
 body.theme-dark .modal.modal--slideover .modal-footer{
+  background:#243144 !important;
   border-top-color:#2d4a5e;
 }
-.modal.modal--slideover .modal-body > h2{
+.modal.modal--slideover .modal-body > h2,
+.modal.modal--slideover .modal-body-inner > h2{
   margin-bottom:20px;
   font-size:1.35rem;
   font-weight:800;
   color:#1e293b;
   letter-spacing:-.02em;
 }
-body.theme-dark .modal.modal--slideover .modal-body > h2{color:#f1f5f9;}
+/* Başlıq: inner içindədirsə konteyner artıq pad verir; birbaşa body-də olan h2 üçün yuxarıdakı :has() qaydası */
+.modal.modal--slideover .modal-body-inner > h2:first-child{
+  text-align:left;
+  padding-left:0;
+  padding-right:0;
+}
+body.theme-dark .modal.modal--slideover .modal-body > h2,
+body.theme-dark .modal.modal--slideover .modal-body-inner > h2{color:#f1f5f9;}
 .modal.modal--slideover.modal--open .modal-body{
   transform:translateX(0);
 }
@@ -3790,6 +3935,38 @@ body.theme-dark .modal.modal--slideover .modal-body > h2{color:#f1f5f9;}
   border:1px solid #e5e7eb;
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
+}
+.modal.modal--popup .modal-body:has(.modal-body-inner){
+  display:flex;
+  flex-direction:column;
+  padding:0;
+  overflow:hidden;
+  min-height:0;
+}
+.modal.modal--popup .modal-body:has(.modal-body-inner) > form{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+}
+.modal.modal--popup .modal-body-inner{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:auto;
+  padding:20px 28px 8px;
+  -webkit-overflow-scrolling:touch;
+}
+.modal.modal--popup .modal-nav-top{
+  flex-shrink:0;
+  padding:18px 28px 0;
+  margin-bottom:0;
+}
+.modal.modal--popup .modal-body:has(.modal-body-inner) .modal-footer{
+  padding-left:28px;
+  padding-right:28px;
+  padding-bottom:20px;
 }
 body.theme-dark .modal.modal--popup .modal-body{
   background:#1e2d3d !important;
@@ -3861,16 +4038,44 @@ button.dev-company-item:hover{
   margin-bottom:10px;
 }
 .modal-footer{
-  margin-top:18px;
+  margin-top:0;
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  position:sticky;
-  bottom:0;
+  position:static;
   background:#fff;
   padding-top:12px;
   padding-bottom:4px;
   border-top:1px solid #f3f4f6;
+  flex-shrink:0;
+}
+/* Boz panel üzərində boz düymə görünmür — footer və üst nav-da ağ fon */
+.modal-footer .btn-cancel,
+.modal.modal--slideover .modal-nav-top .btn-cancel,
+.modal.modal--popup .modal-nav-top .btn-cancel{
+  background:#fff !important;
+  color:#334155 !important;
+  border:1px solid #cbd5e1 !important;
+  box-shadow:0 1px 2px rgba(15,23,42,.06);
+}
+.modal-footer .btn-cancel:hover,
+.modal.modal--slideover .modal-nav-top .btn-cancel:hover,
+.modal.modal--popup .modal-nav-top .btn-cancel:hover{
+  background:#f8fafc !important;
+  border-color:#94a3b8 !important;
+  box-shadow:0 1px 4px rgba(15,23,42,.08);
+}
+body.theme-dark .modal-footer .btn-cancel,
+body.theme-dark .modal.modal--slideover .modal-nav-top .btn-cancel,
+body.theme-dark .modal.modal--popup .modal-nav-top .btn-cancel{
+  background:#fff !important;
+  color:#1e293b !important;
+  border-color:#94a3b8 !important;
+}
+body.theme-dark .modal-footer .btn-cancel:hover,
+body.theme-dark .modal.modal--slideover .modal-nav-top .btn-cancel:hover,
+body.theme-dark .modal.modal--popup .modal-nav-top .btn-cancel:hover{
+  background:#f1f5f9 !important;
 }
 .modal-footer-actions{
   padding-top:16px;
@@ -4059,9 +4264,10 @@ body.theme-dark .form-card textarea:focus{
   border-radius:12px;
   border:1px solid #e8ecf1;
   box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 18px rgba(15,23,42,.06);
-  overflow:hidden;
+  overflow:visible;
   margin-bottom:16px;
   margin-top:0;
+  max-width:100%;
 }
 .modal.modal--slideover .form-card .table-wrap,
 .modal.modal--popup .form-card .table-wrap{
@@ -4084,15 +4290,19 @@ body.theme-dark .modal.modal--popup .form-card .table-wrap{
   box-shadow:none;
 }
 .modal.modal--slideover .modal-body > .card,
-.modal.modal--popup .modal-body > .card{
+.modal.modal--slideover .modal-body-inner > .card,
+.modal.modal--popup .modal-body > .card,
+.modal.modal--popup .modal-body-inner > .card{
   border-radius:12px !important;
   border:1px solid #e8ecf1 !important;
   background:#fff !important;
   box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 18px rgba(15,23,42,.06) !important;
-  overflow:hidden;
+  overflow:visible;
 }
 body.theme-dark .modal.modal--slideover .modal-body > .card,
-body.theme-dark .modal.modal--popup .modal-body > .card{
+body.theme-dark .modal.modal--slideover .modal-body-inner > .card,
+body.theme-dark .modal.modal--popup .modal-body > .card,
+body.theme-dark .modal.modal--popup .modal-body-inner > .card{
   background:#1e2d3d !important;
   border-color:#2d4a5e !important;
   box-shadow:0 2px 14px rgba(0,0,0,.25) !important;
@@ -4100,6 +4310,27 @@ body.theme-dark .modal.modal--popup .modal-body > .card{
 
 /* Form field qrupu — label + input */
 .f-group{display:flex;flex-direction:column;gap:4px;}
+/* Oxunaqlı dəyər — input ilə eyni ölçü/boşluq (info modalları) */
+.f-static{
+  width:100%;
+  min-height:42px;
+  padding:9px 12px;
+  border:1px solid #dbe3ea;
+  border-radius:6px;
+  font-size:.875rem;
+  color:var(--text-main);
+  background:#f8fafc;
+  box-shadow:0 1px 2px rgba(26,43,60,.05);
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+body.theme-dark .f-static{
+  background:#1a2332;
+  border-color:#3d5268;
+  color:var(--text-main);
+}
 .f-group label,.f-label{
   font-size:.72rem;font-weight:700;color:var(--text-muted);
   text-transform:uppercase;letter-spacing:.04em;
@@ -4326,46 +4557,105 @@ body.theme-dark .info-label{background:#162231;border-right-color:var(--border-c
   padding-bottom:0;
 }
 
-.table-wrap{overflow:auto;margin-top:10px;}
+.table-wrap{overflow:visible;margin-top:10px;}
 .table-wrap table{width:100%;border-collapse:collapse;}
 .table-wrap th,.table-wrap td{padding:7px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);}
 .table-wrap th:last-child,.table-wrap td:last-child{border-right:none;width:auto;text-align:left;}
 
-/* Pills */
-.pill{
-  display:inline-flex;align-items:center;gap:4px;justify-content:center;
-  padding:4px 10px;border-radius:999px;font-weight:700;font-size:.74rem;letter-spacing:.02em;
-  border:1.5px solid transparent;white-space:nowrap;
-}
-.pill.paid{background:#dcfce7;color:#15803d;border-color:#86efac;}
-.pill.paid::before{content:"✓";}
-.pill.partial{background:#fef9c3;color:#92400e;border-color:#fde68a;}
-.pill.partial::before{content:"◑";}
-.pill.unpaid{background:#fee2e2;color:#b91c1c;border-color:#fca5a5;}
-.pill.unpaid::before{content:"✕";}
-.pill.warn{background:#fef3c7;color:#b45309;border-color:#fcd34d;}
-.pill.err{background:#fee2e2;color:#dc2626;border-color:#fca5a5;}
-.pill.ok{background:#dcfce7;color:#15803d;border-color:#86efac;}
-.pill.credit{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd;}
-.pill.nagd{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
-body.theme-dark .pill.paid{background:#14532d;color:#86efac;border-color:#16a34a;}
-body.theme-dark .pill.partial{background:#451a03;color:#fcd34d;border-color:#b45309;}
-body.theme-dark .pill.unpaid{background:#450a0a;color:#fca5a5;border-color:#dc2626;}
-body.theme-dark .pill.warn{background:#451a03;color:#fbbf24;border-color:#d97706;}
-body.theme-dark .pill.err{background:#450a0a;color:#f87171;border-color:#dc2626;}
-body.theme-dark .pill.ok{background:#14532d;color:#86efac;border-color:#16a34a;}
-body.theme-dark .pill.credit{background:#2e1065;color:#c4b5fd;border-color:#7c3aed;}
-body.theme-dark .pill.nagd{background:#1e3a5f;color:#93c5fd;border-color:#2563eb;}
-
-/* Stock status rows */
-.row-stock td{background:var(--stock-bg);border-bottom-color:var(--stock-border);}
-.row-sold td{background:var(--sold-bg);border-bottom-color:var(--sold-border);}
+/*
+ * Status nişanları — pastel, düz, qabarıq olmayan (gradient/kölgə yox)
+ */
+.pill,
 .status-badge{
-  display:inline-flex;align-items:center;justify-content:center;
-  padding:6px 10px;border-radius:999px;font-weight:900;font-size:.72rem;letter-spacing:.03em;border:1px solid transparent;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  padding:3px 9px;
+  border-radius:var(--status-chip-radius);
+  font-weight:600;
+  font-size:.7rem;
+  letter-spacing:.02em;
+  line-height:1.3;
+  white-space:nowrap;
+  border:1px solid transparent;
+  box-shadow:none;
 }
-.badge-stock{background:#dcfce7;color:var(--stock-text);border-color:var(--stock-border);}
-.badge-sold{background:#fee2e2;color:var(--sold-text);border-color:var(--sold-border);}
+.pill.paid::before,
+.pill.partial::before,
+.pill.unpaid::before{content:none;width:0;margin:0;padding:0;}
+
+.pill.paid,
+.pill.ok,
+.badge-stock{
+  background:#dcfce7;
+  color:#166534;
+  border-color:#bbf7d0;
+}
+
+.pill.unpaid,
+.pill.err,
+.badge-sold{
+  background:#fee2e2;
+  color:#b91c1c;
+  border-color:#fecaca;
+}
+
+.pill.partial,
+.pill.warn,
+.badge-returned{
+  background:#fef9c3;
+  color:#a16207;
+  border-color:#fde68a;
+}
+
+.pill.credit{
+  background:#ede9fe;
+  color:#5b21b6;
+  border-color:#ddd6fe;
+}
+
+.pill.nagd{
+  background:#dbeafe;
+  color:#1d4ed8;
+  border-color:#bfdbfe;
+}
+
+body.theme-dark .pill,
+body.theme-dark .status-badge{
+  box-shadow:none;
+}
+body.theme-dark .pill.paid,
+body.theme-dark .pill.ok,
+body.theme-dark .badge-stock{
+  background:rgba(34,197,94,.14);
+  color:#86efac;
+  border-color:rgba(74,222,128,.28);
+}
+body.theme-dark .pill.unpaid,
+body.theme-dark .pill.err,
+body.theme-dark .badge-sold{
+  background:rgba(248,113,113,.12);
+  color:#fca5a5;
+  border-color:rgba(248,113,113,.25);
+}
+body.theme-dark .pill.partial,
+body.theme-dark .pill.warn,
+body.theme-dark .badge-returned{
+  background:rgba(250,204,21,.12);
+  color:#fcd34d;
+  border-color:rgba(250,204,21,.22);
+}
+body.theme-dark .pill.credit{
+  background:rgba(167,139,250,.14);
+  color:#c4b5fd;
+  border-color:rgba(167,139,250,.28);
+}
+body.theme-dark .pill.nagd{
+  background:rgba(96,165,250,.14);
+  color:#93c5fd;
+  border-color:rgba(96,165,250,.28);
+}
 
 /* select with plus button */
 .select-plus{display:flex;gap:8px;align-items:center;}
@@ -4411,7 +4701,7 @@ body.theme-dark .pill.nagd{background:#1e3a5f;color:#93c5fd;border-color:#2563eb
 .btn-mini-pay{
   height:28px;
   padding:0 10px;
-  border-radius:999px;
+  border-radius:var(--btn-radius);
   border:1px solid var(--border-color);
   background:#fff;
   cursor:pointer;
@@ -4428,7 +4718,14 @@ body.theme-dark .pill.nagd{background:#1e3a5f;color:#93c5fd;border-color:#2563eb
   .header-search-wrap{display:none;}
   .header-rest{padding-left:12px;padding-right:12px;}
   .app-header-title{font-size:1.1rem;}
-  main{margin-left:0;padding:14px;}
+  main{
+    margin-left:0;
+    padding:14px;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
   .grid-3{grid-template-columns:1fr;}
   .info-row{grid-template-columns:1fr;}
   th:last-child,td:last-child{width:auto;}
@@ -4444,6 +4741,9 @@ body.theme-dark .pill.nagd{background:#1e3a5f;color:#93c5fd;border-color:#2563eb
 }
 
 /* Sidebar collapsed mode */
+body.sidebar-collapsed{
+  --app-sidebar-w:68px;
+}
 body.sidebar-collapsed aside{
   width:68px;
   overflow:visible;
@@ -4658,7 +4958,14 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   body.sidebar-collapsed .nav-group-label{display:block !important;}
 
   .main-area{margin-left:0 !important;min-width:0;max-width:100vw;overflow-x:hidden;}
-  main{padding:12px !important;min-width:0;}
+  main{
+    padding:12px !important;
+    min-width:0;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
   .section.active{padding:0 !important;min-width:0;}
 
   .header-logo{width:0 !important;overflow:hidden;padding:0;border:none;}
@@ -4667,24 +4974,24 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .header-datetime,.last-saved,.realtime-indicator{display:none !important;}
   .lang-switcher{display:none !important;}
 
-  /* Cədvəl scroll — əsas düzəliş */
+  /* Cədvəl: üfüqi scroll tək main-da */
+  .main-area{
+    height:100dvh;
+    max-height:100dvh;
+  }
   .card{
     border-radius:10px;
-    overflow:hidden !important;  /* kartı constrain edir */
+    overflow:visible !important;
     max-width:100%;
   }
   .card > .table-wrap,
   .card > table,
   .card > div > table{
-    overflow-x:auto !important;
-    -webkit-overflow-scrolling:touch;
+    overflow-x:visible !important;
     max-width:100%;
-    display:block;
   }
-  /* Bütün cədvəl wrap-lar scroll olsun */
   .table-wrap{
-    overflow-x:auto !important;
-    -webkit-overflow-scrolling:touch;
+    overflow:visible !important;
     max-width:100%;
   }
   table{min-width:520px;}
@@ -4702,6 +5009,7 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .dash-charts{grid-template-columns:1fr !important;}
   .content-header{flex-wrap:wrap;gap:8px;padding:0 0 10px;}
   .content-header-actions{flex-wrap:wrap;gap:6px;}
+  .modal.modal--slideover{--so-pad-x:12px;}
   .modal.modal--slideover .modal-body{width:100vw;min-width:unset;border-radius:0;}
   .modal.modal--popup .modal-body{max-width:100vw;border-radius:12px;}
 }
