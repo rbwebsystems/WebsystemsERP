@@ -660,7 +660,7 @@ function showDebtSub(sectionId) {
     updateDebtSectionVisibility();
     return;
   }
-  const debtNav = Array.from(document.querySelectorAll(".nav-link")).find((el) => el.getAttribute("onclick")?.includes("showSec('debts'"));
+  const debtNav = findNavLinkForSection("debts");
   showSec(sectionId, debtNav || null);
   document.querySelectorAll(".debt-type-select").forEach((s) => {
     s.value = sectionId;
@@ -1379,11 +1379,9 @@ function applyAccessUI() {
   });
 
   // Hide sections the user can't access (nav links)
-  document.querySelectorAll(".nav-link").forEach((el) => {
-    const on = el.getAttribute("onclick") || "";
-    const m = on.match(/showSec\('([^']+)'/);
-    if (!m) return;
-    const secId = m[1];
+  document.querySelectorAll(".nav-link[data-sec]").forEach((el) => {
+    const secId = el.getAttribute("data-sec");
+    if (!secId) return;
     if (el.classList.contains("dev-only") || el.classList.contains("admin-only") || el.classList.contains("dev-sub")) return;
     el.style.display = userCanSection(secId) ? "flex" : "none";
   });
@@ -1728,6 +1726,11 @@ function logout() {
   meta.session = null;
   saveMeta();
   closeMdl();
+  try {
+    if (location.hash && /^#\/[a-z0-9_]+$/i.test(location.hash)) {
+      history.replaceState(null, "", location.pathname + (location.search || ""));
+    }
+  } catch (e) {}
   showLoginOverlay(true);
   applyAccessUI();
 }
@@ -2055,7 +2058,7 @@ function getNotifications() {
       kind: "overdue",
       title: "Vaxtı keçmiş kredit",
       text: `${g.customer}: ${money(g.dueTotal)} AZN • ${g.maxLate} gün`,
-      action: () => showSec("overdue", document.querySelector(`.nav-link[onclick*="showSec('overdue'"]`) || null),
+      action: () => showSec("overdue", null),
     });
   }
 
@@ -2082,7 +2085,7 @@ function getNotifications() {
       kind: "stock",
       title: "Anbar azalıb",
       text: `${low.length} məhsul • hədd ≤ ${thr}. Nümunə: ${top}`,
-      action: () => showSec("stock", document.querySelector(`.nav-link[onclick*="showSec('stock'"]`) || null),
+      action: () => showSec("stock", findNavLinkForSection("stock")),
     });
   }
 
@@ -2110,7 +2113,56 @@ function updateHeaderDateTime() {
   el.textContent = dateStr + "  " + timeStr;
 }
 
-function showSec(id, el) {
+/** URL: #/dash, #/sales, … — ana səhifə #lp-* ilə qarışmır (slash ilə başlayır). */
+function parseAppSectionFromHash() {
+  const raw = String(location.hash || "").replace(/^#/, "");
+  const m = raw.match(/^\/([a-z][a-z0-9_]*)$/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+function isValidAppSection(id) {
+  const el = typeof id === "string" && id ? document.getElementById(id) : null;
+  return !!(el && el.classList && el.classList.contains("section"));
+}
+
+function findNavLinkForSection(id) {
+  if (!id || !/^[a-z][a-z0-9_]*$/i.test(id)) return null;
+  try {
+    return document.querySelector(`aside nav .nav-link[data-sec="${id}"]`);
+  } catch {
+    return null;
+  }
+}
+
+function syncAppSectionHash(id) {
+  if (!meta?.session || !id) return;
+  const want = "#/" + id;
+  if (location.hash === want) return;
+  try {
+    history.replaceState(null, "", location.pathname + (location.search || "") + want);
+  } catch (e) {
+    try {
+      location.hash = want;
+    } catch (e2) {}
+  }
+}
+
+function onErpHashChange() {
+  if (!meta?.session) return;
+  const id = parseAppSectionFromHash();
+  if (!id || !isValidAppSection(id)) return;
+  if (!userCanSection(id)) {
+    alert("Bu bölməyə icazə yoxdur.");
+    const dn = findNavLinkForSection("dash");
+    showSec("dash", dn || null, { skipHash: true });
+    syncAppSectionHash("dash");
+    return;
+  }
+  const nav = findNavLinkForSection(id);
+  showSec(id, nav || null, { skipHash: true });
+}
+
+function showSec(id, el, opts) {
   if (meta?.session && !userCanSection(id)) {
     alert("Bu bölməyə icazə yoxdur.");
     return;
@@ -2132,17 +2184,26 @@ function showSec(id, el) {
   }
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
+  if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
 }
 
 function showDashboardAfterLogin() {
   if (!meta?.session) return;
+  const fromHash = parseAppSectionFromHash();
+  if (fromHash && isValidAppSection(fromHash) && userCanSection(fromHash)) {
+    const nav = findNavLinkForSection(fromHash);
+    showSec(fromHash, nav || null, { skipHash: true });
+    try {
+      sessionStorage.setItem("bakfon_lastSection", fromHash);
+    } catch (e) {}
+    return;
+  }
   try {
     sessionStorage.setItem("bakfon_lastSection", "dash");
   } catch (e) {}
-  const dashNav = Array.from(document.querySelectorAll("aside nav .nav-link")).find((el) =>
-    (el.getAttribute("onclick") || "").includes("showSec('dash'")
-  );
-  showSec("dash", dashNav || null);
+  const dashNav = findNavLinkForSection("dash");
+  showSec("dash", dashNav || null, { skipHash: true });
+  syncAppSectionHash("dash");
 }
 
 function pagePrev(key) {
@@ -9914,21 +9975,27 @@ function initApp() {
   showLoginOverlay(false);
   var secToShow = null;
   var navToUse = null;
-  const lastSection = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("bakfon_lastSection")) || null;
-  if (lastSection && userCanSection(lastSection)) {
-    const navLink = Array.from(document.querySelectorAll(".nav-link")).find(
-      (el) => el.getAttribute("onclick")?.includes("showSec('" + lastSection + "'") && el.style.display !== "none"
-    );
-    if (navLink) {
-      secToShow = lastSection;
-      navToUse = navLink;
+  const fromHash = parseAppSectionFromHash();
+  const usedHash = !!(fromHash && isValidAppSection(fromHash) && userCanSection(fromHash));
+  if (usedHash) {
+    secToShow = fromHash;
+    navToUse = findNavLinkForSection(fromHash);
+  }
+  if (!secToShow) {
+    const lastSection = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("bakfon_lastSection")) || null;
+    if (lastSection && isValidAppSection(lastSection) && userCanSection(lastSection)) {
+      const navLink = findNavLinkForSection(lastSection);
+      if (!navLink || navLink.style.display !== "none") {
+        secToShow = lastSection;
+        navToUse = navLink || null;
+      }
     }
   }
   if (!secToShow) {
-    const firstVisible = Array.from(document.querySelectorAll(".nav-link")).find(
-      (el) => el.style.display !== "none" && !el.classList.contains("dev-toggle")
+    const firstVisible = Array.from(document.querySelectorAll(".nav-link[data-sec]")).find(
+      (el) => el.style.display !== "none"
     );
-    const firstSecId = firstVisible?.getAttribute("onclick")?.match(/showSec\('([^']+)'/)?.[1];
+    const firstSecId = firstVisible?.getAttribute("data-sec");
     if (firstVisible && firstSecId && userCanSection(firstSecId)) {
       secToShow = firstSecId;
       navToUse = firstVisible;
@@ -9936,7 +10003,7 @@ function initApp() {
   }
   runMigrations();
   ensureOverdueTestPack();
-  if (secToShow && navToUse) showSec(secToShow, navToUse);
+  if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash });
   renderAll();
 }
 
@@ -9970,6 +10037,10 @@ async function init() {
     showOfflineBlock(true);
     window.addEventListener("online", () => location.reload());
     return;
+  }
+  if (!window.__erpHashNavBound) {
+    window.__erpHashNavBound = true;
+    window.addEventListener("hashchange", onErpHashChange);
   }
   window.addEventListener("offline", () => showOfflineBlock(true));
   window.addEventListener("online", () => location.reload());
@@ -10784,42 +10855,20 @@ function applyLangPagerButtons() {
   });
 }
 function applyLangToNav() {
-  const map = {
-    "showSec('dash'": t("nav_dash"),
-    "showSec('cust'": t("nav_cust"),
-    "showSec('supp'": t("nav_supp"),
-    "showSec('prod'": t("nav_prod"),
-    "showSec('purch'": t("nav_purch"),
-    "showSec('stock'": t("nav_stock"),
-    "showSec('sales'": t("nav_sales"),
-    "showSec('staff'": t("nav_staff"),
-    "showSec('debts'": t("nav_debts"),
-    "showSec('creditor'": t("nav_creditor"),
-    "showSec('cash'": t("nav_cash"),
-    "showSec('reports'": t("nav_reports"),
-    "showSec('audit'": t("nav_audit"),
-    "showSec('users'": t("nav_users"),
-    "showSec('trash'": t("nav_trash"),
-    "showSec('companies'": t("nav_companies"),
-    "showSec('tools'": t("nav_tools"),
-  };
-  document.querySelectorAll(".nav-link[onclick]").forEach((el) => {
-    const oc = el.getAttribute("onclick") || "";
-    if (oc.includes("toggleDevMenu")) {
-      const lab = t("nav_dev");
-      const span = el.querySelector(".nav-text");
-      if (span) span.textContent = lab;
-      el.setAttribute("data-tip", lab);
-      return;
-    }
-    for (const [frag, label] of Object.entries(map)) {
-      if (oc.includes(frag)) {
-        const span = el.querySelector(".nav-text");
-        if (span) span.textContent = label;
-        el.setAttribute("data-tip", label);
-        break;
-      }
-    }
+  document.querySelectorAll(".nav-link[data-sec]").forEach((el) => {
+    const sec = el.getAttribute("data-sec");
+    if (!sec) return;
+    const key = sec === "debts" ? "nav_debts" : `nav_${sec}`;
+    const label = t(key);
+    const span = el.querySelector(".nav-text");
+    if (span) span.textContent = label;
+    el.setAttribute("data-tip", label);
+  });
+  document.querySelectorAll(".nav-link.dev-toggle").forEach((el) => {
+    const lab = t("nav_dev");
+    const span = el.querySelector(".nav-text");
+    if (span) span.textContent = lab;
+    el.setAttribute("data-tip", lab);
   });
 }
 function applyLangToStaticDom() {

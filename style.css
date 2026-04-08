@@ -770,6 +770,14 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
   transition:background .15s,color .15s;
   overflow:visible;
 }
+a.nav-link{
+  text-decoration:none;
+  color:inherit;
+  box-sizing:border-box;
+}
+a.nav-link:visited{color:inherit;}
+body.theme-dark a.nav-link:visited{color:rgba(255,255,255,.68);}
+body.theme-dark a.nav-link.active:visited{color:#93c5fd;}
 .nav-link::before,.nav-link::after{content:none;}
 .nav-link .nav-text{font-size:.875rem;font-weight:500;}
 .dev-menu{margin-top:0;margin-bottom:0;display:flex;flex-direction:column;}
