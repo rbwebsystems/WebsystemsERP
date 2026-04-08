@@ -379,7 +379,7 @@ function openAccountsManager() {
   if (!userCanSection("accounts")) return alert("Hesablar bölməsinə giriş icazəniz yoxdur.");
   openModal(`
     <h2>Hesablar</h2>
-    <div class="modal-footer" style="justify-content:space-between; margin-bottom:10px;">
+    <div class="modal-toolbar-row">
       <div class="muted">Hesab yarat, redaktə et, sil və qalıqlara bax.</div>
       ${userCanEdit() ? `<button class="btn-main" type="button" onclick="openAccount()"><i class="fas fa-plus"></i> Yeni hesab</button>` : ""}
     </div>

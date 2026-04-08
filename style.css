@@ -4260,6 +4260,15 @@ body.theme-dark .form-card textarea:focus{
 .modal.modal--popup .info-block{
   margin-bottom:16px;
 }
+/* İki «modal-footer» olmasın: layoutModalScrollShell yalnız sonuncunu alt panel kimi saxlayır */
+.modal-toolbar-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
 .modal.modal--slideover .modal-body .table-wrap,
 .modal.modal--popup .modal-body .table-wrap{
   background:#fff;
