@@ -3991,17 +3991,10 @@ function renderSaleItemOptions(filterText = "", preferredValue = "") {
 }
 
 function fillSaleAmountFromSelectedItem() {
-  const sel = byId("f_s_item")?.value || "";
-  const item = getSaleItemCatalog().find((x) => x.value === sel);
   const amtEl = byId("f_s_amount");
-  if (!item || !amtEl) return;
-  const auto = n(amtEl.getAttribute("data-autofill"));
-  const current = n(amtEl.value);
-  const defaultAmount = Math.max(0, n(item.defaultAmount));
-  if (!String(amtEl.value || "").trim() || current === 0 || current === auto) {
-    amtEl.value = defaultAmount > 0 ? money(defaultAmount) : "";
-  }
-  amtEl.setAttribute("data-autofill", String(defaultAmount));
+  if (!amtEl) return;
+  amtEl.value = "";
+  amtEl.setAttribute("data-autofill", "0");
 }
 
 function clearSalePickerFields() {
@@ -4936,7 +4929,29 @@ function addSaleDraftItem(skipAlert) {
     return false;
   }
   const arr = window.__saleDraftItems || [];
-  arr.push(r.item);
+  const item = r.item;
+
+  if (item.kind !== "bulk" && item.kind !== "fifo") {
+    const dup = arr.some((x) => x.purchUid === item.purchUid && x.kind === item.kind);
+    if (dup) {
+      if (!skipAlert) alert("Bu məhsul artıq siyahıya əlavə edilib.");
+      return false;
+    }
+  } else {
+    const catalogItem = getSaleItemCatalog().find((x) => x.value === `${item.kind}:${item.purchUid}`);
+    if (catalogItem) {
+      const alreadyQty = arr.filter((x) => x.purchUid === item.purchUid && x.kind === item.kind).reduce((s, x) => s + (x.qty || 0), 0);
+      const maxRem = item.kind === "fifo"
+        ? Math.floor(n((catalogItem.optionLabel || "").match(/QALIQ:(\d+)/)?.[1]))
+        : Math.floor(n((catalogItem.optionLabel || "").match(/QALIQ:(\d+)/)?.[1]));
+      if (maxRem > 0 && alreadyQty + item.qty > maxRem) {
+        if (!skipAlert) alert(`Anbarda yalnız ${maxRem} ədəd qalıb. Siyahıda artıq ${alreadyQty} ədəd var.`);
+        return false;
+      }
+    }
+  }
+
+  arr.push(item);
   window.__saleDraftItems = arr;
   renderSaleDraftItems();
   clearSalePickerFields();
