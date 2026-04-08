@@ -3701,6 +3701,9 @@ tr.total-row td{padding:7px 10px;}
 .modal.modal--open{
   background:rgba(0,0,0,.55);
 }
+.modal.modal--popup.modal--open{
+  background:#0f172a;
+}
 
 /* ── Slide-over (sağdan gələn panel) ── */
 .modal.modal--slideover{
@@ -3768,17 +3771,25 @@ body.theme-dark .modal.modal--slideover .modal-body > h2{color:#f1f5f9;}
   max-height:calc(100vh - 40px);
   height:auto;
   border-radius:12px;
-  transform:scale(.92) translateY(-12px);
-  opacity:0;
-  transition:transform .25s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+  transform:translateY(-10px);
+  opacity:1;
+  transition:transform .2s cubic-bezier(.4,0,.2,1);
   overflow:auto;
   padding:28px;
-  box-shadow:0 8px 32px rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
   margin:0;
+  background:#fff !important;
+  border:1px solid #e5e7eb;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+body.theme-dark .modal.modal--popup .modal-body{
+  background:#1e2d3d !important;
+  border-color:#2d4a5e;
+  box-shadow:0 20px 50px rgba(0,0,0,.55);
 }
 .modal.modal--popup.modal--open .modal-body{
-  transform:scale(1) translateY(0);
-  opacity:1;
+  transform:translateY(0);
 }
 .modal:has(.pick-company-modal) .modal-body{
   width:min(440px, 96vw);
@@ -3968,22 +3979,31 @@ body.theme-dark .form-card-title{
 .grid-2{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:16px 22px;
+  gap:14px 18px;
   align-items:start;
 }
-.grid-2 .span-full{grid-column:span 2;}
+/* Tam sətir: yalnız qeyd, checkbox sətirləri, köməkçi mətn */
+.grid-2 > .f-group--note,
+.grid-2 .f-group--note,
+.grid-2 > .paybox--row,
+.grid-2 > label.chk.grid-span-2,
+.grid-2 > .grid-span-2,
+.grid-2 .hint-line{
+  grid-column:span 2;
+}
 .form-card .paybox{margin:0;}
-.form-card .paybox.span-full{padding-top:4px;}
+.form-card .paybox--row{padding-top:2px;}
 .form-card .table-wrap{margin-top:4px;}
-.form-card .grid-2 > label.chk.span-full{
+.form-card .grid-2 > label.chk.grid-span-2{
   display:flex;align-items:center;gap:10px;margin:0;padding-top:4px;
 }
-.form-card textarea{min-height:88px;resize:vertical;}
+.form-card textarea{min-height:72px;resize:vertical;}
+.form-card .f-group--note textarea{min-height:96px;}
 .form-card .select-small{min-height:42px;width:100%;}
 .form-card input,
 .form-card select,
 .form-card textarea{
-  border:1px solid #dee2e6;
+  border:1px solid #cfd6de;
   box-shadow:none;
   min-height:42px;
   border-radius:8px;
@@ -3992,7 +4012,7 @@ body.theme-dark .form-card-title{
 .form-card input:hover,
 .form-card select:hover,
 .form-card textarea:hover{
-  border-color:#ced4da;
+  border-color:#b8c2ce;
   box-shadow:0 1px 3px rgba(15,23,42,.06);
 }
 .form-card input:focus,
@@ -4041,7 +4061,7 @@ body.theme-dark .f-section{color:#5bb8d4;border-bottom-color:#2d5a6e;}
 input,select,textarea{
   width:100%;
   padding:9px 12px;
-  border:1px solid #e4eaf0;
+  border:1px solid #dbe3ea;
   border-radius:6px;
   font-size:.875rem;
   color:var(--text-main);
@@ -4602,7 +4622,10 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .grid-3{grid-template-columns:1fr !important;}
   .grid-3 .span-2,.grid-3 .span-3{grid-column:span 1 !important;}
   .grid-2{grid-template-columns:1fr !important;}
-  .grid-2 .span-full{grid-column:span 1 !important;}
+  .grid-2 .grid-span-2,
+  .grid-2 .f-group--note,
+  .grid-2 .hint-line,
+  .grid-2 > .paybox--row{grid-column:span 1 !important;}
   .f-group.span-2,.f-group.span-3{grid-column:span 1 !important;}
   .dash-charts{grid-template-columns:1fr !important;}
   .content-header{flex-wrap:wrap;gap:8px;padding:0 0 10px;}
