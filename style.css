@@ -3926,31 +3926,37 @@ body.theme-dark .modal.modal--popup.modal--open{
 
 /* ── Slide-over (sağdan gələn panel) ── */
 .modal.modal--slideover{
+  /* flex-end paneli bəzi brauzerlərdə sağa sıxışdırır; stretch + soldan tam en */
   display:flex;
-  justify-content:flex-end;
-  align-items:flex-start;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
   padding:0;
   overflow:hidden;
+  box-sizing:border-box;
   top:68px !important;
   left:var(--app-sidebar-w);
   right:0;
   bottom:0;
   width:auto;
-  /* Overlay + panel yalnız sidebar-dan sonrakı əsas sahəni əhatə edir (100vw − sidebar; logo sütunu daxil) */
-  --so-pad-x:28px;
+  /* main { padding: 28px 32px } ilə eyni üfüqi boşluq */
+  --so-pad-x:32px;
 }
 .modal.modal--slideover .modal-body{
+  box-sizing:border-box;
   width:100%;
-  min-width:unset;
+  min-width:0;
   max-width:100%;
+  flex:1 1 auto;
+  align-self:stretch;
   height:calc(100vh - 68px);
   max-height:calc(100vh - 68px);
   border-radius:0;
   transform:translateX(100%);
   transition:transform .3s cubic-bezier(.4,0,.2,1);
   overflow-y:auto;
+  overflow-x:hidden;
   padding:28px var(--so-pad-x) 36px;
-  padding-left:var(--slideover-pad-left, var(--so-pad-x));
   box-shadow:-12px 0 48px rgba(0,0,0,.25);
   margin:0;
   background:#f4f6f9 !important;
@@ -3977,7 +3983,6 @@ body.theme-dark .modal.modal--popup.modal--open{
   overflow-y:auto;
   overflow-x:auto;
   padding:28px var(--so-pad-x) 8px;
-  padding-left:var(--slideover-pad-left, var(--so-pad-x));
   -webkit-overflow-scrolling:touch;
 }
 /* Formlu slide-over: <h2> form-dan kənarda qalır — əvvəlki .modal-body padding itir */
@@ -3988,7 +3993,7 @@ body.theme-dark .modal.modal--popup.modal--open{
   padding-top:28px;
   padding-right:var(--so-pad-x);
   padding-bottom:0;
-  padding-left:var(--slideover-pad-left, var(--so-pad-x));
+  padding-left:var(--so-pad-x);
   box-sizing:border-box;
 }
 .modal.modal--slideover .modal-body:has(> .modal-nav-top + h2):has(> form .modal-body-inner) > h2{
@@ -4001,7 +4006,6 @@ body.theme-dark .modal.modal--popup.modal--open{
 .modal.modal--slideover .modal-nav-top{
   flex-shrink:0;
   padding:20px var(--so-pad-x) 0;
-  padding-left:var(--slideover-pad-left, var(--so-pad-x));
   margin-bottom:0;
 }
 body.theme-dark .modal.modal--slideover .modal-body{
@@ -4013,7 +4017,6 @@ body.theme-dark .modal.modal--slideover .modal-body{
   flex-shrink:0;
   margin-top:0;
   padding:16px var(--so-pad-x) 28px;
-  padding-left:var(--slideover-pad-left, var(--so-pad-x));
   background:#fff !important;
   border-top:1px solid #e2e8f0;
   position:static;

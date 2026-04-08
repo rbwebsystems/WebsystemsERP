@@ -2452,32 +2452,9 @@ function layoutModalScrollShell(root) {
   if (inner.childNodes.length) host.insertBefore(inner, footer);
 }
 
-/** Slide-over məzmununun sol boşluğu: #appHeaderTitle ilə eyni piksel xətti (CSS-dən asılı olmayaraq). */
+/** Köhnə sessiyalar üçün --slideover-pad-left təmizlənir (padding indi yalnız CSS --so-pad-x). */
 function syncSlideoverContentPad() {
-  const panel = document.getElementById("modalContent");
-  const mdl = document.getElementById("mdlMain");
-  if (!panel || !mdl || !mdl.classList.contains("modal--slideover") || mdl.style.display === "none") {
-    panel?.style.removeProperty("--slideover-pad-left");
-    return;
-  }
-  const ref = document.getElementById("appHeaderTitle");
-  if (!ref || ref.offsetParent === null) {
-    panel.style.removeProperty("--slideover-pad-left");
-    return;
-  }
-  const tl = ref.getBoundingClientRect().left;
-  const main = document.querySelector("#appShell .main-area");
-  let pad;
-  if (main && main.offsetParent !== null) {
-    pad = Math.round(tl - main.getBoundingClientRect().left);
-  } else {
-    pad = Math.round(tl - panel.getBoundingClientRect().left);
-  }
-  if (Number.isFinite(pad) && pad >= 8) {
-    panel.style.setProperty("--slideover-pad-left", pad + "px");
-  } else {
-    panel.style.removeProperty("--slideover-pad-left");
-  }
+  document.getElementById("modalContent")?.style.removeProperty("--slideover-pad-left");
 }
 
 function openModal(html, opts = {}) {
@@ -2512,10 +2489,7 @@ function openModal(html, opts = {}) {
     // slide-in animasiya trigger + başlıq xətti (main-area / header ilə sinxron)
     requestAnimationFrame(() => {
       modal.classList.add("modal--open");
-      if (!opts.popup) {
-        syncSlideoverContentPad();
-        requestAnimationFrame(() => syncSlideoverContentPad());
-      }
+      if (!opts.popup) syncSlideoverContentPad();
     });
     window.__modalJustClosedAt = 0;
   } finally {
@@ -2540,10 +2514,7 @@ function modalBack() {
     if (slideover) {
       requestAnimationFrame(() => {
         syncSlideoverContentPad();
-        requestAnimationFrame(() => {
-          syncSlideoverContentPad();
-          softLoadingEnd();
-        });
+        requestAnimationFrame(() => softLoadingEnd());
       });
     }
   }
