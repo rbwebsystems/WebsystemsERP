@@ -1351,27 +1351,21 @@ function toggleDevMenu() {
 }
 
 function sectionLabelAz(id) {
-  const map = {
-    dash: "Dashboard",
-    cust: "Müştərilər",
-    supp: "Təchizatçılar",
-    prod: "Məhsullar",
-    purch: "Alışlar",
-    stock: "Anbar",
-    sales: "Satışlar",
-    staff: "Əməkdaşlar",
-    debts: "Borclar - Debitor",
-    overdue: "Borclar - Kreditlər",
-    creditor: "Borclar - Kreditor",
-    cash: "Kassa",
-    accounts: "Hesablar",
-    audit: "Audit",
-    trash: "Səbət",
-    tools: "Alətlər",
-    reports: "Hesabatlar",
-    profile: "Profil",
+  const keyMap = {
+    debts: "page_debts_deb",
+    overdue: "page_debts_loans",
+    creditor: "page_debts_cred",
+    companies: "nav_companies",
+    tools: "nav_tools",
+    users: "nav_users",
+    trash: "nav_trash",
+    accounts: "nav_accounts",
+    profile: "nav_profile",
   };
-  return map[id] || id;
+  const k = keyMap[id] || `nav_${id}`;
+  const tr = t(k);
+  if (tr !== k) return tr;
+  return id;
 }
 
 function showLoginOverlay(show) {
@@ -1941,7 +1935,7 @@ function refreshHeaderBar() {
       const u = currentUser();
       const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
       const cname = getCurrentCompanyName();
-      titleEl.textContent = firstName ? "Xoş gəldiniz, " + firstName + "!" : (cname || "");
+      titleEl.textContent = firstName ? t("welcome_title", { name: firstName }) : (cname || "");
     }
   }
   updateHeaderDateTime();
@@ -9310,7 +9304,7 @@ function renderAll() {
             <td>${money(comm)} AZN</td>
             <td>${money(base)} AZN</td>
             <td>${money(total)} AZN</td>
-            <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(String(st.uid))}')" title="Satış siyahısı"><i class="fas fa-list"></i> Bax</button></td>
+            <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(String(st.uid))}')" title="${escapeAttr(t("btn_sales_list"))}"><i class="fas fa-list"></i> ${escapeHtml(t("btn_view"))}</button></td>
           </tr>`;
         })
         .join("");
@@ -9331,14 +9325,13 @@ function renderAll() {
   byId("st-cash").innerText = money(totalAccountsBalance());
 
   // Dashboard charts: son 6 ay satış
-  const monthNamesAz = ["Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"];
   const now = new Date();
   const last6 = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
-    last6.push({ key: `${y}-${m}`, label: `${monthNamesAz[d.getMonth()]} ${y}` });
+    last6.push({ key: `${y}-${m}` });
   }
   const salesByMonth = last6.map(({ key }) => {
     const sum = (db.sales || [])
@@ -9347,8 +9340,6 @@ function renderAll() {
     return sum;
   });
   const maxSales = Math.max(1, ...salesByMonth);
-  // Qısa ay adları
-  const shortMonths = ["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"];
   function fmtChartVal(v) {
     if (v >= 1000000) return (v/1000000).toFixed(1).replace(/\.0$/,"") + "M";
     if (v >= 1000) return (v/1000).toFixed(1).replace(/\.0$/,"") + "k";
@@ -9372,7 +9363,10 @@ function renderAll() {
 
   const salesChartEl = byId("dashChartSales");
   if (salesChartEl) {
-    const shortLabels = last6.map(({key}) => { const [,m] = key.split("-"); return shortMonths[+m-1]||m; });
+    const shortLabels = last6.map(({ key }) => {
+      const [, mo] = key.split("-");
+      return chartMonthAbbr(Number(mo) - 1);
+    });
     salesChartEl.innerHTML = buildVBarHtml(salesByMonth, shortLabels, "");
   }
 
@@ -9384,8 +9378,8 @@ function renderAll() {
   const pvsEl = byId("dashChartPurchVsSales");
   if (pvsEl) {
     pvsEl.innerHTML = `<div class="dash-hbar-wrap">
-      <div class="dash-bar-row"><span class="dash-bar-label">Alış</span><div class="dash-bar-track"><div class="dash-bar-fill purch" style="width:${(purchThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(purchThisMonth)} AZN</span></div>
-      <div class="dash-bar-row"><span class="dash-bar-label">Satış</span><div class="dash-bar-track"><div class="dash-bar-fill sales" style="width:${(salesThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(salesThisMonth)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(t("dash_lbl_purch"))}</span><div class="dash-bar-track"><div class="dash-bar-fill purch" style="width:${(purchThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(purchThisMonth)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(t("dash_lbl_sales"))}</span><div class="dash-bar-track"><div class="dash-bar-fill sales" style="width:${(salesThisMonth/maxPVS*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(salesThisMonth)} AZN</span></div>
     </div>`;
   }
 
@@ -9393,7 +9387,10 @@ function renderAll() {
   const purchByMonth = last6.map(({ key }) => (db.purch || []).filter((p) => inMonth(p.date, key)).reduce((a, p) => a + n(p.amount), 0));
   const purchChartEl = byId("dashChartPurch");
   if (purchChartEl) {
-    const shortLabels2 = last6.map(({key}) => { const [,m] = key.split("-"); return shortMonths[+m-1]||m; });
+    const shortLabels2 = last6.map(({ key }) => {
+      const [, mo] = key.split("-");
+      return chartMonthAbbr(Number(mo) - 1);
+    });
     purchChartEl.innerHTML = buildVBarHtml(purchByMonth, shortLabels2, "purch");
   }
 
@@ -9402,8 +9399,8 @@ function renderAll() {
   const debtCredEl = byId("dashChartDebtVsCredit");
   if (debtCredEl) {
     debtCredEl.innerHTML = `<div class="dash-hbar-wrap">
-      <div class="dash-bar-row"><span class="dash-bar-label">Debitor</span><div class="dash-bar-track"><div class="dash-bar-fill debt" style="width:${(debtorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(debtorSum)} AZN</span></div>
-      <div class="dash-bar-row"><span class="dash-bar-label">Kreditor</span><div class="dash-bar-track"><div class="dash-bar-fill credit" style="width:${(creditorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(creditorSum)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(t("dash_lbl_debtor"))}</span><div class="dash-bar-track"><div class="dash-bar-fill debt" style="width:${(debtorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(debtorSum)} AZN</span></div>
+      <div class="dash-bar-row"><span class="dash-bar-label">${escapeHtml(t("dash_lbl_creditor"))}</span><div class="dash-bar-track"><div class="dash-bar-fill credit" style="width:${(creditorSum/maxDebt*100).toFixed(1)}%"></div></div><span class="dash-bar-val-out">${money(creditorSum)} AZN</span></div>
     </div>`;
   }
 
@@ -9756,8 +9753,15 @@ function renderSidebarUser() {
   if (!el) return;
   if (!meta?.session) { el.innerHTML = ""; return; }
   const u = currentUser();
-  const name = u ? userDisplay(u) : "İstifadəçi";
-  const role = u?.role === "developer" ? "Developer" : u?.role === "admin" ? "Admin" : u?.role === "owner" ? "Sahibkar" : "İstifadəçi";
+  const name = u ? userDisplay(u) : t("role_fallback");
+  const role =
+    u?.role === "developer"
+      ? "Developer"
+      : u?.role === "admin"
+        ? "Admin"
+        : u?.role === "owner"
+          ? t("role_owner")
+          : t("role_user");
   const initials = name.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
   const email = u?.email || "";
   const photo = u ? getProfilePhoto(u.uid) : "";
@@ -9765,7 +9769,7 @@ function renderSidebarUser() {
     ? `<img src="${escapeAttr(photo)}" class="sidebar-user-avatar-img" alt="${escapeAttr(initials)}">`
     : escapeHtml(initials);
   el.innerHTML = `
-    <div class="sidebar-user-avatar" title="Şəkil yüklə" onclick="triggerProfilePhotoUpload()">${avatarInner}<span class="sidebar-avatar-cam"><i class="fas fa-camera"></i></span></div>
+    <div class="sidebar-user-avatar" title="${escapeAttr(t("lbl_photo_upload"))}" onclick="triggerProfilePhotoUpload()">${avatarInner}<span class="sidebar-avatar-cam"><i class="fas fa-camera"></i></span></div>
     <input type="file" id="profilePhotoFileInput" accept="image/*" style="display:none" onchange="onProfilePhotoSelected(event)">
     <div class="sidebar-user-name">${escapeHtml(name)}</div>
     <div class="sidebar-user-role">${escapeHtml(email || role)}</div>`;
@@ -9781,6 +9785,7 @@ function renderSidebarBrand() {
   if (!nameEl) return;
   const compId = meta?.session?.companyId || "";
   const comp = meta?.companies?.find((c) => c.id === compId);
+  const compName = comp?.name || comp?.id || "";
   nameEl.textContent = "rbsoft.az";
   if (logoEl) {
     const logo = comp?.logo || "";
@@ -9800,7 +9805,7 @@ function updateHeaderWelcome() {
   if (!meta?.session) return;
   const u = currentUser();
   const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
-  if (firstName) titleEl.textContent = "Xoş gəldiniz, " + firstName + "!";
+  if (firstName) titleEl.textContent = t("welcome_title", { name: firstName });
 }
 
 function initApp() {
@@ -9816,9 +9821,9 @@ function initApp() {
   }
   applyAccessUI();
   applySidebarState();
-  setupNavTooltips();
   initHeaderCompactSearch();
   initLang();
+  applyLangToUI();
   renderSidebarUser();
   renderSidebarBrand();
   updateHeaderWelcome();
@@ -10062,6 +10067,7 @@ function runSpotlight() {
     { id: "sales",     label: t("nav_sales"),     icon: "fa-cash-register" },
     { id: "staff",     label: t("nav_staff"),     icon: "fa-id-badge" },
     { id: "debts",     label: t("nav_debts"),     icon: "fa-file-invoice-dollar" },
+    { id: "overdue",   label: t("page_debts_loans"), icon: "fa-clock" },
     { id: "creditor",  label: t("nav_creditor"),  icon: "fa-hand-holding-dollar" },
     { id: "cash",      label: t("nav_cash"),      icon: "fa-coins" },
     { id: "reports",   label: t("nav_reports"),   icon: "fa-chart-bar" },
@@ -10207,58 +10213,583 @@ const LANGS = {
   },
 };
 
+/** Əlavə tərcümə açarları (UI, filtrlər, cədvəl başlıqları). */
+const EXTRA_LANG = {
+  az: {
+    lang_changed: "Dil yeniləndi",
+    welcome_title: "Xoş gəldiniz, {name}!",
+    page_debts_deb: "Borclar — debitor",
+    page_debts_loans: "Borclar — kreditlər",
+    page_debts_cred: "Borclar — kreditor",
+    nav_users: "İstifadəçilər",
+    nav_trash: "Səbət",
+    nav_companies: "Şirkətlər",
+    nav_tools: "Alətlər",
+    nav_dev: "Developer",
+    nav_accounts: "Hesablar",
+    nav_profile: "Profil",
+    opt_pick: "Seçin",
+    opt_debts: "Debitor",
+    opt_creditor: "Kreditor",
+    opt_loans: "Kreditlər",
+    debts_sub_all: "Hamısı",
+    debts_sub_paid: "Tam ödənilmiş",
+    debts_sub_partial: "Qismən ödənilmiş",
+    debts_sub_unpaid: "Ödənilməmiş",
+    filt_active: "Aktiv",
+    filt_returned: "Qaytarılanlar",
+    stock_in_warehouse: "Anbardadır",
+    stock_sold: "Satılıb",
+    stock_returned: "Qaytarılıb",
+    ov_sub_all: "Ümumi kreditlər",
+    ov_sub_overdue: "Vaxtı keçmiş kreditlər",
+    cred_sub_open: "Ödənilməmiş / Qismən",
+    cred_sub_all: "Hamısı",
+    cred_sub_paid: "Tam ödənilmiş",
+    cred_sub_partial: "Qismən",
+    cred_sub_unpaid: "Ödənilməmiş",
+    cash_opt_all: "Hamısı",
+    cash_opt_in: "Mədaxil",
+    cash_opt_out: "Məxaric",
+    rep_view_summary: "Xülasə",
+    rep_view_monthly: "Aylar üzrə",
+    rep_view_sales: "Satışlar",
+    rep_view_purch: "Alışlar",
+    rep_view_expense: "Xərclər",
+    rep_view_staff: "Əməkdaş",
+    pager_prev: "Əvvəl",
+    pager_next: "Növbəti",
+    mon_1: "Yan", mon_2: "Fev", mon_3: "Mar", mon_4: "Apr", mon_5: "May", mon_6: "İyn",
+    mon_7: "İyl", mon_8: "Avq", mon_9: "Sen", mon_10: "Okt", mon_11: "Noy", mon_12: "Dek",
+    dash_lbl_purch: "Alış",
+    dash_lbl_sales: "Satış",
+    dash_lbl_debtor: "Debitor",
+    dash_lbl_creditor: "Kreditor",
+    ph_search: "Axtar...",
+    ph_imei_search: "IMEI / Seriya ilə axtar...",
+    ph_header_search: "Axtarış...",
+    hint_ctrl_k: "Ctrl+K",
+    dash_stat_cust: "Müştəri",
+    dash_stat_stock: "Anbarda",
+    dash_stat_debt: "Debitor borc (AZN)",
+    dash_stat_cred: "Kreditor borc (AZN)",
+    dash_stat_cash: "Ümumi balans (bütün hesablar)",
+    dash_chart_sales6: "Son 6 ay satış (AZN)",
+    dash_chart_pvs: "Alış vs Satış (bu ay)",
+    dash_chart_purch6: "Son 6 ay alış (AZN)",
+    dash_chart_debtcred: "Debitor vs Kreditor borclar",
+    dash_mini_sales_yr: "Bu il satış cəmi (AZN)",
+    dash_mini_purch_yr: "Bu il alış cəmi (AZN)",
+    dash_mini_stock_n: "Anbarda məhsul sayı",
+    lbl_debt_type: "Borc növü",
+    lbl_subselect: "Alt seçim",
+    lbl_date_range: "Tarix aralığı",
+    lbl_search: "Axtarış",
+    lbl_delay_range: "Gecikmə gün aralığı",
+    lbl_lang: "Dil",
+    role_fallback: "İstifadəçi",
+    role_owner: "Sahibkar",
+    role_user: "İstifadəçi",
+    lbl_photo_upload: "Şəkil yüklə",
+    btn_new_cust: "Yeni Müştəri",
+    btn_new_supp: "Yeni Təchizatçı",
+    btn_new_prod: "Yeni Məhsul",
+    btn_new_purch: "Yeni Alış",
+    btn_new_sale: "Yeni Satış",
+    btn_new_staff: "Yeni Əməkdaş",
+    btn_staff_calc: "Əməkhaqqı hesabla",
+    btn_staff_pay: "Ödə",
+    btn_ret_adv: "Qaytarma avansları",
+    btn_cash_count: "Kassa sayımı",
+    btn_day_close: "Gün sonu",
+    btn_cash_diff: "Artıq/Əskik",
+    btn_accounts: "Hesablar",
+    btn_new_cash_op: "Yeni əməliyyat",
+    btn_new_company: "Yeni şirkət",
+    btn_reset_company: "Şirkəti sıfırla",
+    btn_new_user: "Yeni istifadəçi",
+    btn_audit_clear: "Təmizlə",
+    btn_trash_empty: "Hamısını sil",
+    btn_export: "Export",
+    btn_import: "Import",
+    btn_csv: "CSV",
+    btn_recalc: "Yenidən hesabla",
+    btn_skins: "Skinlər",
+    btn_qr: "QR",
+    btn_settings: "Ayarlar",
+    btn_test_seed: "Test baza yüklə",
+    btn_cust_import: "Müştəri bazası (Excel/CSV) import",
+    cash_stat_in: "Gəlir (Nəğd)",
+    cash_stat_out: "Xərc (Nəğd)",
+    cash_stat_bal: "Balans",
+    cash_stat_adv: "Qaytarma avansı",
+    rep_stat_sales: "Satış",
+    rep_stat_sales_paid: "Satış (ödənilən)",
+    rep_stat_purch: "Alış",
+    rep_stat_exp: "Xərc",
+    rep_stat_payroll: "Əməkhaqqı (ay üzrə)",
+    rep_stat_pl: "Mənfəət/Zərər",
+    rep_stat_pl_cash: "Nağdlaşan mənfəət",
+    rep_hdr_monthly: "Ay üzrə detallı",
+    rep_hdr_staff: "Əməkdaş hesabatı / Əməkhaqqı",
+    rep_col_pct: "Faiz",
+    tools_note_lbl: "Qeyd",
+    tools_note_val: "Export/Import yalnız cari şirkət datasına aiddir.",
+    tools_import_title: "Baza import",
+    tools_import_hint: "Excel-də müştəri bazası (Ad, Soyad, FİN, Mobil və s.) hazırlayıb import etdikdə həmin müştərilər Müştərilər siyahısına düşər. Siyahıda cədvəl sütunları, ətraflı məlumat isə hər müştərinin Info pəncərəsində görünər.",
+    users_intro_html: "Rolları (user / admin / developer) və icazələri bu siyahıda istifadəçi üzərində <strong>Redaktə</strong> ilə dəyişə bilərsiniz.",
+    th_num: "#", th_id: "ID", th_actions: "Əməliyyat", th_name_full: "Ad Soyad Ata", th_mobile: "Mobil", th_fin: "FİN", th_serial: "Seriya №", th_guarantor: "Zamin",
+    th_company: "Şirkət", th_contact: "Məsul", th_voen: "VÖEN", th_name: "Ad", th_cat: "Kateqoriya", th_subcat: "Alt kateqoriya",
+    th_inv: "Qaimə", th_date: "Tarix", th_purch_date: "Alış tarixi", th_supplier: "Təchizatçı", th_staff: "Əməkdaş", th_amount: "Məbləğ", th_paid: "Ödənilən", th_balance: "Qalıq", th_status: "Status", th_type: "Tip",
+    th_product: "Məhsul", th_qty: "Say", th_kind: "Növ", th_price: "Qiymət", th_imei1: "IMEI 1", th_imei2: "IMEI 2", th_remain: "Qalıq say",
+    th_customer: "Müştəri", th_inv_no: "Qaimə №", th_pay_amt: "Ödəniş məbləği", th_account: "Hesab", th_pay_type: "Ödəniş növü",
+    th_user: "İstifadəçi", th_target: "Hədəf", th_detail: "Detallı", th_deleted_by: "Silən", th_role: "Rol", th_active: "Aktiv", th_username: "İstifadəçi adı",
+    th_code: "Kod", th_active_co: "Aktiv", th_info: "Info", th_staff_name: "Ad Soyad", th_position: "Vəzifə", th_phone: "Telefon", th_salary: "Standart maaş", th_pct: "Faiz %",
+    th_cust_debt: "Cəmi borc", th_cust_name_long: "Müştəri (Ad Soyad Ata)", th_sched: "Cədvəl üzrə", th_paid_full: "Ödənilmiş", th_due: "Ödənilməli", th_pay_date: "Ödəmə tarixi", th_delay_days: "Gecikmə günü",
+    th_sale_count: "Satış sayı", th_sale_sum: "Satış cəmi", th_comm: "Komissiya", th_base_sal: "Baza maaş", th_total: "Yekun",
+    btn_view: "Bax",
+    btn_sales_list: "Satış siyahısı",
+  },
+  ru: {
+    lang_changed: "Язык изменён",
+    welcome_title: "Добро пожаловать, {name}!",
+    page_debts_deb: "Задолженности — дебитор",
+    page_debts_loans: "Задолженности — кредиты",
+    page_debts_cred: "Задолженности — кредитор",
+    nav_users: "Пользователи",
+    nav_trash: "Корзина",
+    nav_companies: "Компании",
+    nav_tools: "Инструменты",
+    nav_dev: "Разработчик",
+    nav_accounts: "Счета",
+    nav_profile: "Профиль",
+    opt_pick: "Выберите",
+    opt_debts: "Дебитор",
+    opt_creditor: "Кредитор",
+    opt_loans: "Кредиты",
+    debts_sub_all: "Все",
+    debts_sub_paid: "Полностью оплачено",
+    debts_sub_partial: "Частично оплачено",
+    debts_sub_unpaid: "Не оплачено",
+    filt_active: "Активные",
+    filt_returned: "Возвраты",
+    stock_in_warehouse: "На складе",
+    stock_sold: "Продано",
+    stock_returned: "Возвращено",
+    ov_sub_all: "Все кредиты",
+    ov_sub_overdue: "Просроченные кредиты",
+    cred_sub_open: "Не оплачено / Частично",
+    cred_sub_all: "Все",
+    cred_sub_paid: "Полностью оплачено",
+    cred_sub_partial: "Частично",
+    cred_sub_unpaid: "Не оплачено",
+    cash_opt_all: "Все",
+    cash_opt_in: "Приход",
+    cash_opt_out: "Расход",
+    rep_view_summary: "Сводка",
+    rep_view_monthly: "По месяцам",
+    rep_view_sales: "Продажи",
+    rep_view_purch: "Закупки",
+    rep_view_expense: "Расходы",
+    rep_view_staff: "Сотрудники",
+    pager_prev: "Назад",
+    pager_next: "Далее",
+    mon_1: "Янв", mon_2: "Фев", mon_3: "Мар", mon_4: "Апр", mon_5: "Май", mon_6: "Июн",
+    mon_7: "Июл", mon_8: "Авг", mon_9: "Сен", mon_10: "Окт", mon_11: "Ноя", mon_12: "Дек",
+    dash_lbl_purch: "Закупка",
+    dash_lbl_sales: "Продажа",
+    dash_lbl_debtor: "Дебитор",
+    dash_lbl_creditor: "Кредитор",
+    ph_search: "Поиск...",
+    ph_imei_search: "Поиск по IMEI / серии...",
+    ph_header_search: "Поиск...",
+    hint_ctrl_k: "Ctrl+K",
+    dash_stat_cust: "Клиенты",
+    dash_stat_stock: "На складе",
+    dash_stat_debt: "Дебиторская задолженность (AZN)",
+    dash_stat_cred: "Кредиторская задолженность (AZN)",
+    dash_stat_cash: "Общий баланс (все счета)",
+    dash_chart_sales6: "Продажи за 6 мес. (AZN)",
+    dash_chart_pvs: "Закупки vs Продажи (этот месяц)",
+    dash_chart_purch6: "Закупки за 6 мес. (AZN)",
+    dash_chart_debtcred: "Дебитор vs Кредитор",
+    dash_mini_sales_yr: "Продажи за год (AZN)",
+    dash_mini_purch_yr: "Закупки за год (AZN)",
+    dash_mini_stock_n: "Кол-во товаров на складе",
+    lbl_debt_type: "Тип задолженности",
+    lbl_subselect: "Подвыбор",
+    lbl_date_range: "Период",
+    lbl_search: "Поиск",
+    lbl_delay_range: "Дни просрочки",
+    lbl_lang: "Язык",
+    role_fallback: "Пользователь",
+    role_owner: "Владелец",
+    role_user: "Пользователь",
+    lbl_photo_upload: "Загрузить фото",
+    btn_new_cust: "Новый клиент",
+    btn_new_supp: "Новый поставщик",
+    btn_new_prod: "Новый товар",
+    btn_new_purch: "Новая закупка",
+    btn_new_sale: "Новая продажа",
+    btn_new_staff: "Новый сотрудник",
+    btn_staff_calc: "Расчёт зарплаты",
+    btn_staff_pay: "Оплатить",
+    btn_ret_adv: "Авансы возвратов",
+    btn_cash_count: "Инвентаризация кассы",
+    btn_day_close: "Закрытие дня",
+    btn_cash_diff: "Излишек/недостача",
+    btn_accounts: "Счета",
+    btn_new_cash_op: "Новая операция",
+    btn_new_company: "Новая компания",
+    btn_reset_company: "Сбросить компанию",
+    btn_new_user: "Новый пользователь",
+    btn_audit_clear: "Очистить",
+    btn_trash_empty: "Удалить всё",
+    btn_export: "Экспорт",
+    btn_import: "Импорт",
+    btn_csv: "CSV",
+    btn_recalc: "Пересчитать",
+    btn_skins: "Скины",
+    btn_qr: "QR",
+    btn_settings: "Настройки",
+    btn_test_seed: "Загрузить тестовую базу",
+    btn_cust_import: "Импорт клиентов (Excel/CSV)",
+    cash_stat_in: "Приход (нал.)",
+    cash_stat_out: "Расход (нал.)",
+    cash_stat_bal: "Баланс",
+    cash_stat_adv: "Аванс возврата",
+    rep_stat_sales: "Продажи",
+    rep_stat_sales_paid: "Продажи (оплачено)",
+    rep_stat_purch: "Закупки",
+    rep_stat_exp: "Расход",
+    rep_stat_payroll: "Зарплата (за месяц)",
+    rep_stat_pl: "Прибыль/убыток",
+    rep_stat_pl_cash: "Денежная прибыль",
+    rep_hdr_monthly: "Детально по месяцам",
+    rep_hdr_staff: "Отчёт по сотрудникам / Зарплата",
+    rep_col_pct: "Процент",
+    tools_note_lbl: "Примечание",
+    tools_note_val: "Экспорт/импорт относится только к данным текущей компании.",
+    tools_import_title: "Импорт базы",
+    tools_import_hint: "Подготовьте в Excel базу клиентов (имя, ФИН, телефон и т.д.) — после импорта они появятся в разделе Клиенты.",
+    users_intro_html: "Роли (user / admin / developer) и права можно менять в списке через <strong>Редактирование</strong> пользователя.",
+    th_num: "#", th_id: "ID", th_actions: "Действия", th_name_full: "ФИО", th_mobile: "Моб.", th_fin: "ФИН", th_serial: "Серия №", th_guarantor: "Поручитель",
+    th_company: "Компания", th_contact: "Ответств.", th_voen: "ИНН", th_name: "Название", th_cat: "Категория", th_subcat: "Подкатегория",
+    th_inv: "Накладная", th_date: "Дата", th_purch_date: "Дата закупки", th_supplier: "Поставщик", th_staff: "Сотрудник", th_amount: "Сумма", th_paid: "Оплачено", th_balance: "Остаток", th_status: "Статус", th_type: "Тип",
+    th_product: "Товар", th_qty: "Кол-во", th_kind: "Вид", th_price: "Цена", th_imei1: "IMEI 1", th_imei2: "IMEI 2", th_remain: "Остаток",
+    th_customer: "Клиент", th_inv_no: "№ накладной", th_pay_amt: "Сумма платежа", th_account: "Счёт", th_pay_type: "Тип оплаты",
+    th_user: "Пользователь", th_target: "Цель", th_detail: "Детали", th_deleted_by: "Удалил", th_role: "Роль", th_active: "Активен", th_username: "Логин",
+    th_code: "Код", th_active_co: "Активна", th_info: "Инфо", th_staff_name: "ФИО", th_position: "Должность", th_phone: "Телефон", th_salary: "Оклад", th_pct: "Процент %",
+    th_cust_debt: "Всего долг", th_cust_name_long: "Клиент (ФИО)", th_sched: "По графику", th_paid_full: "Оплачено", th_due: "К оплате", th_pay_date: "Дата оплаты", th_delay_days: "Дней просрочки",
+    th_sale_count: "Кол-во продаж", th_sale_sum: "Сумма продаж", th_comm: "Комиссия", th_base_sal: "Базовый оклад", th_total: "Итого",
+    btn_view: "Смотр",
+    btn_sales_list: "Список продаж",
+  },
+  en: {
+    lang_changed: "Language updated",
+    welcome_title: "Welcome, {name}!",
+    page_debts_deb: "Debts — receivables",
+    page_debts_loans: "Debts — loans",
+    page_debts_cred: "Debts — payables",
+    nav_users: "Users",
+    nav_trash: "Trash",
+    nav_companies: "Companies",
+    nav_tools: "Tools",
+    nav_dev: "Developer",
+    nav_accounts: "Accounts",
+    nav_profile: "Profile",
+    opt_pick: "Select",
+    opt_debts: "Receivables",
+    opt_creditor: "Payables",
+    opt_loans: "Loans",
+    debts_sub_all: "All",
+    debts_sub_paid: "Fully paid",
+    debts_sub_partial: "Partially paid",
+    debts_sub_unpaid: "Unpaid",
+    filt_active: "Active",
+    filt_returned: "Returned",
+    stock_in_warehouse: "In stock",
+    stock_sold: "Sold",
+    stock_returned: "Returned",
+    ov_sub_all: "All loans",
+    ov_sub_overdue: "Overdue loans",
+    cred_sub_open: "Unpaid / Partial",
+    cred_sub_all: "All",
+    cred_sub_paid: "Fully paid",
+    cred_sub_partial: "Partial",
+    cred_sub_unpaid: "Unpaid",
+    cash_opt_all: "All",
+    cash_opt_in: "Incoming",
+    cash_opt_out: "Outgoing",
+    rep_view_summary: "Summary",
+    rep_view_monthly: "By month",
+    rep_view_sales: "Sales",
+    rep_view_purch: "Purchases",
+    rep_view_expense: "Expenses",
+    rep_view_staff: "Staff",
+    pager_prev: "Prev",
+    pager_next: "Next",
+    mon_1: "Jan", mon_2: "Feb", mon_3: "Mar", mon_4: "Apr", mon_5: "May", mon_6: "Jun",
+    mon_7: "Jul", mon_8: "Aug", mon_9: "Sep", mon_10: "Oct", mon_11: "Nov", mon_12: "Dec",
+    dash_lbl_purch: "Purchase",
+    dash_lbl_sales: "Sale",
+    dash_lbl_debtor: "Receivables",
+    dash_lbl_creditor: "Payables",
+    ph_search: "Search...",
+    ph_imei_search: "Search by IMEI / serial...",
+    ph_header_search: "Search...",
+    hint_ctrl_k: "Ctrl+K",
+    dash_stat_cust: "Customers",
+    dash_stat_stock: "In stock",
+    dash_stat_debt: "Receivables (AZN)",
+    dash_stat_cred: "Payables (AZN)",
+    dash_stat_cash: "Total balance (all accounts)",
+    dash_chart_sales6: "Last 6 months sales (AZN)",
+    dash_chart_pvs: "Purchase vs Sale (this month)",
+    dash_chart_purch6: "Last 6 months purchases (AZN)",
+    dash_chart_debtcred: "Receivables vs Payables",
+    dash_mini_sales_yr: "Sales this year (AZN)",
+    dash_mini_purch_yr: "Purchases this year (AZN)",
+    dash_mini_stock_n: "Products in stock",
+    lbl_debt_type: "Debt type",
+    lbl_subselect: "Sub-filter",
+    lbl_date_range: "Date range",
+    lbl_search: "Search",
+    lbl_delay_range: "Overdue days range",
+    lbl_lang: "Language",
+    role_fallback: "User",
+    role_owner: "Owner",
+    role_user: "User",
+    lbl_photo_upload: "Upload photo",
+    btn_new_cust: "New customer",
+    btn_new_supp: "New supplier",
+    btn_new_prod: "New product",
+    btn_new_purch: "New purchase",
+    btn_new_sale: "New sale",
+    btn_new_staff: "New staff",
+    btn_staff_calc: "Calculate payroll",
+    btn_staff_pay: "Pay",
+    btn_ret_adv: "Return advances",
+    btn_cash_count: "Cash count",
+    btn_day_close: "Day close",
+    btn_cash_diff: "Over/short",
+    btn_accounts: "Accounts",
+    btn_new_cash_op: "New transaction",
+    btn_new_company: "New company",
+    btn_reset_company: "Reset company data",
+    btn_new_user: "New user",
+    btn_audit_clear: "Clear",
+    btn_trash_empty: "Delete all",
+    btn_export: "Export",
+    btn_import: "Import",
+    btn_csv: "CSV",
+    btn_recalc: "Recalculate",
+    btn_skins: "Skins",
+    btn_qr: "QR",
+    btn_settings: "Settings",
+    btn_test_seed: "Load test database",
+    btn_cust_import: "Customer import (Excel/CSV)",
+    cash_stat_in: "Income (cash)",
+    cash_stat_out: "Expense (cash)",
+    cash_stat_bal: "Balance",
+    cash_stat_adv: "Return advance",
+    rep_stat_sales: "Sales",
+    rep_stat_sales_paid: "Sales (paid)",
+    rep_stat_purch: "Purchases",
+    rep_stat_exp: "Expense",
+    rep_stat_payroll: "Payroll (month)",
+    rep_stat_pl: "Profit/Loss",
+    rep_stat_pl_cash: "Cash profit",
+    rep_hdr_monthly: "Monthly detail",
+    rep_hdr_staff: "Staff report / Payroll",
+    rep_col_pct: "Percent",
+    tools_note_lbl: "Note",
+    tools_note_val: "Export/Import applies only to the current company data.",
+    tools_import_title: "Database import",
+    tools_import_hint: "Prepare customers in Excel (name, PIN, mobile, etc.) — after import they appear in Customers. Details are in each customer Info window.",
+    users_intro_html: "Roles (user / admin / developer) and permissions can be changed per user via <strong>Edit</strong>.",
+    th_num: "#", th_id: "ID", th_actions: "Actions", th_name_full: "Full name", th_mobile: "Mobile", th_fin: "PIN", th_serial: "Serial №", th_guarantor: "Guarantor",
+    th_company: "Company", th_contact: "Contact", th_voen: "Tax ID", th_name: "Name", th_cat: "Category", th_subcat: "Subcategory",
+    th_inv: "Invoice", th_date: "Date", th_purch_date: "Purchase date", th_supplier: "Supplier", th_staff: "Staff", th_amount: "Amount", th_paid: "Paid", th_balance: "Balance", th_status: "Status", th_type: "Type",
+    th_product: "Product", th_qty: "Qty", th_kind: "Kind", th_price: "Price", th_imei1: "IMEI 1", th_imei2: "IMEI 2", th_remain: "Qty left",
+    th_customer: "Customer", th_inv_no: "Invoice №", th_pay_amt: "Payment amount", th_account: "Account", th_pay_type: "Payment type",
+    th_user: "User", th_target: "Target", th_detail: "Detail", th_deleted_by: "Deleted by", th_role: "Role", th_active: "Active", th_username: "Username",
+    th_code: "Code", th_active_co: "Active", th_info: "Info", th_staff_name: "Name", th_position: "Position", th_phone: "Phone", th_salary: "Base salary", th_pct: "Percent %",
+    th_cust_debt: "Total debt", th_cust_name_long: "Customer (full name)", th_sched: "Per schedule", th_paid_full: "Paid", th_due: "Due", th_pay_date: "Payment date", th_delay_days: "Days overdue",
+    th_sale_count: "Sales count", th_sale_sum: "Sales total", th_comm: "Commission", th_base_sal: "Base salary", th_total: "Total",
+    btn_view: "View",
+    btn_sales_list: "Sales list",
+  }
+};
+
 let _currentLang = localStorage.getItem("erp_lang") || "az";
-function t(key) {
-  return (LANGS[_currentLang] || LANGS.az)[key] || (LANGS.az[key] || key);
+function t(key, vars) {
+  const lc = _currentLang;
+  let s = (LANGS[lc] || LANGS.az)[key];
+  if (s == null) s = (EXTRA_LANG[lc] || EXTRA_LANG.az)[key];
+  if (s == null) s = LANGS.az[key];
+  if (s == null) s = EXTRA_LANG.az[key];
+  if (s == null) s = key;
+  s = String(s);
+  if (vars && typeof vars === "object") {
+    Object.keys(vars).forEach((k) => {
+      s = s.split(`{${k}}`).join(String(vars[k]));
+    });
+  }
+  return s;
+}
+function chartMonthAbbr(monthIndex0) {
+  return t(`mon_${monthIndex0 + 1}`);
+}
+function applyLangMappedOptions(sel, valueToKey) {
+  if (!sel) return;
+  Array.from(sel.options).forEach((o) => {
+    const k = valueToKey[o.value];
+    if (k) o.textContent = t(k);
+  });
+}
+function applyLangDebtUI() {
+  const typeMap = { "": "opt_pick", debts: "opt_debts", creditor: "opt_creditor", overdue: "opt_loans" };
+  document.querySelectorAll(".debt-type-select option").forEach((o) => {
+    const k = typeMap[o.value];
+    if (k) o.textContent = t(k);
+  });
+  const debtsSt = { "": "opt_pick", all: "debts_sub_all", paid: "debts_sub_paid", partial: "debts_sub_partial", unpaid: "debts_sub_unpaid" };
+  byId("debtsStatus")?.querySelectorAll("option").forEach((o) => {
+    const k = debtsSt[o.value];
+    if (k) o.textContent = t(k);
+  });
+  const ovSt = { "": "opt_pick", all: "ov_sub_all", overdue: "ov_sub_overdue" };
+  byId("overdueView")?.querySelectorAll("option").forEach((o) => {
+    const k = ovSt[o.value];
+    if (k) o.textContent = t(k);
+  });
+  const crSt = { "": "opt_pick", open: "cred_sub_open", all: "cred_sub_all", paid: "cred_sub_paid", partial: "cred_sub_partial", unpaid: "cred_sub_unpaid" };
+  byId("credStatus")?.querySelectorAll("option").forEach((o) => {
+    const k = crSt[o.value];
+    if (k) o.textContent = t(k);
+  });
+}
+function applyLangCashReports() {
+  applyLangMappedOptions(byId("cashType"), { all: "cash_opt_all", in: "cash_opt_in", out: "cash_opt_out" });
+  applyLangMappedOptions(byId("repView"), {
+    summary: "rep_view_summary",
+    monthly: "rep_view_monthly",
+    sales: "rep_view_sales",
+    purch: "rep_view_purch",
+    expense: "rep_view_expense",
+    staff: "rep_view_staff",
+  });
+}
+function applyLangExtraFilters() {
+  applyLangMappedOptions(byId("purchStatus"), { active: "filt_active", returned: "filt_returned", all: "debts_sub_all" });
+  applyLangMappedOptions(byId("stockStatus"), {
+    all: "debts_sub_all",
+    stock: "stock_in_warehouse",
+    sold: "stock_sold",
+    returned: "stock_returned",
+  });
+  applyLangMappedOptions(byId("salesStatus"), { active: "filt_active", returned: "filt_returned", all: "debts_sub_all" });
+}
+function applyLangPagerButtons() {
+  document.querySelectorAll(".btn-pager").forEach((btn) => {
+    const oc = btn.getAttribute("onclick") || "";
+    if (oc.includes("pagePrev")) btn.textContent = t("pager_prev");
+    else if (oc.includes("pageNext")) btn.textContent = t("pager_next");
+  });
+}
+function applyLangToNav() {
+  const map = {
+    "showSec('dash'": t("nav_dash"),
+    "showSec('cust'": t("nav_cust"),
+    "showSec('supp'": t("nav_supp"),
+    "showSec('prod'": t("nav_prod"),
+    "showSec('purch'": t("nav_purch"),
+    "showSec('stock'": t("nav_stock"),
+    "showSec('sales'": t("nav_sales"),
+    "showSec('staff'": t("nav_staff"),
+    "showSec('debts'": t("nav_debts"),
+    "showSec('creditor'": t("nav_creditor"),
+    "showSec('cash'": t("nav_cash"),
+    "showSec('reports'": t("nav_reports"),
+    "showSec('audit'": t("nav_audit"),
+    "showSec('users'": t("nav_users"),
+    "showSec('trash'": t("nav_trash"),
+    "showSec('companies'": t("nav_companies"),
+    "showSec('tools'": t("nav_tools"),
+  };
+  document.querySelectorAll(".nav-link[onclick]").forEach((el) => {
+    const oc = el.getAttribute("onclick") || "";
+    if (oc.includes("toggleDevMenu")) {
+      const lab = t("nav_dev");
+      const span = el.querySelector(".nav-text");
+      if (span) span.textContent = lab;
+      el.setAttribute("data-tip", lab);
+      return;
+    }
+    for (const [frag, label] of Object.entries(map)) {
+      if (oc.includes(frag)) {
+        const span = el.querySelector(".nav-text");
+        if (span) span.textContent = label;
+        el.setAttribute("data-tip", label);
+        break;
+      }
+    }
+  });
+}
+function applyLangToStaticDom() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.getAttribute("data-i18n");
+    if (!k) return;
+    el.textContent = t(k);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const k = el.getAttribute("data-i18n-placeholder");
+    if (k) el.setAttribute("placeholder", t(k));
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const k = el.getAttribute("data-i18n-title");
+    if (k) el.setAttribute("title", t(k));
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    const k = el.getAttribute("data-i18n-html");
+    if (k) el.innerHTML = t(k);
+  });
+}
+function applyLangToUI() {
+  applyLangToNav();
+  applyLangToStaticDom();
+  applyLangDebtUI();
+  applyLangCashReports();
+  applyLangExtraFilters();
+  applyLangPagerButtons();
+  setupNavTooltips();
 }
 function setLang(lang) {
   if (!LANGS[lang]) return;
   _currentLang = lang;
   localStorage.setItem("erp_lang", lang);
-  document.querySelectorAll(".lang-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-lang") === lang));
-  applyLangToNav();
-  toast(`${lang.toUpperCase()} dili seçildi`);
-}
-function applyLangToNav() {
-  const map = {
-    "showSec('dash'":   t("nav_dash"),
-    "showSec('cust'":   t("nav_cust"),
-    "showSec('supp'":   t("nav_supp"),
-    "showSec('prod'":   t("nav_prod"),
-    "showSec('purch'":  t("nav_purch"),
-    "showSec('stock'":  t("nav_stock"),
-    "showSec('sales'":  t("nav_sales"),
-    "showSec('staff'":  t("nav_staff"),
-    "showSec('debts'":  t("nav_debts"),
-    "showSec('overdue'":t("nav_debts") + " (vaxtı keçmiş)",
-    "showSec('creditor'":t("nav_creditor"),
-    "showSec('cash'":   t("nav_cash"),
-    "showSec('reports'":t("nav_reports"),
-    "showSec('audit'":  t("nav_audit"),
-  };
-  document.querySelectorAll(".nav-link[onclick]").forEach((el) => {
-    const oc = el.getAttribute("onclick") || "";
-    for (const [key, label] of Object.entries(map)) {
-      if (oc.includes(key)) {
-        const icon = el.querySelector("i");
-        if (icon) {
-          el.childNodes.forEach((n) => { if (n.nodeType === 3) n.textContent = " " + label; });
-        }
-        break;
-      }
-    }
-  });
-  // Update content-header h1 for active section
-  const activeH1 = document.querySelector(".section.active .content-header h1");
-  if (activeH1) {
-    const activeId = document.querySelector(".section.active")?.id;
-    const secKey = `nav_${activeId}`;
-    if (t(secKey) !== secKey) activeH1.textContent = t(secKey);
+  const sel = byId("langSelect");
+  if (sel) sel.value = lang;
+  applyLangToUI();
+  if (typeof runSpotlight === "function" && byId("spotlightOverlay")?.classList.contains("open")) {
+    try {
+      runSpotlight();
+    } catch (e) {}
   }
+  if (meta?.session) {
+    try {
+      refreshHeaderBar();
+      renderSidebarUser();
+      renderAll();
+    } catch (e) {}
+  }
+  toast(t("lang_changed"));
 }
 function initLang() {
   const saved = localStorage.getItem("erp_lang") || "az";
   _currentLang = saved;
-  document.querySelectorAll(".lang-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-lang") === saved));
+  const sel = byId("langSelect");
+  if (sel) sel.value = saved;
 }
 

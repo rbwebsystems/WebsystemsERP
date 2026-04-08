@@ -72,16 +72,21 @@
       <div class="app-header-right">
         <div class="header-search-wrap">
           <i class="fas fa-magnifying-glass header-search-icon"></i>
-          <input type="text" class="header-search-input" placeholder="Axtarış..." onclick="openGlobalSearch()" readonly />
-          <span class="header-search-hint">Ctrl+K</span>
+          <input type="text" id="headerSearchInput" class="header-search-input" data-i18n-placeholder="ph_header_search" placeholder="Axtarış..." onclick="openGlobalSearch()" readonly />
+          <span class="header-search-hint" data-i18n="hint_ctrl_k">Ctrl+K</span>
         </div>
         <span id="headerDateTime" class="header-datetime" title="Cari tarix və saat"></span>
         <span id="realtimeIndicator" class="realtime-indicator hidden" title="Realtime: məlumat bütün cihazlarda sinxron olunur"></span>
         <span id="lastSavedEl" class="last-saved" title="Son saxlanma vaxtı"></span>
         <div class="lang-switcher" id="langSwitcher">
-          <button class="lang-btn active" onclick="setLang('az')" data-lang="az">AZ</button>
-          <button class="lang-btn" onclick="setLang('ru')" data-lang="ru">RU</button>
-          <button class="lang-btn" onclick="setLang('en')" data-lang="en">EN</button>
+          <label class="lang-select-wrap" for="langSelect">
+            <span class="visually-hidden" data-i18n="lbl_lang">Dil</span>
+            <select id="langSelect" class="lang-select" onchange="setLang(this.value)" aria-label="Language">
+              <option value="az">AZ — Azərbaycan</option>
+              <option value="ru">RU — Русский</option>
+              <option value="en">EN — English</option>
+            </select>
+          </label>
         </div>
         <button class="header-btn header-btn-icon" type="button" onclick="openNotifications()" title="Bildirişlər">
           <i class="fas fa-bell"></i>
@@ -99,31 +104,31 @@
 
   <main>
     <div id="dash" class="section active">
-      <div class="content-header"><h1>Xülasə</h1></div>
+      <div class="content-header"><h1 data-i18n="nav_dash">Xülasə</h1></div>
       <div class="stats-grid">
-        <div class="card stat-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
-        <div class="card stat-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
-        <div class="card stat-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
-        <div class="card stat-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
-        <div class="card stat-card"><small>Ümumi balans (bütün hesablar)</small><h2 id="st-cash">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="dash_stat_cust">Müştəri</small><h2 id="st-cust">0</h2></div>
+        <div class="card stat-card"><small data-i18n="dash_stat_stock">Anbarda</small><h2 id="st-stock">0</h2></div>
+        <div class="card stat-card"><small data-i18n="dash_stat_debt">Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="dash_stat_cred">Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="dash_stat_cash">Ümumi balans (bütün hesablar)</small><h2 id="st-cash">0.00</h2></div>
       </div>
       <div class="dash-charts">
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Son 6 ay satış (AZN)</h3>
+          <h3 class="dash-chart-title" data-i18n="dash_chart_sales6">Son 6 ay satış (AZN)</h3>
           <div id="dashChartSales" class="dash-bar-chart"></div>
         </div>
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Alış vs Satış (bu ay)</h3>
+          <h3 class="dash-chart-title" data-i18n="dash_chart_pvs">Alış vs Satış (bu ay)</h3>
           <div id="dashChartPurchVsSales" class="dash-donut-wrap"></div>
         </div>
       </div>
       <div class="dash-charts">
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Son 6 ay alış (AZN)</h3>
+          <h3 class="dash-chart-title" data-i18n="dash_chart_purch6">Son 6 ay alış (AZN)</h3>
           <div id="dashChartPurch" class="dash-bar-chart"></div>
         </div>
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title">Debitor vs Kreditor borclar</h3>
+          <h3 class="dash-chart-title" data-i18n="dash_chart_debtcred">Debitor vs Kreditor borclar</h3>
           <div id="dashChartDebtVsCredit" class="dash-donut-wrap"></div>
         </div>
       </div>
@@ -131,21 +136,21 @@
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon sales"><i class="fas fa-arrow-trend-up"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label">Bu il satış cəmi (AZN)</span>
+            <span class="dash-stat-mini-label" data-i18n="dash_mini_sales_yr">Bu il satış cəmi (AZN)</span>
             <span id="dashStatSalesYear" class="dash-stat-mini-value">0.00</span>
           </div>
         </div>
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon purch"><i class="fas fa-cart-flatbed"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label">Bu il alış cəmi (AZN)</span>
+            <span class="dash-stat-mini-label" data-i18n="dash_mini_purch_yr">Bu il alış cəmi (AZN)</span>
             <span id="dashStatPurchYear" class="dash-stat-mini-value">0.00</span>
           </div>
         </div>
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon stock"><i class="fas fa-warehouse"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label">Anbarda məhsul sayı</span>
+            <span class="dash-stat-mini-label" data-i18n="dash_mini_stock_n">Anbarda məhsul sayı</span>
             <span id="dashStatStockCount" class="dash-stat-mini-value">0</span>
           </div>
         </div>
@@ -154,7 +159,7 @@
 
     <div id="cust" class="section">
       <div class="content-header">
-        <h1>Müştərilər</h1>
+        <h1 data-i18n="nav_cust">Müştərilər</h1>
         <div class="header-actions">
           <div class="date-range">
             <input type="date" id="custFrom" onchange="renderAll()">
@@ -162,16 +167,16 @@
             <input type="date" id="custTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblCust', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblCust', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openCust()"><i class="fas fa-plus"></i> Yeni Müştəri</button>
+          <button class="btn-main" type="button" onclick="openCust()"><i class="fas fa-plus"></i><span data-i18n="btn_new_cust"> Yeni Müştəri</span></button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>ID</th><th>Ad Soyad Ata</th><th>Mobil</th><th>FİN</th><th>Seriya №</th><th>Zamin</th><th>Əməliyyat</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_id">ID</th><th data-i18n="th_name_full">Ad Soyad Ata</th><th data-i18n="th_mobile">Mobil</th><th data-i18n="th_fin">FİN</th><th data-i18n="th_serial">Seriya №</th><th data-i18n="th_guarantor">Zamin</th><th data-i18n="th_actions">Əməliyyat</th></tr>
           </thead>
           <tbody id="tblCust"></tbody>
         </table>
@@ -180,7 +185,7 @@
 
     <div id="supp" class="section">
       <div class="content-header">
-        <h1>Təchizatçılar</h1>
+        <h1 data-i18n="nav_supp">Təchizatçılar</h1>
         <div class="header-actions">
           <div class="date-range">
             <input type="date" id="suppFrom" onchange="renderAll()">
@@ -188,16 +193,16 @@
             <input type="date" id="suppTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblSupp', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblSupp', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openSupp()"><i class="fas fa-plus"></i> Yeni Təchizatçı</button>
+          <button class="btn-main" type="button" onclick="openSupp()"><i class="fas fa-plus"></i><span data-i18n="btn_new_supp"> Yeni Təchizatçı</span></button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>ID</th><th>Şirkət</th><th>Məsul</th><th>Mobil</th><th>VÖEN</th><th>Əməliyyat</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_id">ID</th><th data-i18n="th_company">Şirkət</th><th data-i18n="th_contact">Məsul</th><th data-i18n="th_mobile">Mobil</th><th data-i18n="th_voen">VÖEN</th><th data-i18n="th_actions">Əməliyyat</th></tr>
           </thead>
           <tbody id="tblSupp"></tbody>
         </table>
@@ -206,7 +211,7 @@
 
     <div id="prod" class="section">
       <div class="content-header">
-        <h1>Məhsullar</h1>
+        <h1 data-i18n="nav_prod">Məhsullar</h1>
         <div class="header-actions">
           <div class="date-range">
             <input type="date" id="prodFrom" onchange="renderAll()">
@@ -214,16 +219,16 @@
             <input type="date" id="prodTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblProd', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblProd', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openProd()"><i class="fas fa-plus"></i> Yeni Məhsul</button>
+          <button class="btn-main" type="button" onclick="openProd()"><i class="fas fa-plus"></i><span data-i18n="btn_new_prod"> Yeni Məhsul</span></button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Ad</th><th>Kateqoriya</th><th>Alt kateqoriya</th><th>Əməliyyat</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_name">Ad</th><th data-i18n="th_cat">Kateqoriya</th><th data-i18n="th_subcat">Alt kateqoriya</th><th data-i18n="th_actions">Əməliyyat</th></tr>
           </thead>
           <tbody id="tblProd"></tbody>
         </table>
@@ -232,7 +237,7 @@
 
     <div id="purch" class="section">
       <div class="content-header">
-        <h1>Alışlar</h1>
+        <h1 data-i18n="nav_purch">Alışlar</h1>
         <div class="header-actions">
           <select id="purchStatus" class="select-small" onchange="renderAll()">
             <option value="active" selected>Aktiv</option>
@@ -245,16 +250,16 @@
             <input type="date" id="purchTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-plus"></i> Yeni Alış</button>
+          <button class="btn-main" type="button" onclick="openPurch()"><i class="fas fa-plus"></i><span data-i18n="btn_new_purch"> Yeni Alış</span></button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Təchizatçı</th><th>Əməkdaş</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_inv">Qaimə</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_supplier">Təchizatçı</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_amount">Məbləğ</th><th data-i18n="th_paid">Ödənilən</th><th data-i18n="th_balance">Qalıq</th><th data-i18n="th_actions">Əməliyyat</th></tr>
           </thead>
           <tbody id="tblPurch"></tbody>
           <tfoot id="tblPurchFoot"></tfoot>
@@ -276,7 +281,7 @@
 
     <div id="stock" class="section">
       <div class="content-header">
-        <h1>Anbar</h1>
+        <h1 data-i18n="nav_stock">Anbar</h1>
         <div class="header-actions">
           <select id="stockStatus" class="select-small" onchange="renderAll()">
             <option value="all">Hamısı</option>
@@ -296,7 +301,7 @@
             <option value="" selected>Alt kateqoriya (hamısı)</option>
           </select>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblStock', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblStock', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
         </div>
@@ -304,7 +309,7 @@
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Status</th><th>Alış tarixi</th><th>Təchizatçı</th><th>Məhsul</th><th>Kod</th><th>Qalıq say</th><th>IMEI 1</th><th>IMEI 2</th><th>Seriya №</th><th>Qiymət</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_status">Status</th><th data-i18n="th_purch_date">Alış tarixi</th><th data-i18n="th_supplier">Təchizatçı</th><th data-i18n="th_product">Məhsul</th><th data-i18n="th_code">Kod</th><th data-i18n="th_remain">Qalıq say</th><th data-i18n="th_imei1">IMEI 1</th><th data-i18n="th_imei2">IMEI 2</th><th data-i18n="th_serial">Seriya №</th><th data-i18n="th_price">Qiymət</th></tr>
           </thead>
           <tbody id="tblStock"></tbody>
           <tfoot id="tblStockFoot"></tfoot>
@@ -326,7 +331,7 @@
 
     <div id="sales" class="section">
       <div class="content-header">
-        <h1>Satışlar</h1>
+        <h1 data-i18n="nav_sales">Satışlar</h1>
         <div class="header-actions">
           <select id="salesStatus" class="select-small" onchange="renderAll()">
             <option value="active" selected>Aktiv</option>
@@ -339,16 +344,16 @@
             <input type="date" id="salesTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
+            <input type="text" data-i18n-placeholder="ph_imei_search" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-plus"></i> Yeni Satış</button>
+          <button class="btn-main" type="button" onclick="openSale()"><i class="fas fa-plus"></i><span data-i18n="btn_new_sale"> Yeni Satış</span></button>
         </div>
       </div>
       <div class="card">
         <table>
           <thead>
-            <tr><th>#</th><th>Qaimə</th><th>Tarix</th><th>Müştəri</th><th>Məhsul</th><th>Say</th><th>Növ</th><th>Əməkdaş</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Əməliyyat</th></tr>
+            <tr><th data-i18n="th_num">#</th><th data-i18n="th_inv">Qaimə</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_customer">Müştəri</th><th data-i18n="th_product">Məhsul</th><th data-i18n="th_qty">Say</th><th data-i18n="th_kind">Növ</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_amount">Məbləğ</th><th data-i18n="th_paid">Ödənilən</th><th data-i18n="th_balance">Qalıq</th><th data-i18n="th_actions">Əməliyyat</th></tr>
           </thead>
           <tbody id="tblSales"></tbody>
           <tfoot id="tblSalesFoot"></tfoot>
@@ -370,7 +375,7 @@
 
     <div id="staff" class="section">
       <div class="content-header">
-        <h1>Əməkdaşlar</h1>
+        <h1 data-i18n="nav_staff">Əməkdaşlar</h1>
         <div class="header-actions">
           <div class="date-range">
             <input type="date" id="staffFrom" onchange="renderAll()">
@@ -378,17 +383,17 @@
             <input type="date" id="staffTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblStaff', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblStaff', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-main" type="button" onclick="openStaffPayrollCalc()"><i class="fas fa-calculator"></i> Əməkhaqqı hesabla</button>
-          <button class="btn-main" type="button" onclick="openStaffPay()"><i class="fas fa-money-bill-wave"></i> Ödə</button>
-          <button class="btn-main" type="button" onclick="openStaff()"><i class="fas fa-plus"></i> Yeni Əməkdaş</button>
+          <button class="btn-main" type="button" onclick="openStaffPayrollCalc()"><i class="fas fa-calculator"></i><span data-i18n="btn_staff_calc"> Əməkhaqqı hesabla</span></button>
+          <button class="btn-main" type="button" onclick="openStaffPay()"><i class="fas fa-money-bill-wave"></i><span data-i18n="btn_staff_pay"> Ödə</span></button>
+          <button class="btn-main" type="button" onclick="openStaff()"><i class="fas fa-plus"></i><span data-i18n="btn_new_staff"> Yeni Əməkdaş</span></button>
         </div>
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>ID</th><th>Ad Soyad</th><th>Vəzifə</th><th>Telefon</th><th>Standart maaş</th><th>Faiz %</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_id">ID</th><th data-i18n="th_staff_name">Ad Soyad</th><th data-i18n="th_position">Vəzifə</th><th data-i18n="th_phone">Telefon</th><th data-i18n="th_salary">Standart maaş</th><th data-i18n="th_pct">Faiz %</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblStaff"></tbody>
         </table>
       </div>
@@ -396,11 +401,11 @@
 
     <div id="debts" class="section">
       <div class="content-header">
-        <h1>Borclar - Debitor</h1>
+        <h1 data-i18n="page_debts_deb">Borclar - Debitor</h1>
         <div class="header-actions debt-header-actions">
           <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <label data-i18n="lbl_debt_type">Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="" selected>Seçin</option>
               <option value="debts">Debitor</option>
               <option value="creditor">Kreditor</option>
@@ -408,7 +413,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Alt seçim</label>
+            <label data-i18n="lbl_subselect">Alt seçim</label>
             <select id="debtsStatus" class="select-small debt-sub-select" data-debt-sub-for="debts" onchange="setDebtsStatus(this.value)">
               <option value="" selected>Seçin</option>
               <option value="all">Hamısı</option>
@@ -418,7 +423,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Tarix aralığı</label>
+            <label data-i18n="lbl_date_range">Tarix aralığı</label>
             <div class="date-range">
               <input type="date" id="debtsFrom" onchange="renderAll()">
               <span>—</span>
@@ -426,7 +431,7 @@
             </div>
           </div>
           <div class="filter-field">
-            <label>Axtarış</label>
+            <label data-i18n="lbl_search">Axtarış</label>
             <div class="search-container search-plain">
               <input type="text" id="srcDebts" placeholder="" onkeyup="filterDebts()">
             </div>
@@ -436,7 +441,7 @@
       <div id="debtsContent">
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Müştəri</th><th>Cəmi borc</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_customer">Müştəri</th><th data-i18n="th_cust_debt">Cəmi borc</th><th data-i18n="th_paid">Ödənilən</th><th data-i18n="th_balance">Qalıq</th><th data-i18n="th_status">Status</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblDebts"></tbody>
         </table>
       </div>
@@ -457,11 +462,11 @@
 
     <div id="overdue" class="section">
       <div class="content-header">
-        <h1>Borclar - Kreditlər</h1>
+        <h1 data-i18n="page_debts_loans">Borclar - Kreditlər</h1>
         <div class="header-actions debt-header-actions">
           <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <label data-i18n="lbl_debt_type">Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="">Seçin</option>
               <option value="debts">Debitor</option>
               <option value="creditor">Kreditor</option>
@@ -469,7 +474,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Alt seçim</label>
+            <label data-i18n="lbl_subselect">Alt seçim</label>
             <select id="overdueView" class="select-small debt-sub-select" data-debt-sub-for="overdue" onchange="setOverdueView(this.value)">
               <option value="" selected>Seçin</option>
               <option value="all">Ümumi kreditlər</option>
@@ -477,7 +482,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Gecikmə gün aralığı</label>
+            <label data-i18n="lbl_delay_range">Gecikmə gün aralığı</label>
             <div class="date-range">
               <input type="number" id="overdueDaysFrom" class="select-small" placeholder="" min="0" onchange="renderAll()">
               <span>—</span>
@@ -485,7 +490,7 @@
             </div>
           </div>
           <div class="filter-field">
-            <label>Axtarış</label>
+            <label data-i18n="lbl_search">Axtarış</label>
             <div class="search-container search-plain">
               <input type="text" id="srcOverdue" placeholder="" onkeyup="filterTable('tblOverdue', this.value)">
             </div>
@@ -495,7 +500,7 @@
       <div id="overdueContent">
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Müştəri (Ad Soyad Ata)</th><th>Mobil</th><th>Qaimə №</th><th>Cədvəl üzrə</th><th>Ödənilmiş</th><th>Ödənilməli</th><th>Qalıq</th><th>Ödəmə tarixi</th><th>Gecikmə günü</th><th>Zamin</th><th>Info</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_cust_name_long">Müştəri (Ad Soyad Ata)</th><th data-i18n="th_mobile">Mobil</th><th data-i18n="th_inv_no">Qaimə №</th><th data-i18n="th_sched">Cədvəl üzrə</th><th data-i18n="th_paid_full">Ödənilmiş</th><th data-i18n="th_due">Ödənilməli</th><th data-i18n="th_balance">Qalıq</th><th data-i18n="th_pay_date">Ödəmə tarixi</th><th data-i18n="th_delay_days">Gecikmə günü</th><th data-i18n="th_guarantor">Zamin</th><th data-i18n="th_info">Info</th></tr></thead>
           <tbody id="tblOverdue"></tbody>
         </table>
       </div>
@@ -504,11 +509,11 @@
 
     <div id="creditor" class="section">
       <div class="content-header">
-        <h1>Borclar - Kreditor</h1>
+        <h1 data-i18n="page_debts_cred">Borclar - Kreditor</h1>
         <div class="header-actions debt-header-actions">
           <div class="filter-field">
-            <label>Borc növü</label>
-            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" title="Borc növü">
+            <label data-i18n="lbl_debt_type">Borc növü</label>
+            <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
               <option value="">Seçin</option>
               <option value="debts">Debitor</option>
               <option value="creditor" selected>Kreditor</option>
@@ -516,7 +521,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Alt seçim</label>
+            <label data-i18n="lbl_subselect">Alt seçim</label>
             <select id="credStatus" class="select-small debt-sub-select" data-debt-sub-for="creditor" onchange="renderAll()">
               <option value="" selected>Seçin</option>
               <option value="open">Ödənilməmiş / Qismən</option>
@@ -527,7 +532,7 @@
             </select>
           </div>
           <div class="filter-field">
-            <label>Tarix aralığı</label>
+            <label data-i18n="lbl_date_range">Tarix aralığı</label>
             <div class="date-range">
               <input type="date" id="credFrom" onchange="renderAll()">
               <span>—</span>
@@ -535,7 +540,7 @@
             </div>
           </div>
           <div class="filter-field">
-            <label>Axtarış</label>
+            <label data-i18n="lbl_search">Axtarış</label>
             <div class="search-container search-plain">
               <input type="text" id="srcCred" placeholder="" onkeyup="filterCreditor()">
             </div>
@@ -545,7 +550,7 @@
       <div id="creditorContent">
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Təchizatçı</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_supplier">Təchizatçı</th><th data-i18n="th_amount">Məbləğ</th><th data-i18n="th_paid">Ödənilən</th><th data-i18n="th_balance">Qalıq</th><th data-i18n="th_status">Status</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblCreditor"></tbody>
         </table>
       </div>
@@ -566,7 +571,7 @@
 
     <div id="cash" class="section">
       <div class="content-header">
-        <h1>Kassa</h1>
+        <h1 data-i18n="nav_cash">Kassa</h1>
         <div class="header-actions">
           <select id="cashAccount" class="select-small" onchange="renderAll()"></select>
           <select id="cashType" class="select-small" onchange="renderAll()">
@@ -580,28 +585,28 @@
             <input type="date" id="cashTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblCash', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblCash', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-cancel" type="button" onclick="openReturnedSalesCreditReport()"><i class="fas fa-receipt"></i> Qaytarma avansları</button>
-          <button class="btn-cancel" type="button" onclick="openCashReconcile()"><i class="fas fa-scale-balanced"></i> Kassa sayımı</button>
-          <button class="btn-cancel" type="button" onclick="openDayClose()"><i class="fas fa-calendar-check"></i> Gün sonu</button>
-          <button class="btn-cancel" type="button" onclick="openCashDiffAnalysis()"><i class="fas fa-circle-exclamation"></i> Artıq/Əskik</button>
-          <button id="cashAccountsBtn" class="btn-cancel" type="button" onclick="openAccountsManager()"><i class="fas fa-building-columns"></i> Hesablar</button>
-          <button class="btn-main" type="button" onclick="openCashOp()"><i class="fas fa-plus"></i> Yeni əməliyyat</button>
+          <button class="btn-cancel" type="button" onclick="openReturnedSalesCreditReport()"><i class="fas fa-receipt"></i><span data-i18n="btn_ret_adv"> Qaytarma avansları</span></button>
+          <button class="btn-cancel" type="button" onclick="openCashReconcile()"><i class="fas fa-scale-balanced"></i><span data-i18n="btn_cash_count"> Kassa sayımı</span></button>
+          <button class="btn-cancel" type="button" onclick="openDayClose()"><i class="fas fa-calendar-check"></i><span data-i18n="btn_day_close"> Gün sonu</span></button>
+          <button class="btn-cancel" type="button" onclick="openCashDiffAnalysis()"><i class="fas fa-circle-exclamation"></i><span data-i18n="btn_cash_diff"> Artıq/Əskik</span></button>
+          <button id="cashAccountsBtn" class="btn-cancel" type="button" onclick="openAccountsManager()"><i class="fas fa-building-columns"></i><span data-i18n="btn_accounts"> Hesablar</span></button>
+          <button class="btn-main" type="button" onclick="openCashOp()"><i class="fas fa-plus"></i><span data-i18n="btn_new_cash_op"> Yeni əməliyyat</span></button>
         </div>
       </div>
 
       <div class="stats-grid">
-        <div class="card stat-card"><small>Gəlir (Nəğd)</small><h2 id="cashIn">0.00</h2></div>
-        <div class="card stat-card"><small>Xərc (Nəğd)</small><h2 id="cashOut">0.00</h2></div>
-        <div class="card stat-card"><small>Balans</small><h2 id="cashBal">0.00</h2></div>
-        <div class="card stat-card"><small>Qaytarma avansı</small><h2 id="cashAdv">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_in">Gəlir (Nəğd)</small><h2 id="cashIn">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_out">Xərc (Nəğd)</small><h2 id="cashOut">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_bal">Balans</small><h2 id="cashBal">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_adv">Qaytarma avansı</small><h2 id="cashAdv">0.00</h2></div>
       </div>
 
       <div class="card" style="margin-top:18px;">
         <table>
-          <thead><tr><th>#</th><th>Qaimə №</th><th>Müştəri</th><th>Tip</th><th>Ödəniş məbləği</th><th>Hesab</th><th>Əməkdaş</th><th>Tarix</th><th>Ödəniş növü</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_inv_no">Qaimə №</th><th data-i18n="th_customer">Müştəri</th><th data-i18n="th_type">Tip</th><th data-i18n="th_pay_amt">Ödəniş məbləği</th><th data-i18n="th_account">Hesab</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_pay_type">Ödəniş növü</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblCash"></tbody>
         </table>
       </div>
@@ -621,15 +626,15 @@
 
     <div id="companies" class="section">
       <div class="content-header">
-        <h1>Şirkətlər</h1>
+        <h1 data-i18n="nav_companies">Şirkətlər</h1>
         <div class="header-actions">
-          <button class="btn-main" type="button" onclick="openCompany()"><i class="fas fa-plus"></i> Yeni şirkət</button>
-          <button class="btn-cancel" type="button" onclick="resetCompanyData()"><i class="fas fa-rotate"></i> Şirkəti sıfırla</button>
+          <button class="btn-main" type="button" onclick="openCompany()"><i class="fas fa-plus"></i><span data-i18n="btn_new_company"> Yeni şirkət</span></button>
+          <button class="btn-cancel" type="button" onclick="resetCompanyData()"><i class="fas fa-rotate"></i><span data-i18n="btn_reset_company"> Şirkəti sıfırla</span></button>
         </div>
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Ad</th><th>Kod</th><th>Aktiv</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_name">Ad</th><th data-i18n="th_code">Kod</th><th data-i18n="th_active_co">Aktiv</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblCompanies"></tbody>
         </table>
       </div>
@@ -637,15 +642,15 @@
 
     <div id="users" class="section">
       <div class="content-header">
-        <h1>İstifadəçilər</h1>
+        <h1 data-i18n="nav_users">İstifadəçilər</h1>
         <div class="header-actions">
-          <button class="btn-main" type="button" onclick="openUser()"><i class="fas fa-user-plus"></i> Yeni istifadəçi</button>
+          <button class="btn-main" type="button" onclick="openUser()"><i class="fas fa-user-plus"></i><span data-i18n="btn_new_user"> Yeni istifadəçi</span></button>
         </div>
       </div>
-      <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;">Rolları (user / admin / developer) və icazələri bu siyahıda istifadəçi üzərində <strong>Redaktə</strong> ilə dəyişə bilərsiniz.</p>
+      <p class="muted users-intro" style="margin:0 0 12px 0;font-size:0.9rem;" data-i18n-html="users_intro_html">Rolları (user / admin / developer) və icazələri bu siyahıda istifadəçi üzərində <strong>Redaktə</strong> ilə dəyişə bilərsiniz.</p>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Ad Soyad</th><th>İstifadəçi adı</th><th>Əməkdaş</th><th>Rol</th><th>Aktiv</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_staff_name">Ad Soyad</th><th data-i18n="th_username">İstifadəçi adı</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_role">Rol</th><th data-i18n="th_active">Aktiv</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblUsers"></tbody>
         </table>
       </div>
@@ -653,7 +658,7 @@
 
     <div id="audit" class="section">
       <div class="content-header">
-        <h1>Audit</h1>
+        <h1 data-i18n="nav_audit">Audit</h1>
         <div class="header-actions">
           <div class="date-range">
             <input type="date" id="auditFrom" onchange="renderAll()">
@@ -661,15 +666,15 @@
             <input type="date" id="auditTo" onchange="renderAll()">
           </div>
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblAudit', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblAudit', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-cancel" type="button" onclick="clearAudit()"><i class="fas fa-broom"></i> Təmizlə</button>
+          <button class="btn-cancel" type="button" onclick="clearAudit()"><i class="fas fa-broom"></i><span data-i18n="btn_audit_clear"> Təmizlə</span></button>
         </div>
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Əməliyyat</th><th>Hədəf</th><th>Detallı</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_user">İstifadəçi</th><th data-i18n="th_actions">Əməliyyat</th><th data-i18n="th_target">Hədəf</th><th data-i18n="th_detail">Detallı</th></tr></thead>
           <tbody id="tblAudit"></tbody>
         </table>
       </div>
@@ -677,18 +682,18 @@
 
     <div id="trash" class="section">
       <div class="content-header">
-        <h1>Səbət</h1>
+        <h1 data-i18n="nav_trash">Səbət</h1>
         <div class="header-actions">
           <div class="search-container">
-            <input type="text" placeholder="Axtar..." onkeyup="filterTable('tblTrash', this.value)">
+            <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblTrash', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
           </div>
-          <button class="btn-cancel" type="button" onclick="emptyTrash()"><i class="fas fa-trash-can"></i> Hamısını sil</button>
+          <button class="btn-cancel" type="button" onclick="emptyTrash()"><i class="fas fa-trash-can"></i><span data-i18n="btn_trash_empty"> Hamısını sil</span></button>
         </div>
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Ad</th><th>Silən</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_type">Tip</th><th data-i18n="th_name">Ad</th><th data-i18n="th_deleted_by">Silən</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblTrash"></tbody>
         </table>
       </div>
@@ -696,36 +701,36 @@
 
     <div id="tools" class="section">
       <div class="content-header">
-        <h1>Alətlər</h1>
+        <h1 data-i18n="nav_tools">Alətlər</h1>
         <div class="header-actions">
-          <button class="btn-main" type="button" onclick="exportCompany()"><i class="fas fa-file-export"></i> Export</button>
+          <button class="btn-main" type="button" onclick="exportCompany()"><i class="fas fa-file-export"></i><span data-i18n="btn_export"> Export</span></button>
           <label class="btn-cancel" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
-            <i class="fas fa-file-import"></i> Import
+            <i class="fas fa-file-import"></i><span data-i18n="btn_import"> Import</span>
             <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importCompany(event)">
           </label>
-          <button class="btn-cancel" type="button" onclick="exportCsvCurrent()"><i class="fas fa-file-csv"></i> CSV</button>
-          <button class="btn-cancel" type="button" onclick="recalcAll()"><i class="fas fa-calculator"></i> Recalculate</button>
-          <button class="btn-cancel" type="button" onclick="openSkins()"><i class="fas fa-palette"></i> Skinlər</button>
-          <button class="btn-cancel" type="button" onclick="openQrTool()"><i class="fas fa-qrcode"></i> QR</button>
-          <button class="btn-cancel" type="button" onclick="openSettings()"><i class="fas fa-gear"></i> Ayarlar</button>
-          <button class="btn-cancel dev-only" type="button" onclick="seedDevTestData()"><i class="fas fa-flask"></i> Test baza yüklə</button>
+          <button class="btn-cancel" type="button" onclick="exportCsvCurrent()"><i class="fas fa-file-csv"></i><span data-i18n="btn_csv"> CSV</span></button>
+          <button class="btn-cancel" type="button" onclick="recalcAll()"><i class="fas fa-calculator"></i><span data-i18n="btn_recalc"> Recalculate</span></button>
+          <button class="btn-cancel" type="button" onclick="openSkins()"><i class="fas fa-palette"></i><span data-i18n="btn_skins"> Skinlər</span></button>
+          <button class="btn-cancel" type="button" onclick="openQrTool()"><i class="fas fa-qrcode"></i><span data-i18n="btn_qr"> QR</span></button>
+          <button class="btn-cancel" type="button" onclick="openSettings()"><i class="fas fa-gear"></i><span data-i18n="btn_settings"> Ayarlar</span></button>
+          <button class="btn-cancel dev-only" type="button" onclick="seedDevTestData()"><i class="fas fa-flask"></i><span data-i18n="btn_test_seed"> Test baza yüklə</span></button>
         </div>
       </div>
       <div class="card">
         <div class="info-block">
-          <div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">Export/Import yalnız cari şirkət datasına aiddir.</div></div>
+          <div class="info-row"><div class="info-label" data-i18n="tools_note_lbl">Qeyd</div><div class="info-value" data-i18n="tools_note_val">Export/Import yalnız cari şirkət datasına aiddir.</div></div>
         </div>
       </div>
       <div class="card" style="margin-top:16px;">
-        <h3 class="card-title" style="margin:0 0 12px 0;font-size:1rem;">Baza import</h3>
-        <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;">Excel-də müştəri bazası (Ad, Soyad, FİN, Mobil və s.) hazırlayıb import etdikdə həmin müştərilər <strong>Müştərilər</strong> siyahısına düşər. Siyahıda cədvəl sütunları, ətraflı məlumat isə hər müştərinin <strong>Info</strong> pəncərəsində görünər.</p>
-        <button class="btn-main" type="button" onclick="openCustImport()"><i class="fas fa-file-import"></i> Müştəri bazası (Excel/CSV) import</button>
+        <h3 class="card-title" style="margin:0 0 12px 0;font-size:1rem;" data-i18n="tools_import_title">Baza import</h3>
+        <p class="muted" style="margin:0 0 12px 0;font-size:0.9rem;" data-i18n-html="tools_import_hint">Excel-də müştəri bazası (Ad, Soyad, FİN, Mobil və s.) hazırlayıb import etdikdə həmin müştərilər <strong>Müştərilər</strong> siyahısına düşər. Siyahıda cədvəl sütunları, ətraflı məlumat isə hər müştərinin <strong>Info</strong> pəncərəsində görünər.</p>
+        <button class="btn-main" type="button" onclick="openCustImport()"><i class="fas fa-file-import"></i><span data-i18n="btn_cust_import"> Müştəri bazası (Excel/CSV) import</span></button>
       </div>
     </div>
 
     <div id="reports" class="section">
       <div class="content-header">
-        <h1>Hesabatlar</h1>
+        <h1 data-i18n="nav_reports">Hesabatlar</h1>
         <div class="header-actions">
           <input type="month" id="repMonth" class="select-small" onchange="renderAll()">
           <select id="repView" class="select-small" onchange="renderAll()">
@@ -744,18 +749,18 @@
         </div>
       </div>
       <div class="grid-5">
-        <div class="card stat-card"><small>Satış</small><h2 id="repSales">0.00</h2></div>
-        <div class="card stat-card"><small>Satış (ödənilən)</small><h2 id="repSalesPaid">0.00</h2></div>
-        <div class="card stat-card"><small>Alış</small><h2 id="repCogs">0.00</h2></div>
-        <div class="card stat-card"><small>Xərc</small><h2 id="repExp">0.00</h2></div>
-        <div class="card stat-card"><small>Əməkhaqqı (ay üzrə)</small><h2 id="repPayroll">0.00</h2></div>
-        <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="repPL">0.00</h2></div>
-        <div class="card stat-card"><small>Nağdlaşan mənfəət</small><h2 id="repPLCash">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_sales">Satış</small><h2 id="repSales">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_sales_paid">Satış (ödənilən)</small><h2 id="repSalesPaid">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_purch">Alış</small><h2 id="repCogs">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_exp">Xərc</small><h2 id="repExp">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_payroll">Əməkhaqqı (ay üzrə)</small><h2 id="repPayroll">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_pl">Mənfəət/Zərər</small><h2 id="repPL">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="rep_stat_pl_cash">Nağdlaşan mənfəət</small><h2 id="repPLCash">0.00</h2></div>
       </div>
 
       <div class="card" style="margin-top:18px;">
         <div class="content-header" style="margin-bottom:10px;">
-          <h1 style="font-size:1.1rem;">Ay üzrə detallı</h1>
+          <h1 style="font-size:1.1rem;" data-i18n="rep_hdr_monthly">Ay üzrə detallı</h1>
         </div>
         <table>
           <thead id="repListHead"></thead>
@@ -764,10 +769,10 @@
       </div>
       <div class="card" style="margin-top:18px;">
         <div class="content-header" style="margin-bottom:10px;">
-          <h1 style="font-size:1.1rem;">Əməkdaş hesabatı / Əməkhaqqı</h1>
+          <h1 style="font-size:1.1rem;" data-i18n="rep_hdr_staff">Əməkdaş hesabatı / Əməkhaqqı</h1>
         </div>
         <table>
-          <thead><tr><th>#</th><th>Əməkdaş</th><th>Satış sayı</th><th>Satış cəmi</th><th>Faiz</th><th>Komissiya</th><th>Baza maaş</th><th>Yekun</th><th>Əməliyyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_staff">Əməkdaş</th><th data-i18n="th_sale_count">Satış sayı</th><th data-i18n="th_sale_sum">Satış cəmi</th><th data-i18n="rep_col_pct">Faiz</th><th data-i18n="th_comm">Komissiya</th><th data-i18n="th_base_sal">Baza maaş</th><th data-i18n="th_total">Yekun</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
           <tbody id="tblPayroll"></tbody>
         </table>
       </div>
