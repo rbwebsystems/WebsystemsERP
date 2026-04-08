@@ -5566,7 +5566,7 @@ function openSaleInfo(idx) {
         (r) => `
       <tr>
         <td>${r.idx}</td>
-        <td>${r.due}</td>
+        <td>${fmtDT(r.due)}</td>
         <td>${money(r.amount)} AZN</td>
         <td>${money(r.paid)} AZN</td>
         <td>${money(r.remaining)} AZN</td>
@@ -8462,7 +8462,7 @@ function openOverdueInfo(saleUid) {
     <tr>
       <td>${i + 1}</td>
         <td>${escapeHtml(x.inv)} • ${x.idx}. ay</td>
-      <td>${escapeHtml(x.due)}</td>
+      <td>${fmtDT(x.due)}</td>
       <td>${money(x.monthly)} AZN</td>
       <td>${money(x.remaining)} AZN</td>
       <td><span class="pill unpaid">GECİKİR</span></td>
@@ -8539,7 +8539,7 @@ function openOverdueInfo(saleUid) {
       <table>
         <thead><tr><th>#</th><th>Ödəniş günü</th><th>Məbləğ</th><th>Ödənilib</th><th>Qalıq</th><th>Status</th></tr></thead>
         <tbody>
-          ${credit.rows.map((r) => `<tr><td>${r.idx}</td><td>${escapeHtml(r.due)}</td><td>${money(r.amount)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.remaining)} AZN</td><td><span class="pill ${r.status}">${escapeHtml(debtLabel(r.status))}</span></td></tr>`).join("") || `<tr><td colspan="6">Cədvəl yoxdur</td></tr>`}
+          ${credit.rows.map((r) => `<tr><td>${r.idx}</td><td>${fmtDT(r.due)}</td><td>${money(r.amount)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.remaining)} AZN</td><td><span class="pill ${r.status}">${escapeHtml(debtLabel(r.status))}</span></td></tr>`).join("") || `<tr><td colspan="6">Cədvəl yoxdur</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -9341,7 +9341,7 @@ function renderAll() {
             <td class="overdue-num-cell">${money(x.duePaidAmount)} AZN</td>
             <td class="overdue-num-cell">${money(x.dueAmount)} AZN</td>
             <td class="overdue-num-cell">${money(x.invoiceRemaining)} AZN</td>
-            <td>${escapeHtml(x.dueDate || "-")}</td>
+            <td>${fmtDT(x.dueDate) || "-"}</td>
             <td class="overdue-days-cell"><span class="late-chip ${chipClass}">${x.daysLate}</span></td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions overdue-actions-cell">
