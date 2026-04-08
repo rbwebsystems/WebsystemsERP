@@ -1148,6 +1148,8 @@ function userCanOwnerIncome() {
 function userCanSection(sectionId) {
   const u = currentUser();
   if (!u || !u.active) return false;
+  // Şirkətlər və Dev alətləri yalnız developer üçün (admin və user görməz).
+  if (sectionId === "companies" || sectionId === "tools") return isDeveloper();
   if (!companyAllowsSection(sectionId) && !isDeveloper()) return false;
   if (u.role === "developer" || u.role === "admin") return true;
   const secs = u.perms?.sections || [];
@@ -1321,7 +1323,7 @@ function applyAccessUI() {
     const m = on.match(/showSec\('([^']+)'/);
     if (!m) return;
     const secId = m[1];
-    if (el.classList.contains("dev-only") || el.classList.contains("admin-only")) return;
+    if (el.classList.contains("dev-only") || el.classList.contains("admin-only") || el.classList.contains("dev-sub")) return;
     el.style.display = userCanSection(secId) ? "flex" : "none";
   });
 
@@ -1376,6 +1378,15 @@ function showLoginOverlay(show) {
   const ov = byId("loginOverlay");
   const landing = byId("publicLanding");
   if (!ov) return;
+  if (show) {
+    forceCloseModal();
+    try {
+      closeSpotlight();
+    } catch (e) {}
+    closeProfileMenu();
+    closeMobileSidebar();
+    document.body.classList.remove("landing-login-open");
+  }
   ov.style.display = "none";
   if (landing) landing.style.display = show ? "flex" : "none";
   document.body.classList.toggle("login-open", !!show);
@@ -1587,6 +1598,7 @@ function doLoginWithCompany(companyId) {
       renderSidebarUser();
       refreshHeaderBar();
       renderAll();
+      showDashboardAfterLogin();
     });
   } else {
     db = loadCompanyDB();
@@ -1596,6 +1608,7 @@ function doLoginWithCompany(companyId) {
     renderSidebarUser();
     refreshHeaderBar();
     renderAll();
+    showDashboardAfterLogin();
   }
 }
 
@@ -2063,6 +2076,17 @@ function showSec(id, el) {
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
 }
 
+function showDashboardAfterLogin() {
+  if (!meta?.session) return;
+  try {
+    sessionStorage.setItem("bakfon_lastSection", "dash");
+  } catch (e) {}
+  const dashNav = Array.from(document.querySelectorAll("aside nav .nav-link")).find((el) =>
+    (el.getAttribute("onclick") || "").includes("showSec('dash'")
+  );
+  showSec("dash", dashNav || null);
+}
+
 function pagePrev(key) {
   uiState.page[key] = Math.max(1, (uiState.page[key] || 1) - 1);
   renderAll();
@@ -2248,6 +2272,18 @@ function closeMdl() {
       window.__currentModalRaw = "";
     }
   }, 300);
+}
+
+/** Modal #appShell-dən kənarda olduğu üçün çıxış/giriş ekranında da qala bilər — dərhal təmizlə. */
+function forceCloseModal() {
+  const m = document.getElementById("mdlMain");
+  if (!m) return;
+  m.classList.remove("modal--open", "modal--slideover", "modal--popup");
+  m.style.display = "none";
+  document.getElementById("modalContent")?.style.removeProperty("--slideover-pad-left");
+  window.__modalHistory = [];
+  window.__currentModalRaw = "";
+  window.__modalJustClosedAt = Date.now();
 }
 
 function appAlert(msg, title = "Bildiriş") {
@@ -8869,11 +8905,14 @@ function renderAll() {
   // companies (developer only)
   const compBody = byId("tblCompanies");
   if (compBody) {
-    const curCid = meta?.session?.companyId;
-    compBody.innerHTML = meta.companies
-      .map((c, i) => {
-        const active = c.id === curCid;
-        return `
+    if (!isDeveloper()) {
+      compBody.innerHTML = "";
+    } else {
+      const curCid = meta?.session?.companyId;
+      compBody.innerHTML = meta.companies
+        .map((c, i) => {
+          const active = c.id === curCid;
+          return `
         <tr>
           <td>${i + 1}</td>
           <td>${escapeHtml(c.name)}</td>
@@ -8884,8 +8923,9 @@ function renderAll() {
             ${isDeveloper() ? `<button class="icon-btn edit" onclick="openCompany(${i})" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
-      })
-      .join("");
+        })
+        .join("");
+    }
   }
 
   // users (cari şirkətin istifadəçiləri)
