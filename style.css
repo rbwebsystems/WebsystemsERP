@@ -2182,15 +2182,16 @@ body.landing-login-open .lp-aurora{
     bottom:19%;
     background:#0f172a;
     color:#fff;
-    padding:.7rem 1rem;
-    border-radius:1rem;
+    padding:.4rem .65rem;
+    border-radius:.65rem;
     border:1px solid #334155;
-    box-shadow:0 22px 44px rgba(26,71,84,.28);
+    box-shadow:0 14px 28px rgba(26,71,84,.22);
     animation: lp-dash-float 7s ease-in-out infinite 2s !important;
-    font-size:.68rem;
+    font-size:.58rem;
     font-weight:800;
-    letter-spacing:.08em;
+    letter-spacing:.05em;
     text-transform:uppercase;
+    gap:.4rem;
   }
 }
 /* Orta/dar: badge-lər kartın altında, sıra ilə */
@@ -2217,18 +2218,23 @@ body.landing-login-open .lp-aurora{
   .lp-dash-float-badge--left{
     background:#0f172a;
     color:#fff;
-    padding:.65rem 1rem;
-    border-radius:.9rem;
+    padding:.4rem .65rem;
+    border-radius:.65rem;
     border:1px solid #334155;
-    box-shadow:0 14px 32px rgba(26,71,84,.22);
-    font-size:.62rem;
+    box-shadow:0 10px 24px rgba(26,71,84,.2);
+    font-size:.54rem;
     font-weight:800;
-    letter-spacing:.08em;
+    letter-spacing:.05em;
     text-transform:uppercase;
     animation: lp-dash-float 7s ease-in-out infinite 2s !important;
+    gap:.38rem;
   }
 }
-.lp-dash-float-badge--left p{ margin:0; }
+.lp-dash-float-badge--left p{ margin:0;line-height:1.15; }
+.lp-dash-float-badge--left .lp-dash-live-dot{
+  width:7px;
+  height:7px;
+}
 .lp-dash-fb-ico{
   width:3rem;height:3rem;
   border-radius:.75rem;
