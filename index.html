@@ -190,9 +190,9 @@
         <h1 data-i18n="nav_cust">Müştərilər</h1>
         <div class="header-actions">
           <div class="date-range">
-            <input type="date" id="custFrom" onchange="renderAll()">
+            <input type="text" id="custFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="custTo" onchange="renderAll()">
+            <input type="text" id="custTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblCust', this.value)">
@@ -216,9 +216,9 @@
         <h1 data-i18n="nav_supp">Təchizatçılar</h1>
         <div class="header-actions">
           <div class="date-range">
-            <input type="date" id="suppFrom" onchange="renderAll()">
+            <input type="text" id="suppFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="suppTo" onchange="renderAll()">
+            <input type="text" id="suppTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblSupp', this.value)">
@@ -242,9 +242,9 @@
         <h1 data-i18n="nav_prod">Məhsullar</h1>
         <div class="header-actions">
           <div class="date-range">
-            <input type="date" id="prodFrom" onchange="renderAll()">
+            <input type="text" id="prodFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="prodTo" onchange="renderAll()">
+            <input type="text" id="prodTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblProd', this.value)">
@@ -273,9 +273,9 @@
             <option value="all">Hamısı</option>
           </select>
           <div class="date-range">
-            <input type="date" id="purchFrom" onchange="renderAll()">
+            <input type="text" id="purchFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="purchTo" onchange="renderAll()">
+            <input type="text" id="purchTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblPurch', this.value)">
@@ -318,9 +318,9 @@
             <option value="returned">Qaytarılıb</option>
           </select>
           <div class="date-range">
-            <input type="date" id="stockFrom" onchange="renderAll()">
+            <input type="text" id="stockFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="stockTo" onchange="renderAll()">
+            <input type="text" id="stockTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <select id="stockCat" class="select-small" onchange="onStockCatChange()">
             <option value="" selected>Kateqoriya (hamısı)</option>
@@ -367,9 +367,9 @@
             <option value="all">Hamısı</option>
           </select>
           <div class="date-range">
-            <input type="date" id="salesFrom" onchange="renderAll()">
+            <input type="text" id="salesFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="salesTo" onchange="renderAll()">
+            <input type="text" id="salesTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_imei_search" placeholder="IMEI / Seriya ilə axtar..." onkeyup="filterTable('tblSales', this.value)">
@@ -406,9 +406,9 @@
         <h1 data-i18n="nav_staff">Əməkdaşlar</h1>
         <div class="header-actions">
           <div class="date-range">
-            <input type="date" id="staffFrom" onchange="renderAll()">
+            <input type="text" id="staffFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="staffTo" onchange="renderAll()">
+            <input type="text" id="staffTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblStaff', this.value)">
@@ -453,9 +453,9 @@
           <div class="filter-field">
             <label data-i18n="lbl_date_range">Tarix aralığı</label>
             <div class="date-range">
-              <input type="date" id="debtsFrom" onchange="renderAll()">
+              <input type="text" id="debtsFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
               <span>—</span>
-              <input type="date" id="debtsTo" onchange="renderAll()">
+              <input type="text" id="debtsTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             </div>
           </div>
           <div class="filter-field">
@@ -562,9 +562,9 @@
           <div class="filter-field">
             <label data-i18n="lbl_date_range">Tarix aralığı</label>
             <div class="date-range">
-              <input type="date" id="credFrom" onchange="renderAll()">
+              <input type="text" id="credFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
               <span>—</span>
-              <input type="date" id="credTo" onchange="renderAll()">
+              <input type="text" id="credTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             </div>
           </div>
           <div class="filter-field">
@@ -608,9 +608,9 @@
             <option value="out">Məxaric</option>
           </select>
           <div class="date-range">
-            <input type="date" id="cashFrom" onchange="renderAll()">
+            <input type="text" id="cashFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="cashTo" onchange="renderAll()">
+            <input type="text" id="cashTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblCash', this.value)">
@@ -689,9 +689,9 @@
         <h1 data-i18n="nav_audit">Audit</h1>
         <div class="header-actions">
           <div class="date-range">
-            <input type="date" id="auditFrom" onchange="renderAll()">
+            <input type="text" id="auditFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="auditTo" onchange="renderAll()">
+            <input type="text" id="auditTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblAudit', this.value)">
@@ -770,9 +770,9 @@
             <option value="staff">Əməkdaş</option>
           </select>
           <div class="date-range">
-            <input type="date" id="repFrom" onchange="renderAll()">
+            <input type="text" id="repFrom" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
             <span>—</span>
-            <input type="date" id="repTo" onchange="renderAll()">
+            <input type="text" id="repTo" placeholder="gg.aa.iiii" class="date-text-input" oninput="formatDateInput(this);renderAll()" maxlength="10">
           </div>
         </div>
       </div>

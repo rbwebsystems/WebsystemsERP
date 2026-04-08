@@ -4702,15 +4702,17 @@ a.icon-btn{text-decoration:none;box-sizing:border-box;}
   z-index:2;
 }
 
-/* Date fields: keep text clear from calendar icon */
-input[type="date"],
+/* Date fields */
 input[type="datetime-local"]{
   text-align:left;
   padding-right:30px !important;
 }
-input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   margin-left:6px;
+}
+.date-text-input{
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.03em;
 }
 
 /* Info blocks — ağ kart (form-card ilə eyni üslub) */

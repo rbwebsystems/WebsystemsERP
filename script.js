@@ -2440,11 +2440,25 @@ function getPageSize(selectId, def = 50) {
 }
 
 function parseDateOnly(v) {
-  // v: YYYY-MM-DD
   if (!v) return null;
-  const [y, m, d] = String(v).split("-").map(Number);
+  const s = String(v).trim();
+  // dd.mm.yyyy
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(s)) {
+    const [d, m, y] = s.split(".").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+  }
+  // yyyy-mm-dd
+  const [y, m, d] = s.split("-").map(Number);
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+}
+
+function formatDateInput(el) {
+  let v = el.value.replace(/[^\d]/g, "").slice(0, 8);
+  if (v.length >= 5) v = v.slice(0, 2) + "." + v.slice(2, 4) + "." + v.slice(4);
+  else if (v.length >= 3) v = v.slice(0, 2) + "." + v.slice(2);
+  el.value = v;
 }
 
 function datePartMs(dtStr) {
@@ -4133,8 +4147,8 @@ function openCustStatement(idx) {
   const c = db.cust[idx];
   if (!c) return;
   const cid = String(c.uid);
-  const from = (byId("custFrom")?.value || "").trim();
-  const to = (byId("custTo")?.value || "").trim();
+  const fromMs = parseDateOnly((byId("custFrom")?.value || "").trim());
+  const toMs = parseDateOnly((byId("custTo")?.value || "").trim());
 
   const items = [];
   (db.sales || [])
@@ -4164,9 +4178,10 @@ function openCustStatement(idx) {
     });
 
   const inRange = (d) => {
-    const dd = String(d || "").slice(0, 10);
-    if (from && dd < from) return false;
-    if (to && dd > to) return false;
+    const ms = datePartMs(d);
+    if (ms === null) return true;
+    if (fromMs && ms < fromMs) return false;
+    if (toMs && ms > toMs) return false;
     return true;
   };
   const rows = items
@@ -4227,8 +4242,8 @@ function openSuppStatement(idx) {
   const s = db.supp[idx];
   if (!s) return;
   const suppName = String(s.co || "");
-  const from = (byId("repFrom")?.value || "").trim();
-  const to = (byId("repTo")?.value || "").trim();
+  const fromMs = parseDateOnly((byId("repFrom")?.value || "").trim());
+  const toMs = parseDateOnly((byId("repTo")?.value || "").trim());
 
   const items = [];
   (db.purch || [])
@@ -4261,9 +4276,10 @@ function openSuppStatement(idx) {
     });
 
   const inRange = (d) => {
-    const dd = String(d || "").slice(0, 10);
-    if (from && dd < from) return false;
-    if (to && dd > to) return false;
+    const ms = datePartMs(d);
+    if (ms === null) return true;
+    if (fromMs && ms < fromMs) return false;
+    if (toMs && ms > toMs) return false;
     return true;
   };
 
@@ -10193,6 +10209,7 @@ Object.assign(window, {
   pagePrev,
   pageNext,
   filterTable,
+  formatDateInput,
   closeMdl,
   modalBack,
   login,
