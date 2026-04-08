@@ -2356,7 +2356,7 @@ body.landing-login-open .lp-aurora{
   box-sizing:border-box;
 }
 @media (min-width:768px){
-  .lp-footer-grid{grid-template-columns:2fr 1fr 1fr;text-align:left;}
+  .lp-footer-grid{grid-template-columns:2fr 1fr 1fr 1fr;text-align:left;}
 }
 .lp-footer-brand p{color:#64748b;font-weight:500;line-height:1.7;max-width:22rem;margin:0 auto;}
 @media (min-width:768px){
