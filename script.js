@@ -775,10 +775,15 @@ function onDebtTypeChange(sel) {
 }
 
 // ========= Reports: tab navigation & rendering =========
-const REP_VIEWS = ["sales", "purch", "staff", "expense", "stock", "pl", "cash"];
+const REP_VIEWS = ["sales","purch","staff","expense","stock","pl","cash",
+  "customer","saletype","product","aging","credits","creditor","accounts","daily","returns","staffperf","payments"];
 const REP_TITLES = {
   sales: "Satış hesabatı", purch: "Alış hesabatı", staff: "Əmək haqqı hesabatı",
-  expense: "Xərc hesabatı", stock: "Anbar hesabatı", pl: "Mənfəət/Zərər hesabatı", cash: "Kassa hesabatı"
+  expense: "Xərc hesabatı", stock: "Anbar hesabatı", pl: "Mənfəət/Zərər hesabatı",
+  cash: "Kassa hesabatı", customer: "Müştəri hesabatı", saletype: "Satış növü üzrə",
+  product: "Məhsul satış hesabatı", aging: "Debitor yaşlanma", credits: "Kredit portfeli",
+  creditor: "Kreditor (Təchizatçı) hesabatı", accounts: "Hesab hərəkəti", daily: "Günlük hesabat",
+  returns: "Geri qaytarma hesabatı", staffperf: "Əməkdaş fəaliyyəti", payments: "Ödəniş hesabatı"
 };
 
 function setRepView(view) {
@@ -1100,6 +1105,380 @@ function renderReports() {
         <td colspan="4"><strong>Cəmi (${rows.length} əməliyyat)</strong></td>
         <td><strong class="${(cashIn-cashOut)>=0?"amt-in":"amt-out"}">${money(cashIn-cashOut)} AZN</strong></td>
         <td colspan="2"></td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "customer") {
+    const sales = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
+    const map = new Map();
+    for (const s of sales) {
+      const k = String(s.customerId || s.customerName || "");
+      if (!map.has(k)) map.set(k, { name: s.customerName || k, count: 0, total: 0, paid: 0, rem: 0, lastDate: "" });
+      const o = map.get(k);
+      o.count++; o.total += n(s.amount); o.paid += n(s.paidTotal || 0); o.rem += saleRemaining(s);
+      if (!o.lastDate || s.date > o.lastDate) o.lastDate = s.date;
+    }
+    const rows = Array.from(map.values()).sort((a, b) => b.total - a.total);
+    const totSales = rows.reduce((a, r) => a + r.total, 0);
+    const totPaid = rows.reduce((a, r) => a + r.paid, 0);
+    const totRem = rows.reduce((a, r) => a + r.rem, 0);
+    setText("rv-custCount", String(rows.length));
+    setText("rv-custSales", money(totSales) + " AZN");
+    setText("rv-custPaid", money(totPaid) + " AZN");
+    setText("rv-custRem", money(totRem) + " AZN");
+    const body = byId("tblRepCustomer");
+    if (body) {
+      body.innerHTML = rows.map((r, i) => {
+        const cust = (db.cust || []).find((c) => String(c.sur + " " + c.name) === r.name || String(c.uid) === r.name);
+        const idx = cust ? (db.cust || []).indexOf(cust) : -1;
+        const infoBtn = idx >= 0 ? `<a class="icon-btn info" href="${erpOpHref("cust","custInfo",idx)}" onclick="openCustInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a>` : "-";
+        return `<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.count}</td>
+          <td>${money(r.total)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.rem)} AZN</td>
+          <td>${fmtDT(r.lastDate)}</td><td class="tbl-actions">${infoBtn}</td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td>
+        <td><strong>${money(totSales)} AZN</strong></td><td><strong>${money(totPaid)} AZN</strong></td>
+        <td><strong>${money(totRem)} AZN</strong></td><td colspan="2"></td></tr>` : emptyRow(8));
+    }
+
+  } else if (view === "saletype") {
+    const sales = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
+    const typeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
+    const map = new Map();
+    for (const s of sales) {
+      const k = String(s.saleType || "nagd").toLowerCase();
+      if (!map.has(k)) map.set(k, { count: 0, total: 0, paid: 0, rem: 0 });
+      const o = map.get(k); o.count++; o.total += n(s.amount); o.paid += n(s.paidTotal||0); o.rem += saleRemaining(s);
+    }
+    const totAmt = Array.from(map.values()).reduce((a, r) => a + r.total, 0);
+    setText("rv-stTotal", money(totAmt) + " AZN");
+    setText("rv-stCount", String(sales.length));
+    const rows = Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total);
+    const body = byId("tblRepSaletype");
+    if (body) {
+      body.innerHTML = rows.map(([k, r], i) => `<tr><td>${i+1}</td><td>${escapeHtml(typeMap[k]||k)}</td>
+        <td>${r.count}</td><td>${money(r.total)} AZN</td><td>${money(r.paid)} AZN</td>
+        <td>${money(r.rem)} AZN</td><td>${totAmt > 0 ? (r.total/totAmt*100).toFixed(1) : 0}%</td></tr>`
+      ).join("") + (rows.length ? `<tr class="total-row"><td colspan="2"><strong>Cəmi</strong></td>
+        <td><strong>${sales.length}</strong></td><td><strong>${money(totAmt)} AZN</strong></td>
+        <td><strong>${money(Array.from(map.values()).reduce((a,r)=>a+r.paid,0))} AZN</strong></td>
+        <td><strong>${money(Array.from(map.values()).reduce((a,r)=>a+r.rem,0))} AZN</strong></td>
+        <td>100%</td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "product") {
+    const sales = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
+    const map = new Map();
+    for (const s of sales) {
+      const k = String(s.productName || "-");
+      if (!map.has(k)) map.set(k, { count: 0, total: 0, cogs: 0 });
+      const o = map.get(k); o.count++; o.total += n(s.amount);
+      if (s.bulkPurchUid) {
+        const p = (db.purch||[]).find((x) => String(x.uid) === String(s.bulkPurchUid));
+        o.cogs += p ? (n(p.amount)/Math.max(1,Math.floor(n(p.qty||1))))*Math.max(1,Math.floor(n(s.qty||1))) : 0;
+      } else {
+        const p = (db.purch||[]).find((x) => itemKeyFromPurch(x) === s.itemKey);
+        o.cogs += p ? n(p.amount) : 0;
+      }
+    }
+    const rows = Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total);
+    const totSales = rows.reduce((a, [,r]) => a + r.total, 0);
+    const totCogs = rows.reduce((a, [,r]) => a + r.cogs, 0);
+    setText("rv-prodCount", String(rows.length));
+    setText("rv-prodSales", money(totSales) + " AZN");
+    setText("rv-prodCogs", money(totCogs) + " AZN");
+    setText("rv-prodPL", money(totSales - totCogs) + " AZN");
+    const body = byId("tblRepProduct");
+    if (body) {
+      body.innerHTML = rows.map(([k, r], i) => {
+        const pl = r.total - r.cogs;
+        const plPct = r.total > 0 ? (pl/r.total*100).toFixed(1) : 0;
+        return `<tr><td>${i+1}</td><td>${escapeHtml(k)}</td><td>${r.count}</td>
+          <td>${money(r.total)} AZN</td><td>${money(r.cogs)} AZN</td>
+          <td class="${pl>=0?"amt-in":"amt-out"}">${money(pl)} AZN</td><td>${plPct}%</td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td>
+        <td><strong>${money(totSales)} AZN</strong></td><td><strong>${money(totCogs)} AZN</strong></td>
+        <td><strong class="${(totSales-totCogs)>=0?"amt-in":"amt-out"}">${money(totSales-totCogs)} AZN</strong></td><td></td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "aging") {
+    const today = Date.now();
+    const debts = (db.sales || [])
+      .filter((s) => !s.returnedAt && saleRemaining(s) > 0.001)
+      .map((s) => {
+        const idx = (db.sales || []).indexOf(s);
+        const rem = saleRemaining(s);
+        const days = Math.floor((today - (parseDateOnly(s.date) || today)) / 86400000);
+        const cat = days <= 30 ? "0-30" : days <= 60 ? "31-60" : days <= 90 ? "61-90" : "90+";
+        return { s, idx, rem, days, cat };
+      }).sort((a, b) => b.days - a.days);
+    const total = debts.reduce((a, r) => a + r.rem, 0);
+    const b30 = debts.filter((r) => r.cat==="0-30").reduce((a,r)=>a+r.rem,0);
+    const b60 = debts.filter((r) => r.cat==="31-60").reduce((a,r)=>a+r.rem,0);
+    const b90 = debts.filter((r) => r.cat==="61-90").reduce((a,r)=>a+r.rem,0);
+    const b90p = debts.filter((r) => r.cat==="90+").reduce((a,r)=>a+r.rem,0);
+    setText("rv-agingTotal", money(total) + " AZN");
+    setText("rv-aging30", money(b30) + " AZN");
+    setText("rv-aging60", money(b60) + " AZN");
+    setText("rv-aging90", money(b90) + " AZN");
+    setText("rv-aging90p", money(b90p) + " AZN");
+    const catPill = { "0-30":"partial","31-60":"partial","61-90":"overdue","90+":"overdue" };
+    const body = byId("tblRepAging");
+    if (body) {
+      body.innerHTML = debts.map((r, i) => {
+        const inv = r.s.invNo || invFallback("sales", r.s.uid);
+        return `<tr><td>${i+1}</td><td>${escapeHtml(r.s.customerName)}</td>
+          <td>${escapeHtml(inv)}</td><td>${fmtDT(r.s.date)}</td>
+          <td>${money(r.rem)} AZN</td><td>${r.days}</td>
+          <td><span class="pill ${catPill[r.cat]||"unpaid"}">${r.cat} gün</span></td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",r.idx)}" onclick="openSaleInfo(${r.idx});return false;"><i class="fas fa-circle-info"></i></a></td></tr>`;
+      }).join("") + (debts.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi (${debts.length})</strong></td>
+        <td><strong>${money(total)} AZN</strong></td><td colspan="3"></td></tr>` : emptyRow(8));
+    }
+
+  } else if (view === "credits") {
+    const today = Date.now();
+    const credits = (db.sales || [])
+      .filter((s) => !s.returnedAt && String(s.saleType||"").toLowerCase() === "kredit" && saleRemaining(s) > 0.001)
+      .map((s, _, arr) => { const idx = (db.sales||[]).indexOf(s); return { s, idx }; })
+      .sort((a, b) => (a.s.date > b.s.date ? -1 : 1));
+    const totAmt = credits.reduce((a,{s})=>a+n(s.amount),0);
+    const totPaid = credits.reduce((a,{s})=>a+n(s.paidTotal||0),0);
+    const totRem = credits.reduce((a,{s})=>a+saleRemaining(s),0);
+    let overdueRem = 0;
+    const body = byId("tblRepCredits");
+    if (body) {
+      body.innerHTML = credits.map(({s, idx}, i) => {
+        const inv = s.invNo || invFallback("sales", s.uid);
+        const rem = saleRemaining(s);
+        const schedule = (s.creditSchedule || []);
+        const nextDue = schedule.find((p) => !p.paid && p.dueDate);
+        const nextDueMs = nextDue ? parseDateOnly(nextDue.dueDate) : null;
+        const overdueDays = nextDueMs && nextDueMs < today ? Math.floor((today - nextDueMs)/86400000) : 0;
+        if (overdueDays > 0) overdueRem += rem;
+        return `<tr><td>${i+1}</td><td>${escapeHtml(s.customerName)}</td>
+          <td>${escapeHtml(s.productName)}</td><td>${escapeHtml(inv)}</td>
+          <td>${money(n(s.amount))} AZN</td><td>${money(n(s.paidTotal||0))} AZN</td>
+          <td>${money(rem)} AZN</td>
+          <td>${nextDue ? fmtDT(nextDue.dueDate) : "-"}</td>
+          <td>${overdueDays > 0 ? `<span class="pill overdue">${overdueDays} gün</span>` : `<span class="pill paid">OK</span>`}</td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a></td></tr>`;
+      }).join("") + (credits.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi (${credits.length})</strong></td>
+        <td><strong>${money(totAmt)} AZN</strong></td><td><strong>${money(totPaid)} AZN</strong></td>
+        <td><strong>${money(totRem)} AZN</strong></td><td colspan="3"></td></tr>` : emptyRow(10));
+    }
+    setText("rv-crCount", String(credits.length));
+    setText("rv-crTotal", money(totAmt) + " AZN");
+    setText("rv-crPaid", money(totPaid) + " AZN");
+    setText("rv-crRem", money(totRem) + " AZN");
+    setText("rv-crOverdue", money(overdueRem) + " AZN");
+
+  } else if (view === "creditor") {
+    const purches = (db.purch || []).filter((p) => !p.returnedAt).filter((p) => !hasPeriod || inRange(p.date));
+    const map = new Map();
+    for (const p of purches) {
+      const k = String(p.supp || "-");
+      if (!map.has(k)) map.set(k, { count: 0, total: 0, paid: 0, rem: 0 });
+      const o = map.get(k); o.count++; o.total += n(p.amount); o.paid += n(p.paidTotal||0); o.rem += purchRemaining(p);
+    }
+    const rows = Array.from(map.entries()).sort((a,b) => b[1].rem - a[1].rem);
+    const totT = rows.reduce((a,[,r])=>a+r.total,0), totP = rows.reduce((a,[,r])=>a+r.paid,0), totR = rows.reduce((a,[,r])=>a+r.rem,0);
+    setText("rv-credCount", String(rows.length));
+    setText("rv-credTotal", money(totT) + " AZN");
+    setText("rv-credPaid", money(totP) + " AZN");
+    setText("rv-credRem", money(totR) + " AZN");
+    const body = byId("tblRepCreditor");
+    if (body) {
+      body.innerHTML = rows.map(([k, r], i) => {
+        const st = debtStatus(r.total, r.rem);
+        return `<tr><td>${i+1}</td><td>${escapeHtml(k)}</td><td>${r.count}</td>
+          <td>${money(r.total)} AZN</td><td>${money(r.paid)} AZN</td><td>${money(r.rem)} AZN</td>
+          <td><span class="pill ${st}">${debtLabel(st)}</span></td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td>
+        <td><strong>${money(totT)} AZN</strong></td><td><strong>${money(totP)} AZN</strong></td>
+        <td><strong>${money(totR)} AZN</strong></td><td></td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "accounts") {
+    // Populate account selector
+    const accSel = byId("rv-accountSel");
+    if (accSel && accSel.options.length <= 1) {
+      (db.accounts || [{ id: 1, name: "Kassa" }]).forEach((a) => {
+        const o = document.createElement("option"); o.value = String(a.id); o.textContent = a.name;
+        accSel.appendChild(o);
+      });
+    }
+    const selAccId = accSel?.value ? Number(accSel.value) : null;
+    const rows = (db.cash || [])
+      .filter((c) => !hasPeriod || inRange(c.date))
+      .filter((c) => selAccId === null || Number(c.accountId || 1) === selAccId)
+      .slice().sort((a, b) => (a.date > b.date ? 1 : -1));
+    let running = 0;
+    const cashInAcc = rows.filter(c=>c.type==="in").reduce((a,c)=>a+n(c.amount),0);
+    const cashOutAcc = rows.filter(c=>c.type==="out").reduce((a,c)=>a+n(c.amount),0);
+    setText("rv-accIn", money(cashInAcc) + " AZN");
+    setText("rv-accOut", money(cashOutAcc) + " AZN");
+    setText("rv-accNet", money(cashInAcc - cashOutAcc) + " AZN");
+    const body = byId("tblRepAccounts");
+    if (body) {
+      body.innerHTML = rows.map((c, i) => {
+        const isIn = c.type === "in";
+        running += isIn ? n(c.amount) : -n(c.amount);
+        const accName = (db.accounts||[]).find((a) => a.id === Number(c.accountId||1))?.name || "Kassa";
+        return `<tr><td>${i+1}</td><td>${fmtDT(c.date)}</td>
+          <td><span class="pill ${isIn?"paid":"overdue"}">${isIn?"Giriş":"Çıxış"}</span></td>
+          <td>${escapeHtml(c.source||"-")}</td>
+          <td class="${isIn?"amt-in":"amt-out"}">${isIn?"+":"-"}${money(c.amount)} AZN</td>
+          <td><strong>${money(running)} AZN</strong></td>
+          <td>${escapeHtml(c.note||"")}</td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi</strong></td>
+        <td><strong class="${(cashInAcc-cashOutAcc)>=0?"amt-in":"amt-out"}">${money(cashInAcc-cashOutAcc)} AZN</strong></td>
+        <td colspan="2"></td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "daily") {
+    const cashOps = (db.cash || []).filter((c) => !hasPeriod || inRange(c.date));
+    const salesAll = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
+    const dayMap = new Map();
+    const getDay = (d) => String(d || "").slice(0, 10);
+    for (const s of salesAll) {
+      const d = getDay(s.date); if (!d) continue;
+      if (!dayMap.has(d)) dayMap.set(d, { salesCount: 0, salesAmt: 0, cashIn: 0, cashExp: 0 });
+      dayMap.get(d).salesCount++; dayMap.get(d).salesAmt += n(s.amount);
+    }
+    for (const c of cashOps) {
+      const d = getDay(c.date); if (!d) continue;
+      if (!dayMap.has(d)) dayMap.set(d, { salesCount: 0, salesAmt: 0, cashIn: 0, cashExp: 0 });
+      if (c.type === "in") dayMap.get(d).cashIn += n(c.amount);
+      if (c.type === "out" && c.link?.kind === "expense") dayMap.get(d).cashExp += n(c.amount);
+    }
+    const rows = Array.from(dayMap.entries()).sort((a, b) => (a[0] > b[0] ? -1 : 1));
+    const totSalesAmt = rows.reduce((a,[,r])=>a+r.salesAmt,0);
+    const totCashIn = rows.reduce((a,[,r])=>a+r.cashIn,0);
+    const totExp = rows.reduce((a,[,r])=>a+r.cashExp,0);
+    setText("rv-dailySales", money(totSalesAmt) + " AZN");
+    setText("rv-dailyIn", money(totCashIn) + " AZN");
+    setText("rv-dailyExp", money(totExp) + " AZN");
+    setText("rv-dailyDays", String(rows.length));
+    const body = byId("tblRepDaily");
+    if (body) {
+      body.innerHTML = rows.map(([d, r], i) => {
+        const net = r.cashIn - r.cashExp;
+        return `<tr><td>${i+1}</td><td>${fmtDT(d)}</td><td>${r.salesCount}</td>
+          <td>${money(r.salesAmt)} AZN</td><td>${money(r.cashIn)} AZN</td>
+          <td>${money(r.cashExp)} AZN</td>
+          <td class="${net>=0?"amt-in":"amt-out"}">${money(net)} AZN</td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="2"><strong>Cəmi (${rows.length} gün)</strong></td>
+        <td><strong>${rows.reduce((a,[,r])=>a+r.salesCount,0)}</strong></td>
+        <td><strong>${money(totSalesAmt)} AZN</strong></td>
+        <td><strong>${money(totCashIn)} AZN</strong></td>
+        <td><strong>${money(totExp)} AZN</strong></td>
+        <td><strong class="${(totCashIn-totExp)>=0?"amt-in":"amt-out"}">${money(totCashIn-totExp)} AZN</strong></td></tr>` : emptyRow(7));
+    }
+
+  } else if (view === "returns") {
+    const rows = (db.sales || [])
+      .filter((s) => s.returnedAt && (!hasPeriod || inRange(s.returnedAt)))
+      .slice().sort((a, b) => (a.returnedAt > b.returnedAt ? -1 : 1));
+    const totAmt = rows.reduce((a, s) => a + n(s.amount), 0);
+    setText("rv-retCount", String(rows.length));
+    setText("rv-retTotal", money(totAmt) + " AZN");
+    const body = byId("tblRepReturns");
+    if (body) {
+      body.innerHTML = rows.map((s, i) => {
+        const idx = (db.sales||[]).indexOf(s);
+        const inv = s.invNo || invFallback("sales", s.uid);
+        return `<tr><td>${i+1}</td><td>${fmtDT(s.returnedAt)}</td><td>${fmtDT(s.date)}</td>
+          <td>${escapeHtml(inv)}</td><td>${escapeHtml(s.customerName)}</td>
+          <td>${escapeHtml(s.productName)}</td><td>${money(n(s.amount))} AZN</td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a></td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="6"><strong>Cəmi (${rows.length})</strong></td>
+        <td><strong>${money(totAmt)} AZN</strong></td><td></td></tr>` : emptyRow(8));
+    }
+
+  } else if (view === "staffperf") {
+    // Populate staff selector
+    const staffSel = byId("rv-staffSel");
+    if (staffSel && staffSel.options.length <= 1) {
+      (db.staff || []).forEach((st) => {
+        const o = document.createElement("option"); o.value = String(st.uid); o.textContent = st.name;
+        staffSel.appendChild(o);
+      });
+    }
+    const selStaff = staffSel?.value || "";
+    const salesAll = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date))
+      .filter((s) => !selStaff || String(s.employeeId||"") === selStaff);
+    const staffList = selStaff ? (db.staff||[]).filter((st) => String(st.uid) === selStaff) : (db.staff||[]);
+    const monthSalesMap = new Map();
+    for (const s of salesAll) {
+      const mk = String(s.date||"").slice(0,7);
+      const empId = String(s.employeeId||"");
+      const key = mk + "|" + empId;
+      if (!monthSalesMap.has(key)) monthSalesMap.set(key, { month: mk, empId, count: 0, sum: 0 });
+      const o = monthSalesMap.get(key); o.count++; o.sum += n(s.amount);
+    }
+    const rows = Array.from(monthSalesMap.values()).sort((a,b)=>a.month>b.month?-1:1);
+    let totSales = 0, totComm = 0;
+    const body = byId("tblRepStaffperf");
+    if (body) {
+      body.innerHTML = rows.map((r, i) => {
+        const st = (db.staff||[]).find((x) => String(x.uid) === r.empId);
+        const pct = Math.max(0, n(st?.commPct||0));
+        const base = Math.max(0, n(st?.baseSalary||0));
+        const comm = r.sum * (pct/100);
+        const yekun = base + comm;
+        totSales += r.sum; totComm += yekun;
+        return `<tr><td>${i+1}</td><td>${r.month}</td><td>${escapeHtml(st?.name||r.empId||"-")}</td>
+          <td>${r.count}</td><td>${money(r.sum)} AZN</td><td>${money(comm)} AZN</td>
+          <td>${money(base)} AZN</td><td><strong>${money(yekun)} AZN</strong></td></tr>`;
+      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi</strong></td>
+        <td><strong>${money(totSales)} AZN</strong></td>
+        <td colspan="2"></td><td><strong>${money(totComm)} AZN</strong></td></tr>` : emptyRow(8));
+    }
+    setText("rv-spSales", money(totSales) + " AZN");
+    setText("rv-spCount", String(salesAll.length));
+    setText("rv-spComm", money(totComm) + " AZN");
+
+  } else if (view === "payments") {
+    const SALE_PAY_KINDS = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment",
+      "debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
+    const PURCH_PAY_KINDS = new Set(["purch_payment","purch_payment_adj","creditor_payment","creditor_invoice_payment"]);
+    const allCash = (db.cash || []).filter((c) => !hasPeriod || inRange(c.date));
+    const incoming = allCash.filter((c) => c.type === "in" && SALE_PAY_KINDS.has(String(c.link?.kind||"")));
+    const outgoing = allCash.filter((c) => c.type === "out" && PURCH_PAY_KINDS.has(String(c.link?.kind||"")));
+    const combined = [
+      ...incoming.map((c) => ({ ...c, _dir: "in" })),
+      ...outgoing.map((c) => ({ ...c, _dir: "out" }))
+    ].sort((a, b) => (a.date > b.date ? -1 : 1));
+    const totIn = incoming.reduce((a,c)=>a+n(c.amount),0);
+    const totOut = outgoing.reduce((a,c)=>a+n(c.amount),0);
+    setText("rv-payIn", money(totIn) + " AZN");
+    setText("rv-payOut", money(totOut) + " AZN");
+    setText("rv-payNet", money(totIn - totOut) + " AZN");
+    setText("rv-payCount", String(combined.length));
+    const body = byId("tblRepPayments");
+    if (body) {
+      body.innerHTML = combined.map((c, i) => {
+        const isIn = c._dir === "in";
+        const accName = (db.accounts||[]).find((a)=>a.id===Number(c.accountId||1))?.name||"Kassa";
+        // Try to find customer/supplier name from link
+        let party = c.source || "-";
+        const kind = String(c.link?.kind||"");
+        let qaimə = "-";
+        if (SALE_PAY_KINDS.has(kind) && c.link?.saleUid) {
+          const s = (db.sales||[]).find((x)=>String(x.uid)===String(c.link.saleUid));
+          if (s) { party = s.customerName; qaimə = s.invNo || invFallback("sales",s.uid); }
+        } else if (PURCH_PAY_KINDS.has(kind) && c.link?.purchUid) {
+          const p = (db.purch||[]).find((x)=>String(x.uid)===String(c.link.purchUid));
+          if (p) { party = p.supp || "-"; qaimə = p.invNo || invFallback("purch",p.uid); }
+        }
+        const dirLabel = isIn ? "Satış ödənişi" : "Alış ödənişi";
+        return `<tr><td>${i+1}</td><td>${fmtDT(c.date)}</td>
+          <td><span class="pill ${isIn?"paid":"unpaid"}">${dirLabel}</span></td>
+          <td>${escapeHtml(party)}</td><td>${escapeHtml(qaimə)}</td>
+          <td class="${isIn?"amt-in":"amt-out"}">${isIn?"+":"-"}${money(c.amount)} AZN</td>
+          <td>${escapeHtml(accName)}</td><td>${escapeHtml(c.note||"")}</td></tr>`;
+      }).join("") + (combined.length ? `<tr class="total-row"><td colspan="5"><strong>Cəmi (${combined.length})</strong></td>
+        <td><strong class="${(totIn-totOut)>=0?"amt-in":"amt-out"}">${money(totIn-totOut)} AZN</strong></td>
+        <td colspan="2"></td></tr>` : emptyRow(8));
     }
   }
 }

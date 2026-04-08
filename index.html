@@ -820,6 +820,50 @@
             <i class="fas fa-cash-register"></i>
             <span>Kassa hesabatı</span>
           </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=customer" onclick="setRepView('customer');return false;">
+            <i class="fas fa-person"></i>
+            <span>Müştəri hesabatı</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=saletype" onclick="setRepView('saletype');return false;">
+            <i class="fas fa-tags"></i>
+            <span>Satış növü üzrə</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=product" onclick="setRepView('product');return false;">
+            <i class="fas fa-box-open"></i>
+            <span>Məhsul satış</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=aging" onclick="setRepView('aging');return false;">
+            <i class="fas fa-hourglass-half"></i>
+            <span>Debitor yaşlanma</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=credits" onclick="setRepView('credits');return false;">
+            <i class="fas fa-credit-card"></i>
+            <span>Kredit portfeli</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=creditor" onclick="setRepView('creditor');return false;">
+            <i class="fas fa-handshake"></i>
+            <span>Kreditor (Təchizatçı)</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=accounts" onclick="setRepView('accounts');return false;">
+            <i class="fas fa-building-columns"></i>
+            <span>Hesab hərəkəti</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=daily" onclick="setRepView('daily');return false;">
+            <i class="fas fa-calendar-day"></i>
+            <span>Günlük hesabat</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=returns" onclick="setRepView('returns');return false;">
+            <i class="fas fa-rotate-left"></i>
+            <span>Geri qaytarma</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=staffperf" onclick="setRepView('staffperf');return false;">
+            <i class="fas fa-chart-column"></i>
+            <span>Əməkdaş fəaliyyəti</span>
+          </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=payments" onclick="setRepView('payments');return false;">
+            <i class="fas fa-money-bill-transfer"></i>
+            <span>Ödəniş hesabatı</span>
+          </a>
         </div>
       </div>
 
@@ -947,6 +991,188 @@
             <table>
               <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Mənbə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
               <tbody id="tblRepCash"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Müştəri hesabatı -->
+        <div id="repSec-customer" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Müştəri sayı</small><h2 id="rv-custCount">0</h2></div>
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-custSales">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-custPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-custRem">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Müştəri</th><th>Satış sayı</th><th>Ümumi məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Son satış</th><th>Info</th></tr></thead>
+              <tbody id="tblRepCustomer"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Satış növü üzrə -->
+        <div id="repSec-saletype" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-stTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-stCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Satış növü</th><th>Satış sayı</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>% (məbləğ)</th></tr></thead>
+              <tbody id="tblRepSaletype"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Məhsul satış hesabatı -->
+        <div id="repSec-product" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Məhsul növü sayı</small><h2 id="rv-prodCount">0</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-prodSales">0.00</h2></div>
+            <div class="card stat-card"><small>Maya cəmi</small><h2 id="rv-prodCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət</small><h2 id="rv-prodPL">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Məhsul adı</th><th>Satış sayı</th><th>Satış məbləği</th><th>Maya dəyəri</th><th>Mənfəət</th><th>Mənfəət %</th></tr></thead>
+              <tbody id="tblRepProduct"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Debitor yaşlanma -->
+        <div id="repSec-aging" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Ümumi borc</small><h2 id="rv-agingTotal">0.00</h2></div>
+            <div class="card stat-card"><small>0–30 gün</small><h2 id="rv-aging30">0.00</h2></div>
+            <div class="card stat-card"><small>31–60 gün</small><h2 id="rv-aging60">0.00</h2></div>
+            <div class="card stat-card"><small>61–90 gün</small><h2 id="rv-aging90">0.00</h2></div>
+            <div class="card stat-card"><small>90+ gün</small><h2 id="rv-aging90p">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Müştəri</th><th>Qaimə</th><th>Tarix</th><th>Borc</th><th>Gün</th><th>Kateqoriya</th><th>Info</th></tr></thead>
+              <tbody id="tblRepAging"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kredit portfeli -->
+        <div id="repSec-credits" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Aktiv kredit</small><h2 id="rv-crCount">0</h2></div>
+            <div class="card stat-card"><small>Cəmi məbləğ</small><h2 id="rv-crTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-crPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-crRem">0.00</h2></div>
+            <div class="card stat-card"><small>Gecikmiş</small><h2 id="rv-crOverdue">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Müştəri</th><th>Məhsul</th><th>Qaimə</th><th>Cəmi</th><th>Ödənilən</th><th>Qalıq</th><th>Növbəti ödəniş</th><th>Gecikmə</th><th>Info</th></tr></thead>
+              <tbody id="tblRepCredits"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kreditor (Təchizatçı) hesabatı -->
+        <div id="repSec-creditor" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Təchizatçı sayı</small><h2 id="rv-credCount">0</h2></div>
+            <div class="card stat-card"><small>Ümumi alış</small><h2 id="rv-credTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-credPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-credRem">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Təchizatçı</th><th>Alış sayı</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th></tr></thead>
+              <tbody id="tblRepCreditor"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Hesab hərəkəti -->
+        <div id="repSec-accounts" style="display:none">
+          <div style="margin-bottom:12px">
+            <select id="rv-accountSel" class="select-small" onchange="renderReports()">
+              <option value="">Bütün hesablar</option>
+            </select>
+          </div>
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Giriş</small><h2 id="rv-accIn">0.00</h2></div>
+            <div class="card stat-card"><small>Çıxış</small><h2 id="rv-accOut">0.00</h2></div>
+            <div class="card stat-card"><small>Saldo</small><h2 id="rv-accNet">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Mənbə</th><th>Məbləğ</th><th>Cari saldo</th><th>Qeyd</th></tr></thead>
+              <tbody id="tblRepAccounts"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Günlük hesabat -->
+        <div id="repSec-daily" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-dailySales">0.00</h2></div>
+            <div class="card stat-card"><small>Daxil olan</small><h2 id="rv-dailyIn">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc</small><h2 id="rv-dailyExp">0.00</h2></div>
+            <div class="card stat-card"><small>Gün sayı</small><h2 id="rv-dailyDays">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Satış sayı</th><th>Satış məbləği</th><th>Daxil olan</th><th>Xərc</th><th>Xalis</th></tr></thead>
+              <tbody id="tblRepDaily"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Geri qaytarma hesabatı -->
+        <div id="repSec-returns" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Qaytarma sayı</small><h2 id="rv-retCount">0</h2></div>
+            <div class="card stat-card"><small>Qaytarılan məbləğ</small><h2 id="rv-retTotal">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Qaytarma tarixi</th><th>Satış tarixi</th><th>Qaimə</th><th>Müştəri</th><th>Məhsul</th><th>Məbləğ</th><th>Info</th></tr></thead>
+              <tbody id="tblRepReturns"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Əməkdaş fəaliyyəti -->
+        <div id="repSec-staffperf" style="display:none">
+          <div style="margin-bottom:12px">
+            <select id="rv-staffSel" class="select-small" onchange="renderReports()">
+              <option value="">Bütün əməkdaşlar</option>
+            </select>
+          </div>
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-spSales">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-spCount">0</h2></div>
+            <div class="card stat-card"><small>Komissiya</small><h2 id="rv-spComm">0.00</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Ay</th><th>Əməkdaş</th><th>Satış sayı</th><th>Satış məbləği</th><th>Komissiya</th><th>Baza maaş</th><th>Yekun</th></tr></thead>
+              <tbody id="tblRepStaffperf"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Ödəniş hesabatı -->
+        <div id="repSec-payments" style="display:none">
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Daxil olan (satış)</small><h2 id="rv-payIn">0.00</h2></div>
+            <div class="card stat-card"><small>Çıxan (alış)</small><h2 id="rv-payOut">0.00</h2></div>
+            <div class="card stat-card"><small>Xalis ödəniş</small><h2 id="rv-payNet">0.00</h2></div>
+            <div class="card stat-card"><small>Əməliyyat sayı</small><h2 id="rv-payCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Müştəri/Təchizatçı</th><th>Qaimə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
+              <tbody id="tblRepPayments"></tbody>
             </table>
           </div>
         </div>
