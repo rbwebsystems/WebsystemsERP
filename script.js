@@ -3589,7 +3589,7 @@ function openPurch(idx = null) {
           <div class="grid-2">
             <div class="f-group"><label>Qaimə №</label><input id="f_p_inv" value="${escapeAttr(invVal)}" placeholder="Auto" readonly required></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_p_date" value="${escapeAttr(p.date)}" required></div>
-            <div class="f-group"><label>Əməkdaş</label><select id="f_p_staff" ${canChangeSaleStaff() ? "" : "disabled"}>${staffOptions}</select></div>
+            <div class="f-group"><label>Əməkdaş${canChangeSaleStaff() ? "" : " *"}</label><select id="f_p_staff" ${canChangeSaleStaff() ? "" : "disabled"} ${canChangeSaleStaff() ? "" : "required"}>${staffOptions}</select></div>
             <div class="f-group"><label>Təchizatçı *</label><select id="f_p_supp" required>
           <option value="">Seçin…</option>
           ${suppOptions}
@@ -4731,7 +4731,7 @@ function openSale(idx = null) {
           <div class="form-card-title">Əsas məlumat</div>
           <div class="grid-2">
             <div class="f-group"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
-            <div class="f-group"><label>Əməkdaş *</label><select id="f_s_staff" ${staffEditable ? "" : "disabled"} required>${staffOptions}</select></div>
+            <div class="f-group"><label>Əməkdaş${staffEditable ? "" : " *"}</label><select id="f_s_staff" ${staffEditable ? "" : "disabled"} ${staffEditable ? "" : "required"}>${staffOptions}</select></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
             <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
           <option value="nagd">nagd</option>
