@@ -1004,8 +1004,8 @@
     </div>
   </div>
 
-  <div class="modal" id="mdlMain">
-    <div class="modal-body" id="modalContent"></div>
+  <div class="modal" id="mdlMain" onclick="if(event.target===this)closeMdl()">
+    <div class="modal-body" id="modalContent" onclick="event.stopPropagation()"></div>
   </div>
 
   <div class="login-overlay login-v3" id="loginOverlay">

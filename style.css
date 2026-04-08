@@ -1077,10 +1077,12 @@ select{
 .modal-body input,
 .modal-body select,
 .modal-body textarea{
-  min-height:42px;
-  padding:12px;
-  border-radius:12px;
+  min-height:36px;
+  padding:7px 10px;
+  border-radius:8px;
+  font-size:.875rem;
 }
+.modal-body textarea{min-height:72px;}
 
 @media (max-width: 980px){
   .content-header{align-items:flex-start;}
@@ -3680,24 +3682,73 @@ tr.total-row td{padding:7px 10px;}
 /* ===== MODAL (scroll + sticky footer) ===== */
 .modal{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.3);
-  backdrop-filter:blur(5px);
+  background:rgba(0,0,0,.0);
   display:none;
+  z-index:10050;
+  transition:background .25s ease;
+}
+.modal.modal--open{
+  background:rgba(0,0,0,.55);
+}
+
+/* ── Slide-over (sağdan gələn panel) ── */
+.modal.modal--slideover{
+  display:flex;
+  justify-content:flex-end;
+  align-items:flex-end;
+  padding:0;
+  overflow:hidden;
+  top:68px !important;
+}
+.modal.modal--slideover .modal-body{
+  width:calc(100vw - 190px);
+  min-width:unset;
+  max-width:100vw;
+  height:calc(100vh - 68px);
+  max-height:calc(100vh - 68px);
+  border-radius:0;
+  transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;
+  padding:32px 28px;
+  box-shadow:-12px 0 48px rgba(0,0,0,.25);
+  margin:0;
+  background:#fff !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+body.theme-dark .modal.modal--slideover .modal-body{
+  background:#1e2d3d !important;
+}
+.modal.modal--slideover.modal--open .modal-body{
+  transform:translateX(0);
+}
+
+/* ── Popup (mərkəzləşdirilmiş xəbərdarlıq) ── */
+.modal.modal--popup{
+  display:flex;
   justify-content:center;
   align-items:flex-start;
-  z-index:10050;
   padding:20px 16px;
   overflow:auto;
 }
-.modal-body{
-  background:#fff;
-  width:min(1160px, 98vw);
+.modal.modal--popup .modal-body{
+  width:min(520px,98vw);
   max-width:98vw;
   max-height:calc(100vh - 40px);
+  height:auto;
+  border-radius:12px;
+  transform:scale(.92) translateY(-12px);
+  opacity:0;
+  transition:transform .25s cubic-bezier(.4,0,.2,1), opacity .25s ease;
   overflow:auto;
   padding:28px;
-  border-radius:10px;
-  box-shadow:0 8px 32px rgba(0,0,0,.18);
+  box-shadow:0 8px 32px rgba(0,0,0,.22);
+  margin:0;
+}
+.modal.modal--popup.modal--open .modal-body{
+  transform:scale(1) translateY(0);
+  opacity:1;
 }
 .modal:has(.pick-company-modal) .modal-body{
   width:min(440px, 96vw);
@@ -3848,9 +3899,28 @@ button.dev-company-item:hover{
   margin-right:6px;
 }
 
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .span-2{grid-column:span 2;}
 .span-3{grid-column:span 3;}
+
+/* Form field qrupu — label + input */
+.f-group{display:flex;flex-direction:column;gap:4px;}
+.f-group label,.f-label{
+  font-size:.72rem;font-weight:700;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.04em;
+}
+/* Form bölmə başlığı */
+.f-section{
+  grid-column:span 3;
+  font-size:.78rem;font-weight:800;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.05em;
+  padding:6px 0 2px;border-bottom:2px solid var(--accent);
+  margin-top:6px;
+}
+.f-section:first-child{margin-top:0;}
+body.theme-dark .f-group label,
+body.theme-dark .f-label{color:var(--text-muted);}
+body.theme-dark .f-section{color:#5bb8d4;border-bottom-color:#2d5a6e;}
 input,select,textarea{
   width:100%;padding:9px 12px;border:1px solid var(--border-color);
   border-radius:6px;font-size:.875rem;color:var(--text-main);background:#fff;
@@ -4397,10 +4467,12 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .stats-grid{grid-template-columns:repeat(2,1fr) !important;}
   .grid-3{grid-template-columns:1fr !important;}
   .grid-3 .span-2,.grid-3 .span-3{grid-column:span 1 !important;}
+  .f-group.span-2,.f-group.span-3{grid-column:span 1 !important;}
   .dash-charts{grid-template-columns:1fr !important;}
   .content-header{flex-wrap:wrap;gap:8px;padding:0 0 10px;}
   .content-header-actions{flex-wrap:wrap;gap:6px;}
-  .modal-body{max-width:100vw;border-radius:0 0 16px 16px;}
+  .modal.modal--slideover .modal-body{width:100vw;min-width:unset;border-radius:0;}
+  .modal.modal--popup .modal-body{max-width:100vw;border-radius:12px;}
 }
 @media(min-width:769px){
   .mobile-menu-btn{display:none !important;}
