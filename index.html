@@ -792,6 +792,7 @@
         <div class="lp-nav-inner">
           <div class="lp-nav-desktop">
             <a href="#lp-features" class="lp-nav-link">Haqqımızda</a>
+            <a href="#lp-modules" class="lp-nav-link">Modullar</a>
             <a href="#lp-footer" class="lp-nav-link">Əlaqə</a>
             <button type="button" class="lp-nav-cta" onclick="openLoginModal()">
               Daxil ol <i class="fas fa-arrow-right"></i>
@@ -803,6 +804,7 @@
         </div>
         <div class="lp-nav-mobile" id="lpNavMobile" style="display:none">
           <a href="#lp-features" class="lp-nav-mobile-link" onclick="closeLpMenu()">Haqqımızda</a>
+          <a href="#lp-modules" class="lp-nav-mobile-link" onclick="closeLpMenu()">Modullar</a>
           <a href="#lp-footer" class="lp-nav-mobile-link" onclick="closeLpMenu()">Əlaqə</a>
           <button type="button" class="lp-nav-mobile-cta" onclick="openLoginModal(); closeLpMenu();">Daxil ol</button>
         </div>
@@ -945,12 +947,28 @@
         </div>
       </section>
 
-      <section class="lp-stats">
-        <div class="lp-stats-grid">
-          <div class="lp-stat"><div class="lp-stat-val">10k+</div><div class="lp-stat-lbl">İstifadəçi</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">500+</div><div class="lp-stat-lbl">Müəssisə</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">24/7</div><div class="lp-stat-lbl">Dəstək</div></div>
-          <div class="lp-stat"><div class="lp-stat-val">SSL</div><div class="lp-stat-lbl">Təhlükəsizlik</div></div>
+      <section class="lp-modules" id="lp-modules">
+        <div class="lp-modules-inner">
+          <div class="lp-modules-head">
+            <h2>Sistem modulları</h2>
+            <p>Tətbiqdə mövcud əsas bölmələr — vahid interfeysdən idarə olunur.</p>
+          </div>
+          <div class="lp-modules-grid" role="list">
+            <div class="lp-mod" role="listitem"><i class="fas fa-gauge" aria-hidden="true"></i><span>Xülasə</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-users" aria-hidden="true"></i><span>Müştərilər</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-truck" aria-hidden="true"></i><span>Təchizatçılar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-box-open" aria-hidden="true"></i><span>Məhsullar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-cart-flatbed" aria-hidden="true"></i><span>Alışlar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-warehouse" aria-hidden="true"></i><span>Anbar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-cash-register" aria-hidden="true"></i><span>Satışlar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-id-badge" aria-hidden="true"></i><span>Əməkdaşlar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i><span>Debitor borclar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-hand-holding-dollar" aria-hidden="true"></i><span>Kreditor borclar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-coins" aria-hidden="true"></i><span>Kassa</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-building-columns" aria-hidden="true"></i><span>Hesablar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-chart-bar" aria-hidden="true"></i><span>Hesabatlar</span></div>
+            <div class="lp-mod" role="listitem"><i class="fas fa-shield-halved" aria-hidden="true"></i><span>Audit jurnalı</span></div>
+          </div>
         </div>
       </section>
 
@@ -1009,6 +1027,7 @@
             <h4 class="lp-footer-h">Naviqasiya</h4>
             <ul class="lp-footer-ul">
               <li><a href="#lp-features">Haqqımızda</a></li>
+              <li><a href="#lp-modules">Modullar</a></li>
               <li><a href="#lp-footer">Əlaqə</a></li>
             </ul>
           </div>
