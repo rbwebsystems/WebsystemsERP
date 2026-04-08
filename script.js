@@ -10531,7 +10531,7 @@ const LANGS = {
     spotlight_hint: "Axtar: müştəri, məhsul, qaimə, bölmə...", code: "Kod",
     nav_dash: "Nəzarət paneli", nav_cust: "Müştərilər", nav_supp: "Təchizatçılar",
     nav_prod: "Məhsullar", nav_purch: "Alışlar", nav_stock: "Anbar",
-    nav_sales: "Satışlar", nav_staff: "Əməkdaşlar", nav_debts: "Debitor borclar",
+    nav_sales: "Satışlar", nav_staff: "Əməkdaşlar", nav_debts: "Borclar",
     nav_creditor: "Kreditor borclar", nav_cash: "Kassa", nav_reports: "Hesabatlar",
     nav_audit: "Audit log",
   },
