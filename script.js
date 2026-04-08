@@ -10766,6 +10766,10 @@ function applyLangToStaticDom() {
     const k = el.getAttribute("data-i18n-title");
     if (k) el.setAttribute("title", t(k));
   });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    const k = el.getAttribute("data-i18n-aria-label");
+    if (k) el.setAttribute("aria-label", t(k));
+  });
   document.querySelectorAll("[data-i18n-html]").forEach((el) => {
     const k = el.getAttribute("data-i18n-html");
     if (k) el.innerHTML = t(k);
