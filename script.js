@@ -4010,18 +4010,11 @@ function clearSalePickerFields() {
   toggleSaleQty();
 }
 
-function handleSaleItemChange(skipAutoAdd) {
+function handleSaleItemChange() {
   fillSaleAmountFromSelectedItem();
   toggleSaleQty();
   if (typeof window.__saleUpdateHint === "function") window.__saleUpdateHint();
   recalcCredit();
-  if (!skipAutoAdd && window.__saleAutoAddEnabled) {
-    const selected = byId("f_s_item")?.value || "";
-    if (!selected) return;
-    const amt = n(byId("f_s_amount")?.value);
-    if (amt <= 0) return;
-    addSaleDraftItem();
-  }
 }
 
 function searchSaleItem() {
@@ -4034,16 +4027,7 @@ function searchSaleItem() {
   const exactMatches = getSaleItemCatalog().filter((item) => Array.isArray(item.autoTokens) && item.autoTokens.includes(normalized));
   if (exactMatches.length !== 1) return;
   renderSaleItemOptions(q, exactMatches[0].value);
-  handleSaleItemChange(false);
-}
-
-function trySaleAutoAddOnPrice() {
-  if (!window.__saleAutoAddEnabled) return;
-  const selected = byId("f_s_item")?.value || "";
-  if (!selected) return;
-  const amt = n(byId("f_s_amount")?.value);
-  if (amt <= 0) return;
-  addSaleDraftItem(true);
+  handleSaleItemChange();
 }
 
 function syncSalePaymentInputState() {
@@ -4750,7 +4734,7 @@ function openSale(idx = null) {
             <div id="saleQtyBox" style="display:none;">
               <div class="f-group"><label>Say</label><input type="number" step="1" min="1" id="f_s_qty" placeholder="Ədəd sayı"></div>
             </div>
-            <div class="f-group"><label>Qiymət (AZN)</label><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" ${isEdit ? "required" : ""} oninput="if(window.__saleUpdateHint)window.__saleUpdateHint();recalcCredit();trySaleAutoAddOnPrice()"></div>
+            <div class="f-group"><label>Qiymət (AZN)</label><div style="display:flex;gap:6px;align-items:center"><input type="number" step="0.01" id="f_s_amount" placeholder="0.00" style="flex:1" ${isEdit ? "required" : ""} oninput="if(window.__saleUpdateHint)window.__saleUpdateHint();recalcCredit()"><button type="button" class="btn-main" onclick="addSaleDraftItem()" style="white-space:nowrap;padding:8px 14px">+ Əlavə et</button></div></div>
             <div id="sTotalHint" class="hint-line grid-span-2 muted small" style="display:none">Cəmi: —</div>
           </div>
         </div>
