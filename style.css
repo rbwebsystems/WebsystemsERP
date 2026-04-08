@@ -772,12 +772,19 @@ body.theme-dark .profile-dropdown-sep{background:#4b5563;}
 }
 a.nav-link{
   text-decoration:none;
-  color:inherit;
+  /* inherit body mətn rəngi sidebarı qara edir — sidebar üçün açıq rəng */
+  color:rgba(255,255,255,.68);
   box-sizing:border-box;
 }
-a.nav-link:visited{color:inherit;}
+a.nav-link:visited{color:rgba(255,255,255,.68);}
 body.theme-dark a.nav-link:visited{color:rgba(255,255,255,.68);}
 body.theme-dark a.nav-link.active:visited{color:#93c5fd;}
+button.nav-link{
+  font-family:inherit;
+  text-align:left;
+  -webkit-appearance:none;
+  appearance:none;
+}
 .nav-link::before,.nav-link::after{content:none;}
 .nav-link .nav-text{font-size:.875rem;font-weight:500;}
 .dev-menu{margin-top:0;margin-bottom:0;display:flex;flex-direction:column;}
@@ -3925,13 +3932,17 @@ body.theme-dark .modal.modal--popup.modal--open{
   padding:0;
   overflow:hidden;
   top:68px !important;
-  /* .header-rest ilə eyni — "Xoş gəldiniz" mətninin sol xətti */
+  left:var(--app-sidebar-w);
+  right:0;
+  bottom:0;
+  width:auto;
+  /* Overlay + panel yalnız sidebar-dan sonrakı əsas sahəni əhatə edir (100vw − sidebar; logo sütunu daxil) */
   --so-pad-x:28px;
 }
 .modal.modal--slideover .modal-body{
-  width:calc(100vw - var(--app-sidebar-w));
+  width:100%;
   min-width:unset;
-  max-width:100vw;
+  max-width:100%;
   height:calc(100vh - 68px);
   max-height:calc(100vh - 68px);
   border-radius:0;
@@ -4511,6 +4522,7 @@ body.theme-dark textarea:focus{
   transition:background .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease;
   display:inline-flex;align-items:center;justify-content:center;min-width:28px;min-height:28px;
 }
+a.icon-btn{text-decoration:none;box-sizing:border-box;}
 .icon-btn i{pointer-events:none;font-size:.85rem;}
 .icon-btn.info{background:#e0f2fe;color:#0369a1;}
 .icon-btn.info:hover{background:#bfdbfe;box-shadow:0 3px 8px rgba(59,130,246,.35);transform:translateY(-1px);}
@@ -5138,8 +5150,12 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .dash-charts{grid-template-columns:1fr !important;}
   .content-header{flex-wrap:wrap;gap:8px;padding:0 0 10px;}
   .content-header-actions{flex-wrap:wrap;gap:6px;}
-  .modal.modal--slideover{--so-pad-x:12px;}
-  .modal.modal--slideover .modal-body{width:100vw;min-width:unset;border-radius:0;}
+  .modal.modal--slideover{
+    --so-pad-x:12px;
+    left:0 !important;
+    right:0;
+  }
+  .modal.modal--slideover .modal-body{width:100%;min-width:unset;border-radius:0;}
   .modal.modal--popup .modal-body{max-width:100vw;border-radius:12px;}
 }
 @media(min-width:769px){

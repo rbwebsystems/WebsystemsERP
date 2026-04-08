@@ -11,32 +11,63 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="login-open">
+  <script>
+  (function () {
+    var META_KEY = "bakfon_erp_meta_v1";
+    var ALLOW = { dash: 1, cash: 1, sales: 1, purch: 1, stock: 1, cust: 1, supp: 1, prod: 1, debts: 1, staff: 1, reports: 1, users: 1, audit: 1, trash: 1, companies: 1, tools: 1, overdue: 1, creditor: 1 };
+    function pickSection() {
+      try {
+        var raw = (location.hash || "").replace(/^#/, "");
+        var base = raw.split("?")[0];
+        var m = base.match(/^\/([a-z][a-z0-9_]*)$/i);
+        if (m) {
+          var x = m[1].toLowerCase();
+          if (ALLOW[x]) return x;
+        }
+      } catch (e) {}
+      try {
+        var ls = sessionStorage.getItem("bakfon_lastSection");
+        if (ls && ALLOW[ls]) return ls;
+      } catch (e) {}
+      return "dash";
+    }
+    window.__erpBootSec = pickSection();
+    try {
+      var raw = localStorage.getItem(META_KEY);
+      if (!raw) return;
+      var p = JSON.parse(raw);
+      if (p && p.session && p.session.companyId) {
+        document.body.classList.remove("login-open");
+      }
+    } catch (e) {}
+  })();
+  </script>
   <div id="appShell">
   <aside>
     <div class="sidebar-user-info" id="sidebarUserInfo"></div>
     <nav>
-      <a class="nav-link active" href="#/dash" data-sec="dash" data-tip="Dashboard"><i class="fas fa-gauge"></i><span class="nav-text">Dashboard</span></a>
-      <a class="nav-link" href="#/cash" data-sec="cash" data-tip="Kassa"><i class="fas fa-coins"></i><span class="nav-text">Kassa</span></a>
+      <button type="button" class="nav-link active" data-sec="dash" data-tip="Dashboard"><i class="fas fa-gauge"></i><span class="nav-text">Dashboard</span></button>
+      <button type="button" class="nav-link" data-sec="cash" data-tip="Kassa"><i class="fas fa-coins"></i><span class="nav-text">Kassa</span></button>
       <div class="nav-sep"></div>
-      <a class="nav-link" href="#/sales" data-sec="sales" data-tip="Satışlar"><i class="fas fa-receipt"></i><span class="nav-text">Satışlar</span></a>
-      <a class="nav-link" href="#/purch" data-sec="purch" data-tip="Alışlar"><i class="fas fa-cart-flatbed"></i><span class="nav-text">Alışlar</span></a>
-      <a class="nav-link" href="#/stock" data-sec="stock" data-tip="Anbar"><i class="fas fa-warehouse"></i><span class="nav-text">Anbar</span></a>
+      <button type="button" class="nav-link" data-sec="sales" data-tip="Satışlar"><i class="fas fa-receipt"></i><span class="nav-text">Satışlar</span></button>
+      <button type="button" class="nav-link" data-sec="purch" data-tip="Alışlar"><i class="fas fa-cart-flatbed"></i><span class="nav-text">Alışlar</span></button>
+      <button type="button" class="nav-link" data-sec="stock" data-tip="Anbar"><i class="fas fa-warehouse"></i><span class="nav-text">Anbar</span></button>
       <div class="nav-sep"></div>
-      <a class="nav-link" href="#/cust" data-sec="cust" data-tip="Müştərilər"><i class="fas fa-users"></i><span class="nav-text">Müştərilər</span></a>
-      <a class="nav-link" href="#/supp" data-sec="supp" data-tip="Təchizatçılar"><i class="fas fa-truck"></i><span class="nav-text">Təchizatçı</span></a>
-      <a class="nav-link" href="#/prod" data-sec="prod" data-tip="Məhsullar"><i class="fas fa-box-open"></i><span class="nav-text">Məhsullar</span></a>
+      <button type="button" class="nav-link" data-sec="cust" data-tip="Müştərilər"><i class="fas fa-users"></i><span class="nav-text">Müştərilər</span></button>
+      <button type="button" class="nav-link" data-sec="supp" data-tip="Təchizatçılar"><i class="fas fa-truck"></i><span class="nav-text">Təchizatçı</span></button>
+      <button type="button" class="nav-link" data-sec="prod" data-tip="Məhsullar"><i class="fas fa-box-open"></i><span class="nav-text">Məhsullar</span></button>
       <div class="nav-sep"></div>
-      <a class="nav-link" href="#/debts" data-sec="debts" data-tip="Borclar"><i class="fas fa-file-invoice-dollar"></i><span class="nav-text">Borclar</span></a>
-      <a class="nav-link" href="#/staff" data-sec="staff" data-tip="Əməkdaşlar"><i class="fas fa-id-badge"></i><span class="nav-text">Əməkdaşlar</span></a>
-      <a class="nav-link" href="#/reports" data-sec="reports" data-tip="Hesabatlar"><i class="fas fa-chart-bar"></i><span class="nav-text">Hesabatlar</span></a>
+      <button type="button" class="nav-link" data-sec="debts" data-tip="Borclar"><i class="fas fa-file-invoice-dollar"></i><span class="nav-text">Borclar</span></button>
+      <button type="button" class="nav-link" data-sec="staff" data-tip="Əməkdaşlar"><i class="fas fa-id-badge"></i><span class="nav-text">Əməkdaşlar</span></button>
+      <button type="button" class="nav-link" data-sec="reports" data-tip="Hesabatlar"><i class="fas fa-chart-bar"></i><span class="nav-text">Hesabatlar</span></button>
       <div class="nav-sep"></div>
-      <a class="nav-link admin-only" href="#/users" data-sec="users" data-tip="İstifadəçilər"><i class="fas fa-user-shield"></i><span class="nav-text">İstifadəçi</span></a>
-      <a class="nav-link admin-only" href="#/audit" data-sec="audit" data-tip="Audit"><i class="fas fa-shield-halved"></i><span class="nav-text">Audit</span></a>
-      <a class="nav-link admin-only" href="#/trash" data-sec="trash" data-tip="Səbət"><i class="fas fa-trash-can"></i><span class="nav-text">Səbət</span></a>
+      <button type="button" class="nav-link admin-only" data-sec="users" data-tip="İstifadəçilər"><i class="fas fa-user-shield"></i><span class="nav-text">İstifadəçi</span></button>
+      <button type="button" class="nav-link admin-only" data-sec="audit" data-tip="Audit"><i class="fas fa-shield-halved"></i><span class="nav-text">Audit</span></button>
+      <button type="button" class="nav-link admin-only" data-sec="trash" data-tip="Səbət"><i class="fas fa-trash-can"></i><span class="nav-text">Səbət</span></button>
       <div class="nav-link dev-only dev-toggle" onclick="toggleDevMenu()" data-tip="Developer"><i class="fas fa-user-gear"></i><span class="nav-text">Dev</span></div>
       <div id="devMenu" class="dev-only dev-menu" style="display:none;">
-        <a class="nav-link dev-sub" href="#/companies" data-sec="companies"><i class="fas fa-city"></i><span class="nav-text">Şirkətlər</span></a>
-        <a class="nav-link dev-sub" href="#/tools" data-sec="tools"><i class="fas fa-screwdriver-wrench"></i><span class="nav-text">Alətlər</span></a>
+        <button type="button" class="nav-link dev-sub" data-sec="companies"><i class="fas fa-city"></i><span class="nav-text">Şirkətlər</span></button>
+        <button type="button" class="nav-link dev-sub" data-sec="tools"><i class="fas fa-screwdriver-wrench"></i><span class="nav-text">Alətlər</span></button>
       </div>
     </nav>
     <div class="sidebar-brand" id="sidebarBrand">
@@ -100,7 +131,7 @@
     <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
 
   <main>
-    <div id="dash" class="section active">
+    <div id="dash" class="section">
       <div class="content-header"><h1 data-i18n="nav_dash">Nəzarət paneli</h1></div>
       <div class="stats-grid">
         <div class="card stat-card"><small data-i18n="dash_stat_cust">Müştəri</small><h2 id="st-cust">0</h2></div>
@@ -775,6 +806,19 @@
       </div>
     </div>
 
+  <script>
+  (function () {
+    var sec = window.__erpBootSec || "dash";
+    var ALLOW = { dash: 1, cash: 1, sales: 1, purch: 1, stock: 1, cust: 1, supp: 1, prod: 1, debts: 1, staff: 1, reports: 1, users: 1, audit: 1, trash: 1, companies: 1, tools: 1, overdue: 1, creditor: 1 };
+    if (!ALLOW[sec]) sec = "dash";
+    document.querySelectorAll("#appShell main .section").forEach(function (el) {
+      el.classList.toggle("active", el.id === sec);
+    });
+    document.querySelectorAll("aside nav .nav-link[data-sec]").forEach(function (el) {
+      el.classList.toggle("active", el.getAttribute("data-sec") === sec);
+    });
+  })();
+  </script>
   </main>
   </div>
   </div>

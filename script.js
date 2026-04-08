@@ -402,7 +402,7 @@ function renderAccountsManagerTable() {
         <td>${escapeHtml(a.type)}</td>
         <td>${money(bal)} AZN</td>
         <td class="tbl-actions">
-          ${userCanEdit() ? `<button class="icon-btn edit" onclick="openAccount(${i})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("cash", "accountEdit", i)}" onclick="openAccount(${i});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
           ${userCanDelete("accounts") ? `<button class="icon-btn delete" onclick="delAccount(${i})" title="Sil" ${delDisabled}><i class="fas fa-trash"></i></button>` : ""}
         </td>
       </tr>`;
@@ -2113,11 +2113,155 @@ function updateHeaderDateTime() {
   el.textContent = dateStr + "  " + timeStr;
 }
 
-/** URL: #/dash, #/sales, … — ana səhifə #lp-* ilə qarışmır (slash ilə başlayır). */
+/** URL: #/dash, #/sales, … — sorğu sətri (dərin keçid) ayrıca emal olunur. */
 function parseAppSectionFromHash() {
   const raw = String(location.hash || "").replace(/^#/, "");
-  const m = raw.match(/^\/([a-z][a-z0-9_]*)$/i);
+  const pathOnly = raw.split("?")[0] || "";
+  const m = pathOnly.match(/^\/([a-z][a-z0-9_]*)$/i);
   return m ? m[1].toLowerCase() : null;
+}
+
+/** Məs: #/cust?o=custInfo&v=3 */
+function parseHashRouteQuery() {
+  const raw = String(location.hash || "").replace(/^#/, "");
+  const qIdx = raw.indexOf("?");
+  const pathPart = (qIdx >= 0 ? raw.slice(0, qIdx) : raw) || "";
+  const m = pathPart.match(/^\/([a-z][a-z0-9_]*)$/i);
+  if (!m) return null;
+  const queryPart = qIdx >= 0 ? raw.slice(qIdx + 1) : "";
+  let params;
+  try {
+    params = new URLSearchParams(queryPart);
+  } catch {
+    return { sec: m[1].toLowerCase(), op: null, v: null };
+  }
+  return {
+    sec: m[1].toLowerCase(),
+    op: params.get("o"),
+    v: params.get("v"),
+  };
+}
+
+function erpOpHref(sec, op, v) {
+  const s = String(sec || "").toLowerCase();
+  const o = String(op || "");
+  return "#/" + s + "?o=" + encodeURIComponent(o) + "&v=" + encodeURIComponent(v == null ? "" : String(v));
+}
+
+function stripDeepLinkFromHash(sec) {
+  const s = String(sec || "").toLowerCase();
+  try {
+    history.replaceState(null, "", location.pathname + (location.search || "") + "#/" + s);
+  } catch (e) {
+    try {
+      location.hash = "#/" + s;
+    } catch (e2) {}
+  }
+}
+
+function consumeHashDeepLink() {
+  if (!meta?.session) return;
+  const parsed = parseHashRouteQuery();
+  if (!parsed || !parsed.op || parsed.v == null || parsed.v === "") return;
+  const { sec, op, v } = parsed;
+  const run = () => {
+    try {
+      switch (op) {
+        case "custInfo":
+          openCustInfo(Number(v));
+          break;
+        case "custEdit":
+          openCust(Number(v));
+          break;
+        case "suppInfo":
+          openSuppInfo(Number(v));
+          break;
+        case "suppEdit":
+          openSupp(Number(v));
+          break;
+        case "prodEdit":
+          openProd(Number(v));
+          break;
+        case "saleInfo":
+          openSaleInfo(Number(v));
+          break;
+        case "saleEdit":
+          openSale(Number(v));
+          break;
+        case "staffEdit":
+          openStaff(Number(v));
+          break;
+        case "purchEdit":
+          openPurch(Number(v));
+          break;
+        case "purchInfoInv":
+          openPurchInfoByInv(v);
+          break;
+        case "purchInvEdit":
+          openPurchInvoiceEdit(v);
+          break;
+        case "cashInfo":
+          openCashInfo(Number(v));
+          break;
+        case "cashEdit":
+          openEditCashOp(Number(v));
+          break;
+        case "accountEdit":
+          openAccount(Number(v));
+          break;
+        case "companyEdit":
+          openCompany(Number(v));
+          break;
+        case "userEdit":
+          openUser(v);
+          break;
+        case "debtorInfo":
+          openDebtorInfo(v);
+          break;
+        case "overdueInfo":
+          openOverdueInfo(v);
+          break;
+        case "creditorInfo":
+          openCreditorInfo(Number(v));
+          break;
+        case "auditView":
+          openAuditDetails(Number(v));
+          break;
+        default:
+          return;
+      }
+      stripDeepLinkFromHash(sec);
+    } catch (e) {
+      console.warn("Dərin keçid:", e);
+    }
+  };
+  requestAnimationFrame(() => requestAnimationFrame(run));
+}
+
+function bindSidebarNavClicks() {
+  if (window.__sidebarNavClicksBound) return;
+  window.__sidebarNavClicksBound = true;
+  document.addEventListener(
+    "click",
+    (e) => {
+      const btn = e.target.closest("aside nav .nav-link[data-sec]");
+      if (!btn || btn.tagName !== "BUTTON") return;
+      e.preventDefault();
+      const id = btn.getAttribute("data-sec");
+      if (!id) return;
+      if (!meta?.session) {
+        showLoginOverlay(true);
+        return;
+      }
+      if (!userCanSection(id)) {
+        alert("Bu bölməyə icazə yoxdur.");
+        return;
+      }
+      showSec(id, btn);
+      renderAll();
+    },
+    true
+  );
 }
 
 function isValidAppSection(id) {
@@ -2160,6 +2304,8 @@ function onErpHashChange() {
   }
   const nav = findNavLinkForSection(id);
   showSec(id, nav || null, { skipHash: true });
+  renderAll();
+  consumeHashDeepLink();
 }
 
 function showSec(id, el, opts) {
@@ -2167,42 +2313,52 @@ function showSec(id, el, opts) {
     alert("Bu bölməyə icazə yoxdur.");
     return;
   }
-  document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
-  document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
-  const sec = document.getElementById(id);
-  if (sec) {
-    sec.classList.add("active");
+  const skipLoading = opts && opts.skipLoading;
+  if (!skipLoading && meta?.session) softLoadingBegin(false);
+  try {
+    document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
+    document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
+    const sec = document.getElementById(id);
+    if (sec) {
+      sec.classList.add("active");
+    }
+    if (el) el.classList.add("active");
+    if (id === "debts") {
+      document.querySelectorAll(".debt-type-select").forEach((s) => {
+        s.value = "";
+      });
+      updateDebtSubSelectVisibility("");
+      updateDebtSubEnabled();
+      updateDebtSectionVisibility();
+    }
+    refreshHeaderBar();
+    if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
+    if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
+  } finally {
+    if (!skipLoading && meta?.session) {
+      requestAnimationFrame(() => requestAnimationFrame(() => softLoadingEnd()));
+    }
   }
-  if (el) el.classList.add("active");
-  if (id === "debts") {
-    document.querySelectorAll(".debt-type-select").forEach((s) => {
-      s.value = "";
-    });
-    updateDebtSubSelectVisibility("");
-    updateDebtSubEnabled();
-    updateDebtSectionVisibility();
-  }
-  refreshHeaderBar();
-  if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
-  if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
 }
 
 function showDashboardAfterLogin() {
   if (!meta?.session) return;
+  bindSidebarNavClicks();
   const fromHash = parseAppSectionFromHash();
   if (fromHash && isValidAppSection(fromHash) && userCanSection(fromHash)) {
     const nav = findNavLinkForSection(fromHash);
-    showSec(fromHash, nav || null, { skipHash: true });
+    showSec(fromHash, nav || null, { skipHash: true, skipLoading: true });
     try {
       sessionStorage.setItem("bakfon_lastSection", fromHash);
     } catch (e) {}
+    requestAnimationFrame(() => consumeHashDeepLink());
     return;
   }
   try {
     sessionStorage.setItem("bakfon_lastSection", "dash");
   } catch (e) {}
   const dashNav = findNavLinkForSection("dash");
-  showSec("dash", dashNav || null, { skipHash: true });
+  showSec("dash", dashNav || null, { skipHash: true, skipLoading: true });
   syncAppSectionHash("dash");
 }
 
@@ -2327,53 +2483,69 @@ function syncSlideoverContentPad() {
 function openModal(html, opts = {}) {
   const body = document.getElementById("modalContent");
   if (!body) return;
-  const now = Date.now();
-  const alreadyOpen = modal.style.display === "flex";
-  const justClosed = window.__modalJustClosedAt && now - window.__modalJustClosedAt < 350;
-  const curRaw = window.__currentModalRaw || "";
-  if ((alreadyOpen || justClosed) && curRaw) {
-    window.__modalHistory = window.__modalHistory || [];
-    window.__modalHistory.push(curRaw);
-  } else if (!alreadyOpen) {
-    window.__modalHistory = [];
-  }
-  window.__currentModalRaw = html;
-  body.innerHTML = renderModalWithNav(html);
-  layoutModalScrollShell(body);
-  // popup (xəbərdarlıq) vs slide-over
-  if (opts.popup) {
-    modal.classList.add("modal--popup");
-    modal.classList.remove("modal--slideover");
-    body.style.removeProperty("--slideover-pad-left");
-  } else {
-    modal.classList.add("modal--slideover");
-    modal.classList.remove("modal--popup");
-  }
-  modal.style.display = "flex";
-  // slide-in animasiya trigger + başlıq xətti (main-area / header ilə sinxron)
-  requestAnimationFrame(() => {
-    modal.classList.add("modal--open");
-    if (!opts.popup) {
-      syncSlideoverContentPad();
-      requestAnimationFrame(() => syncSlideoverContentPad());
+  const slideover = !opts.popup;
+  if (slideover) softLoadingBegin(false);
+  try {
+    const now = Date.now();
+    const alreadyOpen = modal.style.display === "flex";
+    const justClosed = window.__modalJustClosedAt && now - window.__modalJustClosedAt < 350;
+    const curRaw = window.__currentModalRaw || "";
+    if ((alreadyOpen || justClosed) && curRaw) {
+      window.__modalHistory = window.__modalHistory || [];
+      window.__modalHistory.push(curRaw);
+    } else if (!alreadyOpen) {
+      window.__modalHistory = [];
     }
-  });
-  window.__modalJustClosedAt = 0;
+    window.__currentModalRaw = html;
+    body.innerHTML = renderModalWithNav(html);
+    layoutModalScrollShell(body);
+    // popup (xəbərdarlıq) vs slide-over
+    if (opts.popup) {
+      modal.classList.add("modal--popup");
+      modal.classList.remove("modal--slideover");
+      body.style.removeProperty("--slideover-pad-left");
+    } else {
+      modal.classList.add("modal--slideover");
+      modal.classList.remove("modal--popup");
+    }
+    modal.style.display = "flex";
+    // slide-in animasiya trigger + başlıq xətti (main-area / header ilə sinxron)
+    requestAnimationFrame(() => {
+      modal.classList.add("modal--open");
+      if (!opts.popup) {
+        syncSlideoverContentPad();
+        requestAnimationFrame(() => syncSlideoverContentPad());
+      }
+    });
+    window.__modalJustClosedAt = 0;
+  } finally {
+    if (slideover) {
+      requestAnimationFrame(() => requestAnimationFrame(() => softLoadingEnd()));
+    }
+  }
 }
 function modalBack() {
   const body = document.getElementById("modalContent");
   const hist = window.__modalHistory || [];
   if (!body || !hist.length) return;
-  const prevRaw = hist.pop();
-  window.__currentModalRaw = prevRaw;
-  body.innerHTML = renderModalWithNav(prevRaw);
-  layoutModalScrollShell(body);
-  modal.style.display = "flex";
-  if (modal.classList.contains("modal--slideover")) {
-    requestAnimationFrame(() => {
-      syncSlideoverContentPad();
-      requestAnimationFrame(() => syncSlideoverContentPad());
-    });
+  const slideover = modal.classList.contains("modal--slideover");
+  if (slideover) softLoadingBegin(false);
+  try {
+    const prevRaw = hist.pop();
+    window.__currentModalRaw = prevRaw;
+    body.innerHTML = renderModalWithNav(prevRaw);
+    layoutModalScrollShell(body);
+    modal.style.display = "flex";
+  } finally {
+    if (slideover) {
+      requestAnimationFrame(() => {
+        syncSlideoverContentPad();
+        requestAnimationFrame(() => {
+          syncSlideoverContentPad();
+          softLoadingEnd();
+        });
+      });
+    }
   }
   // Tarixçədəki HTML boş tbody saxlaya bilər — hesablar siyahısını yenilə.
   if (byId("mdlAccountsTbl")) {
@@ -2881,6 +3053,8 @@ function openCustImport() {
     const isCsv = /\.csv$/i.test(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
+      softLoadingBegin(true);
+      try {
       let rawRows = [];
       try {
         if (isCsv) {
@@ -2968,6 +3142,9 @@ function openCustImport() {
         toast(added + " müştəri əlavə edildi.", "ok", 2500);
       } else {
         toast("Əlavə edilən müştəri yoxdur (FİN təkrarlana bilər və ya məcburi sahələr boşdur).", "warn", 3000);
+      }
+      } finally {
+        softLoadingEnd();
       }
     };
     if (isCsv) reader.readAsText(file, "UTF-8");
@@ -3191,7 +3368,7 @@ function openPurchInvoiceEdit(invNoRaw) {
         <td>${money(unit)} AZN</td>
         <td>${money(p.amount)} AZN</td>
         <td class="tbl-actions">
-          <button class="icon-btn edit" type="button" onclick="closeMdl();openPurch(${idx})" title="Redaktə"><i class="fas fa-pen"></i></button>
+          <a class="icon-btn edit" href="${erpOpHref("purch", "purchEdit", idx)}" onclick="closeMdl();openPurch(${idx});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>
           ${userCanDelete("purch") ? `<button class="icon-btn delete" type="button" onclick="delPurchInvoiceRow(${idx}, '${escapeAttr(invNo)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
         </td>
       </tr>`;
@@ -5092,7 +5269,7 @@ function openStaffReportSales(employeeUid) {
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal || 0)} AZN</td>
         <td>${money(rem)} AZN</td>
-        <td class="tbl-actions"><button class="icon-btn info" onclick="closeMdl(); openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button></td>
+        <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="closeMdl(); openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
       </tr>`;
     })
     .join("");
@@ -5362,7 +5539,7 @@ function openDebtorInfo(customerId) {
         <td>${money(rem)} AZN</td>
         <td><span class="pill ${st}">${debtLabel(st)}</span></td>
         <td class="tbl-actions">
-          <button class="icon-btn info" onclick="openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
+          <a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
           <button class="btn-mini-pay" type="button" onclick="openSalePayment(${idx})" ${payDisabled}>Ödəniş et</button>
         </td>
       </tr>`;
@@ -8326,8 +8503,8 @@ function renderAll() {
         <td>${escapeHtml(c.seriaNum)}</td>
         <td>${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name}`) : "-"}</td>
         <td class="tbl-actions">
-          <button class="icon-btn info" onclick="openCustInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
-          ${canE ? `<button class="icon-btn edit" onclick="openCust(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          <a class="icon-btn info" href="${erpOpHref("cust", "custInfo", idx)}" onclick="openCustInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+          ${canE ? `<a class="icon-btn edit" href="${erpOpHref("cust", "custEdit", idx)}" onclick="openCust(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
           ${canD ? `<button class="icon-btn delete" onclick="delItem('cust', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
         </td>
       </tr>`;
@@ -8351,8 +8528,8 @@ function renderAll() {
       <td>${escapeHtml(s.mob || "-")}</td>
       <td>${escapeHtml(s.voen || "-")}</td>
       <td class="tbl-actions">
-        <button class="icon-btn info" onclick="openSuppInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openSupp(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+        <a class="icon-btn info" href="${erpOpHref("supp", "suppInfo", idx)}" onclick="openSuppInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("supp", "suppEdit", idx)}" onclick="openSupp(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("supp") ? `<button class="icon-btn delete" onclick="delItem('supp', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
     </tr>`
@@ -8374,7 +8551,7 @@ function renderAll() {
       <td>${escapeHtml(p.cat || "-")}</td>
       <td>${escapeHtml(p.subCat || "-")}</td>
       <td class="tbl-actions">
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openProd(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("prod", "prodEdit", idx)}" onclick="openProd(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("prod") ? `<button class="icon-btn delete" onclick="delItem('prod', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
     </tr>`
@@ -8427,8 +8604,8 @@ function renderAll() {
         .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))[0];
       const actor = latestRow ? operationActorName(latestRow, getStaffName(latestRow.employeeId) || "-") : "-";
       const actions = `
-        <button class="icon-btn info" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}')" title="Məlumat"><i class="fas fa-circle-info"></i></button>
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openPurchInvoiceEdit('${escapeAttr(g.invNo)}')" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+        <a class="icon-btn info" href="${erpOpHref("purch", "purchInfoInv", g.invNo)}" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}');return false;" title="Məlumat"><i class="fas fa-circle-info"></i></a>
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("purch", "purchInvEdit", g.invNo)}" onclick="openPurchInvoiceEdit('${escapeAttr(g.invNo)}');return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("purch") ? `<button class="icon-btn delete" onclick="delPurchInvoice('${escapeAttr(g.invNo)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       `;
       const searchText = [
@@ -8605,8 +8782,8 @@ function renderAll() {
         <td>${money(s.paidTotal)} AZN</td>
         <td>${money(rem)} AZN</td>
         <td class="tbl-actions">
-          <button class="icon-btn info" onclick="openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button>
-          ${userCanEdit() ? `<button class="icon-btn edit" onclick="openSale(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          <a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+          ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("sales", "saleEdit", idx)}" onclick="openSale(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
           ${userCanDelete("sales") ? `<button class="icon-btn delete" onclick="delItem('sales', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           <span style="display:none">${escapeHtml(searchText)}</span>
         </td>
@@ -8632,7 +8809,7 @@ function renderAll() {
       <td>${money(s.baseSalary || 0)} AZN</td>
       <td>${money(s.commPct || 0)}%</td>
       <td class="tbl-actions">
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openStaff(${idx})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("staff") ? `<button class="icon-btn delete" onclick="delItem('staff', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
     </tr>`
@@ -8690,7 +8867,7 @@ function renderAll() {
         <td>${money(g.rem)} AZN</td>
         <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
         <td class="tbl-actions">
-          <button class="icon-btn info" onclick="openDebtorInfo('${escapeAttr(g.customerId)}')" title="Info"><i class="fas fa-circle-info"></i></button>
+          <a class="icon-btn info" href="${erpOpHref("debts", "debtorInfo", g.customerId)}" onclick="openDebtorInfo('${escapeAttr(g.customerId)}');return false;" title="Info"><i class="fas fa-circle-info"></i></a>
           <button class="btn-mini-pay" type="button" onclick="openDebtorPayment('${escapeAttr(g.customerId)}')" ${payDisabled}>Ödəniş et</button>
         </td>
       </tr>`;
@@ -8821,7 +8998,7 @@ function renderAll() {
             <td class="overdue-days-cell"><span class="late-chip ${chipClass}">${x.daysLate}</span></td>
             <td>${escapeHtml(x.zam || "-")}</td>
             <td class="tbl-actions overdue-actions-cell">
-              <button class="icon-btn info overdue-info-btn" type="button" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}')" title="Info"><i class="fas fa-circle-info"></i></button>
+              <a class="icon-btn info overdue-info-btn" href="${erpOpHref("debts", "overdueInfo", x.saleUid)}" onclick="openOverdueInfo('${escapeAttr(x.saleUid)}');return false;" title="Info"><i class="fas fa-circle-info"></i></a>
             </td>
           </tr>`;
         })
@@ -8889,7 +9066,7 @@ function renderAll() {
       <td>${money(g.rem)} AZN</td>
       <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
       <td class="tbl-actions">
-        <button class="icon-btn info" onclick="openCreditorInfo(${credGroups.indexOf(g)})" title="Info"><i class="fas fa-circle-info"></i></button>
+        <a class="icon-btn info" href="${erpOpHref("creditor", "creditorInfo", credGroups.indexOf(g))}" onclick="openCreditorInfo(${credGroups.indexOf(g)});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
       </td>
     </tr>`
     )
@@ -8997,8 +9174,8 @@ function renderAll() {
       <td>${fmtDT(c.date)}</td>
       <td>${escapeHtml(payType)}</td>
       <td class="tbl-actions">
-        <button class="icon-btn info" onclick="openCashInfo(${c.uid})" title="Info"><i class="fas fa-circle-info"></i></button>
-        ${userCanEdit() ? `<button class="icon-btn edit" onclick="openEditCashOp(${c.uid})" title="Redaktə"><i class="fas fa-pen"></i></button>` : ""}
+        <a class="icon-btn info" href="${erpOpHref("cash", "cashInfo", c.uid)}" onclick="openCashInfo(${c.uid});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("cash", "cashEdit", c.uid)}" onclick="openEditCashOp(${c.uid});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("cash") ? `<button class="icon-btn delete" onclick="delCashOp(${c.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
     </tr>`;
@@ -9029,7 +9206,7 @@ function renderAll() {
         <td>${escapeHtml(a.type)}</td>
         <td>${money(bal)} AZN</td>
         <td class="tbl-actions">
-          ${userCanEdit() ? `<button class="icon-btn edit" onclick="openAccount(${i})" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
+          ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("cash", "accountEdit", i)}" onclick="openAccount(${i});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
           ${userCanDelete("accounts") ? `<button class="icon-btn delete" onclick="delAccount(${i})" title="Sil" ${delDisabled}><i class="fas fa-trash"></i></button>` : ""}
         </td>
       </tr>`;
@@ -9054,7 +9231,7 @@ function renderAll() {
           <td>${active ? '<span class="pill paid">AKTİV</span>' : "-"}</td>
           <td class="tbl-actions">
             <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
-            ${isDeveloper() ? `<button class="icon-btn edit" onclick="openCompany(${i})" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies", "companyEdit", i)}" onclick="openCompany(${i});return false;" title="Edit"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
         })
@@ -9083,7 +9260,7 @@ function renderAll() {
           <td>${escapeHtml(u.role || "user")}</td>
           <td>${u.active ? "Aktiv" : "Deaktiv"}</td>
           <td class="tbl-actions">
-            ${(isDeveloper() || isAdmin()) ? `<button class="icon-btn edit" onclick="openUser('${uidAttr}')" title="Edit"><i class="fas fa-pen"></i></button><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            ${(isDeveloper() || isAdmin()) ? `<a class="icon-btn edit" href="${erpOpHref("users", "userEdit", u.uid)}" onclick="openUser('${uidAttr}');return false;" title="Edit"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
       })
@@ -9237,7 +9414,7 @@ function renderAll() {
               <td>${escapeHtml(s.customerName)}</td>
               <td>${escapeHtml(s.productName)}</td>
               <td>${money(s.amount)} AZN</td>
-              <td class="tbl-actions"><button class="icon-btn info" onclick="openSaleInfo(${idx})" title="Info"><i class="fas fa-circle-info"></i></button></td>
+              <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
             </tr>`;
           })
           .join("");
@@ -10003,8 +10180,10 @@ function initApp() {
   }
   runMigrations();
   ensureOverdueTestPack();
-  if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash });
+  if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash, skipLoading: true });
+  bindSidebarNavClicks();
   renderAll();
+  requestAnimationFrame(() => consumeHashDeepLink());
 }
 
 function hideLoading() {
