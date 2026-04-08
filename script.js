@@ -4039,9 +4039,14 @@ function searchSaleItem() {
   const currentValue = byId("f_s_item")?.value || "";
   renderSaleItemOptions(q, currentValue);
   if (!window.__saleAutoAddEnabled || !normalized) return;
-  const exactMatches = getSaleItemCatalog().filter((item) => Array.isArray(item.autoTokens) && item.autoTokens.includes(normalized));
-  if (exactMatches.length !== 1) return;
-  renderSaleItemOptions(q, exactMatches[0].value);
+  const catalog = getSaleItemCatalog();
+  const exactMatches = catalog.filter((item) => Array.isArray(item.autoTokens) && item.autoTokens.includes(normalized));
+  if (!exactMatches.length) return;
+  // Saynan (FIFO/bulk) məhsulda kod uyğunluğu prioritetdir
+  const fifoMatch = exactMatches.filter((item) => item.group === "fifo");
+  const winner = fifoMatch.length === 1 ? fifoMatch[0] : exactMatches.length === 1 ? exactMatches[0] : null;
+  if (!winner) return;
+  renderSaleItemOptions(q, winner.value);
   handleSaleItemChange();
 }
 
