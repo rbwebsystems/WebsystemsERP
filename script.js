@@ -2657,6 +2657,9 @@ function consumeHashDeepLink() {
         case "auditView":
           openAuditDetails(Number(v));
           break;
+        case "repView":
+          setRepView(v);
+          break;
         default:
           return;
       }

@@ -5366,6 +5366,7 @@ body.theme-dark .header-search-hint{background:#2d3748;color:#64748b;}
   font-weight:600;
   color:#1a4754;
   box-shadow:0 1px 4px rgba(0,0,0,.06);
+  text-decoration:none;
 }
 .rep-menu-card i{
   font-size:2.2rem;
