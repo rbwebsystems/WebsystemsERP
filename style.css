@@ -1217,12 +1217,28 @@ select{
   transition:opacity .3s;
 }
 .loading-overlay.hidden{opacity:0;pointer-events:none;}
+.loading-overlay.loading-overlay--soft{
+  background:rgba(15,23,42,.32);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
 .loading-card{
   background:#fff;
   padding:32px 40px;
   border-radius:var(--radius);
   box-shadow:0 20px 50px rgba(0,0,0,.15);
   text-align:center;
+}
+.loading-overlay.loading-overlay--soft .loading-card{
+  padding:24px 32px;
+  box-shadow:0 16px 48px rgba(15,23,42,.1);
+  background:rgba(255,255,255,.94);
+  border:1px solid rgba(226,232,240,.9);
+}
+body.theme-dark .loading-overlay.loading-overlay--soft .loading-card{
+  background:rgba(30,41,59,.92);
+  border-color:rgba(51,65,85,.85);
+  box-shadow:0 16px 48px rgba(0,0,0,.35);
 }
 .loading-spinner{
   width:44px;height:44px;
@@ -1232,8 +1248,50 @@ select{
   animation:spin .8s linear infinite;
   margin:0 auto 16px;
 }
+.loading-overlay.loading-overlay--soft .loading-spinner{
+  width:34px;height:34px;
+  border-width:3px;
+  margin-bottom:12px;
+  opacity:.92;
+}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-card p{margin:0;color:var(--text-muted);font-size:.95rem;}
+.loading-overlay.loading-overlay--soft .loading-card p{font-size:.9rem;}
+
+/* İş zamanı: bulud yazı/oxu — incə üst zolaq */
+.soft-loading-bar{
+  position:fixed;
+  top:0;left:0;right:0;
+  height:3px;
+  z-index:10050;
+  pointer-events:none;
+  overflow:hidden;
+  opacity:1;
+  transition:opacity .22s ease;
+  isolation:isolate;
+}
+.soft-loading-bar.hidden{opacity:0;}
+.soft-loading-bar__track{
+  height:100%;
+  background:rgba(26,71,84,.12);
+}
+body.theme-dark .soft-loading-bar__track{background:rgba(148,163,184,.14);}
+.soft-loading-bar__indeterminate{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:38%;
+  max-width:200px;
+  background:linear-gradient(90deg,transparent,rgba(26,71,84,.55),var(--brand-green),rgba(26,71,84,.55),transparent);
+  border-radius:2px;
+  animation:soft-loading-slide 1.05s ease-in-out infinite;
+}
+body.theme-dark .soft-loading-bar__indeterminate{
+  background:linear-gradient(90deg,transparent,rgba(148,163,184,.35),rgba(56,189,248,.65),rgba(148,163,184,.35),transparent);
+}
+@keyframes soft-loading-slide{
+  0%{transform:translate3d(-120%,0,0);}
+  100%{transform:translate3d(380%,0,0);}
+}
 
 .login-overlay{
   position:fixed;

@@ -1112,11 +1112,16 @@
 
   <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
 
-  <div id="loadingOverlay" class="loading-overlay">
+  <div id="loadingOverlay" class="loading-overlay loading-overlay--soft">
     <div class="loading-card">
       <div class="loading-spinner"></div>
       <p id="loadingText">Yüklənir...</p>
     </div>
+  </div>
+
+  <div id="softLoadingBar" class="soft-loading-bar hidden" role="status" aria-live="polite" aria-label="Yüklənir">
+    <div class="soft-loading-bar__track" aria-hidden="true"></div>
+    <div class="soft-loading-bar__indeterminate" aria-hidden="true"></div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>

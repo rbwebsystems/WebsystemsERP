@@ -45,6 +45,39 @@ function setLoading(text) {
   if (ov) ov.classList.toggle("hidden", !text);
 }
 
+let _softOpDepth = 0;
+let _softOpTimer = null;
+
+/** Yumşaq yükləmə zolağı: immediate=true dərhal; false ≈260ms gecikmə (tez Firestore yazılarında parıltı olmasın). */
+function softLoadingBegin(immediate) {
+  _softOpDepth++;
+  if (_softOpDepth > 1) {
+    if (immediate && _softOpTimer) {
+      clearTimeout(_softOpTimer);
+      _softOpTimer = null;
+      byId("softLoadingBar")?.classList.remove("hidden");
+    }
+    return;
+  }
+  const bar = byId("softLoadingBar");
+  const show = () => {
+    _softOpTimer = null;
+    if (_softOpDepth > 0) bar?.classList.remove("hidden");
+  };
+  if (immediate) show();
+  else _softOpTimer = setTimeout(show, 260);
+}
+
+function softLoadingEnd() {
+  _softOpDepth = Math.max(0, _softOpDepth - 1);
+  if (_softOpDepth > 0) return;
+  if (_softOpTimer) {
+    clearTimeout(_softOpTimer);
+    _softOpTimer = null;
+  }
+  byId("softLoadingBar")?.classList.add("hidden");
+}
+
 function initFirestore() {
   if (!useFirestore() || firestoreInitialized) return;
   try {
@@ -157,24 +190,30 @@ async function loadMetaAsync() {
   return loadMetaSync();
 }
 
-async function loadCompanyDBAsync() {
-  if (!useFirestore()) return loadCompanyDBSync();
-  const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
-  const ref = getCompanyRef(cid);
-  if (!ref) return loadCompanyDBSync();
+async function loadCompanyDBAsync(opts) {
+  const useSoft = !!(opts && opts.soft);
+  if (useSoft) softLoadingBegin(true);
   try {
-    const snap = await ref.get();
-    if (snap.exists) return { ...defaultDB(), ...snap.data() };
-    const local = loadCompanyDBSync();
-    const hasData = local.cust?.length || local.sales?.length || local.staff?.length || local.purch?.length;
-    if (hasData) {
-      await ref.set(JSON.parse(JSON.stringify(local)));
-      return local;
+    if (!useFirestore()) return loadCompanyDBSync();
+    const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
+    const ref = getCompanyRef(cid);
+    if (!ref) return loadCompanyDBSync();
+    try {
+      const snap = await ref.get();
+      if (snap.exists) return { ...defaultDB(), ...snap.data() };
+      const local = loadCompanyDBSync();
+      const hasData = local.cust?.length || local.sales?.length || local.staff?.length || local.purch?.length;
+      if (hasData) {
+        await ref.set(JSON.parse(JSON.stringify(local)));
+        return local;
+      }
+    } catch (e) {
+      console.warn("Firestore company oxuma xətası:", e);
     }
-  } catch (e) {
-    console.warn("Firestore company oxuma xətası:", e);
+    return loadCompanyDBSync();
+  } finally {
+    if (useSoft) softLoadingEnd();
   }
-  return loadCompanyDBSync();
 }
 
 function subscribeRealtime() {
@@ -239,6 +278,7 @@ async function refreshFromCloud(silent) {
     if (!silent) toast("Firestore bağlantısı yoxdur", "err", 2500);
     return;
   }
+  if (!silent) softLoadingBegin(true);
   try {
     const snap = await ref.get();
     if (!snap.exists) {
@@ -261,6 +301,8 @@ async function refreshFromCloud(silent) {
     console.warn("Buluddan yeniləmə xətası:", e);
     const msg = (e && e.message) ? String(e.message) : "Yeniləmə xətası";
     toast(msg, "err", 4000);
+  } finally {
+    if (!silent) softLoadingEnd();
   }
 }
 
@@ -460,7 +502,11 @@ function saveCompanyDB() {
     const ref = getCompanyRef(cid);
     if (ref) {
       const data = JSON.parse(JSON.stringify(db));
-      ref.set(data).catch((e) => console.warn("Firestore company yazma xətası:", e));
+      softLoadingBegin(false);
+      ref
+        .set(data)
+        .catch((e) => console.warn("Firestore company yazma xətası:", e))
+        .finally(() => softLoadingEnd());
     }
   } else {
     localStorage.setItem(companyDBKey(cid), JSON.stringify(db));
@@ -1018,7 +1064,11 @@ function saveMeta() {
     if (ref) {
       const { session, ...rest } = meta || {};
       const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
-      ref.set(data).catch((e) => console.warn("Firestore meta yazma xətası:", e));
+      softLoadingBegin(false);
+      ref
+        .set(data)
+        .catch((e) => console.warn("Firestore meta yazma xətası:", e))
+        .finally(() => softLoadingEnd());
     }
     localStorage.setItem(META_KEY, JSON.stringify(meta));
   } else {
@@ -1592,7 +1642,7 @@ function doLoginWithCompany(companyId) {
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
   if (useFirestore()) {
-    loadCompanyDBAsync().then((data) => {
+    loadCompanyDBAsync({ soft: true }).then((data) => {
       db = data;
       unsubscribeRealtime();
       subscribeRealtime();
@@ -1926,7 +1976,10 @@ function showOfflineBlock(show) {
   const ov = byId("loadingOverlay");
   const txt = byId("loadingText");
   document.body.classList.toggle("offline-block", !!show);
-  if (ov) ov.classList.toggle("hidden", !show);
+  if (ov) {
+    ov.classList.toggle("hidden", !show);
+    ov.classList.toggle("loading-overlay--soft", !show);
+  }
   if (txt && show) txt.textContent = "İnternet yoxdur. Sistem offline işləmək üçün nəzərdə tutulmayıb.";
 }
 
@@ -6486,7 +6539,7 @@ function useCompany(companyId) {
   meta.session.companyId = c.id;
   saveMeta();
   if (useFirestore()) {
-    loadCompanyDBAsync().then((data) => {
+    loadCompanyDBAsync({ soft: true }).then((data) => {
       db = data;
       unsubscribeRealtime();
       subscribeRealtime();
@@ -6508,7 +6561,7 @@ function delCompany(idx) {
     if (meta.companies.length === 0) meta.companies.push({ id: "bakfon", name: "Bakfon" });
     if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
       meta.session.companyId = meta.companies[0].id;
-      if (useFirestore()) loadCompanyDBAsync().then((data) => { db = data; subscribeRealtime(); });
+      if (useFirestore()) loadCompanyDBAsync({ soft: true }).then((data) => { db = data; subscribeRealtime(); });
       else db = loadCompanyDB();
     }
     saveMeta();
@@ -6526,7 +6579,18 @@ function resetCompanyData() {
     const empty = defaultDB();
     if (useFirestore()) {
       const ref = getCompanyRef(cid);
-      if (ref) ref.set(empty).then(() => { db = empty; logEvent("reset", "company", { companyId: cid }); renderAll(); });
+      if (ref) {
+        softLoadingBegin(false);
+        ref
+          .set(empty)
+          .then(() => {
+            db = empty;
+            logEvent("reset", "company", { companyId: cid });
+            renderAll();
+          })
+          .catch((e) => console.warn("Firestore reset xətası:", e))
+          .finally(() => softLoadingEnd());
+      }
     } else {
       localStorage.setItem(companyDBKey(cid), JSON.stringify(empty));
       db = loadCompanyDB();
@@ -9879,6 +9943,12 @@ function initApp() {
 function hideLoading() {
   const loadingEl = byId("loadingOverlay");
   if (loadingEl) loadingEl.classList.add("hidden");
+  if (_softOpTimer) {
+    clearTimeout(_softOpTimer);
+    _softOpTimer = null;
+  }
+  _softOpDepth = 0;
+  byId("softLoadingBar")?.classList.add("hidden");
 }
 
 function getLoginCompanyFromUrl() {
@@ -9906,7 +9976,8 @@ async function init() {
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
   const loadingEl = byId("loadingOverlay");
   if (loadingEl) loadingEl.classList.remove("hidden");
-  byId("loadingText").textContent = useFirestore() ? "Firestore bağlanır..." : "Yüklənir...";
+  const loadingTxt = byId("loadingText");
+  if (loadingTxt) loadingTxt.textContent = "Yüklənir...";
 
   var loadingHidden = false;
   var timeoutId = setTimeout(function () {
@@ -9925,7 +9996,6 @@ async function init() {
     if (useFirestore()) saveMeta();
 
     if (meta.session) {
-      if (byId("loadingText")) byId("loadingText").textContent = "Məlumat yüklənir...";
       db = await loadCompanyDBAsync();
     } else {
       db = defaultDB();
