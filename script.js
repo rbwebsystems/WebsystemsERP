@@ -368,7 +368,7 @@ function accountBalance(accountUid) {
 function accountOptionsHtml(selectedId) {
   ensureAccounts();
   return db.accounts
-    .map((a) => `<option value="${a.uid}" ${String(a.uid) === String(selectedId) ? "selected" : ""}>${escapeHtml(a.name)} (${a.type})</option>`)
+    .map((a) => `<option value="${a.uid}" ${String(a.uid) === String(selectedId) ? "selected" : ""}>${escapeHtml(a.name)}</option>`)
     .join("");
 }
 
@@ -379,7 +379,7 @@ function fillCashAccountSelect() {
   const cur = sel.value || "all";
   sel.innerHTML =
     `<option value="all">Bütün hesablar</option>` +
-    db.accounts.map((a) => `<option value="${a.uid}">${escapeHtml(a.name)} (${a.type})</option>`).join("");
+    db.accounts.map((a) => `<option value="${a.uid}">${escapeHtml(a.name)}</option>`).join("");
   sel.value = cur;
 }
 
@@ -5236,7 +5236,7 @@ function addSalePaymentInternal(sale, amount, date, source) {
   return applied;
 }
 
-function applyCustomerPaymentToDebts(customerId, amount, date, source) {
+function applyCustomerPaymentToDebts(customerId, amount, date, source, saleFilter) {
   let left = Math.max(0, n(amount));
   if (left <= 0) return { applied: 0, remaining: left, allocations: [] };
 
@@ -5244,6 +5244,7 @@ function applyCustomerPaymentToDebts(customerId, amount, date, source) {
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => String(s.customerId) === String(customerId))
     .filter(({ s }) => saleRemaining(s) > 0.000001)
+    .filter(({ s }) => typeof saleFilter === "function" ? saleFilter(s) : true)
     .sort((a, b) => (a.s.date > b.s.date ? 1 : -1));
 
   const allocations = [];
@@ -5983,8 +5984,6 @@ function totalAccountsBalance() {
 
 function openCashOp() {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
-  const custOptions = `<option value="">Müştəri seç</option>` + db.cust.map((c) => `<option value="${c.uid}">${escapeHtml(c.sur)} ${escapeHtml(c.name)} (${c.uid})</option>`).join("");
-  const suppOptions = `<option value="">Təchizatçı seç</option>` + db.supp.map((s) => `<option value="${escapeAttr(s.co)}">${escapeHtml(s.co)} (${s.uid})</option>`).join("");
   const catOptions = db.expenseCats.map((c) => `<option value="${escapeAttr(c.name)}">${escapeHtml(c.name)}</option>`).join("");
   const accOptions = accountOptionsHtml(1);
 
@@ -5996,37 +5995,20 @@ function openCashOp() {
           <div class="form-card-title">Əməliyyat növü</div>
           <div class="grid-2">
             <div class="f-group"><label>Növ</label><select id="cash_kind" onchange="toggleCashKind()">
-          <option value="cust_pay">Müştəri ödənişi (Debitor)</option>
-          <option value="supp_pay">Təchizatçı ödənişi (Kreditor)</option>
-          <option value="transfer">Hesablar arası transfer</option>
-          <option value="income">Mədaxil (digər)</option>
+          <option value="" selected>Seçin</option>
+          <option value="cash_pay">Nağd Ödəniş</option>
+          <option value="credit_pay">Kredit Ödənişi</option>
+          <option value="supp_pay">Kreditor Ödənişi</option>
+          <option value="owner_income">Təsisçidən Mədaxil</option>
           <option value="expense">Xərc</option>
         </select></div>
-          </div>
-        </div>
-        <div class="form-card">
-          <div class="form-card-title">Məbləğ və tarix</div>
-          <div class="grid-2">
-            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cash_date" value="${nowISODateTimeLocal()}" required></div>
-            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="cash_amount" placeholder="0.00" required></div>
-            <div id="cash_acc_box">
-              <div class="f-group"><label>Hesab *</label><select id="cash_acc" required>${accOptions}</select></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="cash_transfer_box" class="form-card" style="display:none;">
-          <div class="form-card-title">Transfer</div>
-          <div class="grid-2">
-            <div class="f-group"><label>Göndərən hesab *</label><select id="cash_from_acc" required>${accOptions}</select></div>
-            <div class="f-group"><label>Alan hesab *</label><select id="cash_to_acc" required>${accOptions}</select></div>
           </div>
         </div>
 
         <div id="cash_customer_box" class="form-card">
           <div class="form-card-title">Müştəri</div>
           <div class="grid-2">
-            <div class="f-group"><label>Müştəri *</label><select id="cash_customer" onchange="refreshCustomerInvoices()" required>${custOptions}</select></div>
+            <div class="f-group"><label>Müştəri *</label><select id="cash_customer" onchange="refreshCustomerInvoices()" required><option value="">Müştəri seç</option></select></div>
             <div class="f-group"><label>Qaimə</label><select id="cash_customer_invoice" onchange="refreshCashPayKind()">
               <option value="">Bütün borclar üzrə bölüşdür</option>
             </select></div>
@@ -6043,24 +6025,28 @@ function openCashOp() {
         <div id="cash_supplier_box" class="form-card" style="display:none;">
           <div class="form-card-title">Təchizatçı</div>
           <div class="grid-2">
-            <div class="f-group"><label>Təchizatçı</label><select id="cash_supplier" onchange="refreshSupplierInvoices()">${suppOptions}</select></div>
+            <div class="f-group"><label>Təchizatçı</label><select id="cash_supplier" onchange="refreshSupplierInvoices()"><option value="">Təchizatçı seç</option></select></div>
             <div class="f-group"><label>Qaimə</label><select id="cash_supplier_invoice">
               <option value="">Qaimə seç (istəyə bağlı)</option>
             </select></div>
           </div>
         </div>
 
+        <div class="form-card">
+          <div class="form-card-title">Məbləğ və tarix</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="cash_amount" placeholder="0.00" required></div>
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="cash_date" value="${nowISODateTimeLocal()}" required></div>
+            <div id="cash_acc_box">
+              <div class="f-group"><label>Hesab *</label><select id="cash_acc" required>${accOptions}</select></div>
+            </div>
+          </div>
+        </div>
+
         <div id="cash_income_box" class="form-card" style="display:none;">
           <div class="form-card-title">Mədaxil</div>
           <div class="grid-2">
-            <div class="f-group"><label>Gəlir mənbəyi</label><select id="cash_income_from" onchange="toggleIncomeSourceBox()">
-              <option value="">Seçin…</option>
-              ${userCanOwnerIncome() ? '<option value="owner">Təsisçi / Sahibkar</option>' : ""}
-              <option value="supplier">Təchizatçı</option>
-              <option value="other">Digər</option>
-            </select></div>
-            <div class="f-group" id="cash_income_supplier_wrap" style="display:none;"><label>Təchizatçı</label><select id="cash_income_supplier">${suppOptions}</select></div>
-            <div class="f-group"><label>Açıqlama</label><input id="cash_income_source" placeholder="məs: Təchizatçıdan qaytarma"></div>
+            <div class="f-group"><label>Açıqlama</label><input id="cash_income_source" value="Təsisçidən mədaxil" placeholder="məs: Təsisçidən mədaxil"></div>
           </div>
         </div>
 
@@ -6109,76 +6095,108 @@ function toggleCashKind() {
   const suppBox = byId("cash_supplier_box");
   const expBox = byId("cash_expense_box");
   const incBox = byId("cash_income_box");
-  const trBox = byId("cash_transfer_box");
   const accBox = byId("cash_acc_box");
   if (!custBox || !expBox) return;
-  if (kind === "expense") {
+  if (kind === "cash_pay" || kind === "credit_pay") {
+    custBox.style.display = "";
+    if (suppBox) suppBox.style.display = "none";
+    if (incBox) incBox.style.display = "none";
+    expBox.style.display = "none";
+    if (accBox) accBox.style.display = "";
+    byId("cash_customer").required = true;
+    byId("cash_acc").required = true;
+    refreshCashCustomers();
+    refreshCustomerInvoices();
+  } else if (kind === "supp_pay") {
+    custBox.style.display = "none";
+    if (suppBox) suppBox.style.display = "";
+    if (incBox) incBox.style.display = "none";
+    expBox.style.display = "none";
+    if (accBox) accBox.style.display = "";
+    byId("cash_customer").required = false;
+    byId("cash_acc").required = true;
+    refreshCashSuppliers();
+    refreshSupplierInvoices();
+  } else if (kind === "owner_income") {
+    custBox.style.display = "none";
+    if (suppBox) suppBox.style.display = "none";
+    if (incBox) incBox.style.display = "";
+    expBox.style.display = "none";
+    if (accBox) accBox.style.display = "";
+    byId("cash_customer").required = false;
+    byId("cash_acc").required = true;
+  } else if (kind === "expense") {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
     if (incBox) incBox.style.display = "none";
     expBox.style.display = "";
-    if (trBox) trBox.style.display = "none";
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = false;
     byId("cash_acc").required = true;
   } else {
+    custBox.style.display = "none";
+    if (suppBox) suppBox.style.display = "none";
+    if (incBox) incBox.style.display = "none";
     expBox.style.display = "none";
-    if (kind === "supp_pay") {
-      custBox.style.display = "none";
-      if (suppBox) suppBox.style.display = "";
-      if (incBox) incBox.style.display = "none";
-      if (trBox) trBox.style.display = "none";
-      if (accBox) accBox.style.display = "";
-      byId("cash_customer").required = false;
-      byId("cash_acc").required = true;
-      refreshSupplierInvoices();
-    } else if (kind === "transfer") {
-      custBox.style.display = "none";
-      if (suppBox) suppBox.style.display = "none";
-      if (incBox) incBox.style.display = "none";
-      if (trBox) trBox.style.display = "";
-      if (accBox) accBox.style.display = "none";
-      byId("cash_customer").required = false;
-      byId("cash_acc").required = false;
-      if (byId("cash_from_acc")) byId("cash_from_acc").required = true;
-      if (byId("cash_to_acc")) byId("cash_to_acc").required = true;
-    } else if (kind === "income") {
-      custBox.style.display = "none";
-      if (suppBox) suppBox.style.display = "none";
-      if (incBox) incBox.style.display = "";
-      if (trBox) trBox.style.display = "none";
-      if (accBox) accBox.style.display = "";
-      byId("cash_customer").required = false;
-      byId("cash_acc").required = true;
-      toggleIncomeSourceBox();
-    } else {
-      custBox.style.display = "";
-      if (suppBox) suppBox.style.display = "none";
-      if (incBox) incBox.style.display = "none";
-      if (trBox) trBox.style.display = "none";
-      if (accBox) accBox.style.display = "";
-      byId("cash_customer").required = true;
-      byId("cash_acc").required = true;
-      refreshCustomerInvoices();
-    }
+    if (accBox) accBox.style.display = "";
+    byId("cash_customer").required = false;
+    byId("cash_acc").required = true;
   }
 }
 
-function toggleIncomeSourceBox() {
-  const from = byId("cash_income_from")?.value || "";
-  const wrap = byId("cash_income_supplier_wrap");
-  if (wrap) wrap.style.display = from === "supplier" ? "" : "none";
-}
-
-function refreshCustomerInvoices() {
-  const customerId = byId("cash_customer")?.value || "";
-  const sel = byId("cash_customer_invoice");
-  if (!sel) return;
-  const inv = db.sales
+function cashCustomerSalesByKind(kind, customerId) {
+  return db.sales
     .filter((s) => String(s.customerId) === String(customerId))
     .filter((s) => !s.returnedAt)
     .filter((s) => saleRemaining(s) > 0.000001)
-    .sort((a, b) => (a.date > b.date ? 1 : -1))
+    .filter((s) => kind === "credit_pay" ? String(s.saleType || "").toLowerCase() === "kredit" : String(s.saleType || "").toLowerCase() !== "kredit")
+    .sort((a, b) => (a.date > b.date ? 1 : -1));
+}
+
+function refreshCashCustomers() {
+  const sel = byId("cash_customer");
+  const kind = byId("cash_kind")?.value || "";
+  if (!sel) return;
+  const customers = [];
+  const seen = new Set();
+  for (const s of db.sales) {
+    if (s.returnedAt || saleRemaining(s) <= 0.000001) continue;
+    const isCredit = String(s.saleType || "").toLowerCase() === "kredit";
+    if (kind === "cash_pay" && isCredit) continue;
+    if (kind === "credit_pay" && !isCredit) continue;
+    const c = db.cust.find((x) => String(x.uid) === String(s.customerId));
+    if (!c || seen.has(String(c.uid))) continue;
+    seen.add(String(c.uid));
+    customers.push(c);
+  }
+  const prev = sel.value || "";
+  sel.innerHTML = `<option value="">Müştəri seç</option>` + customers
+    .sort((a, b) => `${a.sur || ""} ${a.name || ""}`.localeCompare(`${b.sur || ""} ${b.name || ""}`, "az"))
+    .map((c) => `<option value="${c.uid}">${escapeHtml(c.sur)} ${escapeHtml(c.name)}</option>`)
+    .join("");
+  if (prev && seen.has(String(prev))) sel.value = prev;
+}
+
+function refreshCashSuppliers() {
+  const sel = byId("cash_supplier");
+  if (!sel) return;
+  const withDebt = new Set(db.purch.filter((p) => purchRemaining(p) > 0.000001).map((p) => String(p.supp)));
+  const prev = sel.value || "";
+  sel.innerHTML = `<option value="">Təchizatçı seç</option>` + db.supp
+    .filter((s) => withDebt.has(String(s.co)))
+    .sort((a, b) => String(a.co || "").localeCompare(String(b.co || ""), "az"))
+    .map((s) => `<option value="${escapeAttr(s.co)}">${escapeHtml(s.co)}</option>`)
+    .join("");
+  if (prev && withDebt.has(String(prev))) sel.value = prev;
+}
+
+function refreshCustomerInvoices() {
+  refreshCashPayKind();
+  const customerId = byId("cash_customer")?.value || "";
+  const kind = byId("cash_kind")?.value || "";
+  const sel = byId("cash_customer_invoice");
+  if (!sel) return;
+  const inv = cashCustomerSalesByKind(kind, customerId)
     .map((s) => {
       const invNo = s.invNo || invFallback("sales", s.uid);
       return `<option value="${s.uid}">Qaimə #${escapeHtml(invNo)} • ${fmtDT(s.date)} • Qalıq ${money(saleRemaining(s))}</option>`;
@@ -6188,9 +6206,14 @@ function refreshCustomerInvoices() {
 }
 
 function refreshCashPayKind() {
+  const kind = byId("cash_kind")?.value || "";
   const saleUid = byId("cash_customer_invoice")?.value;
   const box = byId("cash_pay_kind_box");
   if (!box) return;
+  if (kind !== "credit_pay") {
+    box.style.display = "none";
+    return;
+  }
   if (!saleUid) {
     box.style.display = "none";
     return;
@@ -6256,63 +6279,24 @@ function saveCashOp(e) {
   const accId = Number(val("cash_acc") || 1);
 
   if (amount <= 0) return;
+  if (!kind) return alert("Əməliyyat növünü seçin.");
 
-  if (kind === "transfer") {
-    const fromAcc = Number(val("cash_from_acc") || 0);
-    const toAcc = Number(val("cash_to_acc") || 0);
-    if (!fromAcc || !toAcc) return alert("Hesab seçin.");
-    if (fromAcc === toAcc) return alert("Eyni hesablar arasında transfer olmaz.");
-    const bal = accountBalance(fromAcc);
-    if (bal + 0.000001 < amount) return alert(`Hesab balansı kifayət etmir. Balans: ${money(bal)} AZN`);
-    const trId = "tr_" + String(Date.now()) + "_" + String(genId(db.cash, 1));
-    addCashOp({
-      type: "out",
-      date,
-      source: `Transfer → ${db.accounts.find((a) => a.uid === toAcc)?.name || toAcc}`,
-      amount,
-      note,
-      link: { kind: "transfer", transferId: trId, from: fromAcc, to: toAcc },
-      accountId: fromAcc,
-    });
-    addCashOp({
-      type: "in",
-      date,
-      source: `Transfer ← ${db.accounts.find((a) => a.uid === fromAcc)?.name || fromAcc}`,
-      amount,
-      note,
-      link: { kind: "transfer", transferId: trId, from: fromAcc, to: toAcc },
-      accountId: toAcc,
-    });
-    logEvent("create", "cash", { type: "transfer", kind: "transfer", amount, from: fromAcc, to: toAcc });
-    saveDB();
-    closeMdl();
-    return;
-  }
-
-  if (kind === "income") {
-    const from = val("cash_income_from");
-    if (from === "owner" && !userCanOwnerIncome()) {
+  if (kind === "owner_income") {
+    if (!userCanOwnerIncome()) {
       alert("Təsisçi mədaxili yalnız admin və ya developer edə bilər.");
       return;
     }
-    const supp = val("cash_income_supplier");
     const src = (val("cash_income_source") || "").trim();
-    const label =
-      from === "owner"
-        ? (src || "Təsisçi mədaxili")
-        : from === "supplier" && supp
-          ? `Təchizatçı mədaxil (${supp})`
-          : (src || "Mədaxil");
     addCashOp({
       type: "in",
       date,
-      source: label,
+      source: src || "Təsisçidən mədaxil",
       amount,
       note,
-      link: { kind: "income", from: from || "other", supp: from === "supplier" ? supp : "" },
+      link: { kind: "income", from: "owner", supp: "" },
       accountId: accId,
     });
-    logEvent("create", "cash", { type: "in", kind: "income", amount, from, supp });
+    logEvent("create", "cash", { type: "in", kind: "income", amount, from: "owner" });
     saveDB();
     closeMdl();
     return;
@@ -6410,11 +6394,13 @@ function saveCashOp(e) {
     if (!s) return;
     if (String(s.customerId) !== String(customerId)) return;
     if (s.returnedAt) return alert("Bu qaimə qaytarılıb.");
+    const isCreditSale = String(s.saleType || "").toLowerCase() === "kredit";
+    if (kind === "cash_pay" && isCreditSale) return alert("Bu bölmədə yalnız nağd qaimələr seçilə bilər.");
+    if (kind === "credit_pay" && !isCreditSale) return alert("Bu bölmədə yalnız kredit qaimələri seçilə bilər.");
     s.payments = s.payments || [];
     const rem = saleRemaining(s);
     const a = Math.min(rem, amount);
     if (a <= 0.000001) return alert("Bu qaimənin borcu yoxdur.");
-    const isCreditSale = String(s.saleType || "").toLowerCase() === "kredit";
     const cashPayKind = isCreditSale ? (val("cash_pay_kind") || "monthly") : "regular";
     const paySource = cashPayKind === "down" ? "down" : cashPayKind === "monthly" ? "monthly" : "cash_module_invoice";
     addSalePaymentInternal(s, a, date, paySource);
@@ -6435,19 +6421,27 @@ function saveCashOp(e) {
     return;
   }
 
-  const applied = applyCustomerPaymentToDebts(customerId, amount, date, "cash_module");
+  const applied = applyCustomerPaymentToDebts(
+    customerId,
+    amount,
+    date,
+    kind === "credit_pay" ? "monthly" : "cash_module",
+    kind === "credit_pay"
+      ? (s) => String(s.saleType || "").toLowerCase() === "kredit"
+      : (s) => String(s.saleType || "").toLowerCase() !== "kredit"
+  );
   if (applied.applied <= 0.000001) {
     alert("Bu müştərinin borcu yoxdur (və ya borc artıq ödənilib).");
     return;
   }
 
-  const generalPayKind = val("cash_pay_kind") || "regular";
+  const generalPayKind = kind === "credit_pay" ? (val("cash_pay_kind") || "monthly") : "regular";
   addCashOp({
     type: "in",
     date,
     source: `Müştəri ödənişi (${cust.sur} ${cust.name})`,
     amount: applied.applied,
-    note: note || `Debitor ödəniş`,
+    note: note || (kind === "credit_pay" ? "Kredit ödənişi" : "Nağd ödəniş"),
     link: { kind: "debtor_payment", customerId },
     meta: { allocations: applied.allocations, payKind: generalPayKind },
     accountId: accId,
@@ -9923,7 +9917,6 @@ Object.assign(window, {
   onDebtTypeChange,
   seedDevTestData,
   toggleCashKind,
-  toggleIncomeSourceBox,
   refreshSubcats,
   refreshCustomerInvoices,
   refreshSupplierInvoices,
