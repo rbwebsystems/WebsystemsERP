@@ -638,6 +638,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
   border:1px solid #e2e8f0;
 }
 .last-saved{
+  display:none !important;
   font-size:.78rem;
   font-weight:600;
   color:#718096;
@@ -655,6 +656,7 @@ body.theme-dark .rbsoft-progress{background:#1f2937;}
 }
 .hidden{display:none !important;}
 .realtime-indicator{
+  display:none !important;
   font-size:.75rem;
   color:#1a4754;
   margin-right:4px;
