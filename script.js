@@ -7059,6 +7059,71 @@ function usersForCurrentCompany() {
   return meta.users.filter((u) => userBelongsToCompany(u, cid));
 }
 
+function normalizeUsernamePart(text) {
+  const map = {
+    ə: "e", Ə: "e",
+    ı: "i", I: "i", İ: "i",
+    ö: "o", Ö: "o",
+    ü: "u", Ü: "u",
+    ğ: "g", Ğ: "g",
+    ş: "s", Ş: "s",
+    ç: "c", Ç: "c",
+    ñ: "n", Ñ: "n",
+  };
+  return String(text || "")
+    .split("")
+    .map((ch) => (Object.prototype.hasOwnProperty.call(map, ch) ? map[ch] : ch))
+    .join("")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildAutoUsernameForUser(fullName, excludeUid) {
+  const cid = String(meta?.session?.companyId || "").trim().toLowerCase();
+  const cleaned = normalizeUsernamePart(fullName);
+  const parts = cleaned.split(" ").filter(Boolean);
+  const first = parts[0] || "user";
+  const surnameInitial = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
+  const suffix = `${first}${surnameInitial}` || "user";
+  const base = `${cid || "company"}_${suffix}`;
+  let candidate = base;
+  let nIdx = 2;
+  while (meta.users.some((u) => Number(u.uid) !== Number(excludeUid || 0) && String(u.username || "").trim().toLowerCase() === candidate)) {
+    candidate = `${base}${nIdx}`;
+    nIdx++;
+  }
+  return candidate;
+}
+
+function getAutoUserFullName() {
+  const manual = !!byId("u_manual_mode")?.checked;
+  if (manual) return val("u_full").trim();
+  const staffUid = (val("u_staff") || "").trim();
+  const staff = (db.staff || []).find((s) => String(s.uid) === String(staffUid));
+  return String(staff?.name || "").trim();
+}
+
+function syncAutoUserIdentity() {
+  const uidVal = (val("u_uid") || "").trim();
+  const isNew = !uidVal;
+  const manual = !!byId("u_manual_mode")?.checked;
+  const fullEl = byId("u_full");
+  const userEl = byId("u_name");
+  const staffWrap = byId("u_staff_wrap");
+  if (!fullEl || !userEl) return;
+  if (staffWrap) staffWrap.style.display = manual ? "none" : "";
+  if (isNew) fullEl.readOnly = !manual;
+  const fullName = getAutoUserFullName();
+  if (isNew && !manual) fullEl.value = fullName;
+  if (isNew) userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+}
+
+function toggleUserManualMode() {
+  syncAutoUserIdentity();
+}
+
 function openUser(uidOrNull = null) {
   if (!isDeveloper() && !isAdmin()) return alert("İcazə yoxdur.");
   const cid = meta?.session?.companyId;
@@ -7161,6 +7226,19 @@ function openUser(uidOrNull = null) {
     })
     .join("");
   const isNew = uidOrNull == null || uidOrNull === "";
+  const usedStaffUids = new Set(
+    usersForCurrentCompany()
+      .filter((x) => String(x.uid) !== String(editingUser.uid || ""))
+      .map((x) => String(x.staffUid || "").trim())
+      .filter(Boolean)
+  );
+  const staffOptions = [
+    `<option value="">— Əməkdaş seçin —</option>`,
+    ...(db.staff || [])
+      .filter((s) => !isNew || !usedStaffUids.has(String(s.uid)))
+      .map((s) => `<option value="${s.uid}" ${String(editingUser.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`),
+  ].join("");
+  const manualChecked = isNew ? false : !editingUser.staffUid;
   openModal(`
     <h2>${isNew ? "Yeni istifadəçi" : "İstifadəçi redaktə"}</h2>
     <form onsubmit="saveUser(event)">
@@ -7169,12 +7247,12 @@ function openUser(uidOrNull = null) {
         <div class="form-card">
           <div class="form-card-title">İstifadəçi</div>
           <div class="grid-2">
-            <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" required></div>
-            <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" ${!isNew ? "disabled" : ""} required></div>
-            <div class="f-group"><label>Əməkdaş</label><select id="u_staff" title="Əməkdaş">
-          <option value="">— Əməkdaş seçin —</option>
-          ${(db.staff || []).map((s) => `<option value="${s.uid}" ${String(editingUser.staffUid || "") === String(s.uid) ? "selected" : ""}>${escapeHtml(s.name)}${s.role ? " - " + escapeHtml(s.role) : ""}</option>`).join("")}
+            ${isNew ? `<label class="chk grid-span-2"><input type="checkbox" id="u_manual_mode" onchange="toggleUserManualMode()"><span>Əməkdaşsız manual istifadəçi yarat</span></label>` : ""}
+            <div class="f-group" id="u_staff_wrap"><label>Əməkdaş ${isNew ? "*" : ""}</label><select id="u_staff" title="Əməkdaş" ${isNew ? 'onchange="syncAutoUserIdentity()"' : ""}>
+          ${staffOptions}
         </select></div>
+            <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" ${isNew ? 'readonly oninput="syncAutoUserIdentity()"' : ""} required></div>
+            <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" readonly required></div>
             <div class="f-group"><label>Rol</label><select id="u_role">
           <option value="user" ${editingUser.role === "user" ? "selected" : ""}>user</option>
           <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>admin</option>
@@ -7214,15 +7292,23 @@ function openUser(uidOrNull = null) {
       </div>
     </form>
   `);
+  if (isNew) {
+    if (byId("u_manual_mode")) byId("u_manual_mode").checked = false;
+    syncAutoUserIdentity();
+  } else if (byId("u_manual_mode")) {
+    byId("u_manual_mode").checked = manualChecked;
+    syncAutoUserIdentity();
+  }
 }
 
 function saveUser(e) {
   e.preventDefault();
   if (!isDeveloper() && !isAdmin()) return;
   const uidVal = (val("u_uid") || "").trim();
-  const fullName = val("u_full").trim();
-  const username = val("u_name").trim();
-  const staffUid = (val("u_staff") || "").trim();
+  const isNew = uidVal === "";
+  const manualMode = isNew && !!byId("u_manual_mode")?.checked;
+  let fullName = val("u_full").trim();
+  let staffUid = (val("u_staff") || "").trim();
   const pass = val("u_pass");
   const role = val("u_role");
   const active = !!byId("u_active")?.checked;
@@ -7242,11 +7328,26 @@ function saveUser(e) {
   const sections = Array.from(document.querySelectorAll(".permSec"))
     .filter((x) => x.checked)
     .map((x) => x.value);
-  if (!username || !pass) return;
   const cid = (meta?.session?.companyId || "").trim().toLowerCase();
-  const prefix = getCompanyIdFromUsername(username);
-  if (uidVal === "") {
+  if (!pass) return;
+  if (isNew) {
     if (!cid) return alert("Cari şirkət müəyyən deyil.");
+    if (!manualMode && !staffUid) return alert("Əməkdaş seçin.");
+    if (staffUid && usersForCurrentCompany().some((u) => String(u.staffUid || "") === String(staffUid))) {
+      return alert("Bu əməkdaş üçün artıq istifadəçi var.");
+    }
+    if (!manualMode) {
+      const staff = (db.staff || []).find((s) => String(s.uid) === String(staffUid));
+      if (!staff) return alert("Əməkdaş tapılmadı.");
+      fullName = String(staff.name || "").trim();
+    } else {
+      staffUid = "";
+    }
+  }
+  const username = buildAutoUsernameForUser(fullName, uidVal || 0);
+  const prefix = getCompanyIdFromUsername(username);
+  if (!fullName || !username) return;
+  if (isNew) {
     if (!prefix || prefix !== cid) return alert("İstifadəçi adı şirkət adı ilə başlamalıdır: " + (meta?.session?.companyId || cid) + "_ (məs: " + (meta?.session?.companyId || cid) + "_rustamb).");
     if (meta.users.some((u) => u.username === username)) return alert("Bu istifadəçi adı var.");
     meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions }, createdAt: nowISODateTimeLocal() });
@@ -7255,6 +7356,11 @@ function saveUser(e) {
     if (idx === -1) return;
     const keep = meta.users[idx];
     if (!isDeveloper() && cid && !userBelongsToCompany(keep, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
+    if (staffUid && usersForCurrentCompany().some((u) => String(u.uid) !== String(uidVal) && String(u.staffUid || "") === String(staffUid))) {
+      return alert("Bu əməkdaş üçün artıq istifadəçi var.");
+    }
+    const staff = staffUid ? (db.staff || []).find((s) => String(s.uid) === String(staffUid)) : null;
+    if (staff) fullName = String(staff.name || "").trim() || fullName;
     meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions } };
   }
   saveMeta();
@@ -10118,6 +10224,8 @@ Object.assign(window, {
   openDebtorInfo,
   openDebtorPayment,
   saveDebtorPayment,
+  syncAutoUserIdentity,
+  toggleUserManualMode,
   refreshFromCloud,
   delItem,
   searchSaleItem,
