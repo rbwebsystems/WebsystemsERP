@@ -700,11 +700,12 @@ function showDebtSub(sectionId, debtType) {
     updateDebtSectionVisibility();
     return;
   }
-  // nagd/korporativ → #debts section, set sale type filter
-  const isDebtsSec = sectionId === "debts" || sectionId === "nagd" || sectionId === "korporativ";
+  // nagd/topdan/korporativ → #debts section, set sale type filter
+  const salesTypes = ["nagd", "topdan", "korporativ"];
+  const isDebtsSec = sectionId === "debts" || salesTypes.includes(sectionId);
   const realSection = isDebtsSec ? "debts" : sectionId;
   const typeVal = debtType !== undefined ? debtType : sectionId;
-  if (typeVal === "nagd" || typeVal === "korporativ") {
+  if (salesTypes.includes(typeVal)) {
     window.__debtsSaleType = typeVal;
   } else {
     window.__debtsSaleType = "";
@@ -721,7 +722,7 @@ function showDebtSub(sectionId, debtType) {
     // Update section title
     const h1 = byId(realSection)?.querySelector("h1");
     if (h1) {
-      const titles = { nagd: "Borclar - Nağd satış", korporativ: "Borclar - Korporativ satış", debts: "Borclar - Debitor", creditor: "Borclar - Kreditor", overdue: "Borclar - Kreditlər" };
+      const titles = { nagd: "Borclar - Nağd satış", topdan: "Borclar - Topdan satış", korporativ: "Borclar - Korporativ satış", debts: "Borclar - Debitor", creditor: "Borclar - Kreditor", overdue: "Borclar - Kreditlər" };
       h1.textContent = titles[typeVal] || titles[realSection] || h1.textContent;
     }
     renderAll();
@@ -736,7 +737,7 @@ function updateDebtSubSelectVisibility(sectionId) {
 
 function updateDebtSubEnabled() {
   const activeType = document.querySelector(".debt-type-select")?.value || "";
-  const isDebtsType = activeType === "nagd" || activeType === "korporativ";
+  const isDebtsType = activeType === "nagd" || activeType === "topdan" || activeType === "korporativ";
   document.querySelectorAll(".debt-sub-select").forEach((el) => {
     const forSec = el.getAttribute("data-debt-sub-for") || "";
     let enabled = false;
@@ -755,7 +756,7 @@ function updateDebtSectionVisibility() {
     byId("overdue")?.classList.contains("active") ? "overdue" :
     "";
   const activeType = document.querySelector(".debt-type-select")?.value || "";
-  const isDebtsType = activeType === "nagd" || activeType === "korporativ";
+  const isDebtsType = activeType === "nagd" || activeType === "topdan" || activeType === "korporativ";
   const showDebts = activeSec === "debts" && isDebtsType && !!(byId("debtsStatus")?.value || "");
   const showCred = activeSec === "creditor" && activeType === "creditor" && !!(byId("credStatus")?.value || "");
   const showOver = activeSec === "overdue" && activeType === "overdue" && !!(byId("overdueView")?.value || "");
@@ -769,7 +770,7 @@ function onDebtTypeChange(sel) {
   if (byId("debtsStatus")) byId("debtsStatus").value = "";
   if (byId("credStatus")) byId("credStatus").value = "";
   if (byId("overdueView")) byId("overdueView").value = "";
-  const sectionId = (value === "nagd" || value === "korporativ") ? "debts" : value;
+  const sectionId = (value === "nagd" || value === "topdan" || value === "korporativ") ? "debts" : value;
   showDebtSub(sectionId, value);
 }
 
@@ -1906,7 +1907,7 @@ function ensureAuditTrash() {
 }
 
 function saleInvPrefix(saleType) {
-  const map = { nagd: "NS", post: "PS", korporativ: "KPS", kredit: "KS", kocurme: "NS" };
+  const map = { nagd: "NS", post: "PS", topdan: "TS", korporativ: "KPS", kredit: "KS", kocurme: "NS" };
   return map[String(saleType || "").toLowerCase()] || "NS";
 }
 
@@ -4790,6 +4791,7 @@ function openSale(idx = null) {
             <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
           <option value="nagd">Nağd</option>
           <option value="post">Post</option>
+          <option value="topdan">Topdan</option>
           <option value="korporativ">Korporativ</option>
           <option value="kredit">Kredit</option>
         </select></div>
@@ -5650,7 +5652,7 @@ function openSaleInfo(idx) {
         <div class="form-card-title">Əsas məlumat</div>
         <div class="grid-2">
           <div class="f-group"><label>Satış tarixi</label><div class="f-static">${fmtDT(s.date)}</div></div>
-          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</div></div>
+          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
           <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
           <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
@@ -5823,7 +5825,7 @@ function openDebtorInfo(customerId, saleTypeFilter) {
   const custName = items[0]?.s.customerName || customerId;
   const totalRem = items.reduce((a, { s }) => a + saleRemaining(s), 0);
   const footPayDis = totalRem <= 0.000001 ? "disabled" : "";
-  const saleTypeLabel = { nagd: "Nağd", post: "Post", korporativ: "Korporativ", kocurme: "Köçürmə" };
+  const saleTypeLabel = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kocurme: "Köçürmə" };
   const typeTitle = stf ? (saleTypeLabel[stf] || stf) + " satış" : "Debitor";
 
   const rows = items
@@ -9249,7 +9251,7 @@ function renderAll() {
         <td>${escapeHtml(s.customerName)}</td>
         <td>${escapeHtml(s.productName)}</td>
         <td>${String(Math.max(1, Math.floor(n(s.qty || 1))))}</td>
-        <td>${escapeHtml({ nagd: "Nağd", post: "Post", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</td>
+        <td>${escapeHtml({ nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</td>
         <td>${escapeHtml(operationActorName(s, s.employeeName || ""))}</td>
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal)} AZN</td>
