@@ -5076,8 +5076,9 @@ async function saveSale(e, idx) {
     const saleType = val("f_s_type");
     const date = val("f_s_date");
     const cust = db.cust.find((c) => String(c.uid) === String(customerId));
-    const staff = db.staff.find((s) => String(s.uid) === String(employeeId));
-    if (!cust || !staff) return alert("Müştəri və əməkdaş seçin.");
+    const staff = employeeId ? db.staff.find((s) => String(s.uid) === String(employeeId)) : null;
+    if (!cust) return alert("Müştəri seçin.");
+    if (!staff && !canChangeSaleStaff()) return alert("Əməkdaş seçin.");
 
     const totalAmount = draft.reduce((a, x) => a + Math.max(0, n(x.amount)), 0);
     const payNow = !!byId("f_pay_now")?.checked;
@@ -5177,8 +5178,8 @@ async function saveSale(e, idx) {
         saleType,
         customerId: cust.uid,
         customerName: `${cust.sur} ${cust.name} ${cust.father}`.trim(),
-        employeeId: staff.uid,
-        employeeName: staff.name,
+        employeeId: staff?.uid ?? "",
+        employeeName: staff?.name ?? "",
         actorName,
         productName: samplePurch ? (samplePurch.name || "") : "",
         code: samplePurch ? (samplePurch.code || "") : "",
