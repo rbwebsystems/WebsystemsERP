@@ -1524,8 +1524,10 @@ function renderReports() {
       const profitShare = totalShares > 0 ? (grossProfitForShare * share / totalShares) : 0;
       // Xərc payı: bütün xərclər bərabər bölünür
       const expShare = equalExpShare;
-      // Xalis xeyir = xeyir payı − xərc payı − çəkilən
-      const net = profitShare - expShare - withdrawn;
+      // Xalis xeyir = xeyir payı − xərc payı (çəkilən buraya daxil deyil)
+      const net = profitShare - expShare;
+      // Qalıq = xalis xeyir − çəkilən
+      const remaining = net - withdrawn;
       totCapital += capital; totWithdraw += withdrawn;
       totProfitShare += profitShare; totExpShareAll += expShare; totNet += net;
       return `<tr>
@@ -1535,8 +1537,9 @@ function renderReports() {
         <td>${money(capital)} AZN</td>
         <td class="${profitShare>=0?"amt-in":"amt-out"}">${money(profitShare)} AZN</td>
         <td class="amt-out">${money(expShare)} AZN</td>
-        <td class="amt-out">${money(withdrawn)} AZN</td>
         <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
+        <td class="amt-out">${money(withdrawn)} AZN</td>
+        <td class="${remaining>=0?"amt-in":"amt-out"}"><strong>${money(remaining)} AZN</strong></td>
         <td class="tbl-actions">
           <button class="btn-mini" onclick="openFounderForm(${fi})" title="Redaktə"><i class="fas fa-pen"></i></button>
           <button class="btn-mini" onclick="openFounderPayHistory(${fi})" title="Tarixçə"><i class="fas fa-clock-rotate-left"></i></button>
@@ -1551,7 +1554,8 @@ function renderReports() {
     setText("rv-fndNet", money(totNet) + " AZN");
     setText("rv-fndCount", String(db.founders.length));
     const fBody = byId("tblRepFounders");
-    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong class="amt-out">${money(totExpShareAll)} AZN</strong></td><td><strong>${money(totWithdraw)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="9">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
+    const totRemaining = totNet - totWithdraw;
+    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong class="amt-out">${money(totExpShareAll)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td><strong class="amt-out">${money(totWithdraw)} AZN</strong></td><td><strong class="${totRemaining>=0?"amt-in":"amt-out"}">${money(totRemaining)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="10">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
 
     // ops table
     const opsBody = byId("tblRepFounderOps");
