@@ -24,6 +24,7 @@ const defaultDB = () => ({
   ],
   audit: [],
   trash: [],
+  founders: [],
   settings: { companyName: "Bakfon", companyAddress: "", companyPhone: "", currency: "AZN", currencySymbol: "₼" },
 });
 
@@ -776,14 +777,15 @@ function onDebtTypeChange(sel) {
 
 // ========= Reports: tab navigation & rendering =========
 const REP_VIEWS = ["sales","purch","staff","expense","stock","pl","cash",
-  "customer","saletype","product","aging","credits","creditor","accounts","daily","returns","staffperf","payments"];
+  "customer","saletype","product","aging","credits","creditor","accounts","daily","returns","staffperf","payments","founders"];
 const REP_TITLES = {
   sales: "Satış hesabatı", purch: "Alış hesabatı", staff: "Əmək haqqı hesabatı",
   expense: "Xərc hesabatı", stock: "Anbar hesabatı", pl: "Mənfəət/Zərər hesabatı",
   cash: "Kassa hesabatı", customer: "Müştəri hesabatı", saletype: "Satış növü üzrə",
   product: "Məhsul satış hesabatı", aging: "Debitor yaşlanma", credits: "Kredit portfeli",
   creditor: "Kreditor (Təchizatçı) hesabatı", accounts: "Hesab hərəkəti", daily: "Günlük hesabat",
-  returns: "Geri qaytarma hesabatı", staffperf: "Əməkdaş fəaliyyəti", payments: "Ödəniş hesabatı"
+  returns: "Geri qaytarma hesabatı", staffperf: "Əməkdaş fəaliyyəti", payments: "Ödəniş hesabatı",
+  founders: "Təsisçi bölməsi",
 };
 
 function setRepView(view) {
@@ -1481,11 +1483,191 @@ function renderReports() {
         <td><strong class="${(totIn-totOut)>=0?"amt-in":"amt-out"}">${money(totIn-totOut)} AZN</strong></td>
         <td colspan="2"></td></tr>` : emptyRow(8));
     }
+  } else if (view === "founders") {
+    if (!db.founders) db.founders = [];
+    const allOps = (db.cash || []).filter((c) => ["owner_income","owner_expense","founder_income","founder_expense"].includes(String(c.link?.kind||"")));
+    const periodOps = allOps.filter((c) => !hasPeriod || inRange(c.date));
+    const monthExpenses = (db.cash || []).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const totalShares = db.founders.reduce((a,f) => a + n(f.share||0), 0);
+
+    let totFndIn = 0, totFndOut = 0, totExpShare = 0, totNet = 0;
+    const founderRows = db.founders.map((f, fi) => {
+      const fIn = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+      const fOut = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+      const share = n(f.share || 0);
+      const expShare = totalShares > 0 ? (monthExpenses * share / totalShares) : 0;
+      const net = fIn - fOut - expShare;
+      totFndIn += fIn; totFndOut += fOut; totExpShare += expShare; totNet += net;
+      return `<tr>
+        <td>${fi+1}</td>
+        <td>${escapeHtml(f.name)}</td>
+        <td>${money(share)}%</td>
+        <td class="amt-in">${money(fIn)} AZN</td>
+        <td class="amt-out">${money(fOut)} AZN</td>
+        <td>${money(expShare)} AZN</td>
+        <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
+        <td class="tbl-actions">
+          <button class="btn-mini" onclick="openFounderForm(${fi})" title="Redaktə"><i class="fas fa-pen"></i></button>
+          <button class="btn-mini" onclick="openFounderPayHistory(${fi})" title="Tarixçə"><i class="fas fa-clock-rotate-left"></i></button>
+          <button class="btn-mini" onclick="openFounderCashOp(${fi},'in')" title="Mədaxil"><i class="fas fa-plus"></i></button>
+          <button class="btn-mini" onclick="openFounderCashOp(${fi},'out')" title="Məxaric"><i class="fas fa-minus"></i></button>
+        </td>
+      </tr>`;
+    }).join("");
+    setText("rv-fndIn", money(totFndIn) + " AZN");
+    setText("rv-fndOut", money(totFndOut) + " AZN");
+    setText("rv-fndExpShare", money(totExpShare) + " AZN");
+    setText("rv-fndNet", money(totNet) + " AZN");
+    setText("rv-fndCount", String(db.founders.length));
+    const fBody = byId("tblRepFounders");
+    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totFndIn)} AZN</strong></td><td><strong>${money(totFndOut)} AZN</strong></td><td><strong>${money(totExpShare)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="8">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
+
+    // ops table
+    const opsBody = byId("tblRepFounderOps");
+    if (opsBody) {
+      opsBody.innerHTML = periodOps.slice().sort((a,b) => (a.date>b.date?-1:1)).map((c,i) => {
+        const f = db.founders.find((x) => String(x.uid) === String(c.link?.founderId));
+        return `<tr><td>${i+1}</td><td>${fmtDT(c.date)}</td>
+          <td><span class="pill ${c.type==="in"?"paid":"unpaid"}">${c.type==="in"?"Mədaxil":"Məxaric"}</span></td>
+          <td>${escapeHtml(f?.name||c.source||"-")}</td>
+          <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
+          <td>${escapeHtml(c.note||"")}</td></tr>`;
+      }).join("") || `<tr><td colspan="6">Bu dövr üçün əməliyyat yoxdur</td></tr>`;
+    }
   }
 }
 
 function setText(id, val) {
   const el = byId(id); if (el) el.innerText = val;
+}
+
+function ensureFounders() { if (!db.founders) db.founders = []; }
+
+function openFounderForm(idx = null) {
+  if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  ensureFounders();
+  const f = idx !== null ? db.founders[idx] : { name: "", share: "", note: "" };
+  openModal(`
+    <h2>${idx !== null ? "Təsisçi redaktə" : "Yeni Təsisçi"}</h2>
+    <form onsubmit="saveFounder(event, ${idx})">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Məlumat</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Ad Soyad *</label><input id="fnd_name" value="${escapeHtml(f.name||"")}" required placeholder="Ad Soyad"></div>
+            <div class="f-group"><label>Faiz payı (%)</label><input type="number" step="0.01" min="0" max="100" id="fnd_share" value="${escapeHtml(String(f.share||""))}" placeholder="məs: 50"></div>
+            <div class="f-group grid-span-2"><label>Qeyd</label><input id="fnd_note" value="${escapeHtml(f.note||"")}" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Əlavə et"}</button>
+        ${idx !== null && userCanDelete("founders") ? `<button class="btn-cancel" type="button" onclick="deleteFounder(${idx})">Sil</button>` : ""}
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveFounder(e, idx) {
+  e.preventDefault();
+  ensureFounders();
+  const name = val("fnd_name").trim();
+  if (!name) return;
+  const share = Math.max(0, n(val("fnd_share")));
+  const note = val("fnd_note").trim();
+  if (idx !== null) {
+    db.founders[idx] = { ...db.founders[idx], name, share, note };
+  } else {
+    db.founders.push({ uid: genId(db.founders, 1), name, share, note, createdAt: nowISODateTimeLocal() });
+  }
+  logEvent(idx !== null ? "update" : "create", "founders", { name });
+  saveDB(); closeMdl(); setRepView("founders");
+}
+
+function deleteFounder(idx) {
+  if (!userCanDelete("founders")) return;
+  appConfirm("Bu təsisçi silinsin?").then((ok) => { if (!ok) return; db.founders.splice(idx, 1); saveDB(); closeMdl(); setRepView("founders"); });
+}
+
+function openFounderCashOp(founderIdx, direction) {
+  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  ensureFounders();
+  const f = db.founders[founderIdx];
+  if (!f) return;
+  const accOptions = accountOptionsHtml(1);
+  openModal(`
+    <h2>Təsisçi ${direction === "in" ? "Mədaxil" : "Məxaric"} — ${escapeHtml(f.name)}</h2>
+    <form onsubmit="saveFounderCashOp(event, ${founderIdx}, '${direction}')">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="grid-2">
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="fnd_op_amount" placeholder="0.00" required></div>
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="fnd_op_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Hesab</label><select id="fnd_op_acc">${accOptions}</select></div>
+            <div class="f-group"><label>Qeyd</label><input id="fnd_op_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveFounderCashOp(e, founderIdx, direction) {
+  e.preventDefault();
+  ensureFounders();
+  const f = db.founders[founderIdx];
+  if (!f) return;
+  const amount = Math.max(0, n(val("fnd_op_amount")));
+  if (!amount) return;
+  const date = val("fnd_op_date");
+  const note = val("fnd_op_note");
+  const accId = Number(val("fnd_op_acc") || 1);
+  if (direction === "out") {
+    const bal = accountBalance(accId);
+    if (bal + 0.000001 < amount) return alert("Balans kifayət etmir.");
+  }
+  addCashOp({
+    type: direction,
+    date,
+    source: `Təsisçi ${direction === "in" ? "mədaxil" : "məxaric"} — ${f.name}`,
+    amount,
+    note,
+    link: { kind: direction === "in" ? "founder_income" : "founder_expense", founderId: f.uid },
+    accountId: accId,
+  });
+  logEvent("create", "cash", { kind: direction === "in" ? "founder_income" : "founder_expense", founderId: f.uid, amount });
+  saveDB(); closeMdl(); setRepView("founders");
+}
+
+function openFounderPayHistory(founderIdx) {
+  ensureFounders();
+  const f = db.founders[founderIdx];
+  if (!f) return;
+  const ops = (db.cash || []).filter((c) => String(c.link?.founderId) === String(f.uid))
+    .slice().sort((a,b) => (a.date>b.date?-1:1));
+  const rows = ops.map((c,i) => `<tr>
+    <td>${i+1}</td><td>${fmtDT(c.date)}</td>
+    <td><span class="pill ${c.type==="in"?"paid":"unpaid"}">${c.type==="in"?"Mədaxil":"Məxaric"}</span></td>
+    <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
+    <td>${escapeHtml((db.accounts||[]).find((a)=>a.uid===Number(c.accountId||1))?.name||"Kassa")}</td>
+    <td>${escapeHtml(c.note||"")}</td></tr>`).join("");
+  openModal(`
+    <h2>Ödəniş tarixçəsi — ${escapeHtml(f.name)}</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Faiz payı</div><div class="info-value">${money(n(f.share))}%</div></div>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="6">Tarixçə boşdur</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeMdl()">Bağla</button></div>
+  `);
 }
 
 function seedDevTestData() {
@@ -7116,6 +7298,7 @@ function openCashOp() {
           <option value="credit_pay">Kredit Ödənişi</option>
           <option value="supp_pay">Kreditor Ödənişi</option>
           <option value="owner_income">Təsisçidən Mədaxil</option>
+          <option value="owner_expense">Təsisçiyə Məxaric</option>
           <option value="transfer">Hesablar arası transfer</option>
           <option value="expense">Xərc</option>
         </select></div>
@@ -7245,7 +7428,7 @@ function toggleCashKind() {
     byId("cash_acc").required = true;
     refreshCashSuppliers();
     refreshSupplierInvoices();
-  } else if (kind === "owner_income") {
+  } else if (kind === "owner_income" || kind === "owner_expense") {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
     if (incBox) incBox.style.display = "";
@@ -7254,6 +7437,11 @@ function toggleCashKind() {
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = false;
     byId("cash_acc").required = true;
+    // Update income box label
+    const incTitle = incBox?.querySelector(".form-card-title");
+    if (incTitle) incTitle.textContent = kind === "owner_income" ? "Mədaxil" : "Məxaric";
+    const incInput = byId("cash_income_source");
+    if (incInput) incInput.value = kind === "owner_income" ? "Təsisçidən mədaxil" : "Təsisçiyə məxaric";
   } else if (kind === "transfer") {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
@@ -7438,22 +7626,26 @@ function saveCashOp(e) {
     return;
   }
 
-  if (kind === "owner_income") {
+  if (kind === "owner_income" || kind === "owner_expense") {
     if (!userCanOwnerIncome()) {
-      alert("Təsisçi mədaxili yalnız admin və ya developer edə bilər.");
+      alert("Təsisçi əməliyyatı yalnız admin və ya developer edə bilər.");
       return;
     }
     const src = (val("cash_income_source") || "").trim();
+    if (kind === "owner_expense") {
+      const bal = accountBalance(accId);
+      if (bal + 0.000001 < amount) return alert("Balans kifayət etmir.");
+    }
     addCashOp({
-      type: "in",
+      type: kind === "owner_income" ? "in" : "out",
       date,
-      source: src || "Təsisçidən mədaxil",
+      source: src || (kind === "owner_income" ? "Təsisçidən mədaxil" : "Təsisçiyə məxaric"),
       amount,
       note,
-      link: { kind: "income", from: "owner", supp: "" },
+      link: { kind: kind === "owner_income" ? "owner_income" : "owner_expense", from: "owner" },
       accountId: accId,
     });
-    logEvent("create", "cash", { type: "in", kind: "income", amount, from: "owner" });
+    logEvent("create", "cash", { type: kind === "owner_income" ? "in" : "out", kind, amount });
     saveDB();
     closeMdl();
     return;
@@ -11385,6 +11577,12 @@ Object.assign(window, {
   filterDebts,
   filterCreditOnly,
   filterCreditor,
+  openFounderForm,
+  saveFounder,
+  deleteFounder,
+  openFounderCashOp,
+  saveFounderCashOp,
+  openFounderPayHistory,
   applyJobPreset,
   toggleAllUserPerms,
   toggleAllUserSecs,

@@ -895,6 +895,10 @@
             <i class="fas fa-money-bill-transfer"></i>
             <span>Ödəniş hesabatı</span>
           </a>
+          <a class="rep-menu-card" href="#/reports?o=repView&v=founders" onclick="setRepView('founders');return false;">
+            <i class="fas fa-user-tie"></i>
+            <span>Təsisçi bölməsi</span>
+          </a>
         </div>
       </div>
 
@@ -1204,6 +1208,34 @@
             <table>
               <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Müştəri/Təchizatçı</th><th>Qaimə</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
               <tbody id="tblRepPayments"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Təsisçi bölməsi -->
+        <div id="repSec-founders" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="margin:0;font-size:1.05rem">Təsisçilər</h2>
+            <button class="btn-main" type="button" onclick="openFounderForm(null)"><i class="fas fa-plus"></i> Təsisçi əlavə et</button>
+          </div>
+          <div class="grid-5" style="margin-bottom:16px">
+            <div class="card stat-card"><small>Cəmi mədaxil</small><h2 id="rv-fndIn">0.00</h2></div>
+            <div class="card stat-card"><small>Cəmi məxaric</small><h2 id="rv-fndOut">0.00</h2></div>
+            <div class="card stat-card"><small>Aylıq xərc payı</small><h2 id="rv-fndExpShare">0.00</h2></div>
+            <div class="card stat-card"><small>Xalis xeyir</small><h2 id="rv-fndNet">0.00</h2></div>
+            <div class="card stat-card"><small>Təsisçi sayı</small><h2 id="rv-fndCount">0</h2></div>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Ad</th><th>Faiz (%)</th><th>Mədaxil</th><th>Məxaric</th><th>Xərc payı</th><th>Xalis xeyir</th><th>Əməliyyat</th></tr></thead>
+              <tbody id="tblRepFounders"></tbody>
+            </table>
+          </div>
+          <h3 style="margin:16px 0 8px;font-size:.95rem">Bu dövr əməliyyatlar</h3>
+          <div class="card">
+            <table>
+              <thead><tr><th>#</th><th>Tarix</th><th>Növ</th><th>Təsisçi</th><th>Məbləğ</th><th>Qeyd</th></tr></thead>
+              <tbody id="tblRepFounderOps"></tbody>
             </table>
           </div>
         </div>
