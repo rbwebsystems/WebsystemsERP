@@ -1505,26 +1505,36 @@ function renderReports() {
     }, 0);
     const periodExpenses = (db.cash||[]).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
     const periodPayroll = (db.cash||[]).filter((c) => c.type === "out" && ["salary","payroll"].includes(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    const companyProfit = salesRev - cogs - periodExpenses - periodPayroll;
+    // Gross profit (before expenses) split by % share
+    const grossProfit = salesRev - cogs - periodPayroll;
+    // Expenses split equally among founders
+    const numFounders = db.founders.length || 1;
+    const expSharePerFounder = (periodExpenses + periodPayroll) / numFounders;
+    // For display: gross profit split by %, then each deducts equal expense share
+    // Actually: xeyir payı = grossProfit * share% ; xərc payı = expenses / N (bərabər)
+    const grossProfitForShare = salesRev - cogs;  // before expenses & payroll
+    const equalExpShare = (periodExpenses + periodPayroll) / numFounders;
 
-    let totCapital = 0, totWithdraw = 0, totProfitShare = 0, totNet = 0;
+    let totCapital = 0, totWithdraw = 0, totProfitShare = 0, totExpShareAll = 0, totNet = 0;
     const founderRows = db.founders.map((f, fi) => {
-      // Capital = money founder PUT IN (sermaye, not profit)
       const capital = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
-      // Withdrawals = money founder TOOK OUT
       const withdrawn = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
       const share = n(f.share || 0);
-      // Profit share = company net profit × founder's proportional share
-      const profitShare = totalShares > 0 ? (companyProfit * share / totalShares) : 0;
-      // Net benefit = what founder earned minus what they withdrew
-      const net = profitShare - withdrawn;
-      totCapital += capital; totWithdraw += withdrawn; totProfitShare += profitShare; totNet += net;
+      // Xeyir payı: ümumi brüt mənfəətin faiz payı
+      const profitShare = totalShares > 0 ? (grossProfitForShare * share / totalShares) : 0;
+      // Xərc payı: bütün xərclər bərabər bölünür
+      const expShare = equalExpShare;
+      // Xalis xeyir = xeyir payı − xərc payı − çəkilən
+      const net = profitShare - expShare - withdrawn;
+      totCapital += capital; totWithdraw += withdrawn;
+      totProfitShare += profitShare; totExpShareAll += expShare; totNet += net;
       return `<tr>
         <td>${fi+1}</td>
         <td>${escapeHtml(f.name)}</td>
         <td>${money(share)}%</td>
         <td>${money(capital)} AZN</td>
         <td class="${profitShare>=0?"amt-in":"amt-out"}">${money(profitShare)} AZN</td>
+        <td class="amt-out">${money(expShare)} AZN</td>
         <td class="amt-out">${money(withdrawn)} AZN</td>
         <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
         <td class="tbl-actions">
@@ -1535,13 +1545,13 @@ function renderReports() {
         </td>
       </tr>`;
     }).join("");
-    setText("rv-fndIn", money(companyProfit) + " AZN");
+    setText("rv-fndIn", money(grossProfitForShare) + " AZN");
     setText("rv-fndOut", money(totWithdraw) + " AZN");
     setText("rv-fndExpShare", money(totCapital) + " AZN");
     setText("rv-fndNet", money(totNet) + " AZN");
     setText("rv-fndCount", String(db.founders.length));
     const fBody = byId("tblRepFounders");
-    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong>${money(totWithdraw)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="8">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
+    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong class="amt-out">${money(totExpShareAll)} AZN</strong></td><td><strong>${money(totWithdraw)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="9">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
 
     // ops table
     const opsBody = byId("tblRepFounderOps");
