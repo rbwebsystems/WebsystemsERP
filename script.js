@@ -1487,40 +1487,61 @@ function renderReports() {
     if (!db.founders) db.founders = [];
     const allOps = (db.cash || []).filter((c) => ["owner_income","owner_expense","founder_income","founder_expense"].includes(String(c.link?.kind||"")));
     const periodOps = allOps.filter((c) => !hasPeriod || inRange(c.date));
-    const monthExpenses = (db.cash || []).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
     const totalShares = db.founders.reduce((a,f) => a + n(f.share||0), 0);
 
-    let totFndIn = 0, totFndOut = 0, totExpShare = 0, totNet = 0;
+    // Company profit for the period: sales − COGS − expenses − payroll
+    const periodSales = (db.sales||[]).filter((s) => !s.returnedAt && (!hasPeriod || inRange(s.date)));
+    const salesRev = periodSales.reduce((a,s) => a + n(s.amount), 0);
+    const cogs = periodSales.reduce((a,s) => {
+      if (s.bulkPurchUid || (Array.isArray(s.bulkAllocations) && s.bulkAllocations.length)) {
+        const purch = s.bulkAllocations?.length
+          ? db.purch.find((x) => String(x.uid) === String(s.bulkAllocations[0].purchUid))
+          : db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid));
+        const unit = purch ? n(purch.amount) / Math.max(1, Math.floor(n(purch.qty||1))) : 0;
+        return a + unit * Math.max(1, Math.floor(n(s.qty||1)));
+      }
+      const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
+      return a + (p ? n(p.amount) : 0);
+    }, 0);
+    const periodExpenses = (db.cash||[]).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const periodPayroll = (db.cash||[]).filter((c) => c.type === "out" && ["salary","payroll"].includes(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const companyProfit = salesRev - cogs - periodExpenses - periodPayroll;
+
+    let totCapital = 0, totWithdraw = 0, totProfitShare = 0, totNet = 0;
     const founderRows = db.founders.map((f, fi) => {
-      const fIn = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
-      const fOut = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+      // Capital = money founder PUT IN (sermaye, not profit)
+      const capital = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+      // Withdrawals = money founder TOOK OUT
+      const withdrawn = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
       const share = n(f.share || 0);
-      const expShare = totalShares > 0 ? (monthExpenses * share / totalShares) : 0;
-      const net = fIn - fOut - expShare;
-      totFndIn += fIn; totFndOut += fOut; totExpShare += expShare; totNet += net;
+      // Profit share = company net profit × founder's proportional share
+      const profitShare = totalShares > 0 ? (companyProfit * share / totalShares) : 0;
+      // Net benefit = what founder earned minus what they withdrew
+      const net = profitShare - withdrawn;
+      totCapital += capital; totWithdraw += withdrawn; totProfitShare += profitShare; totNet += net;
       return `<tr>
         <td>${fi+1}</td>
         <td>${escapeHtml(f.name)}</td>
         <td>${money(share)}%</td>
-        <td class="amt-in">${money(fIn)} AZN</td>
-        <td class="amt-out">${money(fOut)} AZN</td>
-        <td>${money(expShare)} AZN</td>
+        <td>${money(capital)} AZN</td>
+        <td class="${profitShare>=0?"amt-in":"amt-out"}">${money(profitShare)} AZN</td>
+        <td class="amt-out">${money(withdrawn)} AZN</td>
         <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
         <td class="tbl-actions">
           <button class="btn-mini" onclick="openFounderForm(${fi})" title="Redaktə"><i class="fas fa-pen"></i></button>
           <button class="btn-mini" onclick="openFounderPayHistory(${fi})" title="Tarixçə"><i class="fas fa-clock-rotate-left"></i></button>
-          <button class="btn-mini" onclick="openFounderCashOp(${fi},'in')" title="Mədaxil"><i class="fas fa-plus"></i></button>
-          <button class="btn-mini" onclick="openFounderCashOp(${fi},'out')" title="Məxaric"><i class="fas fa-minus"></i></button>
+          <button class="btn-mini" onclick="openFounderCashOp(${fi},'in')" title="Sermayə qoy"><i class="fas fa-plus"></i></button>
+          <button class="btn-mini" onclick="openFounderCashOp(${fi},'out')" title="Çəkmə"><i class="fas fa-minus"></i></button>
         </td>
       </tr>`;
     }).join("");
-    setText("rv-fndIn", money(totFndIn) + " AZN");
-    setText("rv-fndOut", money(totFndOut) + " AZN");
-    setText("rv-fndExpShare", money(totExpShare) + " AZN");
+    setText("rv-fndIn", money(companyProfit) + " AZN");
+    setText("rv-fndOut", money(totWithdraw) + " AZN");
+    setText("rv-fndExpShare", money(totCapital) + " AZN");
     setText("rv-fndNet", money(totNet) + " AZN");
     setText("rv-fndCount", String(db.founders.length));
     const fBody = byId("tblRepFounders");
-    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totFndIn)} AZN</strong></td><td><strong>${money(totFndOut)} AZN</strong></td><td><strong>${money(totExpShare)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="8">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
+    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong>${money(totWithdraw)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="8">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
 
     // ops table
     const opsBody = byId("tblRepFounderOps");
@@ -1528,9 +1549,9 @@ function renderReports() {
       opsBody.innerHTML = periodOps.slice().sort((a,b) => (a.date>b.date?-1:1)).map((c,i) => {
         const f = db.founders.find((x) => String(x.uid) === String(c.link?.founderId));
         return `<tr><td>${i+1}</td><td>${fmtDT(c.date)}</td>
-          <td><span class="pill ${c.type==="in"?"paid":"unpaid"}">${c.type==="in"?"Mədaxil":"Məxaric"}</span></td>
+          <td><span class="pill ${c.type==="in"?"partial":"unpaid"}">${c.type==="in"?"Qoyulan sermayə":"Çəkilən"}</span></td>
           <td>${escapeHtml(f?.name||c.source||"-")}</td>
-          <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
+          <td class="${c.type==="in"?"":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
           <td>${escapeHtml(c.note||"")}</td></tr>`;
       }).join("") || `<tr><td colspan="6">Bu dövr üçün əməliyyat yoxdur</td></tr>`;
     }
@@ -1597,7 +1618,7 @@ function openFounderCashOp(founderIdx, direction) {
   if (!f) return;
   const accOptions = accountOptionsHtml(1);
   openModal(`
-    <h2>Təsisçi ${direction === "in" ? "Mədaxil" : "Məxaric"} — ${escapeHtml(f.name)}</h2>
+    <h2>Təsisçi ${direction === "in" ? "Sermayə qoyuluşu" : "Məxaric (çəkmə)"} — ${escapeHtml(f.name)}</h2>
     <form onsubmit="saveFounderCashOp(event, ${founderIdx}, '${direction}')">
       <div class="form-stack">
         <div class="form-card">
@@ -1652,8 +1673,8 @@ function openFounderPayHistory(founderIdx) {
     .slice().sort((a,b) => (a.date>b.date?-1:1));
   const rows = ops.map((c,i) => `<tr>
     <td>${i+1}</td><td>${fmtDT(c.date)}</td>
-    <td><span class="pill ${c.type==="in"?"paid":"unpaid"}">${c.type==="in"?"Mədaxil":"Məxaric"}</span></td>
-    <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
+    <td><span class="pill ${c.type==="in"?"partial":"unpaid"}">${c.type==="in"?"Qoyulan sermayə":"Çəkilən"}</span></td>
+    <td class="${c.type==="in"?"":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
     <td>${escapeHtml((db.accounts||[]).find((a)=>a.uid===Number(c.accountId||1))?.name||"Kassa")}</td>
     <td>${escapeHtml(c.note||"")}</td></tr>`).join("");
   openModal(`
