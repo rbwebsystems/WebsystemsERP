@@ -7813,7 +7813,7 @@ function openCompany(idx = null) {
           <div class="form-card-title">Şirkət</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
-            <div class="f-group"><label>Kod (unikal) *</label><input id="co_id" placeholder="Kod" value="${escapeHtml(c.id || "")}" ${idx !== null ? "disabled" : ""} required></div>
+            <div class="f-group"><label>ID (avtomatik)</label><input id="co_id" value="${escapeHtml(c.id || (idx === null ? "Yaradılarkən avtomatik UUID" : ""))}" disabled style="opacity:.6;font-size:.8rem;font-family:monospace"></div>
           </div>
         </div>
       </div>
@@ -7833,17 +7833,24 @@ function openCompany(idx = null) {
   `);
 }
 
+function genCompanyUUID() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 function saveCompany(e, idx) {
   e.preventDefault();
   if (!isDeveloper()) return;
   const name = val("co_name").trim();
-  const id = (val("co_id") || "").trim().toLowerCase();
   const sections = Array.from(document.querySelectorAll(".coSec"))
     .filter((x) => x.checked)
     .map((x) => x.value);
-  if (!name || !id) return;
+  if (!name) return;
   if (idx === null) {
-    if (meta.companies.some((c) => c.id === id)) return alert("Bu kodla şirkət var.");
+    const id = genCompanyUUID();
     meta.companies.push({ id, name, sections });
   } else {
     meta.companies[idx] = { ...meta.companies[idx], name, sections };
