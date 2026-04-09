@@ -1219,18 +1219,30 @@
             <button class="btn-main" type="button" onclick="openFounderForm(null)"><i class="fas fa-plus"></i> Təsisçi əlavə et</button>
           </div>
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card"><small>Şirkət xalis mənfəəti (AZN)</small><h2 id="rv-fndIn">0.00</h2></div>
+            <div class="card stat-card"><small>Brüt mənfəət — Kassa metodu</small><h2 id="rv-fndIn">0.00</h2></div>
+            <div class="card stat-card"><small>Brüt mənfəət — Tahakkuk metodu</small><h2 id="rv-fndIn2">0.00</h2></div>
             <div class="card stat-card"><small>Cəmi çəkilən (məxaric)</small><h2 id="rv-fndOut">0.00</h2></div>
             <div class="card stat-card"><small>Cəmi qoyulan (sərmayə)</small><h2 id="rv-fndExpShare">0.00</h2></div>
-            <div class="card stat-card"><small>Xalis xeyir (mənfəət − çəkilən)</small><h2 id="rv-fndNet">0.00</h2></div>
+            <div class="card stat-card"><small>Xalis xeyir — Kassa (mənfəət − xərc)</small><h2 id="rv-fndNet">0.00</h2></div>
             <div class="card stat-card"><small>Təsisçi sayı</small><h2 id="rv-fndCount">0</h2></div>
           </div>
-          <div class="card">
+
+          <h3 style="margin:0 0 8px;font-size:.95rem">&#x1F4B5; Kassa metodu — yalnız faktiki ödənişlər əsasında</h3>
+          <div class="card" style="margin-bottom:16px">
             <table>
               <thead><tr><th>#</th><th>Ad</th><th>Faiz (%)</th><th>Qoyulan sermayə</th><th>Mənfəət payı</th><th>Xərc payı (bərabər)</th><th>Xalis xeyir</th><th>Çəkilən</th><th>Qalıq</th><th>Əməliyyat</th></tr></thead>
               <tbody id="tblRepFounders"></tbody>
             </table>
           </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem">&#x1F4C4; Tahakkuk metodu — qaimə yazılan an əsasında (ödənilməmiş daxil)</h3>
+          <div class="card" style="margin-bottom:16px">
+            <table>
+              <thead><tr><th>#</th><th>Ad</th><th>Faiz (%)</th><th>Qoyulan sermayə</th><th>Mənfəət payı</th><th>Xərc payı (bərabər)</th><th>Xalis xeyir</th><th>Çəkilən</th><th>Qalıq</th></tr></thead>
+              <tbody id="tblRepFoundersAccrual"></tbody>
+            </table>
+          </div>
+
           <h3 style="margin:16px 0 8px;font-size:.95rem">Bu dövr əməliyyatlar</h3>
           <div class="card">
             <table>

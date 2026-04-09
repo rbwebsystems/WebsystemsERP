@@ -1491,60 +1491,87 @@ function renderReports() {
 
     const periodExpenses = (db.cash||[]).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
     const periodPayroll = (db.cash||[]).filter((c) => c.type === "out" && ["salary","payroll"].includes(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    // === KASSA METODU ===
-    // Gəlir = faktiki kassaya daxil olan satış ödənişləri
-    const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
-    const PURCH_PAY_KINDS_FND = new Set(["purch_payment","purch_payment_adj","creditor_payment","creditor_invoice_payment"]);
-    const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    // Maya = faktiki kassadan çıxan alış ödənişləri
-    const cashCogs = (db.cash||[]).filter((c) => c.type === "out" && PURCH_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    // Gross profit = kassaya gələn satış pulları − kassadan gedən alış pulları
-    const grossProfitForShare = cashSaleRev - cashCogs;
-    // Xərclər bərabər bölünür
     const numFounders = db.founders.length || 1;
     const equalExpShare = (periodExpenses + periodPayroll) / numFounders;
 
-    let totCapital = 0, totWithdraw = 0, totProfitShare = 0, totExpShareAll = 0, totNet = 0;
-    const founderRows = db.founders.map((f, fi) => {
-      const capital = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
-      const withdrawn = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
-      const share = n(f.share || 0);
-      // Xeyir payı: ümumi brüt mənfəətin faiz payı
-      const profitShare = totalShares > 0 ? (grossProfitForShare * share / totalShares) : 0;
-      // Xərc payı: bütün xərclər bərabər bölünür
-      const expShare = equalExpShare;
-      // Xalis xeyir = xeyir payı − xərc payı (çəkilən buraya daxil deyil)
-      const net = profitShare - expShare;
-      // Qalıq = xalis xeyir − çəkilən
-      const remaining = net - withdrawn;
-      totCapital += capital; totWithdraw += withdrawn;
-      totProfitShare += profitShare; totExpShareAll += expShare; totNet += net;
-      return `<tr>
-        <td>${fi+1}</td>
-        <td>${escapeHtml(f.name)}</td>
-        <td>${money(share)}%</td>
-        <td>${money(capital)} AZN</td>
-        <td class="${profitShare>=0?"amt-in":"amt-out"}">${money(profitShare)} AZN</td>
-        <td class="amt-out">${money(expShare)} AZN</td>
-        <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
-        <td class="amt-out">${money(withdrawn)} AZN</td>
-        <td class="${remaining>=0?"amt-in":"amt-out"}"><strong>${money(remaining)} AZN</strong></td>
-        <td class="tbl-actions">
-          <button class="btn-mini" onclick="openFounderForm(${fi})" title="Redaktə"><i class="fas fa-pen"></i></button>
+    // === KASSA METODU ===
+    const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
+    const PURCH_PAY_KINDS_FND = new Set(["purch_payment","purch_payment_adj","creditor_payment","creditor_invoice_payment"]);
+    const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const cashCogs = (db.cash||[]).filter((c) => c.type === "out" && PURCH_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const grossProfitCash = cashSaleRev - cashCogs;
+
+    // === TAHAKKUq METODU ===
+    const periodSales = (db.sales||[]).filter((s) => !s.returnedAt && (!hasPeriod || inRange(s.date)));
+    const accrualSaleRev = periodSales.reduce((a,s) => a + n(s.amount), 0);
+    const accrualCogs = periodSales.reduce((a,s) => {
+      if (s.bulkPurchUid || (Array.isArray(s.bulkAllocations) && s.bulkAllocations.length)) {
+        const purch = s.bulkAllocations?.length
+          ? db.purch.find((x) => String(x.uid) === String(s.bulkAllocations[0].purchUid))
+          : db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid));
+        const unit = purch ? n(purch.amount) / Math.max(1, Math.floor(n(purch.qty||1))) : 0;
+        return a + unit * Math.max(1, Math.floor(n(s.qty||1)));
+      }
+      const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
+      return a + (p ? n(p.amount) : 0);
+    }, 0);
+    const grossProfitAccrual = accrualSaleRev - accrualCogs;
+
+    function buildFounderRows(grossProfit, showActions) {
+      let totCap = 0, totWit = 0, totPS = 0, totExp = 0, totNet = 0;
+      const rows = db.founders.map((f, fi) => {
+        const capital = periodOps.filter((c) => c.type === "in" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+        const withdrawn = periodOps.filter((c) => c.type === "out" && String(c.link?.founderId) === String(f.uid)).reduce((a,c) => a+n(c.amount), 0);
+        const share = n(f.share || 0);
+        const profitShare = totalShares > 0 ? (grossProfit * share / totalShares) : 0;
+        const expShare = equalExpShare;
+        const net = profitShare - expShare;
+        const remaining = net - withdrawn;
+        totCap += capital; totWit += withdrawn; totPS += profitShare; totExp += expShare; totNet += net;
+        const actions = showActions ? `<button class="btn-mini" onclick="openFounderForm(${fi})" title="Redaktə"><i class="fas fa-pen"></i></button>
           <button class="btn-mini" onclick="openFounderPayHistory(${fi})" title="Tarixçə"><i class="fas fa-clock-rotate-left"></i></button>
           <button class="btn-mini" onclick="openFounderCashOp(${fi},'in')" title="Sermayə qoy"><i class="fas fa-plus"></i></button>
-          <button class="btn-mini" onclick="openFounderCashOp(${fi},'out')" title="Çəkmə"><i class="fas fa-minus"></i></button>
-        </td>
-      </tr>`;
-    }).join("");
-    setText("rv-fndIn", money(grossProfitForShare) + " AZN");
-    setText("rv-fndOut", money(totWithdraw) + " AZN");
-    setText("rv-fndExpShare", money(totCapital) + " AZN");
-    setText("rv-fndNet", money(totNet) + " AZN");
+          <button class="btn-mini" onclick="openFounderCashOp(${fi},'out')" title="Çəkmə"><i class="fas fa-minus"></i></button>` : "";
+        return `<tr>
+          <td>${fi+1}</td><td>${escapeHtml(f.name)}</td><td>${money(share)}%</td>
+          <td>${money(capital)} AZN</td>
+          <td class="${profitShare>=0?"amt-in":"amt-out"}">${money(profitShare)} AZN</td>
+          <td class="amt-out">${money(expShare)} AZN</td>
+          <td class="${net>=0?"amt-in":"amt-out"}"><strong>${money(net)} AZN</strong></td>
+          <td class="amt-out">${money(withdrawn)} AZN</td>
+          <td class="${remaining>=0?"amt-in":"amt-out"}"><strong>${money(remaining)} AZN</strong></td>
+          ${showActions ? `<td class="tbl-actions">${actions}</td>` : ""}
+        </tr>`;
+      }).join("");
+      const totRemaining = totNet - totWit;
+      const cols = showActions ? 10 : 9;
+      const totalRow = db.founders.length
+        ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td>
+            <td><strong>${money(totCap)} AZN</strong></td>
+            <td><strong class="${totPS>=0?"amt-in":"amt-out"}">${money(totPS)} AZN</strong></td>
+            <td><strong class="amt-out">${money(totExp)} AZN</strong></td>
+            <td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td>
+            <td><strong class="amt-out">${money(totWit)} AZN</strong></td>
+            <td><strong class="${totRemaining>=0?"amt-in":"amt-out"}">${money(totRemaining)} AZN</strong></td>
+            ${showActions ? "<td></td>" : ""}
+           </tr>`
+        : `<tr><td colspan="${cols}">Təsisçi yoxdur.</td></tr>`;
+      return { html: rows + totalRow, totCap, totWit, totPS, totNet };
+    }
+
+    const cashResult = buildFounderRows(grossProfitCash, true);
+    const accrualResult = buildFounderRows(grossProfitAccrual, false);
+
+    setText("rv-fndIn", money(grossProfitCash) + " AZN");
+    setText("rv-fndIn2", money(grossProfitAccrual) + " AZN");
+    setText("rv-fndOut", money(cashResult.totWit) + " AZN");
+    setText("rv-fndExpShare", money(cashResult.totCap) + " AZN");
+    setText("rv-fndNet", money(cashResult.totNet) + " AZN");
     setText("rv-fndCount", String(db.founders.length));
     const fBody = byId("tblRepFounders");
-    const totRemaining = totNet - totWithdraw;
-    if (fBody) fBody.innerHTML = founderRows + (db.founders.length ? `<tr class="total-row"><td colspan="3"><strong>Cəmi</strong></td><td><strong>${money(totCapital)} AZN</strong></td><td><strong class="${totProfitShare>=0?"amt-in":"amt-out"}">${money(totProfitShare)} AZN</strong></td><td><strong class="amt-out">${money(totExpShareAll)} AZN</strong></td><td><strong class="${totNet>=0?"amt-in":"amt-out"}">${money(totNet)} AZN</strong></td><td><strong class="amt-out">${money(totWithdraw)} AZN</strong></td><td><strong class="${totRemaining>=0?"amt-in":"amt-out"}">${money(totRemaining)} AZN</strong></td><td></td></tr>` : `<tr><td colspan="10">Təsisçi yoxdur. "Təsisçi əlavə et" düyməsini sıxın.</td></tr>`);
+    if (fBody) fBody.innerHTML = cashResult.html;
+    const fBody2 = byId("tblRepFoundersAccrual");
+    if (fBody2) fBody2.innerHTML = accrualResult.html;
 
     // ops table
     const opsBody = byId("tblRepFounderOps");
