@@ -4082,7 +4082,8 @@ function openPurchInfo(idx) {
   const staff = p.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(p.employeeId)) : null;
   const staffName = staff ? staff.name : (p.employeeName || "");
   const actorLabel = operationActorName(p, staffName) || "-";
-  const payTypeLabel = { nagd: "Nəğd", kocurme: "Köçürmə", kredit: "Kredit" }[String(p.payType || "").toLowerCase()] || (p.payType || "-");
+  const payTypeLabel = { nagd: "Nağd", kocurme: "Köçürmə", kredit: "Kredit" }[String(p.payType || "").toLowerCase()] || (p.payType || "-");
+  const paymentTypeLabel = { resmi: "Rəsmi", qeyri_resmi: "Qeyri-Rəsmi" }[p.paymentType || ""] || "-";
   openModal(`
     <h2>Alış – Məlumat</h2>
     <div class="info-block">
@@ -4097,7 +4098,9 @@ function openPurchInfo(idx) {
       <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(p.seria || "-")}</div></div>
       <div class="info-row"><div class="info-label">Məbləğ (AZN)</div><div class="info-value">${money(p.amount)}</div></div>
       <div class="info-row"><div class="info-label">Ödəniş növü</div><div class="info-value">${escapeHtml(payTypeLabel)}</div></div>
+      <div class="info-row"><div class="info-label">Rəsmilik</div><div class="info-value">${escapeHtml(paymentTypeLabel)}</div></div>
       <div class="info-row"><div class="info-label">Ödənilən (AZN)</div><div class="info-value">${money(p.paidTotal)}</div></div>
+      <div class="info-row"><div class="info-label">Qalıq (AZN)</div><div class="info-value">${money(purchRemaining(p))}</div></div>
       <div class="info-row"><div class="info-label">Alış edən əməkdaş</div><div class="info-value">${escapeHtml(actorLabel)}</div></div>
     </div>
     <div class="modal-footer">
@@ -4396,9 +4399,14 @@ function openPurch(idx = null) {
           <div class="grid-2">
             <div class="f-group"><label>${isBulk ? "1 ədəd qiymət (AZN)" : "Məbləğ (AZN)"}</label><input type="number" step="0.01" id="f_p_amount" value="${escapeAttr(isBulk ? String(prefUnit) : String(p.amount))}" placeholder="0.00" ${idx !== null ? "required" : ""}></div>
             <div class="f-group"><label>Ödəniş növü</label><select id="f_p_payType">
-          <option value="nagd" ${p.payType === "nagd" ? "selected" : ""}>nagd</option>
-          <option value="kocurme" ${p.payType === "kocurme" ? "selected" : ""}>kocurme</option>
-          <option value="kredit" ${p.payType === "kredit" ? "selected" : ""}>kredit</option>
+          <option value="nagd" ${p.payType === "nagd" ? "selected" : ""}>Nağd</option>
+          <option value="kocurme" ${p.payType === "kocurme" ? "selected" : ""}>Köçürmə</option>
+          <option value="kredit" ${p.payType === "kredit" ? "selected" : ""}>Kredit</option>
+        </select></div>
+            <div class="f-group"><label>Rəsmilik</label><select id="f_p_paymentType">
+          <option value="" ${!p.paymentType ? "selected" : ""}>Seçilməyib</option>
+          <option value="resmi" ${p.paymentType === "resmi" ? "selected" : ""}>Rəsmi</option>
+          <option value="qeyri_resmi" ${p.paymentType === "qeyri_resmi" ? "selected" : ""}>Qeyri-Rəsmi</option>
         </select></div>
             <div class="f-group"><label>Ödəniş hesabı</label><select id="f_p_pay_acc">${payAccOptions}</select></div>
             <div class="f-group"><label>Ödənilən (AZN)</label><input type="number" step="0.01" id="f_p_paid" value="${escapeAttr(p.paidTotal || "0")}" placeholder="0.00"></div>
@@ -4532,6 +4540,7 @@ async function savePurch(e, idx) {
     const employeeId = (canChangeSaleStaff() ? (val("f_p_staff") || "").trim() : currentUserStaffId()) || undefined;
     const actorName = currentActorName();
     const payType = val("f_p_payType");
+    const paymentType = val("f_p_paymentType") || "";
     const paidTotal = Math.max(0, n(val("f_p_paid")));
     const paymentAccountId = Number(val("f_p_pay_acc") || 1);
     draft.forEach((it, i) => {
@@ -4550,6 +4559,7 @@ async function savePurch(e, idx) {
         amount: String(Math.max(0, n(it.amount))),
         unitPrice: it.isBulk ? String(Math.max(0, n(it.unitPrice || 0))) : "",
         payType,
+        paymentType,
         paidTotal: String(i === 0 ? paidTotal : 0),
         employeeId,
         actorName,
@@ -4666,6 +4676,7 @@ async function savePurch(e, idx) {
     amount: String(Math.max(0, totalAmount)),
     unitPrice: isBulk ? String(unitPrice) : (idx !== null ? (db.purch[idx]?.unitPrice ?? "") : ""),
     payType: val("f_p_payType"),
+    paymentType: val("f_p_paymentType") || (idx !== null ? (db.purch[idx]?.paymentType || "") : ""),
     paidTotal: String(Math.max(0, n(val("f_p_paid")))),
     employeeId,
     actorName,
@@ -6424,11 +6435,14 @@ function openPaymentHistory(kind, idx) {
       </tr>`
     )
     .join("");
+  const sInvNo = s.invNo || invFallback("sales", s.uid);
   openModal(`
     <h2>Ödəniş tarixçəsi</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
+      <div class="info-row"><div class="info-label">Qaimə №</div><div class="info-value"><strong>${escapeHtml(sInvNo)}</strong></div></div>
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName)}</div></div>
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(n(s.amount))} / ${money(n(s.paidTotal))} / ${money(saleRemaining(s))} AZN</strong></div></div>
     </div>
     <div class="table-wrap">
       <table>
@@ -7069,6 +7083,7 @@ function openCashOp() {
           <option value="credit_pay">Kredit Ödənişi</option>
           <option value="supp_pay">Kreditor Ödənişi</option>
           <option value="owner_income">Təsisçidən Mədaxil</option>
+          <option value="transfer">Hesablar arası transfer</option>
           <option value="expense">Xərc</option>
         </select></div>
           </div>
@@ -7119,6 +7134,14 @@ function openCashOp() {
           </div>
         </div>
 
+        <div id="cash_transfer_box" class="form-card" style="display:none;">
+          <div class="form-card-title">Hesablar arası transfer</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Hansı hesabdan *</label><select id="cash_transfer_from">${accountOptionsHtml(1)}</select></div>
+            <div class="f-group"><label>Hansı hesaba *</label><select id="cash_transfer_to">${accountOptionsHtml(2)}</select></div>
+          </div>
+        </div>
+
         <div id="cash_expense_box" class="form-card" style="display:none;">
           <div class="form-card-title">Xərc</div>
           <div class="grid-2">
@@ -7166,10 +7189,12 @@ function toggleCashKind() {
   const incBox = byId("cash_income_box");
   const accBox = byId("cash_acc_box");
   if (!custBox || !expBox) return;
+  const xfrBox0 = byId("cash_transfer_box");
   if (kind === "cash_pay" || kind === "credit_pay") {
     custBox.style.display = "";
     if (suppBox) suppBox.style.display = "none";
     if (incBox) incBox.style.display = "none";
+    if (xfrBox0) xfrBox0.style.display = "none";
     expBox.style.display = "none";
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = true;
@@ -7180,6 +7205,7 @@ function toggleCashKind() {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "";
     if (incBox) incBox.style.display = "none";
+    if (xfrBox0) xfrBox0.style.display = "none";
     expBox.style.display = "none";
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = false;
@@ -7190,10 +7216,20 @@ function toggleCashKind() {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
     if (incBox) incBox.style.display = "";
+    if (xfrBox0) xfrBox0.style.display = "none";
     expBox.style.display = "none";
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = false;
     byId("cash_acc").required = true;
+  } else if (kind === "transfer") {
+    custBox.style.display = "none";
+    if (suppBox) suppBox.style.display = "none";
+    if (incBox) incBox.style.display = "none";
+    expBox.style.display = "none";
+    if (accBox) accBox.style.display = "none";
+    byId("cash_customer").required = false;
+    const xfrBox = byId("cash_transfer_box");
+    if (xfrBox) xfrBox.style.display = "";
   } else if (kind === "expense") {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
@@ -7202,6 +7238,8 @@ function toggleCashKind() {
     if (accBox) accBox.style.display = "";
     byId("cash_customer").required = false;
     byId("cash_acc").required = true;
+    const xfrBox2 = byId("cash_transfer_box");
+    if (xfrBox2) xfrBox2.style.display = "none";
   } else {
     custBox.style.display = "none";
     if (suppBox) suppBox.style.display = "none";
@@ -7349,6 +7387,23 @@ function saveCashOp(e) {
 
   if (amount <= 0) return;
   if (!kind) return alert("Əməliyyat növünü seçin.");
+
+  if (kind === "transfer") {
+    const fromAccId = Number(val("cash_transfer_from") || 0);
+    const toAccId = Number(val("cash_transfer_to") || 0);
+    if (!fromAccId || !toAccId) return alert("Hesabları seçin.");
+    if (fromAccId === toAccId) return alert("Eyni hesabdan eyni hesaba transfer olmaz.");
+    const fromBal = accountBalance(fromAccId);
+    if (fromBal + 0.000001 < amount) return alert("Seçilmiş hesabda balans kifayət etmir.");
+    const fromAcc = (db.accounts||[]).find((a) => a.uid === fromAccId);
+    const toAcc = (db.accounts||[]).find((a) => a.uid === toAccId);
+    addCashOp({ type: "out", date, source: `Transfer → ${toAcc?.name||"Hesab"}`, amount, note, link: { kind: "transfer", fromAccId, toAccId }, accountId: fromAccId });
+    addCashOp({ type: "in",  date, source: `Transfer ← ${fromAcc?.name||"Hesab"}`, amount, note, link: { kind: "transfer", fromAccId, toAccId }, accountId: toAccId });
+    logEvent("create", "cash", { type: "transfer", fromAccId, toAccId, amount });
+    saveDB();
+    closeMdl();
+    return;
+  }
 
   if (kind === "owner_income") {
     if (!userCanOwnerIncome()) {
@@ -7659,51 +7714,91 @@ function saveCreditorPayment(e, groupIdx) {
 function openCreditorInfo(groupIdx) {
   const g = (window.__credGroups || [])[groupIdx];
   if (!g) return;
+  const today = Date.now();
 
   const rows = g.purchases
     .slice()
     .sort((a, b) => (a.date > b.date ? -1 : 1))
     .map((p) => {
+      const pIdx = (db.purch || []).findIndex((x) => x.uid === p.uid);
+      const invNo = p.invNo || invFallback("purch", p.uid);
       const total = n(p.amount);
       const paid = n(p.paidTotal);
       const rem = purchRemaining(p);
       const st = debtStatus(total, rem);
+      const days = Math.floor((today - (parseDateOnly(p.date) || today)) / 86400000);
+      const staff = p.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(p.employeeId)) : null;
+      const actor = operationActorName(p, staff ? staff.name : (p.employeeName || "-"));
+      const payTypeLabel = p.paymentType === "qeyri_resmi" ? "Qeyri-Rəsmi" : (p.paymentType === "resmi" ? "Rəsmi" : "-");
+      const identifiers = [p.imei1, p.imei2, p.seria, p.code].filter(Boolean).join(" · ");
       return `
       <tr>
-        <td>${p.uid}</td>
+        <td><a href="#" onclick="openPurchInfo(${pIdx});return false;" style="font-weight:600">${escapeHtml(invNo)}</a></td>
         <td>${fmtDT(p.date)}</td>
-        <td>${escapeHtml(p.name)}</td>
+        <td>
+          ${escapeHtml(p.name)}
+          ${identifiers ? `<br><small style="color:var(--text-muted)">${escapeHtml(identifiers)}</small>` : ""}
+        </td>
+        <td>${escapeHtml(actor)}</td>
+        <td>${escapeHtml(payTypeLabel)}</td>
+        <td>${days} gün</td>
         <td>${money(total)} AZN</td>
         <td>${money(paid)} AZN</td>
         <td>${money(rem)} AZN</td>
         <td><span class="pill ${st}">${debtLabel(st)}</span></td>
         <td class="tbl-actions">
           <button class="btn-mini-pay" type="button" onclick="openCreditorInvoicePayment(${p.uid})">Ödəniş et</button>
+          <button class="btn-mini" type="button" onclick="openCreditorPurchPayHistory(${p.uid})"><i class="fas fa-clock-rotate-left"></i></button>
         </td>
       </tr>`;
     })
     .join("");
 
   openModal(`
-    <h2>Kreditor detalları</h2>
+    <h2>Kreditor detalları — ${escapeHtml(g.supp)}</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(g.supp)}</div></div>
       <div class="info-row"><div class="info-label">Cəmi məbləğ</div><div class="info-value">${money(g.total)} AZN</div></div>
       <div class="info-row"><div class="info-label">Cəmi ödənilən</div><div class="info-value">${money(g.paid)} AZN</div></div>
-      <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value">${money(g.rem)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Cəmi qalıq</div><div class="info-value"><strong>${money(g.rem)} AZN</strong></div></div>
     </div>
-
-    <div class="table-wrap">
+    <div class="table-wrap" style="overflow-x:auto">
       <table>
-        <thead><tr><th>Qaimə (Alış ID)</th><th>Tarix</th><th>Məhsul</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Ödəniş</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="8">Bu təchizatçı üzrə alış yoxdur</td></tr>`}</tbody>
+        <thead><tr><th>Qaimə №</th><th>Tarix</th><th>Məhsul / Tanımlayıcı</th><th>Əməkdaş</th><th>Ödəniş növü</th><th>Gün</th><th>Məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th><th>Əməliyyat</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="11">Bu təchizatçı üzrə alış yoxdur</td></tr>`}</tbody>
       </table>
     </div>
-
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openCreditorPayment(${groupIdx})">Ümumi ödəniş</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
+  `);
+}
+
+function openCreditorPurchPayHistory(purchUid) {
+  const p = (db.purch || []).find((x) => Number(x.uid) === Number(purchUid));
+  if (!p) return;
+  const invNo = p.invNo || invFallback("purch", p.uid);
+  const ops = (db.cash || [])
+    .filter((c) => c.link && (c.link.purchUid === p.uid || Number(c.link.purchUid) === Number(p.uid)))
+    .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+  const rows = ops.map((c, i) => `<tr>
+    <td>${i+1}</td><td>${fmtDT(c.date)}</td>
+    <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
+    <td>${escapeHtml((db.accounts||[]).find((a)=>a.uid===Number(c.accountId||1))?.name||"Kassa")}</td>
+    <td>${escapeHtml(c.note||"")}</td></tr>`).join("");
+  openModal(`
+    <h2>Ödəniş tarixçəsi — ${escapeHtml(invNo)}</h2>
+    <div class="info-block">
+      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(p.name)}</div></div>
+      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(n(p.amount))} / ${money(n(p.paidTotal))} / ${money(purchRemaining(p))} AZN</strong></div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tarix</th><th>Məbləğ</th><th>Hesab</th><th>Qeyd</th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="5">Ödəniş tapılmadı</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeMdl()">Bağla</button></div>
   `);
 }
 
@@ -9363,8 +9458,8 @@ function openOverdueInfo(saleUid) {
   openModal(`
     <h2>Gecikmə detalları</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}</div></div>
-      <div class="info-row"><div class="info-label">Ad Soyad Ata</div><div class="info-value">${escapeHtml(cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : custName)}</div></div>
+      <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}${cust && cust.fin ? ` <span style="color:var(--text-muted);font-size:.85em">(FIN: ${escapeHtml(cust.fin)})</span>` : ""}</div></div>
+      ${cust && cust.ph1 ? `<div class="info-row"><div class="info-label">Əlaqə</div><div class="info-value">${escapeHtml(cust.ph1)}${cust.ph2?" / "+escapeHtml(cust.ph2):""}</div></div>` : ""}
       <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-")}</div></div>
       <div class="info-row"><div class="info-label">Qaimə</div><div class="info-value">${escapeHtml(inv)}</div></div>
       <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(sale.productName || "-")}</div></div>
@@ -10048,7 +10143,9 @@ function renderAll() {
     const rem = items.reduce((a, t) => a + t.rem, 0);
     const paid = total - rem;
     const st = debtStatus(total, rem);
-    return { customerId, customerName: items[0]?.s.customerName || customerId, total, paid, rem, st, items };
+    const oldestDate = items.reduce((oldest, t) => (!oldest || t.s.date < oldest ? t.s.date : oldest), "");
+    const days = oldestDate ? Math.floor((Date.now() - (parseDateOnly(oldestDate) || Date.now())) / 86400000) : 0;
+    return { customerId, customerName: items[0]?.s.customerName || customerId, total, paid, rem, st, items, oldestDate, days };
   });
 
   const groupsFiltered = groups;
@@ -10072,6 +10169,8 @@ function renderAll() {
         <td>${money(g.total)} AZN</td>
         <td>${money(g.paid)} AZN</td>
         <td>${money(g.rem)} AZN</td>
+        <td>${g.oldestDate ? fmtDT(g.oldestDate) : "-"}</td>
+        <td>${g.days > 0 ? `<span class="pill ${g.days > 60 ? "unpaid" : g.days > 30 ? "partial" : "warn"}">${g.days} gün</span>` : "-"}</td>
         <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
         <td class="tbl-actions">
           <a class="icon-btn info" href="${erpOpHref("debts", "debtorInfo", g.customerId)}" onclick="openDebtorInfo('${escapeAttr(g.customerId)}','${stf}');return false;" title="Info"><i class="fas fa-circle-info"></i></a>
@@ -10086,8 +10185,7 @@ function renderAll() {
           <td><strong>${money(debtsTotal)} AZN</strong></td>
           <td><strong>${money(debtsPaid)} AZN</strong></td>
           <td><strong>${money(debtsRem)} AZN</strong></td>
-          <td></td>
-          <td></td>
+          <td colspan="4"></td>
         </tr>`
       : "");
   filterDebts();
@@ -10243,7 +10341,9 @@ function renderAll() {
     const paid = actives.reduce((a, x) => a + n(x.paidTotal), 0);
     const rem = actives.reduce((a, x) => a + purchRemaining(x), 0);
     const st = debtStatus(total, rem);
-    return { supp, purchases, total, paid, rem, st };
+    const oldestDate = actives.reduce((oldest, x) => (!oldest || x.date < oldest ? x.date : oldest), "");
+    const days = oldestDate ? Math.floor((Date.now() - (parseDateOnly(oldestDate) || Date.now())) / 86400000) : 0;
+    return { supp, purchases, total, paid, rem, st, oldestDate, days };
   });
 
   // expose groups for info modal
@@ -10263,20 +10363,22 @@ function renderAll() {
   const filteredGroups = paginate(filteredGroupsAll, "cred", credPageSize, "credPageInfo");
 
   byId("tblCreditor").innerHTML = filteredGroups
-    .map(
-      (g, i) => `
-    <tr>
+    .map((g, i) => {
+      const gIdx = credGroups.indexOf(g);
+      return `<tr>
       <td>${i + 1}</td>
       <td>${escapeHtml(g.supp)}</td>
       <td>${money(g.total)} AZN</td>
       <td>${money(g.paid)} AZN</td>
       <td>${money(g.rem)} AZN</td>
+      <td>${g.oldestDate ? fmtDT(g.oldestDate) : "-"}</td>
+      <td>${g.days > 0 ? `<span class="pill ${g.days > 60 ? "unpaid" : g.days > 30 ? "partial" : "warn"}">${g.days} gün</span>` : "-"}</td>
       <td><span class="pill ${g.st}">${debtLabel(g.st)}</span></td>
       <td class="tbl-actions">
-        <a class="icon-btn info" href="${erpOpHref("creditor", "creditorInfo", credGroups.indexOf(g))}" onclick="openCreditorInfo(${credGroups.indexOf(g)});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
+        <a class="icon-btn info" href="${erpOpHref("creditor", "creditorInfo", gIdx)}" onclick="openCreditorInfo(${gIdx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
       </td>
-    </tr>`
-    )
+    </tr>`;
+    })
     .join("")
     + (filteredGroupsAll.length
       ? `<tr class="total-row">
@@ -10284,8 +10386,7 @@ function renderAll() {
           <td><strong>${money(credTotal)} AZN</strong></td>
           <td><strong>${money(credPaid)} AZN</strong></td>
           <td><strong>${money(credRem)} AZN</strong></td>
-          <td></td>
-          <td></td>
+          <td colspan="4"></td>
         </tr>`
       : "");
   filterCreditor();
@@ -11123,6 +11224,7 @@ Object.assign(window, {
   filterCreditOnly,
   filterCreditor,
   openCreditorInfo,
+  openCreditorPurchPayHistory,
   openCreditorPayment,
   saveCreditorPayment,
   openCreditorInvoicePayment,
@@ -11398,7 +11500,6 @@ function initApp() {
     }
   }
   runMigrations();
-  ensureOverdueTestPack();
   if (secToShow) showSec(secToShow, navToUse, { skipHash: usedHash });
   bindSidebarNavClicks();
   renderAll();
