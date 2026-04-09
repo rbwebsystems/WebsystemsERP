@@ -1489,30 +1489,19 @@ function renderReports() {
     const periodOps = allOps.filter((c) => !hasPeriod || inRange(c.date));
     const totalShares = db.founders.reduce((a,f) => a + n(f.share||0), 0);
 
-    // Company profit for the period: sales − COGS − expenses − payroll
-    const periodSales = (db.sales||[]).filter((s) => !s.returnedAt && (!hasPeriod || inRange(s.date)));
-    const salesRev = periodSales.reduce((a,s) => a + n(s.amount), 0);
-    const cogs = periodSales.reduce((a,s) => {
-      if (s.bulkPurchUid || (Array.isArray(s.bulkAllocations) && s.bulkAllocations.length)) {
-        const purch = s.bulkAllocations?.length
-          ? db.purch.find((x) => String(x.uid) === String(s.bulkAllocations[0].purchUid))
-          : db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid));
-        const unit = purch ? n(purch.amount) / Math.max(1, Math.floor(n(purch.qty||1))) : 0;
-        return a + unit * Math.max(1, Math.floor(n(s.qty||1)));
-      }
-      const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
-      return a + (p ? n(p.amount) : 0);
-    }, 0);
     const periodExpenses = (db.cash||[]).filter((c) => c.type === "out" && c.link?.kind === "expense" && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
     const periodPayroll = (db.cash||[]).filter((c) => c.type === "out" && ["salary","payroll"].includes(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    // Gross profit (before expenses) split by % share
-    const grossProfit = salesRev - cogs - periodPayroll;
-    // Expenses split equally among founders
+    // === KASSA METODU ===
+    // Gəlir = faktiki kassaya daxil olan satış ödənişləri
+    const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
+    const PURCH_PAY_KINDS_FND = new Set(["purch_payment","purch_payment_adj","creditor_payment","creditor_invoice_payment"]);
+    const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    // Maya = faktiki kassadan çıxan alış ödənişləri
+    const cashCogs = (db.cash||[]).filter((c) => c.type === "out" && PURCH_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    // Gross profit = kassaya gələn satış pulları − kassadan gedən alış pulları
+    const grossProfitForShare = cashSaleRev - cashCogs;
+    // Xərclər bərabər bölünür
     const numFounders = db.founders.length || 1;
-    const expSharePerFounder = (periodExpenses + periodPayroll) / numFounders;
-    // For display: gross profit split by %, then each deducts equal expense share
-    // Actually: xeyir payı = grossProfit * share% ; xərc payı = expenses / N (bərabər)
-    const grossProfitForShare = salesRev - cogs;  // before expenses & payroll
     const equalExpShare = (periodExpenses + periodPayroll) / numFounders;
 
     let totCapital = 0, totWithdraw = 0, totProfitShare = 0, totExpShareAll = 0, totNet = 0;
