@@ -822,7 +822,7 @@ function renderReports() {
   const useMonth = !!repMonth;
   const inRange = (d) => useMonth ? inMonth(d, repMonth) : inDateRange(d, "repFromVis", "repToVis");
   const hasPeriod = useMonth || (byId("repFromVis")?.value || "").trim() || (byId("repToVis")?.value || "").trim();
-  const saleTypeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
+    const saleTypeMap = { nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
 
   if (view === "sales") {
     const rows = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date))
@@ -1141,7 +1141,7 @@ function renderReports() {
 
   } else if (view === "saletype") {
     const sales = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
-    const typeMap = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
+    const typeMap = { nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" };
     const map = new Map();
     for (const s of sales) {
       const k = String(s.saleType || "nagd").toLowerCase();
@@ -2621,7 +2621,7 @@ function ensureAuditTrash() {
 }
 
 function saleInvPrefix(saleType) {
-  const map = { nagd: "NS", post: "PS", topdan: "TS", korporativ: "KPS", kredit: "KS", kocurme: "NS" };
+  const map = { nagd: "NS", post: "PS", post_taksit: "TKS", topdan: "TS", korporativ: "KPS", kredit: "KS", kocurme: "NS" };
   return map[String(saleType || "").toLowerCase()] || "NS";
 }
 
@@ -5516,13 +5516,20 @@ function openSale(idx = null) {
             <div class="f-group"><label>Müştəri *</label><select id="f_s_customer" required>${custOptions}</select></div>
             <div class="f-group"><label>Əməkdaş${staffEditable ? "" : " *"}</label><select id="f_s_staff" ${staffEditable ? "" : "disabled"} ${staffEditable ? "" : "required"}>${staffOptions}</select></div>
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="f_s_date" value="${escapeAttr(current?.date || nowISODateTimeLocal())}" required></div>
-            <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox()" required>
+            <div class="f-group"><label>Satış növü *</label><select id="f_s_type" onchange="toggleCreditBox();togglePostTaksit()" required>
           <option value="nagd">Nağd</option>
           <option value="post">Post</option>
           <option value="topdan">Topdan</option>
           <option value="korporativ">Korporativ</option>
           <option value="kredit">Kredit</option>
         </select></div>
+            <div id="postTaksitBox" class="f-group" style="display:none">
+              <label class="chk" style="margin-top:24px"><input type="checkbox" id="f_s_taksit" onchange="togglePostTaksit()"><span>Taksit (bank)</span></label>
+            </div>
+            <div id="postTaksitTermBox" class="f-group" style="display:none">
+              <label>Taksit müddəti (ay)</label>
+              <input type="number" step="1" min="1" id="f_s_taksit_term" placeholder="məs: 12">
+            </div>
           </div>
         </div>
         <div class="form-card">
@@ -5630,6 +5637,12 @@ function openSale(idx = null) {
       recalcCredit();
     } else {
       toggleCreditBox(false);
+    }
+    if (current.saleType === "post_taksit") {
+      byId("f_s_type").value = "post";
+      togglePostTaksit();
+      if (byId("f_s_taksit")) { byId("f_s_taksit").checked = true; togglePostTaksit(); }
+      if (byId("f_s_taksit_term")) byId("f_s_taksit_term").value = String(current.taksitTerm || "");
     }
     // pay now
     const paidTotal = n(current.paidTotal);
@@ -5781,6 +5794,17 @@ function togglePayNow(noRender) {
   if (!noRender) return;
 }
 
+function togglePostTaksit() {
+  const type = byId("f_s_type")?.value;
+  const isPost = type === "post";
+  const taksitBox = byId("postTaksitBox");
+  const termBox = byId("postTaksitTermBox");
+  if (taksitBox) taksitBox.style.display = isPost ? "" : "none";
+  if (!isPost) { if (byId("f_s_taksit")) byId("f_s_taksit").checked = false; }
+  const isTaksit = isPost && !!byId("f_s_taksit")?.checked;
+  if (termBox) termBox.style.display = isTaksit ? "" : "none";
+}
+
 function toggleCreditBox(force) {
   const type = byId("f_s_type")?.value;
   const show = typeof force === "boolean" ? force : type === "kredit";
@@ -5867,7 +5891,10 @@ async function saveSale(e, idx) {
     const sold = soldKeySet();
     const usedByPurch = {};
     const created = [];
-    const invNo = nextInvNo("sales", saleType);
+    const isTaksit = saleType === "post" && !!byId("f_s_taksit")?.checked;
+    const taksitTerm = isTaksit ? Math.max(1, Math.floor(n(val("f_s_taksit_term") || 1))) : 0;
+    const effectiveSaleType = isTaksit ? "post_taksit" : saleType;
+    const invNo = nextInvNo("sales", effectiveSaleType);
     let paidLeft = paid;
     const totalDown = saleType === "kredit" ? Math.max(0, n(val("f_cr_down"))) : 0;
     const termMonths = saleType === "kredit" ? Math.max(1, Math.floor(n(val("f_cr_term") || 1))) : 0;
@@ -5935,7 +5962,9 @@ async function saveSale(e, idx) {
         uid: genId(db.sales, 1),
         invNo,
         date,
-        saleType,
+        saleType: effectiveSaleType,
+        isTaksit: isTaksit || undefined,
+        taksitTerm: isTaksit ? taksitTerm : undefined,
         customerId: cust.uid,
         customerName: `${cust.sur} ${cust.name} ${cust.father}`.trim(),
         employeeId: staff?.uid ?? "",
@@ -6380,7 +6409,7 @@ function openSaleInfo(idx) {
         <div class="form-card-title">Əsas məlumat</div>
         <div class="grid-2">
           <div class="f-group"><label>Satış tarixi</label><div class="f-static">${fmtDT(s.date)}</div></div>
-          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</div></div>
+          <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm} ay)` : ""}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
           <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
           <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
@@ -6556,7 +6585,7 @@ function openDebtorInfo(customerId, saleTypeFilter) {
   const custName = items[0]?.s.customerName || customerId;
   const totalRem = items.reduce((a, { s }) => a + saleRemaining(s), 0);
   const footPayDis = totalRem <= 0.000001 ? "disabled" : "";
-  const saleTypeLabel = { nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kocurme: "Köçürmə" };
+  const saleTypeLabel = { nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kocurme: "Köçürmə" };
   const typeTitle = stf ? (saleTypeLabel[stf] || stf) + " satış" : "Debitor";
 
   const rows = items
@@ -7877,21 +7906,23 @@ function openCompany(idx = null) {
   const c = idx !== null ? meta.companies[idx] : { id: "", name: "", sections: [] };
   const allSections = [
     "dash",
+    "sales",
+    "purch",
+    "stock",
     "cust",
     "supp",
     "prod",
-    "purch",
-    "stock",
-    "sales",
     "staff",
     "debts",
+    "overdue",
     "creditor",
     "cash",
     "accounts",
+    "reports",
+    "users",
     "audit",
     "trash",
     "tools",
-    "reports",
   ];
   const enabled = Array.isArray(c.sections) && c.sections.length > 0 ? c.sections : allSections;
   const secChecks = allSections
@@ -8189,22 +8220,23 @@ function openUser(uidOrNull = null) {
   `;
   const sections = [
     "dash",
+    "sales",
+    "purch",
+    "stock",
     "cust",
     "supp",
     "prod",
-    "purch",
-    "stock",
-    "sales",
     "staff",
     "debts",
     "overdue",
     "creditor",
     "cash",
     "accounts",
+    "reports",
+    "users",
     "audit",
     "trash",
     "tools",
-    "reports",
   ];
   const checks = sections
     .map((s) => {
@@ -8253,6 +8285,7 @@ function openUser(uidOrNull = null) {
           <div class="info-row">
             <div class="info-label">İcazələr</div>
             <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
+              <label class="chk" style="font-weight:700;color:var(--accent)"><input type="checkbox" id="u_all_perms" onchange="toggleAllUserPerms(this)"><span>✓ Hamısı (tam icazə)</span></label>
               <label class="chk"><input type="checkbox" id="u_can_edit" ${editingUser.perms.canEdit ? "checked" : ""}><span>Redaktə edə bilsin</span></label>
               <label class="chk"><input type="checkbox" id="u_can_delete" ${editingUser.perms.canDelete ? "checked" : ""}><span>Silə bilsin</span></label>
               <label class="chk"><input type="checkbox" id="u_can_pay" ${editingUser.perms.canPay ? "checked" : ""}><span>Ödəniş edə bilsin</span></label>
@@ -8270,7 +8303,13 @@ function openUser(uidOrNull = null) {
           </div>
         </div>
         <div class="info-block">
-          <div class="info-row"><div class="info-label">Bölmələr</div><div class="info-value" style="display:flex;flex-wrap:wrap;gap:10px;">${checks}</div></div>
+          <div class="info-row">
+            <div class="info-label">Bölmələr</div>
+            <div class="info-value">
+              <label class="chk" style="font-weight:700;color:var(--accent);margin-bottom:8px;display:flex"><input type="checkbox" id="u_all_secs" onchange="toggleAllUserSecs(this)"><span>✓ Hamısı (bütün bölmələr)</span></label>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;">${checks}</div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -8286,6 +8325,22 @@ function openUser(uidOrNull = null) {
     byId("u_manual_mode").checked = manualChecked;
     syncAutoUserIdentity();
   }
+}
+
+function toggleAllUserPerms(cb) {
+  const v = cb.checked;
+  ["u_can_edit","u_can_delete","u_can_pay","u_can_ref","u_can_exp","u_can_imp","u_can_reset"].forEach((id) => {
+    const el = byId(id); if (el) el.checked = v;
+  });
+  document.querySelectorAll(".permAct").forEach((el) => { el.checked = v; });
+  if (v) {
+    document.querySelectorAll(".permSec").forEach((el) => { el.checked = true; });
+    const allSec = byId("u_all_secs"); if (allSec) allSec.checked = true;
+  }
+}
+
+function toggleAllUserSecs(cb) {
+  document.querySelectorAll(".permSec").forEach((el) => { el.checked = cb.checked; });
 }
 
 function saveUser(e) {
@@ -10070,7 +10125,7 @@ function renderAll() {
         <td>${escapeHtml(s.customerName)}</td>
         <td>${escapeHtml(s.productName)}</td>
         <td>${String(Math.max(1, Math.floor(n(s.qty || 1))))}</td>
-        <td>${escapeHtml({ nagd: "Nağd", post: "Post", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}</td>
+        <td>${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm}ay)` : ""}</td>
         <td>${escapeHtml(operationActorName(s, s.employeeName || ""))}</td>
         <td>${money(s.amount)} AZN</td>
         <td>${money(s.paidTotal)} AZN</td>
@@ -11223,6 +11278,8 @@ Object.assign(window, {
   filterDebts,
   filterCreditOnly,
   filterCreditor,
+  toggleAllUserPerms,
+  toggleAllUserSecs,
   openCreditorInfo,
   openCreditorPurchPayHistory,
   openCreditorPayment,
@@ -11245,6 +11302,7 @@ Object.assign(window, {
   handleSaleItemChange,
   toggleSaleInitialPayment,
   toggleCreditBox,
+  togglePostTaksit,
   recalcCredit,
   togglePurchBulk,
   toggleSaleQty,
