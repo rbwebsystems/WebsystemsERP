@@ -4858,6 +4858,18 @@ body.theme-dark .info-label{background:#162231;border-right-color:var(--border-c
   border-color:#fde68a;
 }
 
+.pill.overdue{
+  background:#fee2e2;
+  color:#b91c1c;
+  border-color:#fecaca;
+}
+
+body.theme-dark .pill.overdue{
+  background:rgba(248,113,113,.12);
+  color:#fca5a5;
+  border-color:rgba(248,113,113,.25);
+}
+
 .pill.credit{
   background:#ede9fe;
   color:#5b21b6;

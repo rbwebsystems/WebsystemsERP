@@ -868,7 +868,7 @@ function renderReports() {
     }
 
   } else if (view === "purch") {
-    const rows = (db.purch || []).filter((p) => !hasPeriod || inRange(p.date))
+    const rows = (db.purch || []).filter((p) => !p.returnedAt).filter((p) => !hasPeriod || inRange(p.date))
       .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
     const purchTotal = rows.reduce((a, p) => a + n(p.amount), 0);
     const purchPaid = rows.reduce((a, p) => a + n(p.paidTotal || 0), 0);
@@ -952,7 +952,7 @@ function renderReports() {
     const body = byId("tblRepExp");
     if (body) {
       body.innerHTML = rows.map((c, i) => {
-        const accName = (db.accounts || []).find((a) => a.id === Number(c.accountId || 1))?.name || "Kassa";
+        const accName = (db.accounts || []).find((a) => a.uid === Number(c.accountId || 1))?.name || "Kassa";
         return `<tr>
           <td>${i + 1}</td><td>${fmtDT(c.date)}</td>
           <td>${escapeHtml(c.source || "-")}</td>
@@ -1091,7 +1091,7 @@ function renderReports() {
     const body = byId("tblRepCash");
     if (body) {
       body.innerHTML = rows.map((c, i) => {
-        const accName = (db.accounts || []).find((a) => a.id === Number(c.accountId || 1))?.name || "Kassa";
+        const accName = (db.accounts || []).find((a) => a.uid === Number(c.accountId || 1))?.name || "Kassa";
         const isIn = c.type === "in";
         return `<tr>
           <td>${i + 1}</td><td>${fmtDT(c.date)}</td>
@@ -1112,7 +1112,7 @@ function renderReports() {
     const map = new Map();
     for (const s of sales) {
       const k = String(s.customerId || s.customerName || "");
-      if (!map.has(k)) map.set(k, { name: s.customerName || k, count: 0, total: 0, paid: 0, rem: 0, lastDate: "" });
+      if (!map.has(k)) map.set(k, { name: s.customerName || k, customerId: s.customerId, count: 0, total: 0, paid: 0, rem: 0, lastDate: "" });
       const o = map.get(k);
       o.count++; o.total += n(s.amount); o.paid += n(s.paidTotal || 0); o.rem += saleRemaining(s);
       if (!o.lastDate || s.date > o.lastDate) o.lastDate = s.date;
@@ -1128,7 +1128,7 @@ function renderReports() {
     const body = byId("tblRepCustomer");
     if (body) {
       body.innerHTML = rows.map((r, i) => {
-        const cust = (db.cust || []).find((c) => String(c.sur + " " + c.name) === r.name || String(c.uid) === r.name);
+        const cust = (db.cust || []).find((c) => (r.customerId && c.uid === r.customerId) || String(c.sur + " " + c.name).trim() === String(r.name).trim());
         const idx = cust ? (db.cust || []).indexOf(cust) : -1;
         const infoBtn = idx >= 0 ? `<a class="icon-btn info" href="${erpOpHref("cust","custInfo",idx)}" onclick="openCustInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a>` : "-";
         return `<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.count}</td>
@@ -1202,7 +1202,7 @@ function renderReports() {
   } else if (view === "aging") {
     const today = Date.now();
     const debts = (db.sales || [])
-      .filter((s) => !s.returnedAt && saleRemaining(s) > 0.001)
+      .filter((s) => !s.returnedAt && String(s.saleType||"").toLowerCase() !== "kredit" && saleRemaining(s) > 0.001)
       .map((s) => {
         const idx = (db.sales || []).indexOf(s);
         const rem = saleRemaining(s);
@@ -1249,17 +1249,17 @@ function renderReports() {
       body.innerHTML = credits.map(({s, idx}, i) => {
         const inv = s.invNo || invFallback("sales", s.uid);
         const rem = saleRemaining(s);
-        const schedule = (s.creditSchedule || []);
-        const nextDue = schedule.find((p) => !p.paid && p.dueDate);
-        const nextDueMs = nextDue ? parseDateOnly(nextDue.dueDate) : null;
+        const sched = buildCreditSchedule(s);
+        const nextDueRow = sched.rows.find((r) => r.remaining > 0.001);
+        const nextDueMs = nextDueRow ? parseDateOnly(nextDueRow.due) : null;
         const overdueDays = nextDueMs && nextDueMs < today ? Math.floor((today - nextDueMs)/86400000) : 0;
         if (overdueDays > 0) overdueRem += rem;
         return `<tr><td>${i+1}</td><td>${escapeHtml(s.customerName)}</td>
           <td>${escapeHtml(s.productName)}</td><td>${escapeHtml(inv)}</td>
           <td>${money(n(s.amount))} AZN</td><td>${money(n(s.paidTotal||0))} AZN</td>
           <td>${money(rem)} AZN</td>
-          <td>${nextDue ? fmtDT(nextDue.dueDate) : "-"}</td>
-          <td>${overdueDays > 0 ? `<span class="pill overdue">${overdueDays} gün</span>` : `<span class="pill paid">OK</span>`}</td>
+          <td>${nextDueRow ? fmtDT(nextDueRow.due) : "-"}</td>
+          <td>${overdueDays > 0 ? `<span class="pill unpaid">${overdueDays} gün</span>` : `<span class="pill paid">OK</span>`}</td>
           <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a></td></tr>`;
       }).join("") + (credits.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi (${credits.length})</strong></td>
         <td><strong>${money(totAmt)} AZN</strong></td><td><strong>${money(totPaid)} AZN</strong></td>
@@ -1301,8 +1301,8 @@ function renderReports() {
     // Populate account selector
     const accSel = byId("rv-accountSel");
     if (accSel && accSel.options.length <= 1) {
-      (db.accounts || [{ id: 1, name: "Kassa" }]).forEach((a) => {
-        const o = document.createElement("option"); o.value = String(a.id); o.textContent = a.name;
+      (db.accounts || [{ uid: 1, name: "Kassa" }]).forEach((a) => {
+        const o = document.createElement("option"); o.value = String(a.uid); o.textContent = a.name;
         accSel.appendChild(o);
       });
     }
@@ -1322,7 +1322,7 @@ function renderReports() {
       body.innerHTML = rows.map((c, i) => {
         const isIn = c.type === "in";
         running += isIn ? n(c.amount) : -n(c.amount);
-        const accName = (db.accounts||[]).find((a) => a.id === Number(c.accountId||1))?.name || "Kassa";
+        const accName = (db.accounts||[]).find((a) => a.uid === Number(c.accountId||1))?.name || "Kassa";
         return `<tr><td>${i+1}</td><td>${fmtDT(c.date)}</td>
           <td><span class="pill ${isIn?"paid":"overdue"}">${isIn?"Giriş":"Çıxış"}</span></td>
           <td>${escapeHtml(c.source||"-")}</td>
@@ -1416,7 +1416,7 @@ function renderReports() {
       const o = monthSalesMap.get(key); o.count++; o.sum += n(s.amount);
     }
     const rows = Array.from(monthSalesMap.values()).sort((a,b)=>a.month>b.month?-1:1);
-    let totSales = 0, totComm = 0;
+    let totSales = 0, totCommOnly = 0, totYekun = 0;
     const body = byId("tblRepStaffperf");
     if (body) {
       body.innerHTML = rows.map((r, i) => {
@@ -1425,17 +1425,18 @@ function renderReports() {
         const base = Math.max(0, n(st?.baseSalary||0));
         const comm = r.sum * (pct/100);
         const yekun = base + comm;
-        totSales += r.sum; totComm += yekun;
+        totSales += r.sum; totCommOnly += comm; totYekun += yekun;
         return `<tr><td>${i+1}</td><td>${r.month}</td><td>${escapeHtml(st?.name||r.empId||"-")}</td>
           <td>${r.count}</td><td>${money(r.sum)} AZN</td><td>${money(comm)} AZN</td>
           <td>${money(base)} AZN</td><td><strong>${money(yekun)} AZN</strong></td></tr>`;
       }).join("") + (rows.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi</strong></td>
         <td><strong>${money(totSales)} AZN</strong></td>
-        <td colspan="2"></td><td><strong>${money(totComm)} AZN</strong></td></tr>` : emptyRow(8));
+        <td><strong>${money(totCommOnly)} AZN</strong></td>
+        <td></td><td><strong>${money(totYekun)} AZN</strong></td></tr>` : emptyRow(8));
     }
     setText("rv-spSales", money(totSales) + " AZN");
     setText("rv-spCount", String(salesAll.length));
-    setText("rv-spComm", money(totComm) + " AZN");
+    setText("rv-spComm", money(totCommOnly) + " AZN");
 
   } else if (view === "payments") {
     const SALE_PAY_KINDS = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment",
@@ -1458,7 +1459,7 @@ function renderReports() {
     if (body) {
       body.innerHTML = combined.map((c, i) => {
         const isIn = c._dir === "in";
-        const accName = (db.accounts||[]).find((a)=>a.id===Number(c.accountId||1))?.name||"Kassa";
+        const accName = (db.accounts||[]).find((a)=>a.uid===Number(c.accountId||1))?.name||"Kassa";
         // Try to find customer/supplier name from link
         let party = c.source || "-";
         const kind = String(c.link?.kind||"");
