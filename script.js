@@ -2149,15 +2149,19 @@ function openAuditDetails(uid) {
       rawText = "";
     }
   }
+  const d2 = a.details && typeof a.details === "object" ? a.details : {};
+  const auditTargetLabelM = { sales: "Satış", purch: "Alış", cash: "Kassa", cust: "Müştəri", supp: "Təchizatçı", prod: "Məhsul", staff: "Əməkdaş", accounts: "Hesab", users: "İstifadəçi", company: "Şirkət", settings: "Ayarlar", trash: "Səbət" };
+  const detailFields = Object.entries(d2).filter(([, v]) => v !== null && v !== undefined && v !== "").map(([k, v]) => `<div class="info-row"><div class="info-label" style="text-transform:capitalize">${escapeHtml(k)}</div><div class="info-value">${escapeHtml(String(v))}</div></div>`).join("");
   openModal(`
     <h2>Audit detalları</h2>
     <div class="info-block">
       <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(a.ts)}</div></div>
       <div class="info-row"><div class="info-label">İstifadəçi</div><div class="info-value">${escapeHtml(a.user || "-")}</div></div>
       <div class="info-row"><div class="info-label">Əməliyyat</div><div class="info-value">${escapeHtml(a.action || "-")}</div></div>
-      <div class="info-row"><div class="info-label">Hədəf</div><div class="info-value">${escapeHtml(a.target || "-")}</div></div>
+      <div class="info-row"><div class="info-label">Hədəf</div><div class="info-value">${escapeHtml(auditTargetLabelM[a.target] || a.target || "-")}</div></div>
       <div class="info-row"><div class="info-label">Açıqlama</div><div class="info-value">${escapeHtml(explain)}</div></div>
     </div>
+    ${detailFields ? `<div class="info-block"><div class="info-row"><div class="info-label" style="font-weight:600">Məlumatlar</div><div class="info-value"></div></div>${detailFields}</div>` : ""}
     <div class="card" style="padding:0;">
       ${hasDetails ? "" : `<div class="muted" style="padding:12px 14px;">Bu əməliyyat üçün detallı məlumat yazılmayıb.</div>`}
       <pre style="margin:0;padding:14px;white-space:pre-wrap;word-break:break-word;">${escapeHtml(detailsText || "{}")}</pre>
@@ -8273,9 +8277,18 @@ function openUser(uidOrNull = null) {
             <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" ${isNew ? 'readonly oninput="syncAutoUserIdentity()"' : ""} required></div>
             <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" readonly required></div>
             <div class="f-group"><label>Rol</label><select id="u_role">
-          <option value="user" ${editingUser.role === "user" ? "selected" : ""}>user</option>
-          <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>admin</option>
-          <option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>developer</option>
+          <option value="user" ${editingUser.role === "user" ? "selected" : ""}>İstifadəçi (user)</option>
+          <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>Admin</option>
+          <option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>Developer</option>
+        </select></div>
+            <div class="f-group"><label>Vəzifə şablonu</label><select id="u_job_preset" onchange="applyJobPreset()">
+          <option value="">— Şablon seç (icazələri tez doldurmaq üçün) —</option>
+          <option value="satis_mute">Satış mütəxəssisi</option>
+          <option value="kredit_mute">Kredit mütəxəssisi</option>
+          <option value="anbar_mute">Anbar mütəxəssisi</option>
+          <option value="kassir">Kassir</option>
+          <option value="muhasib">Mühasib</option>
+          <option value="mudur">Müdir (tam icazə)</option>
         </select></div>
             <div class="f-group"><label>Şifrə *</label><input id="u_pass" placeholder="Şifrə" type="password" value="${escapeHtml(editingUser.pass || "")}" required autocomplete="new-password"></div>
             <label class="chk grid-span-2"><input type="checkbox" id="u_active" ${editingUser.active ? "checked" : ""}><span>Aktiv</span></label>
@@ -8324,6 +8337,45 @@ function openUser(uidOrNull = null) {
   } else if (byId("u_manual_mode")) {
     byId("u_manual_mode").checked = manualChecked;
     syncAutoUserIdentity();
+  }
+}
+
+const JOB_PRESETS = {
+  satis_mute: {
+    sections: ["dash", "sales", "cust", "stock", "debts"],
+    perms: { canEdit: true, canPay: true, canRefund: false, canDelete: false, canExport: false, canImport: false, canReset: false },
+  },
+  kredit_mute: {
+    sections: ["dash", "sales", "cust", "debts", "overdue"],
+    perms: { canEdit: true, canPay: true, canRefund: false, canDelete: false, canExport: true, canImport: false, canReset: false },
+  },
+  anbar_mute: {
+    sections: ["dash", "stock", "purch", "prod", "supp"],
+    perms: { canEdit: true, canPay: false, canRefund: true, canDelete: false, canExport: true, canImport: true, canReset: false },
+  },
+  kassir: {
+    sections: ["dash", "cash", "sales", "debts", "creditor"],
+    perms: { canEdit: false, canPay: true, canRefund: false, canDelete: false, canExport: false, canImport: false, canReset: false },
+  },
+  muhasib: {
+    sections: ["dash", "cash", "accounts", "reports", "audit", "staff"],
+    perms: { canEdit: true, canPay: true, canRefund: true, canDelete: false, canExport: true, canImport: false, canReset: false },
+  },
+  mudur: {
+    sections: ["dash", "sales", "purch", "stock", "cust", "supp", "prod", "staff", "debts", "overdue", "creditor", "cash", "accounts", "reports", "audit"],
+    perms: { canEdit: true, canPay: true, canRefund: true, canDelete: true, canExport: true, canImport: true, canReset: false },
+  },
+};
+
+function applyJobPreset() {
+  const preset = JOB_PRESETS[val("u_job_preset") || ""];
+  if (!preset) return;
+  // apply sections
+  document.querySelectorAll(".permSec").forEach((el) => { el.checked = preset.sections.includes(el.value); });
+  // apply perms
+  const pmap = { canEdit: "u_can_edit", canDelete: "u_can_delete", canPay: "u_can_pay", canRefund: "u_can_ref", canExport: "u_can_exp", canImport: "u_can_imp", canReset: "u_can_reset" };
+  for (const [k, id] of Object.entries(pmap)) {
+    const el = byId(id); if (el) el.checked = !!(preset.perms[k]);
   }
 }
 
@@ -10638,15 +10690,27 @@ function renderAll() {
       .filter((a) => inDateRange(a.ts, "auditFrom", "auditTo"))
       .slice()
       .sort((a, b) => (a.ts > b.ts ? -1 : 1));
+    const auditActionClass = { create: "paid", update: "partial", delete: "unpaid", restore: "warn", reset: "unpaid", export: "partial", import: "partial" };
+    const auditActionLabel = { create: "Yaratdı", update: "Yenilədi", delete: "Sildi", restore: "Bərpa", reset: "Sıfırladı", export: "Export", import: "Import", recalc: "Yenidən hesab" };
+    const auditTargetLabel = { sales: "Satış", purch: "Alış", cash: "Kassa", cust: "Müştəri", supp: "Təchizatçı", prod: "Məhsul", staff: "Əməkdaş", accounts: "Hesab", users: "İstifadəçi", company: "Şirkət", settings: "Ayarlar", trash: "Səbət" };
     auditBody.innerHTML = list
       .map((a, i) => {
+        const d = a.details && typeof a.details === "object" ? a.details : {};
+        const pillClass = auditActionClass[a.action] || "partial";
+        const actLabel = auditActionLabel[a.action] || a.action || "-";
+        const tgtLabel = auditTargetLabel[a.target] || a.target || "-";
+        const invNo = d.invNo || d.inv || "";
+        const amount = d.amount != null ? `${money(d.amount)} AZN` : "";
+        const custName = d.customerName || d.fullName || d.name || "";
+        const note = [invNo, custName, amount, d.kind ? `(${d.kind})` : ""].filter(Boolean).join(" · ");
         return `
         <tr>
           <td>${i + 1}</td>
-          <td>${fmtDT(a.ts)}</td>
+          <td style="white-space:nowrap">${fmtDT(a.ts)}</td>
           <td>${escapeHtml(a.user || "-")}</td>
-          <td>${escapeHtml(auditExplain(a))}</td>
-          <td>${escapeHtml(a.target || "-")}</td>
+          <td><span class="pill ${pillClass}" style="font-size:.75rem">${escapeHtml(actLabel)}</span></td>
+          <td>${escapeHtml(tgtLabel)}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${escapeHtml(note) || "-"}</td>
           <td><button class="btn-mini-pay" type="button" onclick="openAuditDetails(${a.uid})">Bax</button></td>
         </tr>`;
       })
@@ -10656,30 +10720,28 @@ function renderAll() {
   // trash
   const trashBody = byId("tblTrash");
   if (trashBody) {
+    const trashTypeLabelMap = { cust: "Müştəri", supp: "Təchizatçı", prod: "Məhsul", purch: "Alış", sales: "Satış", cash: "Kassa", staff: "Əməkdaş" };
     const list = (db.trash || []).slice().sort((a, b) => (a.deletedAt > b.deletedAt ? -1 : 1));
     trashBody.innerHTML = list
       .map((t, i) => {
-        const name =
-          t.type === "cust"
-            ? `${t.item?.sur || ""} ${t.item?.name || ""}`
-            : t.type === "supp"
-              ? t.item?.co || "-"
-              : t.type === "prod"
-                ? t.item?.name || "-"
-                : t.type === "purch"
-                  ? (t.item?.invNo || invFallback("purch", t.item?.uid)) + " • " + (t.item?.name || "-")
-                  : t.type === "sales"
-                    ? (t.item?.invNo || invFallback("sales", t.item?.uid)) + " • " + (t.item?.customerName || "-")
-                    : t.type === "cash"
-                      ? `Cash #${t.item?.uid}`
-                      : "-";
+        const typeLabel = trashTypeLabelMap[t.type] || t.type || "-";
+        let name = "-", invNo = "", amount = "";
+        if (t.type === "cust") { name = `${t.item?.sur || ""} ${t.item?.name || ""} ${t.item?.father || ""}`.trim(); }
+        else if (t.type === "supp") { name = t.item?.co || "-"; }
+        else if (t.type === "prod") { name = t.item?.name || "-"; }
+        else if (t.type === "purch") { invNo = t.item?.invNo || invFallback("purch", t.item?.uid); name = t.item?.name || "-"; amount = t.item?.amount ? `${money(t.item.amount)} AZN` : ""; }
+        else if (t.type === "sales") { invNo = t.item?.invNo || invFallback("sales", t.item?.uid); name = t.item?.customerName || "-"; amount = t.item?.amount ? `${money(t.item.amount)} AZN` : ""; }
+        else if (t.type === "staff") { name = t.item?.name || "-"; }
+        else if (t.type === "cash") { name = t.item?.source || `Kassa #${t.item?.uid || ""}`; amount = t.item?.amount ? `${money(t.item.amount)} AZN` : ""; }
         return `
         <tr>
           <td>${i + 1}</td>
-          <td>${fmtDT(t.deletedAt)}</td>
-          <td>${escapeHtml(t.type)}</td>
-          <td>${escapeHtml(name)}</td>
+          <td style="white-space:nowrap">${fmtDT(t.item?.date || t.deletedAt)}</td>
+          <td><span class="pill partial" style="font-size:.75rem">${escapeHtml(typeLabel)}</span></td>
+          <td>${invNo ? `<strong>${escapeHtml(invNo)}</strong> · ` : ""}${escapeHtml(name)}</td>
+          <td style="white-space:nowrap">${escapeHtml(amount) || "-"}</td>
           <td>${escapeHtml(t.deletedBy || "-")}</td>
+          <td style="white-space:nowrap">${fmtDT(t.deletedAt)}</td>
           <td class="tbl-actions">
             ${userCanEdit() ? `<button class="btn-mini-pay" type="button" onclick="restoreTrash(${t.uid})">Bərpa</button>` : ""}
             ${userCanDelete("trash") ? `<button class="icon-btn delete" onclick="deleteTrash(${t.uid})" title="Tam sil"><i class="fas fa-trash"></i></button>` : ""}
@@ -11001,10 +11063,55 @@ function renderAll() {
   const creditorSum = db.purch.reduce((a, p) => a + purchRemaining(p), 0);
 
   byId("st-cust").innerText = String(db.cust.length);
-  byId("st-stock").innerText = String(stockCount);
+  byId("st-stock").innerText = String(Math.floor(stockCount));
   byId("st-debts").innerText = money(debtorSum);
   byId("st-creditor").innerText = money(creditorSum);
   byId("st-cash").innerText = money(totalAccountsBalance());
+
+  // New KPI cards
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const thisMonthStr = todayStr.slice(0, 7);
+  const monthSales = (db.sales||[]).filter((s) => !s.returnedAt && String(s.date||"").slice(0,7) === thisMonthStr).reduce((a,s) => a + n(s.amount), 0);
+  const monthPurch = (db.purch||[]).filter((p) => !p.returnedAt && String(p.date||"").slice(0,7) === thisMonthStr).reduce((a,p) => a + n(p.amount), 0);
+  const monthExp  = (db.cash||[]).filter((c) => c.type === "out" && c.link?.kind === "expense" && String(c.date||"").slice(0,7) === thisMonthStr).reduce((a,c) => a + n(c.amount), 0);
+  const todaySales = (db.sales||[]).filter((s) => !s.returnedAt && String(s.date||"").slice(0,10) === todayStr).reduce((a,s) => a + n(s.amount), 0);
+
+  const today2 = new Date();
+  const todayISO2 = todayStr;
+  const dayMs2 = 86400000;
+  const toDayStart2 = (iso) => { const [y,m,d] = String(iso||"").slice(0,10).split("-").map(Number); if(!y||!m||!d) return null; return new Date(y,m-1,d).getTime(); };
+  let overdueCount = 0, overdueAmt = 0;
+  for (const s of db.sales||[]) {
+    if (s.returnedAt || String(s.saleType||"").toLowerCase() !== "kredit") continue;
+    const schedule = buildCreditSchedule(s);
+    for (const r of schedule.rows) {
+      if (r.remaining > 0.001) {
+        const due = toDayStart2(r.due);
+        if (due && today2.getTime() - due > 0) { overdueCount++; overdueAmt += r.remaining; break; }
+      }
+    }
+  }
+
+  const setEl = (id, val) => { const el = byId(id); if (el) el.innerText = val; };
+  setEl("st-month-sales", money(monthSales));
+  setEl("st-month-purch", money(monthPurch));
+  setEl("st-month-exp",   money(monthExp));
+  setEl("st-overdue-cnt", String(overdueCount));
+  setEl("st-today-sales", money(todaySales));
+  setEl("dashStatOverdueAmt", money(overdueAmt));
+
+  // Recent sales table
+  const recentSalesEl = byId("dashRecentSales");
+  if (recentSalesEl) {
+    const recS = (db.sales||[]).filter((s) => !s.returnedAt).slice().sort((a,b) => (a.date>b.date?-1:1)).slice(0,5);
+    recentSalesEl.innerHTML = recS.map((s) => `<tr><td style="white-space:nowrap">${fmtDT(s.date)}</td><td>${escapeHtml(s.invNo||invFallback("sales",s.uid))}</td><td>${escapeHtml(s.customerName||"-")}</td><td>${money(s.amount)} AZN</td></tr>`).join("") || `<tr><td colspan="4">Məlumat yoxdur</td></tr>`;
+  }
+  // Recent purch table
+  const recentPurchEl = byId("dashRecentPurch");
+  if (recentPurchEl) {
+    const recP = (db.purch||[]).filter((p) => !p.returnedAt).slice().sort((a,b) => (a.date>b.date?-1:1)).slice(0,5);
+    recentPurchEl.innerHTML = recP.map((p) => `<tr><td style="white-space:nowrap">${fmtDT(p.date)}</td><td>${escapeHtml(p.invNo||invFallback("purch",p.uid))}</td><td>${escapeHtml(p.name||"-")}</td><td>${money(p.amount)} AZN</td></tr>`).join("") || `<tr><td colspan="4">Məlumat yoxdur</td></tr>`;
+  }
 
   // Dashboard charts: son 6 ay satış
   const now = new Date();
@@ -11278,6 +11385,7 @@ Object.assign(window, {
   filterDebts,
   filterCreditOnly,
   filterCreditor,
+  applyJobPreset,
   toggleAllUserPerms,
   toggleAllUserSecs,
   openCreditorInfo,

@@ -132,31 +132,43 @@
 
   <main>
     <div id="dash" class="section">
-      <div class="content-header"><h1 data-i18n="nav_dash">Nəzarət paneli</h1></div>
+      <div class="content-header"><h1>Nəzarət paneli</h1></div>
+
+      <!-- Row 1: Key balances -->
       <div class="stats-grid">
-        <div class="card stat-card"><small data-i18n="dash_stat_cust">Müştəri</small><h2 id="st-cust">0</h2></div>
-        <div class="card stat-card"><small data-i18n="dash_stat_stock">Anbarda</small><h2 id="st-stock">0</h2></div>
-        <div class="card stat-card"><small data-i18n="dash_stat_debt">Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="dash_stat_cred">Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
-        <div class="card stat-card"><small data-i18n="dash_stat_cash">Ümumi balans (bütün hesablar)</small><h2 id="st-cash">0.00</h2></div>
+        <div class="card stat-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
+        <div class="card stat-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
+        <div class="card stat-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
+        <div class="card stat-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
+        <div class="card stat-card"><small>Ümumi balans (AZN)</small><h2 id="st-cash">0.00</h2></div>
       </div>
+
+      <!-- Row 2: Bu ay / bu gün KPIs -->
+      <div class="stats-grid" style="margin-top:12px">
+        <div class="card stat-card" style="border-top:3px solid var(--accent)"><small>Bu ay satış (AZN)</small><h2 id="st-month-sales">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #e63946"><small>Bu ay alış (AZN)</small><h2 id="st-month-purch">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #2a9d8f"><small>Bu ay xərc (AZN)</small><h2 id="st-month-exp">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #f4a261"><small>Gecikmiş kredit sayı</small><h2 id="st-overdue-cnt">0</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #8ecae6"><small>Bu gün satış (AZN)</small><h2 id="st-today-sales">0.00</h2></div>
+      </div>
+
       <div class="dash-charts">
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title" data-i18n="dash_chart_sales6">Son 6 ay satış (AZN)</h3>
+          <h3 class="dash-chart-title">Son 6 ay satış (AZN)</h3>
           <div id="dashChartSales" class="dash-bar-chart"></div>
         </div>
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title" data-i18n="dash_chart_pvs">Alış vs Satış (bu ay)</h3>
+          <h3 class="dash-chart-title">Alış vs Satış (bu ay)</h3>
           <div id="dashChartPurchVsSales" class="dash-donut-wrap"></div>
         </div>
       </div>
       <div class="dash-charts">
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title" data-i18n="dash_chart_purch6">Son 6 ay alış (AZN)</h3>
+          <h3 class="dash-chart-title">Son 6 ay alış (AZN)</h3>
           <div id="dashChartPurch" class="dash-bar-chart"></div>
         </div>
         <div class="card dash-chart-card">
-          <h3 class="dash-chart-title" data-i18n="dash_chart_debtcred">Debitor vs Kreditor borclar</h3>
+          <h3 class="dash-chart-title">Debitor vs Kreditor borclar</h3>
           <div id="dashChartDebtVsCredit" class="dash-donut-wrap"></div>
         </div>
       </div>
@@ -164,23 +176,42 @@
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon sales"><i class="fas fa-arrow-trend-up"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label" data-i18n="dash_mini_sales_yr">Bu il satış cəmi (AZN)</span>
+            <span class="dash-stat-mini-label">Bu il satış cəmi (AZN)</span>
             <span id="dashStatSalesYear" class="dash-stat-mini-value">0.00</span>
           </div>
         </div>
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon purch"><i class="fas fa-cart-flatbed"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label" data-i18n="dash_mini_purch_yr">Bu il alış cəmi (AZN)</span>
+            <span class="dash-stat-mini-label">Bu il alış cəmi (AZN)</span>
             <span id="dashStatPurchYear" class="dash-stat-mini-value">0.00</span>
           </div>
         </div>
         <div class="card dash-stat-mini">
           <div class="dash-stat-mini-icon stock"><i class="fas fa-warehouse"></i></div>
           <div class="dash-stat-mini-body">
-            <span class="dash-stat-mini-label" data-i18n="dash_mini_stock_n">Anbarda məhsul sayı</span>
+            <span class="dash-stat-mini-label">Anbarda məhsul sayı</span>
             <span id="dashStatStockCount" class="dash-stat-mini-value">0</span>
           </div>
+        </div>
+        <div class="card dash-stat-mini">
+          <div class="dash-stat-mini-icon" style="background:rgba(244,162,97,.15)"><i class="fas fa-user-clock" style="color:#f4a261"></i></div>
+          <div class="dash-stat-mini-body">
+            <span class="dash-stat-mini-label">Gecikmiş kredit (AZN)</span>
+            <span id="dashStatOverdueAmt" class="dash-stat-mini-value">0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Son satışlar / Son alışlar -->
+      <div class="dash-charts" style="margin-top:16px">
+        <div class="card" style="flex:1;min-width:280px;padding:16px">
+          <h3 style="margin:0 0 10px;font-size:.95rem">Son 5 satış</h3>
+          <div class="table-wrap"><table><thead><tr><th>Tarix</th><th>Qaimə</th><th>Müştəri</th><th>Məbləğ</th></tr></thead><tbody id="dashRecentSales"></tbody></table></div>
+        </div>
+        <div class="card" style="flex:1;min-width:280px;padding:16px">
+          <h3 style="margin:0 0 10px;font-size:.95rem">Son 5 alış</h3>
+          <div class="table-wrap"><table><thead><tr><th>Tarix</th><th>Qaimə</th><th>Məhsul</th><th>Məbləğ</th></tr></thead><tbody id="dashRecentPurch"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -708,7 +739,7 @@
       </div>
       <div class="card">
         <table>
-          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_user">İstifadəçi</th><th data-i18n="th_actions">Əməliyyat</th><th data-i18n="th_target">Hədəf</th><th data-i18n="th_detail">Detallı</th></tr></thead>
+          <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Əməliyyat</th><th>Hədəf</th><th>Ətraflı</th><th></th></tr></thead>
           <tbody id="tblAudit"></tbody>
         </table>
       </div>
@@ -727,7 +758,7 @@
       </div>
       <div class="card">
         <table>
-          <thead><tr><th data-i18n="th_num">#</th><th data-i18n="th_date">Tarix</th><th data-i18n="th_type">Tip</th><th data-i18n="th_name">Ad</th><th data-i18n="th_deleted_by">Silən</th><th data-i18n="th_actions">Əməliyyat</th></tr></thead>
+          <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Ad / Qaimə</th><th>Məbləğ</th><th>Silən</th><th>Silmə tarixi</th><th>Əməliyyat</th></tr></thead>
           <tbody id="tblTrash"></tbody>
         </table>
       </div>
