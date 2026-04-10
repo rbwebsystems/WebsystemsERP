@@ -1494,16 +1494,6 @@ function renderReports() {
     const numFounders = db.founders.length || 1;
     const equalExpShare = (periodExpenses + periodPayroll) / numFounders;
 
-    // === KASSA METODU ===
-    // Gəlir: kassaya faktiki daxil olan satış ödənişləri
-    const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
-    const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    // Maya: satılan malların alış qiyməti (tahakkuk COGS ilə eyni, amma gəlir kassa əsaslıdır)
-    // cashSaleRev / accrualSaleRev nisbətinə görə proporsional COGS tətbiq edilir
-    const cashCogsRatio = accrualSaleRev > 0 ? (cashSaleRev / accrualSaleRev) : 0;
-    const cashCogs = accrualCogs * cashCogsRatio;
-    const grossProfitCash = cashSaleRev - cashCogs;
-
     // === TAHAKKUq METODU ===
     const periodSales = (db.sales||[]).filter((s) => !s.returnedAt && (!hasPeriod || inRange(s.date)));
     const accrualSaleRev = periodSales.reduce((a,s) => a + n(s.amount), 0);
@@ -1519,6 +1509,13 @@ function renderReports() {
       return a + (p ? n(p.amount) : 0);
     }, 0);
     const grossProfitAccrual = accrualSaleRev - accrualCogs;
+
+    // === KASSA METODU ===
+    const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
+    const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    const cashCogsRatio = accrualSaleRev > 0 ? (cashSaleRev / accrualSaleRev) : 0;
+    const cashCogs = accrualCogs * cashCogsRatio;
+    const grossProfitCash = cashSaleRev - cashCogs;
 
     function buildFounderRows(grossProfit, showActions) {
       let totCap = 0, totWit = 0, totPS = 0, totExp = 0, totNet = 0;
