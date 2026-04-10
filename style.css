@@ -5407,7 +5407,7 @@ select,
 .select-tiny {
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23374151' d='M1 1l5 5 5-5'stroke='%23374151' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23374151' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px 8px;
@@ -5415,20 +5415,16 @@ select,
   cursor: pointer;
 }
 
-select {
+select,
+.select-small {
   font-size: .875rem;
   line-height: 1.4;
   min-height: 36px;
   -webkit-text-size-adjust: 100%;
-  background-color: #f8fafc;
 }
 
 .select-small {
   min-height: 42px;
-  font-size: .875rem;
-  line-height: 1.4;
-  -webkit-text-size-adjust: 100%;
-  background-color: #f8fafc;
 }
 
 .header-actions select,
@@ -5436,20 +5432,14 @@ select {
   min-height: 30px !important;
   height: 30px !important;
   font-size: .82rem;
-  background-color: #f8fafc;
 }
 
-/* Modal içindəki select-lər */
 .modal-body select,
 .form-card select {
   min-height: 40px;
-  font-size: .875rem;
-  line-height: 1.4;
-  background-color: #f8fafc;
 }
 
 body.theme-dark select,
 body.theme-dark .select-small {
-  background-color: #1c2736;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath stroke='%23a0aec0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0aec0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
 }
