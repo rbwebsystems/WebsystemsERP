@@ -1495,10 +1495,13 @@ function renderReports() {
     const equalExpShare = (periodExpenses + periodPayroll) / numFounders;
 
     // === KASSA METODU ===
+    // Gəlir: kassaya faktiki daxil olan satış ödənişləri
     const SALE_PAY_KINDS_FND = new Set(["sale","sale_info","debts_module","sale_payment","debtor_payment","debtor_invoice_payment","monthly","down","sale_down","sale_monthly"]);
-    const PURCH_PAY_KINDS_FND = new Set(["purch_payment","purch_payment_adj","creditor_payment","creditor_invoice_payment"]);
     const cashSaleRev = (db.cash||[]).filter((c) => c.type === "in" && SALE_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
-    const cashCogs = (db.cash||[]).filter((c) => c.type === "out" && PURCH_PAY_KINDS_FND.has(String(c.link?.kind||"")) && (!hasPeriod || inRange(c.date))).reduce((a,c) => a+n(c.amount), 0);
+    // Maya: satılan malların alış qiyməti (tahakkuk COGS ilə eyni, amma gəlir kassa əsaslıdır)
+    // cashSaleRev / accrualSaleRev nisbətinə görə proporsional COGS tətbiq edilir
+    const cashCogsRatio = accrualSaleRev > 0 ? (cashSaleRev / accrualSaleRev) : 0;
+    const cashCogs = accrualCogs * cashCogsRatio;
     const grossProfitCash = cashSaleRev - cashCogs;
 
     // === TAHAKKUq METODU ===
