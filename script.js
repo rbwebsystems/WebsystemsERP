@@ -10466,17 +10466,21 @@ function openDayCloseHistory() {
         <td></td>
       </tr>`
     ).join("");
-    return `
+    const headerRow = `
       <tr style="cursor:default;">
         <td>${x.uid}</td>
         <td>${fmtDT(x.ts)}</td>
         <td>${escapeHtml(x.user || "-")}</td>
-        <td colspan="2">${escapeHtml(x.note || "")}</td>
-        <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
-        <td>${accs.length ? `<span class="muted" style="font-size:.78rem;">${accs.length} hesab</span>` : ""}</td>
+        <td colspan="4">${escapeHtml(x.note || "")}</td>
       </tr>
       ${accRows}
+      <tr class="total-row">
+        <td colspan="5"><strong>Ümumi balans</strong></td>
+        <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
+        <td></td>
+      </tr>
     `;
+    return headerRow;
   }).join("");
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
