@@ -6003,6 +6003,7 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
 
 /* ===================== #18 Mobil uyğunluq ===================== */
 .mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;color:inherit;padding:6px;font-size:1.1rem;}
+.desktop-sidebar-btn{display:none;}
 .mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1199;}
 .mobile-sidebar-overlay.open{display:block;}
 
@@ -6100,6 +6101,10 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
 }
 @media(min-width:769px){
   .mobile-menu-btn{display:none !important;}
+  .desktop-sidebar-btn{display:flex !important;}
+}
+@media(max-width:768px){
+  .desktop-sidebar-btn{display:none !important;}
 }
 
 /* ===================== #19 Qlobal axtarış (command palette) ===================== */
