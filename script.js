@@ -7561,7 +7561,7 @@ function printCreditDoc(idx, type) {
       </div>
       <div style="margin-top:30px;margin-bottom:50px;">
         <p style="font-size:14px;line-height:2.1;text-align:justify;text-indent:2em;">
-          Mən (ad, soyad, Ş/V seriya və Fin kod) <strong>${custFull}</strong>, seriya: <strong>${custSer}</strong>, FİN: <strong>${custFin}</strong> — <strong>"${co}"</strong> MMC-dən aldığım qarşılıqlı razılaşma əsasında dəyərini hissə-hissə ödəmək üçün nəzərdə tutulmuş <strong>"${prod}"</strong> markalı, İMEİ kodu: <strong>${imeiStr}</strong> mobil cihazın Müqavilə şərtlərini pozduğum halda İMEİ kodunun deaktiv edilməsi və vahid şəbəkədə riskli müştərilərin siyahısına salınmasına etirazım yoxdur.
+          Mən <strong>${custFull}</strong>, seriya: <strong>${custSer}</strong>, FİN: <strong>${custFin}</strong> — <strong>"${co}"</strong> MMC-dən aldığım qarşılıqlı razılaşma əsasında dəyərini hissə-hissə ödəmək üçün nəzərdə tutulmuş <strong>"${prod}"</strong> markalı, İMEİ kodu: <strong>${imeiStr}</strong> mobil cihazın Müqavilə şərtlərini pozduğum halda İMEİ kodunun deaktiv edilməsi və vahid şəbəkədə riskli müştərilərin siyahısına salınmasına etirazım yoxdur.
         </p>
       </div>
       <div style="margin-top:50px;font-size:13px;line-height:3.2;">
