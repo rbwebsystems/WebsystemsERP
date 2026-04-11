@@ -8625,6 +8625,7 @@ function openCompanyInfo(idx) {
 }
 
 function checkSubscriptionStatus() {
+  if (isDeveloper()) { hideSubscriptionBlock(); return; }
   const cid = meta?.session?.companyId;
   if (!cid) return;
   const company = (meta.companies || []).find((c) => c.id === cid);
