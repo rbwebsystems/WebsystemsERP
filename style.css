@@ -3773,46 +3773,6 @@ body.landing-login-open .lp-aurora{
 .date-range span{color:var(--text-muted);font-weight:900;}
 .date-range input{border:1px solid var(--border-color) !important;background:#fff !important;}
 
-/* ── Date / month inputs — always white card style ── */
-input[type="date"],
-input[type="month"],
-input[type="datetime-local"] {
-  background: #fff !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 10px !important;
-  color: var(--text-main) !important;
-  box-shadow: none !important;
-}
-input[type="date"]:focus,
-input[type="month"]:focus,
-input[type="datetime-local"]:focus {
-  border-color: #007AFF !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
-  background: #fff !important;
-}
-body.theme-dark input[type="date"],
-body.theme-dark input[type="month"],
-body.theme-dark input[type="datetime-local"] {
-  background: #2c2c2e !important;
-  border-color: rgba(255,255,255,.18) !important;
-  color: #fff !important;
-}
-
-/* ── Sıfırla / reset buttons ── */
-.btn-reset {
-  background: #fff !important;
-  border: 1px solid var(--border-color) !important;
-  color: var(--text-main) !important;
-  border-radius: 10px !important;
-  height: 34px !important;
-  padding: 0 14px !important;
-  font-size: .85rem !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  box-shadow: none !important;
-}
-.btn-reset:hover { background: #f5f5f7 !important; }
 
 .pager{
   display:flex;
@@ -5495,6 +5455,77 @@ body.theme-dark select, body.theme-dark textarea {
 }
 body.theme-dark input:not([type=checkbox]):not([type=radio]):focus,
 body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
+
+/* ── White overrides: date/month inputs + cancel/reset buttons ──────────────
+   Must come AFTER the global iOS gray rule above to win the !important race  */
+input[type="date"],
+input[type="month"],
+input[type="datetime-local"] {
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 10px !important;
+  padding: 0 10px !important;
+  color: var(--text-main, #1c1c1e) !important;
+  box-shadow: none !important;
+}
+input[type="date"]:focus,
+input[type="month"]:focus,
+input[type="datetime-local"]:focus {
+  background: #fff !important;
+  border-color: #007AFF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
+}
+input[type="date"]:hover,
+input[type="month"]:hover,
+input[type="datetime-local"]:hover {
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
+}
+body.theme-dark input[type="date"],
+body.theme-dark input[type="month"],
+body.theme-dark input[type="datetime-local"] {
+  background: #2c2c2e !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+/* Cancel / reset buttons — white */
+.btn-cancel, .btn-reset {
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+.btn-cancel:hover, .btn-reset:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+}
+body.theme-dark .btn-cancel, body.theme-dark .btn-reset {
+  background: #3a3a3c !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: #f9fafb !important;
+}
+/* Circular back button — white */
+.btn-back,
+.modal-nav-top .btn-back,
+.modal-footer .btn-back {
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  color: #6b7280 !important;
+}
+.btn-back:hover,
+.modal-nav-top .btn-back:hover,
+.modal-footer .btn-back:hover {
+  background: #f3f4f6 !important;
+  color: #1c1c1e !important;
+}
+body.theme-dark .btn-back,
+body.theme-dark .modal-nav-top .btn-back,
+body.theme-dark .modal-footer .btn-back {
+  background: #3a3a3c !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: #ebebf5 !important;
+}
 
 /* ── Tables ── */
 .card table { border: none !important; border-radius: 0 !important; }
