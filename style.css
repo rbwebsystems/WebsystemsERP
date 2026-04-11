@@ -1476,6 +1476,21 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   transition:box-shadow .2s, border-color .2s, background .2s;
   box-shadow: none !important;
 }
+/* override global iOS input rule — login fields need left padding for icon */
+#loginUser, #loginPass {
+  padding: 0 2.75rem 0 2.65rem !important;
+  background: #f8fafc !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 1rem !important;
+  height: 48px !important;
+  box-shadow: none !important;
+}
+#loginUser:focus, #loginPass:focus {
+  background: #fff !important;
+  border-color: var(--brand-green) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(26,71,84,.1) !important;
+}
 .login-v3-input-wrap input:focus{
   border-color:var(--brand-green);
   background:#fff;
@@ -5393,6 +5408,22 @@ body.theme-dark .card { background: #2C2C2E !important; box-shadow: 0 1px 3px rg
 body.theme-dark .form-card { background: #2C2C2E !important; }
 
 /* ── Inputs ── */
+/* login inputs are excluded from global iOS rule — they have their own icon-aware padding */
+.login-v3-input-wrap input:not([type=checkbox]):not([type=radio]) {
+  padding: 0 2.75rem 0 2.65rem !important;
+  background: #f8fafc !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 1rem !important;
+  height: 48px !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.login-v3-input-wrap input:focus {
+  background: #fff !important;
+  border-color: var(--brand-green) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(26,71,84,.1) !important;
+}
 input:not([type=checkbox]):not([type=radio]),
 select, textarea {
   background: rgba(120,120,128,.1) !important;
