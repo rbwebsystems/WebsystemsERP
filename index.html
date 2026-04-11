@@ -44,6 +44,9 @@
   </script>
   <div id="appShell">
   <aside>
+    <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Sidebarı daralt / genişlət">
+      <i class="fas fa-chevron-left"></i>
+    </button>
     <div class="sidebar-user-info" id="sidebarUserInfo"></div>
     <nav>
       <button type="button" class="nav-link active" data-sec="dash" data-tip="Dashboard"><i class="fas fa-gauge"></i><span class="nav-text">Dashboard</span></button>
@@ -97,9 +100,6 @@
       <div class="header-rest">
       <div class="app-header-left">
         <button class="mobile-menu-btn header-btn header-btn-icon" type="button" onclick="toggleMobileSidebar()" title="Menyu">
-          <i class="fas fa-bars"></i>
-        </button>
-        <button class="desktop-sidebar-btn header-btn header-btn-icon" type="button" onclick="toggleSidebar()" title="Sidebarı gizlət / göstər">
           <i class="fas fa-bars"></i>
         </button>
         <span class="app-header-title" id="appHeaderTitle"></span>

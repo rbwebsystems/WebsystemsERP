@@ -5036,11 +5036,11 @@ body.theme-dark .app-header { background: #2C2C2E !important; box-shadow: 0 2px 
 body.theme-dark .header-rest { background: transparent !important; }
 
 /* Collapsed sidebar — shift header */
-body.sidebar-collapsed .app-header { left: 76px !important; }
+body.sidebar-collapsed .app-header { left: 72px !important; }
 
 /* Main area — push down below floating header */
-.main-area { margin-left: 228px !important; padding-top: 68px !important; padding-right: 8px !important; padding-bottom: 8px !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; box-sizing: border-box !important; overflow: hidden !important; }
-body.sidebar-collapsed .main-area { margin-left: 76px !important; }
+.main-area { margin-left: 228px !important; padding-top: 68px !important; padding-right: 8px !important; padding-bottom: 8px !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; box-sizing: border-box !important; overflow: hidden !important; transition: margin-left .22s cubic-bezier(.4,0,.2,1) !important; }
+body.sidebar-collapsed .main-area { margin-left: 72px !important; }
 main { padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
 
 /* Hide pagination controls */
@@ -5054,19 +5054,20 @@ main { padding-left: 0 !important; padding-right: 0 !important; overflow: hidden
   bottom: 8px !important;
   border-radius: 14px !important;
   overflow: hidden !important;
+  transition: left .22s cubic-bezier(.4,0,.2,1) !important;
 }
 .modal.modal--slideover .modal-body {
   border-radius: 14px !important;
   height: calc(100vh - 84px) !important;
   max-height: calc(100vh - 84px) !important;
 }
-body.sidebar-collapsed .modal.modal--slideover { left: 76px !important; }
+body.sidebar-collapsed .modal.modal--slideover { left: 72px !important; }
 
 /* Soft loading overlay alignment */
 .soft-loading-center,
 .loading-overlay.loading-overlay--soft { left: 228px !important; }
 body.sidebar-collapsed .soft-loading-center,
-body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 76px !important; }
+body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 72px !important; }
 
 /* Header logo area */
 .header-logo { border-right: none !important; background: transparent !important; }
@@ -5380,6 +5381,48 @@ aside {
   bottom: 8px !important;
   height: auto !important;
   box-shadow: 0 2px 12px rgba(0,0,0,.08) !important;
+  transition: width .22s cubic-bezier(.4,0,.2,1) !important;
+  overflow: hidden !important;
+}
+
+/* ── Sidebar collapse toggle button ── */
+.sidebar-collapse-btn {
+  position: absolute !important;
+  top: 10px !important;
+  right: 8px !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(0,0,0,.12) !important;
+  background: #f2f2f7 !important;
+  color: #636366 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: .65rem !important;
+  z-index: 10 !important;
+  transition: background .15s, transform .22s cubic-bezier(.4,0,.2,1) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1) !important;
+  flex-shrink: 0 !important;
+}
+.sidebar-collapse-btn:hover {
+  background: #e5e5ea !important;
+  color: #1c1c1e !important;
+}
+body.sidebar-collapsed .sidebar-collapse-btn {
+  transform: rotate(180deg) !important;
+  right: auto !important;
+  left: 50% !important;
+  translate: -50% 0 !important;
+}
+body.theme-dark .sidebar-collapse-btn {
+  background: #3a3a3c !important;
+  border-color: rgba(255,255,255,.15) !important;
+  color: #ebebf5 !important;
+}
+body.theme-dark .sidebar-collapse-btn:hover {
+  background: #48484a !important;
 }
 body.theme-dark aside {
   background: #1C1C1E !important;
@@ -5523,9 +5566,9 @@ body.theme-dark .sidebar-brand { border-top-color: rgba(255,255,255,.08) !import
 body.theme-dark .sidebar-brand-name { color: rgba(255,255,255,.3) !important; }
 
 /* Collapsed */
-body.sidebar-collapsed .nav-link { justify-content: center !important; padding: 8px 0 !important; gap: 0 !important; }
-body.sidebar-collapsed .nav-link.active { margin-left: 4px !important; width: calc(100% - 8px) !important; }
-body.sidebar-collapsed .nav-link.active i { background: rgba(255,255,255,.25) !important; }
+body.sidebar-collapsed .nav-link { justify-content: center !important; padding: 10px 0 !important; gap: 0 !important; width: 100% !important; margin-left: 0 !important; border-radius: 0 !important; }
+body.sidebar-collapsed .nav-link.active { margin-left: 0 !important; width: 100% !important; border-radius: 0 !important; }
+body.sidebar-collapsed .nav-link.active i { background: rgba(255,255,255,.22) !important; }
 body.sidebar-collapsed .nav-link.active::before,
 body.sidebar-collapsed .nav-link.active::after { display: none !important; }
 body.sidebar-collapsed .nav-link:hover::before {
@@ -5822,17 +5865,17 @@ body.theme-dark .info-value { color: #fff !important; }
 
 /* Sidebar collapsed mode */
 body.sidebar-collapsed{
-  --app-sidebar-w:68px;
+  --app-sidebar-w:64px;
 }
 body.sidebar-collapsed aside{
-  width:68px;
-  overflow:visible;
+  width:64px !important;
+  overflow:hidden !important;
 }
 body.sidebar-collapsed .main-area{
-  margin-left:68px;
+  margin-left:64px !important;
 }
 body.sidebar-collapsed .app-header{
-  left:68px;
+  left:64px !important;
 }
 body.sidebar-collapsed .sidebar-user-info{padding:12px 6px;gap:6px;}
 body.sidebar-collapsed .sidebar-user-avatar{width:36px;height:36px;font-size:.85rem;}
@@ -6003,7 +6046,7 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
 
 /* ===================== #18 Mobil uyğunluq ===================== */
 .mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;color:inherit;padding:6px;font-size:1.1rem;}
-.desktop-sidebar-btn{display:none;}
+.desktop-sidebar-btn{display:none !important;}
 .mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1199;}
 .mobile-sidebar-overlay.open{display:block;}
 
@@ -6489,6 +6532,9 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
     min-height: 0 !important;
     min-width: 0 !important;
   }
+
+  /* ── Sidebar collapse btn gizlə mobilde ── */
+  .sidebar-collapse-btn { display: none !important; }
 
   /* ── 3. Topbar ── */
   .app-header {
