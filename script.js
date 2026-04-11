@@ -3830,45 +3830,48 @@ function popupDismiss() {
 
 function appAlert(msg, title = "Bildiriş") {
   const text = msg == null ? "" : String(msg);
-  openModal(`
-    <h2>${escapeHtml(title)}</h2>
-    <div class="info-block">
-      <div class="info-row"><div class="info-label">Məlumat</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-main" type="button" onclick="popupDismiss()">Bağla</button>
-    </div>
-  `, { popup: true });
-  return false;
+  return new Promise((resolve) => {
+    const dismiss = () => { el.remove(); resolve(); };
+    const el = document.createElement("div");
+    el.className = "ios-dialog-overlay";
+    el.innerHTML = `
+      <div class="ios-dialog">
+        <div class="ios-dialog-title">${escapeHtml(title)}</div>
+        ${text ? `<div class="ios-dialog-msg">${escapeHtml(text)}</div>` : ""}
+        <div class="ios-dialog-btns">
+          <button class="ios-btn-ok">Tamam</button>
+        </div>
+      </div>`;
+    el.querySelector(".ios-btn-ok").onclick = dismiss;
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "Escape") dismiss(); });
+    document.body.appendChild(el);
+    el.querySelector("button").focus();
+  });
 }
 
 function appConfirm(msg, title = "Təsdiq") {
   const text = msg == null ? "" : String(msg);
   return new Promise((resolve) => {
-    const yes = () => resolveAndClose(true);
-    const no = () => resolveAndClose(false);
-    const onKey = (e) => {
-      if (e.key === "Escape") no();
-      if (e.key === "Enter") yes();
-    };
-    const cleanup = () => document.removeEventListener("keydown", onKey);
-    const resolveAndClose = (v) => {
-      cleanup();
-      popupDismiss();
-      resolve(v);
-    };
-    document.addEventListener("keydown", onKey);
-    openModal(`
-      <h2>${escapeHtml(title)}</h2>
-      <div class="info-block">
-        <div class="info-row"><div class="info-label">Sual</div><div class="info-value" style="white-space:pre-wrap;">${escapeHtml(text)}</div></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-main" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(true)">Bəli</button>
-        <button class="btn-cancel" type="button" onclick="window.__appConfirmResolve && window.__appConfirmResolve(false)">Xeyr</button>
-      </div>
-    `, { popup: true });
-    window.__appConfirmResolve = resolveAndClose;
+    const close = (v) => { el.remove(); resolve(v); };
+    const el = document.createElement("div");
+    el.className = "ios-dialog-overlay";
+    el.innerHTML = `
+      <div class="ios-dialog">
+        <div class="ios-dialog-title">${escapeHtml(title)}</div>
+        ${text ? `<div class="ios-dialog-msg">${escapeHtml(text)}</div>` : ""}
+        <div class="ios-dialog-btns">
+          <button class="ios-btn-cancel">Ləğv et</button>
+          <button class="ios-btn-confirm">Bəli</button>
+        </div>
+      </div>`;
+    el.querySelector(".ios-btn-cancel").onclick = () => close(false);
+    el.querySelector(".ios-btn-confirm").onclick = () => close(true);
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter") close(true);
+    });
+    document.body.appendChild(el);
+    el.querySelector(".ios-btn-cancel").focus();
   });
 }
 
@@ -8677,64 +8680,62 @@ function showCompanyDisabled(name) {
   if (!el) {
     el = document.createElement("div");
     el.id = "compDisabledOverlay";
-    el.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.95);display:flex;align-items:center;justify-content:center;";
     document.body.appendChild(el);
   }
+  el.className = "ios-block-overlay";
   el.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)">
-      <div style="font-size:3rem;margin-bottom:16px">🚫</div>
-      <h2 style="margin:0 0 12px;color:#1a2b3c">Şirkət deaktiv edildi</h2>
-      <p style="color:#475569;margin:0 0 20px"><b>${escapeHtml(name || "")}</b> şirkəti developer tərəfindən deaktiv edilib.</p>
-      <p style="color:#94a3b8;font-size:.85rem;background:#f8fafc;border-radius:8px;padding:10px 14px">
-        Əlavə məlumat üçün developer ilə əlaqə saxlayın.
-      </p>
+    <div class="ios-block-card">
+      <div class="ios-block-icon">🚫</div>
+      <div class="ios-block-title">Şirkət deaktiv edildi</div>
+      <div class="ios-block-body"><b>${escapeHtml(name || "")}</b> şirkəti developer tərəfindən deaktiv edilib.</div>
+      <div class="ios-block-body" style="margin-bottom:24px;font-size:.8rem">Əlavə məlumat üçün developer ilə əlaqə saxlayın.</div>
+      <div class="ios-dialog-btns" style="margin:0 -28px">
+        <button class="ios-btn-cancel" onclick="logout()">Çıxış</button>
+      </div>
     </div>
   `;
-  el.style.display = "flex";
 }
 
 function showSubscriptionWarning(amount, monthLabel) {
-  // Remove old bar if exists
-  const old = byId("subWarningBar");
-  if (old) old.remove();
-
+  ["subWarningBar","subSuspendOverlay","compDisabledOverlay"].forEach(id => { const e = byId(id); if (e) e.remove(); });
   let el = byId("subWarningPopup");
-  if (el) el.remove();
-  el = document.createElement("div");
-  el.id = "subWarningPopup";
-  el.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;";
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "subWarningPopup";
+    document.body.appendChild(el);
+  }
+  el.className = "ios-block-overlay";
   el.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:36px 44px;max-width:460px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)">
-      <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
-      <h2 style="margin:0 0 10px;color:#92400e;font-size:1.25rem">Abunəlik ödənişi gözlənilir</h2>
-      <p style="color:#475569;margin:0 0 6px"><b>${monthLabel}</b> üçün ödəniş hələ edilməyib.</p>
-      <p style="color:#475569;margin:0 0 20px">Məbləğ: <b>${amount} AZN</b></p>
-      <p style="color:#92400e;font-size:.88rem;background:#fef3c7;border-radius:8px;padding:10px 14px;margin:0 0 24px">
-        Son tarix: bu ayın <b>5-i</b>.<br>Ödəniş edilmədikdə xidmət dayandırılacaq.
-      </p>
-      <button onclick="document.getElementById('subWarningPopup').remove()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:.95rem;font-weight:600;cursor:pointer">Anladım</button>
+    <div class="ios-block-card">
+      <div class="ios-block-icon">⚠️</div>
+      <div class="ios-block-title">Abunəlik ödənişi gözlənilir</div>
+      <div class="ios-block-body"><b>${monthLabel}</b> üçün ödəniş hələ edilməyib.<br>Məbləğ: <b>${amount} AZN</b></div>
+      <div class="ios-block-note">Son tarix: bu ayın <b>5-i</b>.<br>Ödəniş edilmədikdə xidmət dayandırılacaq.</div>
+      <div class="ios-dialog-btns" style="margin:0 -28px">
+        <button class="ios-btn-ok" onclick="document.getElementById('subWarningPopup').remove()">Anladım</button>
+      </div>
     </div>
   `;
-  document.body.appendChild(el);
 }
 
 function showSubscriptionSuspended(amount, monthLabel) {
+  ["subWarningPopup","compDisabledOverlay"].forEach(id => { const e = byId(id); if (e) e.remove(); });
   let el = byId("subSuspendOverlay");
   if (!el) {
     el = document.createElement("div");
     el.id = "subSuspendOverlay";
-    el.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.92);display:flex;align-items:center;justify-content:center;";
     document.body.appendChild(el);
   }
+  el.className = "ios-block-overlay";
   el.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
-      <div style="font-size:3rem;margin-bottom:16px">🔒</div>
-      <h2 style="margin:0 0 12px;color:#1a2b3c">Xidmət dayandırıldı</h2>
-      <p style="color:#475569;margin:0 0 8px"><b>${monthLabel}</b> üçün abunəlik ödənişi edilməyib.</p>
-      <p style="color:#475569;margin:0 0 20px">Məbləğ: <b>${amount} AZN</b></p>
-      <p style="color:#94a3b8;font-size:.85rem;background:#f8fafc;border-radius:8px;padding:10px 14px">
-        Xidmetdən istifadəni bərpa etmək üçün ödəniş edin<br>və developer ilə əlaqə saxlayın.
-      </p>
+    <div class="ios-block-card">
+      <div class="ios-block-icon">🔒</div>
+      <div class="ios-block-title">Xidmət dayandırıldı</div>
+      <div class="ios-block-body"><b>${monthLabel}</b> üçün abunəlik ödənişi edilməyib.<br>Məbləğ: <b>${amount} AZN</b></div>
+      <div class="ios-block-body" style="margin-bottom:24px;font-size:.8rem">Xidmətdən istifadəni bərpa etmək üçün ödəniş edin və developer ilə əlaqə saxlayın.</div>
+      <div class="ios-dialog-btns" style="margin:0 -28px">
+        <button class="ios-btn-cancel" onclick="logout()">Çıxış</button>
+      </div>
     </div>
   `;
   el.style.display = "flex";

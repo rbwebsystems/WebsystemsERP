@@ -5017,6 +5017,102 @@ body.theme-dark .pill.nagd{
 /* Companies table action column placeholder */
 .icon-btn-placeholder{display:inline-flex;width:28px;height:28px;flex-shrink:0;}
 
+/* ── iOS-style dialog ─────────────────────────────────────── */
+.ios-dialog-overlay{
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(15,23,42,.28);
+  backdrop-filter:blur(18px) saturate(1.1);
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);
+  padding:20px;
+}
+.ios-dialog{
+  background:rgba(242,242,247,.97);
+  border-radius:20px;
+  padding:24px 20px 0;
+  width:min(320px,92vw);
+  text-align:center;
+  box-shadow:0 8px 40px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+.ios-dialog-title{
+  font-size:1rem;
+  font-weight:600;
+  color:#1c1c1e;
+  margin:0 0 6px;
+  line-height:1.4;
+}
+.ios-dialog-msg{
+  font-size:.875rem;
+  color:#3c3c43;
+  margin:0 0 20px;
+  line-height:1.5;
+  opacity:.7;
+}
+.ios-dialog-btns{
+  display:flex;
+  border-top:1px solid rgba(60,60,67,.18);
+  margin:0 -20px;
+}
+.ios-dialog-btns button{
+  flex:1;
+  padding:14px 8px;
+  border:none;
+  background:transparent;
+  font-size:1rem;
+  font-weight:400;
+  cursor:pointer;
+  transition:background .15s;
+  color:#1c1c1e;
+}
+.ios-dialog-btns button:not(:last-child){
+  border-right:1px solid rgba(60,60,67,.18);
+}
+.ios-dialog-btns button:hover{
+  background:rgba(60,60,67,.07);
+}
+.ios-dialog-btns button.ios-btn-confirm{
+  color:#e53e3e;
+  font-weight:500;
+}
+.ios-dialog-btns button.ios-btn-ok{
+  color:#007aff;
+  font-weight:600;
+}
+.ios-dialog-btns button.ios-btn-cancel{
+  color:#1c1c1e;
+}
+/* Info/warning overlay using ios style */
+.ios-block-overlay{
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(15,23,42,.45);
+  backdrop-filter:blur(20px) saturate(1.1);
+  -webkit-backdrop-filter:blur(20px) saturate(1.1);
+  padding:20px;
+}
+.ios-block-card{
+  background:rgba(242,242,247,.97);
+  border-radius:20px;
+  padding:32px 28px 0;
+  width:min(320px,92vw);
+  text-align:center;
+  box-shadow:0 8px 40px rgba(0,0,0,.22);
+  overflow:hidden;
+}
+.ios-block-icon{font-size:2.4rem;margin-bottom:14px;}
+.ios-block-title{font-size:1.05rem;font-weight:700;color:#1c1c1e;margin:0 0 8px;}
+.ios-block-body{font-size:.875rem;color:#3c3c43;opacity:.8;margin:0 0 20px;line-height:1.5;}
+.ios-block-note{
+  font-size:.8rem;color:#92400e;
+  background:rgba(245,158,11,.1);
+  border-radius:10px;padding:10px 14px;
+  margin:0 0 20px;line-height:1.5;
+}
+.ios-block-card .ios-dialog-btns{
+  margin:0 -28px;
+}
+
 /* Company info modal */
 .info-block{
   background:var(--bg-card);
