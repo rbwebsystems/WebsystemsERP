@@ -8340,17 +8340,19 @@ async function saveEditCashOp(e, uid) {
   renderAll();
 }
 
-function delCashOp(uid) {
+async function delCashOp(uid) {
   if (!userCanDelete("cash")) return alert("Sil icazəsi yoxdur.");
   const i = db.cash.findIndex((c) => Number(c.uid) === Number(uid));
   if (i < 0) return;
   const c = db.cash[i];
-  appConfirm("Kassa əməliyyatı silinsin?").then((ok) => {
-    if (!ok) return;
+  const deleteReason = await appConfirmWithReason(
+    `Kassa əməliyyatı silinəcək.\nMəbləğ: ${money(c.amount)} AZN\nMənbə: ${c.source || "-"}`
+  );
+  if (!deleteReason) return;
   ensureAuditTrash();
   const u = currentUser();
-  db.trash.push({ uid: genId(db.trash, 1), type: "cash", item: c, deletedAt: nowISODateTimeLocal(), deletedBy: u ? u.username : "-" });
-  logEvent("delete", "cash", { uid: c.uid, kind: c.link?.kind || "" });
+  db.trash.push({ uid: genId(db.trash, 1), type: "cash", item: c, deletedAt: nowISODateTimeLocal(), deletedBy: u ? u.username : "-", deleteReason });
+  logEvent("delete", "cash", { uid: c.uid, kind: c.link?.kind || "", deleteReason });
 
   // Rollback linked effects
   const kind = c.link?.kind || "";
@@ -8396,12 +8398,44 @@ function delCashOp(uid) {
       s.paidTotal = String(sumPayments(s.payments || []));
     }
   } else if (kind === "sale_payment" || kind === "sale") {
+    const invNo = c.link?.invNo || c.meta?.invNo;
     const saleUid = c.link?.saleUid;
-    const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
-    if (s) {
-      const pi = (s.payments || []).findIndex((p) => String(p.date) === String(c.date) && n(p.amount) === n(c.amount));
-      if (pi >= 0) s.payments.splice(pi, 1);
-      s.paidTotal = String(sumPayments(s.payments || []));
+    if (invNo) {
+      // Consolidated invoice payment: roll back ALL sale records belonging to this invNo.
+      // Each individual record holds only its proportional share (not the full cash amount),
+      // so we match by date only (not amount).
+      const sibs = db.sales.filter(x => x.invNo === invNo);
+      for (const s of sibs) {
+        if (!s.payments) continue;
+        // Remove the first payment on this date that was recorded as part of this cash op.
+        const pi = s.payments.findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
+        if (pi >= 0) s.payments.splice(pi, 1);
+        s.paidTotal = String(sumPayments(s.payments));
+      }
+      // Also handle the specific saleUid record if it somehow wasn't caught above
+      if (saleUid && !sibs.find(x => Number(x.uid) === Number(saleUid))) {
+        const s = db.sales.find(x => Number(x.uid) === Number(saleUid));
+        if (s) {
+          const pi = (s.payments || []).findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
+          if (pi >= 0) s.payments.splice(pi, 1);
+          s.paidTotal = String(sumPayments(s.payments || []));
+        }
+      }
+    } else if (saleUid) {
+      // Single-product cash op: match by date + amount
+      const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
+      if (s) {
+        const pi = (s.payments || []).findIndex(
+          (p) => String(p.date).slice(0, 16) === String(c.date).slice(0, 16) && Math.abs(n(p.amount) - n(c.amount)) < 0.01
+        );
+        if (pi >= 0) s.payments.splice(pi, 1);
+        else {
+          // Fallback: remove first payment matching date only
+          const pi2 = (s.payments || []).findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
+          if (pi2 >= 0) s.payments.splice(pi2, 1);
+        }
+        s.paidTotal = String(sumPayments(s.payments || []));
+      }
     }
   } else if (kind === "purch_payment" || kind === "purch_payment_adj") {
     const purchUid = c.link?.purchUid;
@@ -8418,7 +8452,6 @@ function delCashOp(uid) {
   db.cash.splice(i, 1);
   saveDB();
   renderAll();
-  });
 }
 
 function cashTotals() {
