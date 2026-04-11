@@ -4105,7 +4105,7 @@ function runActorBackfillMigration() {
 function runMigrations() {
   ensureAuditTrash();
   if (!db.settings) db.settings = defaultDB().settings;
-  const TARGET_SCHEMA_VERSION = 2;
+  const TARGET_SCHEMA_VERSION = 3;
   let ver = Math.max(0, Math.floor(n(db.settings.__schemaVersion || 0)));
   let changed = false;
 
@@ -4116,7 +4116,7 @@ function runMigrations() {
       logEvent("update", "tools", { kind: "credit_round_migration_v2" });
       changed = true;
     }
-    db.settings.__creditRoundV2 = true; // backward compatibility marker
+    db.settings.__creditRoundV2 = true;
     ver = 1;
   }
 
@@ -4128,6 +4128,29 @@ function runMigrations() {
       changed = true;
     }
     ver = 2;
+  }
+
+  // v3: backfill missing default fields from recent features
+  if (ver < 3) {
+    // telegramEnabled default: true (existing companies that had Telegram set up keep working)
+    if (db.settings.telegramEnabled === undefined) {
+      db.settings.telegramEnabled = !!(db.settings.telegramToken && db.settings.telegramChatId);
+      changed = true;
+    }
+    // paymentAccountId default on sales missing it
+    for (const s of (db.sales || [])) {
+      if (s.paymentAccountId == null) { s.paymentAccountId = 1; changed = true; }
+    }
+    // paymentAccountId default on purchases missing it
+    for (const p of (db.purch || [])) {
+      if (p.paymentAccountId == null) { p.paymentAccountId = 1; changed = true; }
+    }
+    // cash ops: ensure accountId exists
+    for (const c of (db.cash || [])) {
+      if (c.accountId == null) { c.accountId = 1; changed = true; }
+    }
+    if (changed) logEvent("update", "tools", { kind: "defaults_backfill_v3" });
+    ver = 3;
   }
 
   db.settings.__schemaVersion = TARGET_SCHEMA_VERSION;
