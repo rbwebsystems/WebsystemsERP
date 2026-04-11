@@ -10017,79 +10017,102 @@ function printSaleContract(idx) {
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
-  .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
-  p{font-size:13px;line-height:1.9;margin-bottom:10px;text-align:justify;}
-  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:20px 0 10px;}
-  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;font-size:13px;}
+  .page{width:210mm;background:#fff;padding:20mm 18mm;border-radius:8px;}
+  p{font-size:13px;line-height:1.9;margin-bottom:9px;text-align:justify;}
+  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:18px 0 8px;}
+  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:7px;font-size:13px;}
   .field-label{font-weight:700;white-space:nowrap;}
-  .field-line{flex:1;border-bottom:1px solid #111;min-width:80px;}
-  .sign-block{display:flex;justify-content:space-between;margin-top:30px;gap:20px;}
-  .sign-col{flex:1;}
-  .sign-col p{text-align:left;margin-bottom:4px;}
-  .sign-underline{border-bottom:1px solid #111;height:22px;margin-top:16px;}
+  .field-line{flex:1;border-bottom:1px solid #111;min-width:60px;padding-left:4px;}
+  .sign-block{display:flex;justify-content:space-between;margin-top:28px;gap:24px;}
+  .sign-col{flex:1;font-size:13px;}
+  .sign-col p{margin-bottom:4px;text-align:left;}
+  .sign-underline{border-bottom:1px solid #111;height:24px;margin-top:18px;}
   .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
-  @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
+  @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:15mm 18mm;}@page{size:A4 portrait;margin:0;}}
 </style></head><body>
 <div class="page">
 
-  <div style="font-size:17px;font-weight:700;margin-bottom:16px;">${co}</div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:16px;">${coLegal || co}</div>
 
-  <div style="text-align:right;font-size:13px;font-weight:700;margin-bottom:20px;">
-    Nisyə alqı-satqı müqaviləsi № ${docNo}
+  <div style="text-align:right;font-size:13px;font-weight:700;margin-bottom:18px;">Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
+
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px;">
+    <span><strong>Bakı şəhəri,</strong></span>
+    <span><strong>${saleDate}</strong></span>
   </div>
+  <p style="margin-bottom:18px;">${saleDate.split(".")[2]}-cü il</p>
 
-  <div style="display:flex;justify-content:space-between;margin-bottom:18px;font-size:13px;">
-    <div><strong>Bakı şəhəri,</strong></div>
-    <div><strong>${saleDate}</strong></div>
-  </div>
-  <div style="margin-bottom:18px;font-size:13px;">${saleDate.split(".")[2]}-cü il</div>
-
-  <p>
-    Bu müqaviləni (bundan sonra «Müqavilə» adlandırılacaq), bir tərəfdən Azərbaycan Respublikasının qanunvericiliyinə əsasən qeydə alınmış və Nizamnamə əsasında fəaliyyət göstərən <strong>"${coLegal}" Məhdud Məsuliyyətli Cəmiyyəti</strong>, Direktor <strong>${coDirector}${coVoen ? ` (VÖEN:${coVoen})` : ""}</strong> şəxsində, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində, (bundan sonra "Alıcı" adlanacaq (birlikdə "Tərəflər") aşağıdakı müqaviləni (bundan sonra "Müqavilə") bağladılar.
-  </p>
+  <p>Bu müqaviləni (bundan sonra «Müqavilə» adlandırılacaq), bir tərəfdən Azərbaycan Respublikasının qanunvericiliyinə əsasən qeydə alınmış və Nizamnamə əsasında fəaliyyət göstərən <strong>"${coLegal || co}" Məhdud Məsuliyyətli Cəmiyyəti</strong>, Direktor <strong>${coDirector}${coVoen ? ` (VÖEN: ${coVoen})` : ""}</strong> şəxsində, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində, (bundan sonra "Alıcı" adlanacaq, birlikdə "Tərəflər") aşağıdakı müqaviləni (bundan sonra "Müqavilə") bağladılar.</p>
 
   <div class="sec-title">1. Müqavilənin predmeti</div>
-  <p>
-    1.1. Müqaviləyə əsasən Satıcı Alıcıya Müqaviləyə əlavə olunan, Müqavilədə və onun ayrılmaz tərkib hissəsi hesab edilən "Əlavə 1"-də göstərilən Mal(lar)ı sənədlər əsasında (qaimə, vergi hesab-fakturası, və s.) nisyə satır, Alıcı isə həmin Mal(lar)ı qəbul edir və bu müqavilə ilə razılaşdırılmış qaydada Mal(lar)ın dəyərini Satıcıya ödəməyi öhdəsinə götürür.
-  </p>
+  <p>1.1. Müqaviləyə əsasən Satıcı Alıcıya Müqaviləyə əlavə olunan, Müqavilədə və onun ayrılmaz tərkib hissəsi hesab edilən "Əlavə 1"-də göstərilən Mal(lar)ı sənədlər əsasında (qaimə, vergi hesab-fakturası, və s.) nisyə satır, Alıcı isə həmin Mal(lar)ı qəbul edir və bu müqavilə ilə razılaşdırılmış qaydada Mal(lar)ın dəyərini Satıcıya ödəməyi öhdəsinə götürür.</p>
 
-  <div style="margin:14px 0 6px;">
-    <div class="field-row"><span class="field-label">Məhsulun adı:</span><span class="field-line">&nbsp;${prod}</span></div>
-    <div class="field-row"><span class="field-label">İlkin ödəniş məbləği:</span><span class="field-line">&nbsp;${downAmt} AZN</span></div>
-    <div class="field-row"><span class="field-label">Kredit məbləği:</span><span class="field-line">&nbsp;${creditAmt} AZN</span></div>
-    <div class="field-row"><span class="field-label">Kredit müddəti:</span><span class="field-line">&nbsp;${termMonths}</span></div>
-    <div class="field-row"><span class="field-label">Aylıq ödəniş məbləği:</span><span class="field-line">&nbsp;${monthlyAmt} AZN</span></div>
+  <div style="margin:14px 0 8px;">
+    <div class="field-row"><span class="field-label">Məhsulun adı:</span><span class="field-line">${prod}</span></div>
+    <div class="field-row"><span class="field-label">İlkin ödəniş məbləği:</span><span class="field-line">${downAmt} AZN</span></div>
+    <div class="field-row"><span class="field-label">Kredit məbləği:</span><span class="field-line">${creditAmt} AZN</span></div>
+    <div class="field-row"><span class="field-label">Kredit müddəti:</span><span class="field-line">${termMonths}</span></div>
+    <div class="field-row"><span class="field-label">Aylıq ödəniş məbləği:</span><span class="field-line">${monthlyAmt} AZN</span></div>
   </div>
 
   <div class="sec-title">2. Tərəflərin hüquq və vəzifələri</div>
   <p><strong>2.1. Satıcının hüquqları:</strong></p>
-  <p>2.1.1. Müqavilə ilə üzərinə götürdüyü vəzifələri vaxtında və lazımınca icra etməyi və onların pozulmasına yol verməməyi Alıcıdan tələb edir;</p>
-  <p>2.1.2. Alıcı bu müqavilənin şərtlərinin pozulmasına yol verdiyi halda isə müqavilənin vaxtından əvvəl ləğv edilməsinin və Alıcının müqavilə üzrə Satıcıya olan borcunun vaxtından əvvəl ödənilməsini tələb etmək.</p>
+  <p>2.1.1. Müqavilə ilə üzərinə götürdüyü vəzifələri vaxtında və lazımınca icra etməyi və onların pozulmasına yol verməməyi Alıcıdan tələb etmək;</p>
+  <p>2.1.2. Alıcı bu müqavilənin şərtlərinin pozulmasına yol verdiyi halda müqavilənin vaxtından əvvəl ləğv edilməsini və Alıcının müqavilə üzrə Satıcıya olan borcunun vaxtından əvvəl ödənilməsini tələb etmək.</p>
   <p><strong>2.2. Satıcının vəzifələri:</strong></p>
   <p>2.2.1. Alıcının nisyə aldığı Mala görə birdəfəlik haqqın hesablanmasının və tutulmasının düzgünlüyünə riayət etmək;</p>
-  <p>2.2.2. Malı Alıcıya tam saz və qüsursuz vəziyyətdə təhvil vermək.</p>
+  <p>2.2.2. Malı Alıcıya tam saz, işlək və qüsursuz vəziyyətdə müqavilədə göstərilən müddətdə təhvil vermək;</p>
+  <p>2.2.3. Alıcıya Malın istifadəsi ilə bağlı zəruri məlumatları vermək.</p>
   <p><strong>2.3. Alıcının hüquqları:</strong></p>
-  <p>2.3.1. Satıcıdan Malın keyfiyyəti barədə tam məlumat almaq hüququna malikdir.</p>
+  <p>2.3.1. Satıcıdan Malın keyfiyyəti, texniki xüsusiyyətləri və istifadə qaydaları barədə tam məlumat almaq;</p>
+  <p>2.3.2. Malda aşkar edilmiş istehsal qüsurları olduqda Satıcıdan pulsuz aradan qaldırılmasını tələb etmək.</p>
   <p><strong>2.4. Alıcının vəzifələri:</strong></p>
-  <p>2.4.1. Aylıq ödənişləri müqavilədə göstərilən müddətdə vaxtında ödəmək;</p>
-  <p>2.4.2. Malı qəbul etdikdən sonra onun saxlanması və istifadəsi qaydalarına riayət etmək.</p>
+  <p>2.4.1. Aylıq ödənişləri müqavilədə göstərilən müddətdə və məbləğdə vaxtında ödəmək;</p>
+  <p>2.4.2. Malı qəbul etdikdən sonra onun saxlanması və istifadəsi qaydalarına riayət etmək;</p>
+  <p>2.4.3. Ünvan və ya əlaqə məlumatlarında dəyişiklik olduqda Satıcını 3 (üç) iş günü ərzində xəbərdar etmək.</p>
 
-  <div class="sec-title">3. Müqavilənin qüvvəsi və şərtləri</div>
-  <p>3.1. Bu Müqavilə imzalandığı andan qüvvəyə minir və Tərəflər öhdəliklərini tam yerinə yetirənədək qüvvədə qalır.</p>
-  <p>3.2. Müqavilə iki nüsxədə tərtib edilmişdir, hər bir nüsxə eyni hüquqi qüvvəyə malikdir.</p>
+  <div class="sec-title">3. Malın qiyməti və ödəniş qaydası</div>
+  <p>3.1. Malın ümumi dəyəri <strong>${total} AZN</strong> təşkil edir.</p>
+  <p>3.2. Alıcı müqavilənin bağlandığı gün ilkin ödəniş kimi <strong>${downAmt} AZN</strong> məbləğini Satıcıya ödəyir. Qalan kredit məbləği <strong>${creditAmt} AZN</strong> aylıq <strong>${monthlyAmt} AZN</strong> olmaqla <strong>${termMonths}</strong> ərzində ödənilir.</p>
+  <p>3.3. Aylıq ödənişlər hər ay müqavilənin bağlandığı tarixə uyğun olaraq həyata keçirilir. Ödəniş günü bayram və ya istirahət gününə düşdükdə, ödəniş növbəti iş günü edilə bilər.</p>
+  <p>3.4. Ödənişlər Satıcının kassa şöbəsinə nağd, bank köçürməsi və ya Satıcı tərəfindən qəbul edilən digər üsullarla həyata keçirilə bilər.</p>
+  <p>3.5. Alıcının aylıq ödənişi vaxtında etməməsi halında Satıcı gecikdirilmiş hər təqvim günü üçün ödənilməmiş məbləğin 0,1%-i həcmində cərimə tətbiq etmək hüququna malikdir.</p>
 
-  <div class="sec-title">4. Tərəflərin rekvizitləri və imzaları</div>
+  <div class="sec-title">4. Malın keyfiyyəti və zəmanət</div>
+  <p>4.1. Satıcı Malın satış anında işlək vəziyyətdə olmasına zəmanət verir.</p>
+  <p>4.2. İstehsalçı tərəfindən müəyyən edilmiş zəmanət müddəti ərzində Malda istehsal qüsuru aşkar edildiyi halda Satıcı onu pulsuz olaraq aradan qaldırır və ya Malı eyni model/analoji Malla əvəz edir.</p>
+  <p>4.3. Zəmanət öhdəlikləri mexaniki zədə, su, yanğın, istehsalçının tövsiyələrinə zidd istifadə nəticəsində baş vermiş nasazlıqlara şamil edilmir.</p>
+  <p>4.4. Zəmanət xidmətindən istifadə etmək üçün Alıcı Satıcıya müraciət etməli, satış sənədini və ya bu müqaviləni təqdim etməlidir.</p>
+
+  <div class="sec-title">5. Tərəflərin məsuliyyəti</div>
+  <p>5.1. Tərəflər bu Müqavilə üzrə öhdəliklərin icra edilməməsinə və ya lazımınca icra edilməməsinə görə Azərbaycan Respublikasının qanunvericiliyinə uyğun olaraq məsuliyyət daşıyırlar.</p>
+  <p>5.2. Alıcı ödəniş öhdəliklərini 30 (otuz) təqvim günündən artıq yerinə yetirmədikdə Satıcı Müqaviləni birtərəfli qaydada ləğv etmək və Malı geri almaq, həmçinin ödənilmiş məbləğdən hər gecikdirilmiş gün üçün 0,1% cərimə çıxmaqla qalan məbləği qaytarmaq hüququna malikdir.</p>
+  <p>5.3. Heç bir Tərəf fors-major halları (təbii fəlakət, müharibə, epidemiya, hökumət qərarları və s.) nəticəsində öhdəliklərini yerinə yetirə bilmədikdə məsuliyyətdən azad edilir. Fors-major halı haqqında digər Tərəf 5 (beş) iş günü ərzində yazılı şəkildə məlumatlandırılmalıdır.</p>
+
+  <div class="sec-title">6. Müqavilənin qüvvəsi, dəyişdirilməsi və ləğvi</div>
+  <p>6.1. Bu Müqavilə hər iki Tərəf tərəfindən imzalandığı andan qüvvəyə minir və Tərəflər öhdəliklərini tam yerinə yetirənədək qüvvədə qalır.</p>
+  <p>6.2. Müqaviləyə dəyişikliklər yalnız Tərəflərin yazılı razılığı ilə edilə bilər.</p>
+  <p>6.3. Müqavilə Tərəflərin qarşılıqlı yazılı razılığı ilə, yaxud bu Müqavilədə nəzərdə tutulmuş əsaslarla birtərəfli qaydada ləğv edilə bilər.</p>
+  <p>6.4. Müqavilə iki nüsxədə tərtib edilmişdir; hər iki nüsxə eyni hüquqi qüvvəyə malikdir. Bir nüsxə Satıcıda, bir nüsxə isə Alıcıda saxlanılır.</p>
+
+  <div class="sec-title">7. Mübahisələrin həlli</div>
+  <p>7.1. Müqavilənin icrası ilə əlaqədar yaranan mübahisələr danışıqlar yolu ilə həll edilir.</p>
+  <p>7.2. Tərəflər danışıqlar yolu ilə razılığa gələ bilmədikdə mübahisə Azərbaycan Respublikasının müvafiq məhkəmə orqanlarında həll edilir.</p>
+
+  <div class="sec-title">8. Tərəflərin rekvizitləri və imzaları</div>
   <div class="sign-block">
     <div class="sign-col">
       <p><strong>SATICI:</strong></p>
       <p><strong>"${coLegal || co}"</strong> MMC</p>
-      ${coVoen    ? `<p>VÖEN: ${coVoen}</p>`       : ""}
-      ${coAddr    ? `<p>Ünvan: ${coAddr}</p>`       : ""}
-      ${coPhone   ? `<p>Tel: ${coPhone}</p>`         : ""}
-      ${coDirector !== "______________________" ? `<p>Direktor: ${coDirector}</p>` : ""}
-      ${bankBlock}
+      ${coVoen    ? `<p>VÖEN: ${coVoen}</p>`              : ""}
+      ${coAddr    ? `<p>Ünvan: ${coAddr}</p>`              : ""}
+      ${coPhone   ? `<p>Tel: ${coPhone}</p>`               : ""}
+      ${coBank    ? `<p>Bank: ${coBank}</p>`               : ""}
+      ${coBankAcc ? `<p>Hesab №: ${coBankAcc}</p>`         : ""}
+      ${coSwift   ? `<p>SWIFT: ${coSwift}</p>`             : ""}
+      ${coCorrAcc ? `<p>Müxbir hesab: ${coCorrAcc}</p>`    : ""}
       <div class="sign-underline"></div>
-      <p style="font-size:11px;margin-top:4px;">İmza / Möhür</p>
+      <p style="font-size:11px;margin-top:4px;">${coDirector} / Möhür</p>
     </div>
     <div class="sign-col">
       <p><strong>ALICI:</strong></p>
@@ -10097,12 +10120,13 @@ function printSaleContract(idx) {
       <p>Şəx. vəs. ser.: ${custSer}</p>
       <p>FİN: ${custFin}</p>
       ${custPh !== "-" ? `<p>Tel: ${custPh}</p>` : ""}
+      ${custAddr !== "-" ? `<p>Ünvan: ${custAddr}</p>` : ""}
       <div class="sign-underline"></div>
       <p style="font-size:11px;margin-top:4px;">İmza</p>
     </div>
   </div>
 
-  <div class="footer-note">Müqavilə ${saleDate} tarixində tərtib edildi &nbsp;•&nbsp; ${co}</div>
+  <div class="footer-note">Müqavilə ${saleDate} tarixində tərtib edildi &nbsp;•&nbsp; ${coLegal || co}</div>
 </div>
 <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
 </body></html>`;
