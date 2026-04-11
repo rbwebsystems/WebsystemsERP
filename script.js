@@ -581,6 +581,7 @@ function saveDB() {
 // ===================== Telegram Bildirişləri =====================
 async function sendTelegram(text) {
   const s = db.settings || {};
+  if (s.telegramEnabled === false) return;
   const token = (s.telegramToken || "").trim();
   const chatId = (s.telegramChatId || "").trim();
   if (!token || !chatId) return;
@@ -9522,6 +9523,8 @@ function renderSettingsPage() {
   setVal("pg_set_sym",   s.currencySymbol || "₼");
   setVal("pg_tg_token",  s.telegramToken  || "");
   setVal("pg_tg_chat",   s.telegramChatId || "");
+  const chk = byId("pg_tg_enabled");
+  if (chk) chk.checked = s.telegramEnabled !== false;
 }
 
 function saveSettingsPage() {
@@ -9534,6 +9537,7 @@ function saveSettingsPage() {
   db.settings.currencySymbol = (byId("pg_set_sym")?.value   || "₼").trim();
   db.settings.telegramToken  = (byId("pg_tg_token")?.value  || "").trim();
   db.settings.telegramChatId = (byId("pg_tg_chat")?.value   || "").trim();
+  db.settings.telegramEnabled = byId("pg_tg_enabled")?.checked !== false;
   logEvent("update", "settings", {});
   saveDB();
   toast("Ayarlar yadda saxlandı", "ok");
