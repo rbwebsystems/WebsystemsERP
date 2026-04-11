@@ -5186,10 +5186,12 @@ body.theme-dark .modal-footer { border-top-color: rgba(255,255,255,.08) !importa
 /* ══════════════════════════════════════════════════════════════
    iOS Sidebar — Frosted glass, light theme nav
    ══════════════════════════════════════════════════════════════ */
+aside {
   background: rgba(242,242,247,.96) !important;
   backdrop-filter: blur(24px) saturate(1.2) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
   border-right: 1px solid rgba(60,60,67,.14) !important;
+}
 }
 body.theme-dark aside {
   background: rgba(28,28,30,.92) !important;
