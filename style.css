@@ -5463,9 +5463,13 @@ body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):no
 /* modal / slideover form inputs — white with border
    Uses #modalContent (ID selector) to guarantee higher specificity than global gray rule */
 #modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]),
-#modalContent select,
 #modalContent textarea {
-  background: #fff !important;
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+  color: #1c1c1e !important;
+  box-shadow: none !important;
+}
+#modalContent select {
   border: 1px solid #d1d5db !important;
   color: #1c1c1e !important;
   box-shadow: none !important;
@@ -5473,18 +5477,21 @@ body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):no
 #modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
 #modalContent select:focus,
 #modalContent textarea:focus {
-  background: #fff !important;
   border-color: #007AFF !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
 }
-#modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):hover {
-  background: #f9fafb !important;
+#modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+#modalContent textarea:hover {
+  background-color: #f9fafb !important;
 }
 body.theme-dark #modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]),
-body.theme-dark #modalContent select,
 body.theme-dark #modalContent textarea {
-  background: #2c2c2e !important;
+  background-color: #2c2c2e !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #f1f5f9 !important;
+}
+body.theme-dark #modalContent select {
   border-color: rgba(255,255,255,.2) !important;
   color: #f1f5f9 !important;
 }
@@ -5520,27 +5527,34 @@ body.theme-dark .search-plain input {
   color: #fff !important;
 }
 
-/* select — always white with border */
+/* select — always white with border + custom chevron arrow */
 select {
-  background: #fff !important;
+  background-color: #fff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
   border: 1px solid #d1d5db !important;
   border-radius: 10px !important;
   color: #1c1c1e !important;
   box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 30px !important;
 }
 select:focus {
   border-color: #007AFF !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
-  background: #fff !important;
+  background-color: #fff !important;
 }
-select:hover { background: #f9fafb !important; }
+select:hover { background-color: #f9fafb !important; }
 body.theme-dark select {
-  background: #2c2c2e !important;
+  background-color: #2c2c2e !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ebebf5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") !important;
   border-color: rgba(255,255,255,.2) !important;
   color: #fff !important;
 }
-body.theme-dark select:focus { background: #2c2c2e !important; }
+body.theme-dark select:focus { background-color: #2c2c2e !important; }
 
 /* ── Date / month / datetime inputs — always white ── */
 input[type=date], input[type=month], input[type=datetime-local] {
