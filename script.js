@@ -6181,8 +6181,37 @@ function openSale(idx = null) {
             <div id="sTotalHint" class="hint-line grid-span-2 muted small" style="display:none">Cəmi: —</div>
           </div>
         </div>
-        ${!isEdit ? `<div class="form-card">
-          <div class="form-card-title">Satış siyahısı</div>
+        ${isEdit && current ? (() => {
+          const invNo = current.invNo || "";
+          const siblings = invNo
+            ? db.sales.map((s, j) => ({ s, j })).filter(x => x.s.invNo === invNo)
+            : [{ s: current, j: idx }];
+          const rows = siblings.map(({ s, j }, i) => {
+            const canDel = siblings.length > 1 && !(n(s.paidTotal) > 0.000001 || (s.payments && s.payments.length));
+            return `<tr>
+              <td>${i+1}</td>
+              <td>${escapeHtml(s.productName || "-")}</td>
+              <td>${escapeHtml(s.code || "-")}</td>
+              <td>${Math.max(1, Math.floor(n(s.qty || 1)))}</td>
+              <td>${escapeHtml([s.imei1, s.imei2, s.seria].filter(Boolean).join(" / ") || "-")}</td>
+              <td>${money(s.amount)} AZN</td>
+              <td>${canDel ? `<button type="button" class="icon-btn delete" onclick="removeSaleItemFromInvoice(${s.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}</td>
+            </tr>`;
+          }).join("");
+          const total = siblings.reduce((a, x) => a + n(x.s.amount), 0);
+          return `<div class="form-card">
+            <div class="form-card-title">Qaimedəki məhsullar (${siblings.length} ədəd)</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI / Seriya</th><th>Məbləğ</th><th></th></tr></thead>
+                <tbody id="invoiceItemsList">${rows}</tbody>
+                <tfoot><tr class="total-row"><td colspan="5">Cəmi</td><td>${money(total)} AZN</td><td></td></tr></tfoot>
+              </table>
+            </div>
+          </div>`;
+        })() : ""}
+        <div class="form-card">
+          <div class="form-card-title">Satış siyahısı${isEdit ? " (əlavə olunacaq)" : ""}</div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>#</th><th>Məhsul</th><th>Qiymət</th><th>Növ</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
@@ -6190,29 +6219,7 @@ function openSale(idx = null) {
               <tfoot><tr class="total-row"><td colspan="5">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
             </table>
           </div>
-        </div>` : ""}${isEdit && current?.invNo ? (() => {
-          const siblings = db.sales.filter(s => s.invNo === current.invNo);
-          if (siblings.length <= 1) return "";
-          const rows = siblings.map((s, i) => `<tr>
-            <td>${i+1}</td>
-            <td>${escapeHtml(s.productName || "-")}</td>
-            <td>${escapeHtml(s.code || "-")}</td>
-            <td>${Math.max(1, Math.floor(n(s.qty || 1)))}</td>
-            <td>${escapeHtml([s.imei1, s.imei2, s.seria].filter(Boolean).join(" / ") || "-")}</td>
-            <td>${money(s.amount)} AZN</td>
-          </tr>`).join("");
-          const total = siblings.reduce((a, s) => a + n(s.amount), 0);
-          return `<div class="form-card">
-            <div class="form-card-title">Qaimedəki məhsullar (${siblings.length} ədəd)</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI / Seriya</th><th>Məbləğ</th></tr></thead>
-                <tbody>${rows}</tbody>
-                <tfoot><tr class="total-row"><td colspan="5">Cəmi</td><td>${money(total)} AZN</td></tr></tfoot>
-              </table>
-            </div>
-          </div>`;
-        })() : ""}
+        </div>
         <div id="creditBox" class="form-card" style="display:none;">
           <div class="form-card-title">Kredit şərtləri</div>
           <div class="grid-2">
@@ -6925,6 +6932,95 @@ async function saveSale(e, idx) {
     }
   }
 
+  // In edit mode, also save any newly added draft items as extra sale records on the same invoice
+  if (isEdit) {
+    const editDraft = window.__saleDraftItems || [];
+    if (editDraft.length > 0) {
+      const parentSale = db.sales[idx];
+      const editInvNo = parentSale?.invNo || base.invNo;
+      const editCustId = base.customerId;
+      const editCustName = base.customerName;
+      const editDate = base.date;
+      const editSaleType = base.saleType;
+      const editEmpId = base.employeeId;
+      const editEmpName = base.employeeName;
+      const editCredit = base.credit ? { ...base.credit } : undefined;
+      const soldSet = soldKeySet();
+      for (const it of editDraft) {
+        const itKind = it.kind;
+        const itPurchUidStr = String(it.purchUid || "");
+        const itQty = Math.max(1, Math.floor(n(it.qty || 1)));
+        const itAmount = Math.max(0, n(it.amount || 0));
+        let itPurch = null;
+        let itBulkPurchUid = null;
+        let itBulkAlloc = null;
+        let itKey = "";
+        if (itKind === "fifo") {
+          const token = itPurchUidStr.replace(/:/g, "_");
+          const itLots = (db.purch || []).filter(p => {
+            if (!p || p.returnedAt || !purchIsBulk(p)) return false;
+            const c = String(p.code || "").trim().replace(/:/g, "_");
+            const nm = String(p.name || "").trim().replace(/:/g, "_");
+            return (c && c === token) || (!c && nm === token) || nm === token;
+          }).sort((a, b) => String(a.date||"").localeCompare(String(b.date||"")));
+          itKey = `FIFO:${token}`;
+          itBulkAlloc = [];
+          let left = itQty;
+          for (const lp of itLots) {
+            const rem = purchRemainingQty(lp);
+            if (rem <= 0) continue;
+            const take = Math.min(left, rem);
+            if (take > 0) itBulkAlloc.push({ purchUid: lp.uid, qty: take });
+            left -= take;
+            if (left <= 0) break;
+          }
+          itPurch = itLots[0] || null;
+        } else {
+          itPurch = db.purch.find(p => String(p.uid) === itPurchUidStr);
+          if (!itPurch) continue;
+          if (itKind === "bulk") {
+            itBulkPurchUid = itPurch.uid;
+            const avail = purchRemainingQty(itPurch);
+            if (itQty > avail) { alert(`"${itPurch.name}" üçün anbarda kifayət qədər say yoxdur.`); continue; }
+          } else {
+            itKey = itemKeyFromPurch(itPurch);
+            if (soldSet.has(itKey)) { alert(`"${itPurch.name}" artıq satılıb.`); continue; }
+            soldSet.add(itKey);
+          }
+        }
+        const itNewUid = genId(db.sales, 1);
+        const itNew = {
+          uid: itNewUid,
+          invNo: editInvNo,
+          customerId: editCustId,
+          customerName: editCustName,
+          date: editDate,
+          saleType: editSaleType,
+          employeeId: editEmpId,
+          employeeName: editEmpName,
+          productName: it.productName || (itPurch?.name || "-"),
+          code: it.code || (itPurch?.code || ""),
+          imei1: it.imei1 || (itPurch?.imei1 || ""),
+          imei2: it.imei2 || (itPurch?.imei2 || ""),
+          seria: it.seria || (itPurch?.seria || ""),
+          qty: itQty,
+          purchUid: itKind !== "fifo" && itKind !== "bulk" ? String(itPurch?.uid || "") : undefined,
+          bulkPurchUid: itBulkPurchUid,
+          bulkAllocations: itBulkAlloc,
+          itemKey: itKey || undefined,
+          amount: String(itAmount),
+          paidTotal: "0",
+          payments: [],
+          saleNote: "",
+          credit: editCredit,
+        };
+        db.sales.push(itNew);
+        logEvent("create", "sales", { uid: itNew.uid, invNo: editInvNo });
+      }
+      window.__saleDraftItems = [];
+    }
+  }
+
   saveDB();
   closeMdl();
 }
@@ -7039,6 +7135,30 @@ function openStaffReportSales(employeeUid) {
 }
 
 // ========= Sales info + payments =========
+function removeSaleItemFromInvoice(saleUid) {
+  const j = db.sales.findIndex(s => String(s.uid) === String(saleUid));
+  if (j < 0) return;
+  const s = db.sales[j];
+  if (n(s.paidTotal) > 0.000001 || (Array.isArray(s.payments) && s.payments.length)) {
+    return alert("Bu məhsulun ödənişi var. Silmək olmaz.");
+  }
+  const invNo = s.invNo;
+  const siblings = invNo ? db.sales.filter(x => x.invNo === invNo) : [s];
+  if (siblings.length <= 1) {
+    return alert("Qaimədə yalnız bir məhsul var. Bütün qaiməni silmək üçün siyahıdan istifadə edin.");
+  }
+  ensureAuditTrash();
+  const u = currentUser();
+  db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-" });
+  logEvent("delete", "sales", { uid: s.uid, invNo });
+  db.sales.splice(j, 1);
+  saveDB();
+  // Refresh the edit form
+  const editIdx = db.sales.findIndex(x => x.invNo === invNo);
+  if (editIdx >= 0) openSale(editIdx);
+  else closeMdl();
+}
+
 function openSaleInfo(idx) {
   const s = db.sales[idx];
   if (!s) return;
