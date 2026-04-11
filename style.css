@@ -5015,6 +5015,103 @@ body.theme-dark .pill.nagd{
    iOS Full UI — Buttons, Cards, Inputs, Tables, Layout
    ══════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════
+   iOS Workspace Layout — floating topbar, rounded panels
+   ══════════════════════════════════════════════════════════════ */
+
+/* App header — floating rounded card */
+.app-header {
+  top: 8px !important;
+  left: 228px !important;
+  right: 8px !important;
+  width: auto !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08) !important;
+}
+.header-rest { background: transparent !important; border-radius: 14px !important; }
+body.theme-dark .app-header { background: #2C2C2E !important; box-shadow: 0 2px 16px rgba(0,0,0,.4) !important; }
+body.theme-dark .header-rest { background: transparent !important; }
+
+/* Collapsed sidebar — shift header */
+body.sidebar-collapsed .app-header { left: 76px !important; }
+
+/* Main area — push down below floating header */
+.main-area { margin-left: 228px !important; padding-top: 68px !important; }
+body.sidebar-collapsed .main-area { margin-left: 76px !important; }
+
+/* Slideover — start right after sidebar gap, below header */
+.modal.modal--slideover {
+  top: 68px !important;
+  left: 228px !important;
+}
+body.sidebar-collapsed .modal.modal--slideover { left: 76px !important; }
+
+/* Soft loading overlay alignment */
+.soft-loading-center,
+.loading-overlay.loading-overlay--soft { left: 228px !important; }
+body.sidebar-collapsed .soft-loading-center,
+body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 76px !important; }
+
+/* Header logo area */
+.header-logo { border-right: none !important; background: transparent !important; }
+
+/* ── iOS Search ── */
+.header-search-wrap {
+  background: rgba(120,120,128,.1) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  height: 34px !important;
+  box-shadow: none !important;
+}
+.header-search-wrap:hover { background: rgba(120,120,128,.15) !important; border: none !important; box-shadow: none !important; }
+.header-search-input { color: #1c1c1e !important; font-size: .875rem !important; }
+.header-search-input::placeholder { color: #8E8E93 !important; }
+.header-search-icon { color: #8E8E93 !important; }
+.header-search-hint { background: rgba(120,120,128,.15) !important; border-radius: 6px !important; color: #8E8E93 !important; }
+body.theme-dark .header-search-wrap { background: rgba(255,255,255,.1) !important; }
+body.theme-dark .header-search-input { color: #fff !important; }
+
+/* Section-level search containers */
+.search-container input {
+  background: rgba(120,120,128,.1) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 8px 36px 8px 12px !important;
+  box-shadow: none !important;
+}
+.search-container input:focus {
+  background: rgba(120,120,128,.14) !important;
+  outline: 2px solid #007AFF !important;
+  border: none !important;
+}
+.search-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #8E8E93 !important;
+  box-shadow: none !important;
+}
+.search-btn:hover { background: transparent !important; color: #007AFF !important; }
+body.theme-dark .search-container input { background: rgba(255,255,255,.1) !important; }
+
+/* Mobile: remove floating */
+@media (max-width: 768px) {
+  .app-header {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    height: 56px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
+  }
+  .main-area { margin-left: 0 !important; padding-top: 56px !important; }
+  .modal.modal--slideover { top: 56px !important; left: 0 !important; right: 0 !important; }
+  .soft-loading-center,
+  .loading-overlay.loading-overlay--soft { left: 0 !important; }
+}
+
 /* ── Global font ── */
 body, input, select, textarea, button {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
