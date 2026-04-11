@@ -8645,6 +8645,13 @@ function checkSubscriptionStatus() {
   const cid = meta?.session?.companyId;
   if (!cid) return;
   const company = (meta.companies || []).find((c) => c.id === cid);
+  if (!company) return;
+
+  // Company disabled check
+  if (company.disabled) {
+    showCompanyDisabled(company.name);
+    return;
+  }
   const sub = company?.subscription;
   if (!sub?.active) return;
 
@@ -8662,6 +8669,28 @@ function checkSubscriptionStatus() {
   } else {
     showSubscriptionSuspended(amount, monthLabel);
   }
+}
+
+function showCompanyDisabled(name) {
+  ["subWarningPopup","subSuspendOverlay"].forEach(id => { const e = byId(id); if (e) e.remove(); });
+  let el = byId("compDisabledOverlay");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "compDisabledOverlay";
+    el.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.95);display:flex;align-items:center;justify-content:center;";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+      <div style="font-size:3rem;margin-bottom:16px">🚫</div>
+      <h2 style="margin:0 0 12px;color:#1a2b3c">Şirkət deaktiv edildi</h2>
+      <p style="color:#475569;margin:0 0 20px"><b>${escapeHtml(name || "")}</b> şirkəti developer tərəfindən deaktiv edilib.</p>
+      <p style="color:#94a3b8;font-size:.85rem;background:#f8fafc;border-radius:8px;padding:10px 14px">
+        Əlavə məlumat üçün developer ilə əlaqə saxlayın.
+      </p>
+    </div>
+  `;
+  el.style.display = "flex";
 }
 
 function showSubscriptionWarning(amount, monthLabel) {
@@ -8712,7 +8741,7 @@ function showSubscriptionSuspended(amount, monthLabel) {
 }
 
 function hideSubscriptionBlock() {
-  ["subWarningBar","subWarningPopup","subSuspendOverlay"].forEach(id => {
+  ["subWarningBar","subWarningPopup","subSuspendOverlay","compDisabledOverlay"].forEach(id => {
     const el = byId(id);
     if (el) el.remove();
   });
