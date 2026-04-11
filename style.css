@@ -6059,21 +6059,15 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
     height:100dvh;
     max-height:100dvh;
   }
-  .card{
-    border-radius:10px;
-    overflow:visible !important;
-    max-width:100%;
-  }
   .card > .table-wrap,
   .card > table,
   .card > div > table{
     max-width:100%;
   }
   .table-wrap{
-    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
   }
-  table{min-width:520px;}
-  th,td{white-space:nowrap;}
 
   .stats-grid{grid-template-columns:repeat(2,1fr) !important;}
   .grid-3{grid-template-columns:1fr !important;}
@@ -6489,10 +6483,11 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   main {
     padding: 8px !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     -webkit-overflow-scrolling: touch !important;
     flex: 1 !important;
     min-height: 0 !important;
+    min-width: 0 !important;
   }
 
   /* ── 3. Topbar ── */
@@ -6546,18 +6541,34 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   .btn-main span, .btn-cancel span { display: inline !important; }
 
   /* ── 5. Cədvəllər — yatay scroll ── */
+  /* Card-ı scroll konteynerinə çevir */
   .card {
     border-radius: 10px !important;
-    overflow: hidden !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
     max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
   .section.active > .card:not(.stat-card) {
-    overflow: auto !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  /* Modal/slideover daxilindəki kartlar */
+  .modal-body .card,
+  .modal-body-inner .card {
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
+  /* Cədvəlin özü natural eni qorunsun */
   table {
     min-width: 540px !important;
-    width: max-content !important;
+    width: auto !important;
+    border-collapse: collapse !important;
   }
   th, td {
     white-space: nowrap !important;
