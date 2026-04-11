@@ -1382,10 +1382,10 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   z-index:0;
 }
 @keyframes loginCardOpen {
-  0%   { transform: scaleY(0.04); opacity: 0;    border-radius: 6rem; }
-  40%  { transform: scaleY(0.55); opacity: 0.7;  border-radius: 3rem; }
-  70%  { transform: scaleY(1.04); opacity: 0.92; border-radius: 2.6rem; }
-  85%  { transform: scaleY(0.97); opacity: 0.96; }
+  0%   { transform: scaleY(0.03); opacity: 0;   border-radius: 8rem; }
+  45%  { transform: scaleY(0.6);  opacity: 0.75; border-radius: 3rem; }
+  72%  { transform: scaleY(1.05); opacity: 0.95; border-radius: 2.6rem; }
+  86%  { transform: scaleY(0.97); opacity: 1; }
   100% { transform: scaleY(1);    opacity: 1;    border-radius: 2.5rem; }
 }
 .login-v3-card{
@@ -1401,9 +1401,12 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   box-shadow:0 50px 100px -20px rgba(0,0,0,.3);
   padding:2.5rem 2.25rem 2rem;
   transform-origin: center center;
+  /* default: invisible until animation starts */
+  opacity: 0;
+  transform: scaleY(0.03);
 }
 .login-v3-card.login-card-open {
-  animation: loginCardOpen .42s cubic-bezier(.22,.68,0,1.2) both;
+  animation: loginCardOpen .45s cubic-bezier(.22,.68,0,1.2) forwards;
 }
 @media (min-width:480px){
   .login-v3-card{padding:2.75rem 3rem 2.25rem;}

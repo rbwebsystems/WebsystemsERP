@@ -2715,17 +2715,22 @@ function openLoginModal() {
   if (!ov) return;
   prepareLoginForm();
   const card = ov.querySelector(".login-v3-card");
-  if (card) card.classList.remove("login-card-open");
+  // reset animation state
+  if (card) {
+    card.classList.remove("login-card-open");
+    card.style.animation = "none";
+  }
   ov.style.display = "flex";
   document.body.classList.add("landing-login-open");
   closeLpMenu();
-  // wait one frame so display:flex is painted, then trigger animation
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (card) card.classList.add("login-card-open");
-      setTimeout(() => byId("loginUser")?.focus(), 50);
-    });
-  });
+  // force reflow then start animation
+  setTimeout(() => {
+    if (card) {
+      card.style.animation = "";
+      card.classList.add("login-card-open");
+    }
+    setTimeout(() => byId("loginUser")?.focus(), 100);
+  }, 20);
 }
 
 function closeLoginModal() {
@@ -2733,6 +2738,8 @@ function closeLoginModal() {
   if (!ov) return;
   ov.style.display = "none";
   document.body.classList.remove("landing-login-open");
+  const card = ov.querySelector(".login-v3-card");
+  if (card) { card.classList.remove("login-card-open"); card.style.animation = "none"; }
 }
 
 function setupLandingPage() {
