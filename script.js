@@ -11955,10 +11955,55 @@ function restoreTrash(uid) {
   } else if (t.type === "cash") {
     if (existsUid(db.cash, it)) return alert("Bu kassa əməliyyatı artıq mövcuddur (UID təkrarı).");
     db.cash.push(it);
+    // Re-apply the linked effect that was rolled back during deletion
+    const kind = it.link?.kind || "";
+    if (kind === "sale_payment" || kind === "sale") {
+      const invNo = it.link?.invNo || it.meta?.invNo;
+      const saleUid = it.link?.saleUid;
+      if (invNo) {
+        // Multi-product invoice: re-add proportional payment to each sibling
+        const sibs = db.sales.filter(s => s.invNo === invNo);
+        const totalAmt = sibs.reduce((a, s) => a + n(s.amount), 0);
+        for (const s of sibs) {
+          const share = totalAmt > 0 ? n(it.amount) * n(s.amount) / totalAmt : 0;
+          if (share > 0.000001) addSalePaymentInternal(s, share, it.date, it.meta?.payKind || "sale");
+        }
+      } else if (saleUid) {
+        const s = db.sales.find(x => Number(x.uid) === Number(saleUid));
+        if (s) addSalePaymentInternal(s, n(it.amount), it.date, it.meta?.payKind || "sale");
+      }
+    } else if (kind === "creditor_invoice_payment") {
+      const purchUid = it.link?.purchUid;
+      const p = db.purch.find(x => Number(x.uid) === Number(purchUid));
+      if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(it.amount)));
+    } else if (kind === "creditor_payment") {
+      const allocs = it.meta?.allocations || [];
+      for (const a of allocs) {
+        const p = db.purch.find(x => Number(x.uid) === Number(a.purchUid));
+        if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(a.amount)));
+      }
+    } else if (kind === "debtor_payment") {
+      const allocs = it.meta?.allocations || [];
+      for (const a of allocs) {
+        const saleUid = a.saleUid ?? a.salesUid ?? null;
+        if (!saleUid) continue;
+        const s = db.sales.find(x => Number(x.uid) === Number(saleUid));
+        if (s) addSalePaymentInternal(s, n(a.amount), it.date, "monthly");
+      }
+    } else if (kind === "purch_payment") {
+      const purchUid = it.link?.purchUid;
+      const p = db.purch.find(x => Number(x.uid) === Number(purchUid));
+      if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(it.amount)));
+    } else if (kind === "purch_payment_adj") {
+      const purchUid = it.link?.purchUid;
+      const p = db.purch.find(x => Number(x.uid) === Number(purchUid));
+      if (p) p.paidTotal = String(Math.max(0, n(p.paidTotal) - n(it.amount)));
+    }
   }
   db.trash.splice(i, 1);
-  logEvent("restore", "trash", { type: t.type });
+  logEvent("restore", "trash", { type: t.type, uid: it?.uid });
   saveDB();
+  renderAll();
 }
 
 async function deleteTrash(uid) {
