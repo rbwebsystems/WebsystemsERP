@@ -5604,7 +5604,7 @@ body.sidebar-collapsed .nav-link:hover::before {
   font-weight: 400 !important;
   color: #1c1c1e !important;
   padding: 10px 16px 10px 8px !important;
-  text-align: right !important;
+  text-align: left !important;
   word-break: break-word !important;
 }
 body.theme-dark .info-block { background: #2C2C2E !important; }
