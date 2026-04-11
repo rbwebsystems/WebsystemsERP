@@ -9964,6 +9964,8 @@ function printSaleContract(idx) {
   const coBankAcc   = escapeHtml(st.companyBankAcc    || "");
   const coSwift     = escapeHtml(st.companySwift      || "");
   const coCorrAcc   = escapeHtml(st.companyCorrAcc    || "");
+  const coBankVoen  = escapeHtml(st.companyBankVoen   || "");
+  const coBankCode  = escapeHtml(st.companyBankCode   || "");
 
   const custFull = escapeHtml(`${cust.sur||""} ${cust.name||""} ${cust.father||""}`.trim());
   const custFin  = escapeHtml(cust.fin      || "-");
@@ -10111,6 +10113,8 @@ function printSaleContract(idx) {
       ${coBankAcc ? `<p>Hesab №: ${coBankAcc}</p>`         : ""}
       ${coSwift   ? `<p>SWIFT: ${coSwift}</p>`             : ""}
       ${coCorrAcc ? `<p>Müxbir hesab: ${coCorrAcc}</p>`    : ""}
+      ${coBankVoen? `<p>Bankin VÖEN: ${coBankVoen}</p>`    : ""}
+      ${coBankCode? `<p>Bankin kodu: ${coBankCode}</p>`    : ""}
       <div class="sign-underline"></div>
       <p style="font-size:11px;margin-top:4px;">${coDirector} / Möhür</p>
     </div>
@@ -10522,6 +10526,8 @@ function renderSettingsPage() {
   setVal("pg_set_bank_acc",  s.companyBankAcc   || "");
   setVal("pg_set_swift",     s.companySwift     || "");
   setVal("pg_set_corr_acc",  s.companyCorrAcc   || "");
+  setVal("pg_set_bank_voen", s.companyBankVoen  || "");
+  setVal("pg_set_bank_code", s.companyBankCode  || "");
   setVal("pg_tg_token",      s.telegramToken    || "");
   setVal("pg_tg_chat",       s.telegramChatId   || "");
   const chk = byId("pg_tg_enabled");
@@ -10543,6 +10549,8 @@ function saveSettingsPage() {
   db.settings.companyBankAcc   = (byId("pg_set_bank_acc")?.value   || "").trim();
   db.settings.companySwift     = (byId("pg_set_swift")?.value      || "").trim();
   db.settings.companyCorrAcc   = (byId("pg_set_corr_acc")?.value   || "").trim();
+  db.settings.companyBankVoen  = (byId("pg_set_bank_voen")?.value  || "").trim();
+  db.settings.companyBankCode  = (byId("pg_set_bank_code")?.value  || "").trim();
   db.settings.telegramToken    = (byId("pg_tg_token")?.value       || "").trim();
   db.settings.telegramChatId   = (byId("pg_tg_chat")?.value        || "").trim();
   db.settings.telegramEnabled  = byId("pg_tg_enabled")?.checked !== false;
