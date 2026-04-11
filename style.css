@@ -5561,33 +5561,56 @@ body.sidebar-collapsed .nav-link:hover::before {
 }
 
 /* Company info modal */
-.info-block{
-  background:var(--bg-card);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:14px 16px;
+.info-block {
+  background: #fff !important;
+  border: none !important;
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04) !important;
+  margin-bottom: 14px !important;
 }
-.info-block h4{
-  margin:0 0 10px;
-  font-size:.88rem;
-  font-weight:700;
-  color:var(--text-main);
-  letter-spacing:.01em;
+.info-block h4 {
+  font-size: .72rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  color: #8E8E93 !important;
+  margin: 0 !important;
+  padding: 14px 16px 8px !important;
 }
-.info-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:5px 0;
-  border-bottom:1px solid var(--border);
-  font-size:.85rem;
+.info-row {
+  display: grid !important;
+  grid-template-columns: minmax(110px,40%) minmax(0,1fr) !important;
+  align-items: center !important;
+  border-bottom: 1px solid rgba(60,60,67,.1) !important;
+  min-height: 44px !important;
+  gap: 0 !important;
+  padding: 0 !important;
 }
-.info-row:last-child{border-bottom:none;}
-.info-row>span:first-child{
-  min-width:120px;
-  color:var(--text-muted);
-  flex-shrink:0;
+.info-row:last-child { border-bottom: none !important; }
+.info-label {
+  font-size: .875rem !important;
+  font-weight: 400 !important;
+  color: #8E8E93 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  background: transparent !important;
+  padding: 10px 8px 10px 16px !important;
+  border-right: none !important;
 }
+.info-value {
+  font-size: .875rem !important;
+  font-weight: 400 !important;
+  color: #1c1c1e !important;
+  padding: 10px 16px 10px 8px !important;
+  text-align: right !important;
+  word-break: break-word !important;
+}
+body.theme-dark .info-block { background: #2C2C2E !important; }
+body.theme-dark .info-row { border-bottom-color: rgba(255,255,255,.08) !important; }
+body.theme-dark .info-label { color: #8E8E93 !important; }
+body.theme-dark .info-value { color: #fff !important; }
 
 /* Companies table — tidy column widths */
 #tblCompanies td:nth-child(1),
