@@ -5459,6 +5459,31 @@ body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):no
   background: rgba(255,255,255,.14) !important;
 }
 
+/* search inputs — white with border */
+.search-container input,
+.search-plain input {
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 999px !important;
+  color: #1c1c1e !important;
+  box-shadow: none !important;
+}
+.search-container input:focus,
+.search-plain input:focus {
+  background: #fff !important;
+  border-color: #007AFF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
+}
+.search-container input:hover,
+.search-plain input:hover { background: #f9fafb !important; }
+body.theme-dark .search-container input,
+body.theme-dark .search-plain input {
+  background: #2c2c2e !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+
 /* select — always white with border */
 select {
   background: #fff !important;
