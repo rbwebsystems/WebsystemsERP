@@ -10452,10 +10452,9 @@ function saveDayClose() {
   closeMdl();
 }
 
-function openDayCloseHistory() {
-  ensureAuditTrash();
-  const closes = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
-  const rows = closes.map((x, i) => {
+function _renderDayCloseRows(closes) {
+  if (!closes.length) return `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Nəticə tapılmadı</td></tr>`;
+  return closes.map((x, i) => {
     const accs = Array.isArray(x.accounts) ? x.accounts : [];
     const accRows = accs.map(a =>
       `<tr style="background:#f8fafc;">
@@ -10482,12 +10481,46 @@ function openDayCloseHistory() {
       ${accRows}
     `;
   }).join("");
+}
+
+function filterDayCloseHistory() {
+  const from = byId("dcFrom")?.value || "";
+  const to   = byId("dcTo")?.value   || "";
+  const all  = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  const filtered = all.filter(x => {
+    const d = (x.ts || "").slice(0, 10);
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+  const tbody = byId("dcHistTbody");
+  if (tbody) tbody.innerHTML = _renderDayCloseRows(filtered);
+}
+
+function openDayCloseHistory() {
+  ensureAuditTrash();
+  const today = new Date().toISOString().slice(0, 10);
+  const firstDate = (db.dayCloses || []).length
+    ? (db.dayCloses || []).slice().sort((a,b) => String(a.ts).localeCompare(String(b.ts)))[0].ts.slice(0,10)
+    : today;
+  const all = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="f-group" style="margin:0;flex:1;min-width:130px;">
+        <label style="font-size:.78rem;margin-bottom:4px;display:block;">Başlanğıc</label>
+        <input type="date" id="dcFrom" value="${firstDate}" oninput="filterDayCloseHistory()">
+      </div>
+      <div class="f-group" style="margin:0;flex:1;min-width:130px;">
+        <label style="font-size:.78rem;margin-bottom:4px;display:block;">Son</label>
+        <input type="date" id="dcTo" value="${today}" oninput="filterDayCloseHistory()">
+      </div>
+      <button class="btn-cancel" type="button" style="margin-top:18px;" onclick="byId('dcFrom').value='';byId('dcTo').value='';filterDayCloseHistory();">Sıfırla</button>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Qeyd</th><th colspan="2" style="text-align:right;">Ümumi balans</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="7">Tarixçə boşdur</td></tr>`}</tbody>
+        <tbody id="dcHistTbody">${_renderDayCloseRows(all)}</tbody>
       </table>
     </div>
     <div class="modal-footer">
