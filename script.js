@@ -2860,6 +2860,7 @@ function doLoginWithCompany(companyId) {
   window.__pendingLogin = null;
   const c = meta.companies.find((x) => x.id === companyId);
   if (!c) return alert("Şirkət tapılmadı.");
+  if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
   if (useFirestore()) {
@@ -2921,6 +2922,7 @@ function login(e) {
   if (companyFromUsername) {
     const c = meta.companies.find((x) => norm(x.id) === norm(companyFromUsername));
     if (!c) return alert("İstifadəçi adındakı şirkət tapılmadı (format: şirkətadı_ad, məs: baktel_rustamb).");
+    if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
     if (u.companyId != null && u.companyId !== "" && norm(u.companyId) !== norm(companyFromUsername)) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
     doLoginWithCompany(c.id);
     return;
@@ -2933,6 +2935,7 @@ function login(e) {
   if (!userCid && meta.companies[0] && norm(meta.companies[0].id) !== urlCid) return alert("Bu şirkət üçün icazəniz yoxdur.");
   const c = meta.companies.find((x) => norm(x.id) === urlCid);
   if (!c) return alert("Şirkət tapılmadı.");
+  if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
   doLoginWithCompany(c.id);
 }
 
@@ -8624,6 +8627,19 @@ function openCompanyInfo(idx) {
   `);
 }
 
+function restoreCompany(idx) {
+  if (!isDeveloper()) return;
+  const c = meta.companies[idx];
+  if (!c) return;
+  appConfirm(`"${c.name}" yenidən aktiv edilsin?`).then(ok => {
+    if (!ok) return;
+    meta.companies[idx].disabled = false;
+    saveMeta();
+    renderAll();
+    toast(`${escapeHtml(c.name)} bərpa edildi`, "ok");
+  });
+}
+
 function checkSubscriptionStatus() {
   if (isDeveloper()) { hideSubscriptionBlock(); return; }
   const cid = meta?.session?.companyId;
@@ -8725,18 +8741,31 @@ function delCompany(idx) {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   const c = meta.companies[idx];
   if (!c) return;
-  appConfirm("Şirkət silinsin? (məlumatlar LocalStorage-da qalacaq)").then((ok) => {
-    if (!ok) return;
-    meta.companies.splice(idx, 1);
-    if (meta.companies.length === 0) meta.companies.push({ id: "bakfon", name: "Bakfon" });
-    if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
-      meta.session.companyId = meta.companies[0].id;
-      if (useFirestore()) loadCompanyDBAsync({ soft: true }).then((data) => { db = data; subscribeRealtime(); });
-      else db = loadCompanyDB();
-    }
-    saveMeta();
-    renderAll();
-  });
+  if (!c.disabled) {
+    // First action: deactivate
+    appConfirm(`"${c.name}" deaktiv edilsin? (məlumatlar qalacaq, login bloklanacaq)`).then(ok => {
+      if (!ok) return;
+      meta.companies[idx].disabled = true;
+      saveMeta();
+      renderAll();
+      toast(`${escapeHtml(c.name)} deaktiv edildi`, "warn");
+    });
+  } else {
+    // Second action: permanent delete (only if already disabled)
+    appConfirm(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinsin? Bu geri alına bilməz!`).then(ok => {
+      if (!ok) return;
+      meta.companies.splice(idx, 1);
+      if (meta.companies.length === 0) meta.companies.push({ id: "default", name: "Default" });
+      if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
+        meta.session.companyId = meta.companies[0].id;
+        if (useFirestore()) loadCompanyDBAsync({ soft: true }).then((data) => { db = data; subscribeRealtime(); });
+        else db = loadCompanyDB();
+      }
+      saveMeta();
+      renderAll();
+      toast("Şirkət tamamilə silindi", "warn");
+    });
+  }
   return;
 }
 
@@ -11497,16 +11526,24 @@ function renderAll() {
           const paidBtn = (sub.active && !((sub.paidUntil||"") >= curMonth))
             ? `<button class="icon-btn" type="button" onclick="markCompanyPaid(${i})" title="Ödəniş qeyd et" style="color:#16a34a"><i class="fas fa-credit-card"></i></button>`
             : `<span class="icon-btn-placeholder"></span>`;
-          return `<tr>
+          const disabledStyle = c.disabled ? 'opacity:.55' : '';
+          const activeBadge = c.disabled
+            ? '<span class="pill overdue">DEAKTİV</span>'
+            : active ? '<span class="pill paid">AKTİV</span>' : "—";
+          const restoreBtn = (c.disabled && isDeveloper())
+            ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et" style="color:#16a34a"><i class="fas fa-rotate-left"></i></button>`
+            : `<span class="icon-btn-placeholder"></span>`;
+          return `<tr style="${disabledStyle}">
             <td>${i + 1}</td>
             <td><b>${escapeHtml(c.name)}</b></td>
             <td><code style="font-size:.78rem">${escapeHtml(c.id)}</code></td>
-            <td>${active ? '<span class="pill paid">AKTİV</span>' : "—"}</td>
+            <td>${activeBadge}</td>
             <td>${subBadge}</td>
             <td class="tbl-actions">
-              <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
+              <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${(active || c.disabled) ? "disabled" : ""}>Seç</button>
               <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
-              ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+              ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="${c.disabled ? 'Tam sil' : 'Deaktiv et'}"><i class="fas fa-${c.disabled ? 'trash' : 'ban'}"></i></button>` : ""}
+              ${restoreBtn}
               ${paidBtn}
             </td>
           </tr>`;
@@ -12313,6 +12350,7 @@ Object.assign(window, {
   markCompanyPaid,
   openCompanyInfo,
   deleteCompanyPayment,
+  restoreCompany,
   openSkins,
   setSkin,
   openLoginModal,
