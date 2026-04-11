@@ -7415,7 +7415,7 @@ function printCreditDoc(idx, type) {
   // shared page CSS
   const baseCSS = `
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
+    body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
     .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
     h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
     .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
@@ -7423,18 +7423,18 @@ function printCreditDoc(idx, type) {
     .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;}
     .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;}
     .lbl{color:#6b7280;min-width:160px;flex-shrink:0;}
-    .val{font-weight:500;}
-    p{font-size:12px;line-height:1.7;margin-bottom:8px;}
-    table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;}
-    th{background:#f1f5f9;padding:5px 8px;text-align:left;border:1px solid #e2e8f0;font-weight:600;}
-    td{padding:4px 8px;border:1px solid #e2e8f0;}
+    .val{font-weight:600;}
+    p{font-size:13px;line-height:1.8;margin-bottom:8px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}
+    th{background:#f1f5f9;padding:5px 8px;text-align:left;border:1px solid #e2e8f0;font-weight:700;}
+    td{padding:5px 8px;border:1px solid #e2e8f0;}
     .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:30px;}
     .sign-box{flex:1;}
     .sign-line{border-bottom:1px solid #374151;height:28px;margin-bottom:4px;}
-    .sign-label{font-size:10px;color:#6b7280;}
+    .sign-label{font-size:11px;color:#6b7280;}
     .stamp-box{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;margin:0 auto 4px;}
     .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
-    @media print{body{background:#fff;padding:0;display:block;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
+    @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
   `;
 
   let title = "", body = "";
@@ -7552,17 +7552,20 @@ function printCreditDoc(idx, type) {
     title = "Razılıq Ərizəsi";
     const imeiStr = [imei1, imei2].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div style="text-align:right;margin-bottom:24px;font-size:12px;line-height:1.7;">
-        <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
-        <div>1 saylı Əlavə</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;">
+        <div style="font-size:16px;font-weight:700;font-family:'Times New Roman',Times,serif;">${co}</div>
+        <div style="text-align:right;font-size:12px;line-height:1.7;">
+          <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
+          <div>1 saylı Əlavə</div>
+        </div>
       </div>
-      <div style="margin-bottom:32px;">
-        <p style="font-size:13px;line-height:1.9;text-align:justify;">
+      <div style="margin-bottom:40px;">
+        <p style="font-size:13px;line-height:2;text-align:justify;font-family:'Times New Roman',Times,serif;">
           Mən (ad, soyad, Ş/V seriya və Fin kod) <strong>${custFull}</strong>, seriya: <strong>${custSer}</strong>, FİN: <strong>${custFin}</strong> — <strong>"${co}"</strong> MMC-dən aldığım qarşılıqlı razılaşma əsasında dəyərini hissə-hissə ödəmək üçün nəzərdə tutulmuş <strong>"${prod}"</strong> markalı, İMEİ kodu: <strong>${imeiStr}</strong> mobil cihazın Müqavilə şərtlərini pozduğum halda İMEİ kodunun deaktiv edilməsi və vahid şəbəkədə riskli müştərilərin siyahısına salınmasına etirazım yoxdur.
         </p>
       </div>
-      <div style="margin-top:40px;font-size:13px;line-height:2.6;">
-        <div><strong>İmza:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+      <div style="margin-top:40px;font-size:13px;font-family:'Times New Roman',Times,serif;line-height:2.8;">
+        <div><strong>İmza:</strong></div>
         <div><strong>Satıcı:</strong></div>
         <div><strong>Alıcı:</strong></div>
         <div><strong>Tarix:</strong></div>
@@ -9978,7 +9981,7 @@ function printSaleContract(idx) {
 <title>Alqı-Satqı Müqaviləsi №${docNo}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
+  body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
   .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
   h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
   .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
