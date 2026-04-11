@@ -8305,7 +8305,7 @@ function saveCompany(e, idx) {
     .map((x) => x.value);
   if (!name) return;
   if (idx === null) {
-    const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_\u0400-\u04FF]/g, "").slice(0, 40) || genCompanyUUID();
+    const id = name.trim() || genCompanyUUID();
     meta.companies.push({ id, name, sections });
   } else {
     meta.companies[idx] = { ...meta.companies[idx], name, sections };
@@ -8428,16 +8428,18 @@ function normalizeUsernamePart(text) {
 }
 
 function buildAutoUsernameForUser(fullName, excludeUid) {
-  const cid = String(meta?.session?.companyId || "").trim().toLowerCase();
+  const compId = meta?.session?.companyId || "";
+  const comp = (meta?.companies || []).find((c) => c.id === compId);
+  const compName = String(db.settings?.companyName || comp?.name || compId || "company").trim();
   const cleaned = normalizeUsernamePart(fullName);
   const parts = cleaned.split(" ").filter(Boolean);
   const first = parts[0] || "user";
   const surnameInitial = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
   const suffix = `${first}${surnameInitial}` || "user";
-  const base = `${cid || "company"}_${suffix}`;
+  const base = `${compName}_${suffix}`;
   let candidate = base;
   let nIdx = 2;
-  while (meta.users.some((u) => Number(u.uid) !== Number(excludeUid || 0) && String(u.username || "").trim().toLowerCase() === candidate)) {
+  while (meta.users.some((u) => Number(u.uid) !== Number(excludeUid || 0) && String(u.username || "").trim().toLowerCase() === candidate.toLowerCase())) {
     candidate = `${base}${nIdx}`;
     nIdx++;
   }
@@ -8461,10 +8463,11 @@ function syncAutoUserIdentity() {
   const staffWrap = byId("u_staff_wrap");
   if (!fullEl || !userEl) return;
   if (staffWrap) staffWrap.style.display = manual ? "none" : "";
-  if (isNew) fullEl.readOnly = !manual;
   const fullName = getAutoUserFullName();
   if (isNew && !manual) fullEl.value = fullName;
-  if (isNew) userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+  // only auto-fill username if it's still empty (user hasn't typed manually)
+  if (isNew && !userEl.value.trim()) userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+  else if (isNew && fullName) userEl.value = buildAutoUsernameForUser(fullName, 0);
 }
 
 function toggleUserManualMode() {
@@ -8599,8 +8602,8 @@ function openUser(uidOrNull = null) {
             <div class="f-group" id="u_staff_wrap"><label>Əməkdaş ${isNew ? "*" : ""}</label><select id="u_staff" title="Əməkdaş" ${isNew ? 'onchange="syncAutoUserIdentity()"' : ""}>
           ${staffOptions}
         </select></div>
-            <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" ${isNew ? 'readonly oninput="syncAutoUserIdentity()"' : ""} required></div>
-            <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "") + "_ad (məs: " + (cid || "baktel") + "_rustamb)")}" value="${escapeHtml(editingUser.username || "")}" readonly required></div>
+            <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" ${isNew ? 'oninput="syncAutoUserIdentity()"' : ""} required></div>
+            <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "sirket") + "_rustamb")}" value="${escapeHtml(editingUser.username || "")}" required></div>
             <div class="f-group"><label>Rol</label><select id="u_role">
           <option value="user" ${editingUser.role === "user" ? "selected" : ""}>İstifadəçi (user)</option>
           <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>Admin</option>
