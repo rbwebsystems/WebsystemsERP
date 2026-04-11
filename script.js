@@ -7794,10 +7794,38 @@ function openEditCashOp(uid) {
 function printCreditDoc(idx, type) {
   const s = db.sales[idx];
   if (!s || s.saleType !== "kredit") return;
+
+  // Collect all sale records in the same invoice
+  const invNo0 = s.invNo;
+  const siblings = invNo0
+    ? db.sales.filter(x => x.invNo === invNo0)
+    : [s];
+  const isMulti = siblings.length > 1;
+
+  // Aggregated figures
+  const totalAmountRaw  = siblings.reduce((a, x) => a + n(x.amount), 0);
+  const totalDownRaw    = siblings.reduce((a, x) => a + n(x.credit?.downPayment || 0), 0);
+  // Use first sibling's credit terms (all siblings share the same terms)
+  const termMonthsAgg   = s.credit?.termMonths || 1;
+  const remAfterDownAgg = Math.max(0, totalAmountRaw - totalDownRaw);
+  const monthlyAgg      = termMonthsAgg > 0 ? remAfterDownAgg / termMonthsAgg : 0;
+
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
   const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
   const st = db.settings || {};
-  const sch = buildCreditSchedule(s);
+  // Build schedule using aggregated totals (override single-sale schedule)
+  const sch = {
+    term: termMonthsAgg,
+    remAfterDown: remAfterDownAgg,
+    rows: (() => {
+      const startDate = s.date ? new Date(s.date) : new Date();
+      return Array.from({ length: termMonthsAgg }, (_, i) => {
+        const due = new Date(startDate);
+        due.setMonth(due.getMonth() + i + 1);
+        return { idx: i + 1, due: due.toISOString(), amount: monthlyAgg };
+      });
+    })(),
+  };
 
   const today = fmtDT(new Date().toISOString()).split(" ")[0];
   const saleDate = fmtDT(s.date).split(" ")[0];
@@ -7818,16 +7846,18 @@ function printCreditDoc(idx, type) {
   const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : "-";
   const zamPh    = guarantor ? escapeHtml(guarantor.ph1      || "-") : "-";
 
-  const prod     = escapeHtml(s.productName || "-");
+  const prod     = isMulti
+    ? siblings.map((x, i) => `${i+1}. ${escapeHtml(x.productName || "-")}`).join("; ")
+    : escapeHtml(s.productName || "-");
   const imei1    = escapeHtml(s.imei1 || "-");
   const imei2    = escapeHtml(s.imei2 || "-");
   const seria    = escapeHtml(s.seria || "-");
   const docNo    = escapeHtml(String(s.invNo || s.uid));
-  const total    = money(s.amount);
-  const down     = money(s.credit?.downPayment  || 0);
-  const monthly  = money(s.credit?.monthlyPayment || 0);
-  const rem      = money(sch.remAfterDown);
-  const term     = sch.term;
+  const total    = money(totalAmountRaw);
+  const down     = money(totalDownRaw);
+  const monthly  = money(monthlyAgg);
+  const rem      = money(remAfterDownAgg);
+  const term     = termMonthsAgg;
   const emekdas  = escapeHtml(s.employeeName || operationActorName(s, "-"));
 
   // shared page CSS
@@ -7859,8 +7889,6 @@ function printCreditDoc(idx, type) {
 
   if (type === "tehvil") {
     title = "Təhvil-Təslim Aktı";
-    const qty = Math.max(1, Math.floor(n(s.qty || 1)));
-    const imeiDisplay = [imei1, imei2, seria].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
       <div style="display:flex;justify-content:flex-end;margin-bottom:20px;font-size:12px;line-height:1.8;">
         <div style="text-align:right;">
@@ -7890,12 +7918,20 @@ function printCreditDoc(idx, type) {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1.</td>
-            <td>${prod}${imeiDisplay !== "-" ? ` (${imeiDisplay})` : ""}</td>
-            <td style="text-align:center;">${qty}</td>
+          ${siblings.map((x, ii) => {
+            const xQty = Math.max(1, Math.floor(n(x.qty || 1)));
+            const xImei = [x.imei1, x.imei2, x.seria].filter(v => v && v !== "-").join(" / ") || "-";
+            return `<tr>
+              <td>${ii + 1}.</td>
+              <td>${escapeHtml(x.productName || "-")}${xImei !== "-" ? ` (${xImei})` : ""}</td>
+              <td style="text-align:center;">${xQty}</td>
+              <td style="text-align:right;">${money(n(x.amount))}</td>
+            </tr>`;
+          }).join("")}
+          ${isMulti ? `<tr style="font-weight:700;background:#f1f5f9;">
+            <td colspan="3">Cəmi</td>
             <td style="text-align:right;">${total}</td>
-          </tr>
+          </tr>` : ""}
         </tbody>
       </table>
       <p style="font-size:13px;line-height:2;text-align:justify;margin-bottom:16px;">
@@ -7923,9 +7959,7 @@ function printCreditDoc(idx, type) {
 
   else if (type === "cedvel") {
     title = "Ödəniş Cədvəli";
-    const creditTotal = n(s.credit?.downPayment) > 0
-      ? n(s.amount) - n(s.credit.downPayment)
-      : n(sch.remAfterDown || 0);
+    const creditTotal = remAfterDownAgg;
     const rows = sch.rows.map((r, i) => {
       const balance = Math.max(0, creditTotal - r.idx * n(r.amount));
       return `
@@ -7940,7 +7974,7 @@ function printCreditDoc(idx, type) {
       <div class="section">
         <div class="row"><span class="lbl">Müqavilə №:</span><span class="val">${docNo}</span></div>
         <div class="row"><span class="lbl">Alıcı:</span><span class="val">${custFull}</span></div>
-        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+        <div class="row"><span class="lbl">Məhsul${isMulti ? `lar (${siblings.length} ədəd)` : ""}:</span><span class="val">${prod}</span></div>
         <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
         <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
         <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
@@ -7959,6 +7993,22 @@ function printCreditDoc(idx, type) {
 
   else if (type === "zamanet") {
     title = "Zəmanət Talonu";
+    const prodBlock = isMulti
+      ? siblings.map((x, ii) => {
+          const xi1 = escapeHtml(x.imei1 || "-");
+          const xi2 = escapeHtml(x.imei2 || "-");
+          const xs  = escapeHtml(x.seria  || "-");
+          return `
+          <div class="section-title" style="text-align:left;margin-top:8px;font-size:11px;">${ii+1}. ${escapeHtml(x.productName || "-")}</div>
+          ${xi1 !== "-" ? `<div class="row"><span class="lbl">IMEI 1:</span><span class="val">${xi1}</span></div>` : ""}
+          ${xi2 !== "-" ? `<div class="row"><span class="lbl">IMEI 2:</span><span class="val">${xi2}</span></div>` : ""}
+          ${xs  !== "-" ? `<div class="row"><span class="lbl">Seriya №:</span><span class="val">${xs}</span></div>`  : ""}`;
+        }).join("")
+      : `
+          <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+          ${imei1 !== "-" ? `<div class="row"><span class="lbl">IMEI 1:</span><span class="val">${imei1}</span></div>` : ""}
+          ${imei2 !== "-" ? `<div class="row"><span class="lbl">IMEI 2:</span><span class="val">${imei2}</span></div>` : ""}
+          ${seria !== "-" ? `<div class="row"><span class="lbl">Seriya №:</span><span class="val">${seria}</span></div>` : ""}`;
     body = `
       <div class="section">
         <div class="row"><span class="lbl">Talonun №:</span><span class="val">${docNo}</span></div>
@@ -7968,10 +8018,7 @@ function printCreditDoc(idx, type) {
       </div>
       <div class="section">
         <div class="section-title">Məhsul məlumatı</div>
-        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
-        <div class="row"><span class="lbl">IMEI 1:</span><span class="val">${imei1}</span></div>
-        <div class="row"><span class="lbl">IMEI 2:</span><span class="val">${imei2}</span></div>
-        <div class="row"><span class="lbl">Seriya №:</span><span class="val">${seria}</span></div>
+        ${prodBlock}
         <div class="row"><span class="lbl">Satıcı:</span><span class="val">${co}</span></div>
         ${coPhone ? `<div class="row"><span class="lbl">Əlaqə:</span><span class="val">${coPhone}</span></div>` : ""}
       </div>
@@ -10417,6 +10464,17 @@ function saveReturnSale(e, idx) {
 function printSaleContract(idx) {
   const s = db.sales[idx];
   if (!s) return;
+
+  // Collect all invoice siblings
+  const invNo0 = s.invNo;
+  const siblings = invNo0 ? db.sales.filter(x => x.invNo === invNo0) : [s];
+  const isMulti = siblings.length > 1;
+  const totalAmountRaw  = siblings.reduce((a, x) => a + n(x.amount), 0);
+  const totalDownRaw    = siblings.reduce((a, x) => a + n(x.credit?.downPayment || 0), 0);
+  const termMonthsAgg   = s.credit?.termMonths || 1;
+  const remAfterDownAgg = Math.max(0, totalAmountRaw - totalDownRaw);
+  const monthlyAgg      = termMonthsAgg > 0 ? remAfterDownAgg / termMonthsAgg : 0;
+
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
   const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
   const st = db.settings || {};
@@ -10449,33 +10507,31 @@ function printSaleContract(idx) {
   const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : null;
   const zamPh    = guarantor ? escapeHtml(guarantor.ph1 || "-") : null;
 
-  const prod  = escapeHtml(s.productName || "-");
+  const prod  = isMulti
+    ? siblings.map((x, i) => `${i+1}. ${escapeHtml(x.productName || "-")}`).join("; ")
+    : escapeHtml(s.productName || "-");
   const imei1 = escapeHtml(s.imei1 || "-");
   const imei2 = escapeHtml(s.imei2 || "-");
   const seria = escapeHtml(s.seria || "-");
-  const total = money(s.amount);
-  const paid  = money(s.paidTotal);
+  const total = money(totalAmountRaw);
+  const paid  = money(siblings.reduce((a, x) => a + n(x.paidTotal), 0));
   const saleTypeLabel = { nagd:"Nağd", post:"Post", post_taksit:"Post Taksit",
     topdan:"Topdan", korporativ:"Korporativ", kredit:"Kredit", kocurme:"Köçürmə" };
   const sType = escapeHtml(saleTypeLabel[String(s.saleType||"").toLowerCase()] || String(s.saleType||"").toUpperCase());
 
-  const creditRows = s.saleType === "kredit" && s.credit ? (() => {
-    const sch = buildCreditSchedule(s);
-    return `
+  const creditRows = s.saleType === "kredit" && s.credit ? `
     <div class="section">
       <div class="section-title">Kredit şərtləri</div>
-      <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${money(s.credit.downPayment)} AZN</span></div>
-      <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${money(sch.remAfterDown)} AZN</span></div>
-      <div class="row"><span class="lbl">Müddət:</span><span class="val">${sch.term} ay</span></div>
-      <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${money(s.credit.monthlyPayment)} AZN</span></div>
-    </div>`;
-  })() : "";
+      <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${money(totalDownRaw)} AZN</span></div>
+      <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${money(remAfterDownAgg)} AZN</span></div>
+      <div class="row"><span class="lbl">Müddət:</span><span class="val">${termMonthsAgg} ay</span></div>
+      <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${money(monthlyAgg)} AZN</span></div>
+    </div>` : "";
 
-  const sch = s.saleType === "kredit" && s.credit ? buildCreditSchedule(s) : null;
-  const downAmt    = sch ? money(s.credit.downPayment)    : "—";
-  const creditAmt  = sch ? money(sch.remAfterDown)        : "—";
-  const termMonths = sch ? sch.term + " ay"               : "—";
-  const monthlyAmt = sch ? money(s.credit.monthlyPayment) : "—";
+  const downAmt    = s.saleType === "kredit" ? money(totalDownRaw)    : "—";
+  const creditAmt  = s.saleType === "kredit" ? money(remAfterDownAgg) : "—";
+  const termMonths = s.saleType === "kredit" ? termMonthsAgg + " ay"  : "—";
+  const monthlyAmt = s.saleType === "kredit" ? money(monthlyAgg)      : "—";
 
   const bankBlock = (coBank || coBankAcc) ? `
     <p style="margin-top:6px;font-size:12px;">
@@ -10522,7 +10578,31 @@ function printSaleContract(idx) {
   <p>1.1. Müqaviləyə əsasən Satıcı Alıcıya Müqaviləyə əlavə olunan, Müqavilədə və onun ayrılmaz tərkib hissəsi hesab edilən "Əlavə 1"-də göstərilən Mal(lar)ı sənədlər əsasında (qaimə, vergi hesab-fakturası, və s.) nisyə satır, Alıcı isə həmin Mal(lar)ı qəbul edir və bu müqavilə ilə razılaşdırılmış qaydada Mal(lar)ın dəyərini Satıcıya ödəməyi öhdəsinə götürür.</p>
 
   <div style="margin:14px 0 8px;">
-    <div class="field-row"><span class="field-label">Məhsulun adı:</span><span class="field-line">${prod}</span></div>
+    ${isMulti ? `
+    <div style="margin-bottom:8px;"><strong>Məhsullar (${siblings.length} ədəd):</strong></div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;">
+      <thead><tr>
+        <th style="border:1px solid #ccc;padding:4px 8px;background:#f5f5f5;width:36px;">№</th>
+        <th style="border:1px solid #ccc;padding:4px 8px;background:#f5f5f5;">Məhsul</th>
+        <th style="border:1px solid #ccc;padding:4px 8px;background:#f5f5f5;width:120px;">IMEI/Seriya</th>
+        <th style="border:1px solid #ccc;padding:4px 8px;background:#f5f5f5;width:90px;text-align:right;">Məbləğ</th>
+      </tr></thead>
+      <tbody>
+        ${siblings.map((x, ii) => {
+          const xImei = [x.imei1, x.imei2, x.seria].filter(v => v && v.trim()).join(" / ") || "-";
+          return `<tr>
+            <td style="border:1px solid #ccc;padding:4px 8px;">${ii+1}</td>
+            <td style="border:1px solid #ccc;padding:4px 8px;">${escapeHtml(x.productName || "-")}</td>
+            <td style="border:1px solid #ccc;padding:4px 8px;">${escapeHtml(xImei)}</td>
+            <td style="border:1px solid #ccc;padding:4px 8px;text-align:right;">${money(n(x.amount))} AZN</td>
+          </tr>`;
+        }).join("")}
+        <tr style="font-weight:700;background:#f5f5f5;">
+          <td colspan="3" style="border:1px solid #ccc;padding:4px 8px;">Cəmi</td>
+          <td style="border:1px solid #ccc;padding:4px 8px;text-align:right;">${total} AZN</td>
+        </tr>
+      </tbody>
+    </table>` : `<div class="field-row"><span class="field-label">Məhsulun adı:</span><span class="field-line">${prod}</span></div>`}
     <div class="field-row"><span class="field-label">İlkin ödəniş məbləği:</span><span class="field-line">${downAmt} AZN</span></div>
     <div class="field-row"><span class="field-label">Kredit məbləği:</span><span class="field-line">${creditAmt} AZN</span></div>
     <div class="field-row"><span class="field-label">Kredit müddəti:</span><span class="field-line">${termMonths}</span></div>
