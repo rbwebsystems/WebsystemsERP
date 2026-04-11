@@ -5209,6 +5209,40 @@ body.theme-dark .btn-cancel:hover { background: rgba(255,255,255,.16) !important
   color: #636366 !important;
   transition: background .15s !important;
 }
+/* ── btn-mini: iOS style — founder row icons + salary pay buttons ── */
+.btn-mini {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: rgba(120,120,128,.1) !important;
+  color: #1c1c1e !important;
+  font-size: .8rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background .15s !important;
+  white-space: nowrap !important;
+}
+.btn-mini:hover { background: rgba(120,120,128,.18) !important; }
+.btn-mini i { font-size: .78rem !important; pointer-events: none !important; }
+/* Salary "Rəsmi ödə" — blue tint */
+.btn-mini:has(+ .btn-mini),
+.btn-mini + .btn-mini:last-child {
+  background: rgba(0,122,255,.1) !important;
+  color: #007AFF !important;
+}
+.btn-mini:has(+ .btn-mini):hover { background: rgba(0,122,255,.18) !important; }
+/* Salary "Nəğd ödə" — green tint */
+.btn-mini + .btn-mini:last-child {
+  background: rgba(52,199,89,.1) !important;
+  color: #34C759 !important;
+}
+.btn-mini + .btn-mini:last-child:hover { background: rgba(52,199,89,.18) !important; }
+body.theme-dark .btn-mini { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.7) !important; }
 .icon-btn:hover { background: rgba(120,120,128,.2) !important; }
 .icon-btn.edit { background: rgba(0,122,255,.1) !important; color: #007AFF !important; }
 .icon-btn.edit:hover { background: rgba(0,122,255,.18) !important; }
