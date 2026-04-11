@@ -9018,7 +9018,7 @@ function openUser(uidOrNull = null) {
   const checks = sections
     .map((s) => {
       const on = (editingUser.perms?.sections || []).includes("*") || (editingUser.perms?.sections || []).includes(s);
-      return `<label class="chk"><input type="checkbox" class="permSec" value="${s}" ${on ? "checked" : ""}><span>${escapeHtml(sectionLabelAz(s))}</span></label>`;
+      return `<label class="perm-row"><span class="perm-label">${escapeHtml(sectionLabelAz(s))}</span><input type="checkbox" class="permSec" value="${s}" ${on ? "checked" : ""}></label>`;
     })
     .join("");
   const isNew = uidOrNull == null || uidOrNull === "";
@@ -9067,34 +9067,55 @@ function openUser(uidOrNull = null) {
             <label class="chk grid-span-2"><input type="checkbox" id="u_active" ${editingUser.active ? "checked" : ""}><span>Aktiv</span></label>
           </div>
         </div>
-        <div class="info-block">
-          <div class="info-row">
-            <div class="info-label">İcazələr</div>
-            <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
-              <label class="chk" style="font-weight:700;color:var(--accent)"><input type="checkbox" id="u_all_perms" onchange="toggleAllUserPerms(this)"><span>✓ Hamısı (tam icazə)</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_edit" ${editingUser.perms.canEdit ? "checked" : ""}><span>Redaktə edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_delete" ${editingUser.perms.canDelete ? "checked" : ""}><span>Silə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_pay" ${editingUser.perms.canPay ? "checked" : ""}><span>Ödəniş edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_ref" ${editingUser.perms.canRefund ? "checked" : ""}><span>Qaytarma edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_exp" ${editingUser.perms.canExport ? "checked" : ""}><span>Export edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_imp" ${editingUser.perms.canImport ? "checked" : ""}><span>Import edə bilsin</span></label>
-              <label class="chk"><input type="checkbox" id="u_can_reset" ${editingUser.perms.canReset ? "checked" : ""}><span>Reset edə bilsin</span></label>
-            </div>
+        <div class="perm-group">
+          <div class="perm-group-title">İcazələr</div>
+          <div class="perm-list">
+            <label class="perm-row perm-row--accent">
+              <span class="perm-label">Hamısı (tam icazə)</span>
+              <input type="checkbox" id="u_all_perms" onchange="toggleAllUserPerms(this)">
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Redaktə edə bilsin</span>
+              <input type="checkbox" id="u_can_edit" ${editingUser.perms.canEdit ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Silə bilsin</span>
+              <input type="checkbox" id="u_can_delete" ${editingUser.perms.canDelete ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Ödəniş edə bilsin</span>
+              <input type="checkbox" id="u_can_pay" ${editingUser.perms.canPay ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Qaytarma edə bilsin</span>
+              <input type="checkbox" id="u_can_ref" ${editingUser.perms.canRefund ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Export edə bilsin</span>
+              <input type="checkbox" id="u_can_exp" ${editingUser.perms.canExport ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Import edə bilsin</span>
+              <input type="checkbox" id="u_can_imp" ${editingUser.perms.canImport ? "checked" : ""}>
+            </label>
+            <label class="perm-row">
+              <span class="perm-label">Reset edə bilsin</span>
+              <input type="checkbox" id="u_can_reset" ${editingUser.perms.canReset ? "checked" : ""}>
+            </label>
           </div>
         </div>
-        <div class="info-block">
-          <div class="info-row">
-            <div class="info-label">Detallı icazələr</div>
-            <div class="info-value">${actionMatrix}</div>
-          </div>
+        <div class="perm-group">
+          <div class="perm-group-title">Detallı icazələr</div>
+          <div class="perm-list perm-list--table">${actionMatrix}</div>
         </div>
-        <div class="info-block">
-          <div class="info-row">
-            <div class="info-label">Bölmələr</div>
-            <div class="info-value">
-              <label class="chk" style="font-weight:700;color:var(--accent);margin-bottom:8px;display:flex"><input type="checkbox" id="u_all_secs" onchange="toggleAllUserSecs(this)"><span>✓ Hamısı (bütün bölmələr)</span></label>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;">${checks}</div>
-            </div>
+        <div class="perm-group">
+          <div class="perm-group-title">Bölmələr</div>
+          <div class="perm-list">
+            <label class="perm-row perm-row--accent">
+              <span class="perm-label">Hamısı (bütün bölmələr)</span>
+              <input type="checkbox" id="u_all_secs" onchange="toggleAllUserSecs(this)">
+            </label>
+            ${checks}
           </div>
         </div>
       </div>
