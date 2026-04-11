@@ -7505,14 +7505,19 @@ function printCreditDoc(idx, type) {
 
   else if (type === "cedvel") {
     title = "Ödəniş Cədvəli";
-    const rows = sch.rows.map((r, i) => `
+    const creditTotal = n(s.credit?.downPayment) > 0
+      ? n(s.amount) - n(s.credit.downPayment)
+      : n(sch.remAfterDown || 0);
+    const rows = sch.rows.map((r, i) => {
+      const balance = Math.max(0, creditTotal - r.idx * n(r.amount));
+      return `
       <tr style="${i%2===0?"":"background:#f9fafb"}">
         <td>${r.idx}</td>
         <td>${fmtDT(r.due).split(" ")[0]}</td>
         <td style="text-align:right;">${money(r.amount)} AZN</td>
-        <td style="text-align:right;">${money(r.paid)} AZN</td>
-        <td style="text-align:right;">${money(r.remaining)} AZN</td>
-      </tr>`).join("");
+        <td style="text-align:right;">${money(balance)} AZN</td>
+      </tr>`;
+    }).join("");
     body = `
       <div class="section">
         <div class="row"><span class="lbl">Müqavilə №:</span><span class="val">${docNo}</span></div>
@@ -7524,7 +7529,7 @@ function printCreditDoc(idx, type) {
         <div class="row"><span class="lbl">Müddət / Aylıq:</span><span class="val">${term} ay / ${monthly} AZN</span></div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Ödəniş tarixi</th><th>Aylıq məbləğ</th><th>Ödənilən</th><th>Qalıq</th></tr></thead>
+        <thead><tr><th>#</th><th>Ödəniş tarixi</th><th>Aylıq məbləğ</th><th>Qalıq</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="sign-row" style="margin-top:20px;">
