@@ -5011,6 +5011,133 @@ body.theme-dark .pill.nagd{
 #companies .card table td.tbl-actions .btn-mini-pay{flex-shrink:0;}
 #companies .card table td:nth-child(3) code{overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%;}
 
+/* ══════════════════════════════════════════════════════════════
+   iOS Sidebar — Frosted glass, light theme nav
+   ══════════════════════════════════════════════════════════════ */
+aside {
+  background: rgba(242,242,247,.96) !important;
+  backdrop-filter: blur(24px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+  border-right: 1px solid rgba(60,60,67,.14) !important;
+}
+body.theme-dark aside {
+  background: rgba(28,28,30,.92) !important;
+  border-right-color: rgba(255,255,255,.08) !important;
+}
+
+/* Logo area */
+.sidebar-logo-area {
+  border-bottom: 1px solid rgba(60,60,67,.1) !important;
+}
+
+/* Nav links */
+.nav-link {
+  color: #1c1c1e !important;
+  border-radius: 12px !important;
+  margin-left: 8px !important;
+  margin-right: 8px !important;
+  width: calc(100% - 16px) !important;
+  padding: 10px 14px !important;
+  font-size: .875rem !important;
+  font-weight: 500 !important;
+}
+a.nav-link, a.nav-link:visited { color: #1c1c1e !important; }
+.nav-link i { color: #636366 !important; opacity: 1 !important; }
+.nav-link:hover {
+  background: rgba(60,60,67,.08) !important;
+  color: #1c1c1e !important;
+  border-radius: 12px !important;
+}
+
+/* Active link — iOS blue pill, fully rounded */
+.nav-link.active {
+  background: #007AFF !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  margin-left: 8px !important;
+  margin-right: 8px !important;
+  width: calc(100% - 16px) !important;
+  box-shadow: 0 2px 8px rgba(0,122,255,.28) !important;
+}
+.nav-link.active i { color: #fff !important; opacity: 1 !important; }
+.nav-link.active:hover { background: #0066CC !important; color: #fff !important; }
+
+/* Remove the extending tab pseudo-elements */
+.nav-link.active::before,
+.nav-link.active::after { display: none !important; content: none !important; }
+
+/* Dark mode nav */
+body.theme-dark .nav-link { color: rgba(255,255,255,.85) !important; }
+body.theme-dark a.nav-link,
+body.theme-dark a.nav-link:visited { color: rgba(255,255,255,.85) !important; }
+body.theme-dark .nav-link i { color: rgba(255,255,255,.5) !important; }
+body.theme-dark .nav-link:hover { background: rgba(255,255,255,.08) !important; color: #fff !important; }
+body.theme-dark .nav-link.active { background: #0A84FF !important; color: #fff !important; }
+body.theme-dark .nav-link.active i { color: #fff !important; }
+body.theme-dark .nav-link.active::before,
+body.theme-dark .nav-link.active::after { display: none !important; }
+
+/* Separator */
+.nav-sep { background: rgba(60,60,67,.15) !important; margin: 6px 8px !important; }
+body.theme-dark .nav-sep { background: rgba(255,255,255,.1) !important; }
+
+/* User info block */
+.sidebar-user-info {
+  border-bottom: 1px solid rgba(60,60,67,.1) !important;
+  border-top: none !important;
+}
+.sidebar-user-info:hover { background: rgba(60,60,67,.05) !important; }
+.sidebar-user-avatar {
+  background: rgba(0,122,255,.15) !important;
+  border-color: rgba(0,122,255,.25) !important;
+  color: #007AFF !important;
+}
+.sidebar-user-name { color: #1c1c1e !important; }
+.sidebar-user-role { color: #8e8e93 !important; }
+body.theme-dark .sidebar-user-name { color: #fff !important; }
+body.theme-dark .sidebar-user-role { color: rgba(255,255,255,.45) !important; }
+body.theme-dark .sidebar-user-avatar { background: rgba(10,132,255,.18) !important; color: #0A84FF !important; border-color: rgba(10,132,255,.3) !important; }
+
+/* Brand footer */
+.sidebar-brand { border-top: 1px solid rgba(60,60,67,.1) !important; }
+.sidebar-brand-name { color: #8e8e93 !important; }
+body.theme-dark .sidebar-brand { border-top-color: rgba(255,255,255,.08) !important; }
+body.theme-dark .sidebar-brand-name { color: rgba(255,255,255,.3) !important; }
+
+/* Collapsed sidebar tooltip */
+body.sidebar-collapsed .nav-link:hover::before {
+  background: rgba(242,242,247,.96) !important;
+  color: #1c1c1e !important;
+  border: 1px solid rgba(60,60,67,.15) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12) !important;
+}
+body.theme-dark body.sidebar-collapsed .nav-link:hover::before {
+  background: rgba(28,28,30,.95) !important;
+  color: #fff !important;
+}
+
+/* Collapsed active */
+body.sidebar-collapsed .nav-link.active {
+  margin-left: 4px !important;
+  width: calc(100% - 8px) !important;
+  border-radius: 12px !important;
+}
+body.sidebar-collapsed .nav-link.active i { color: #fff !important; }
+body.sidebar-collapsed .nav-link.active::before,
+body.sidebar-collapsed .nav-link.active::after { display: none !important; }
+
+/* ── Mobile: sidebar dark overlay backdrop ── */
+@media (max-width: 768px) {
+  aside {
+    background: rgba(242,242,247,.98) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,.18) !important;
+  }
+  body.theme-dark aside {
+    background: rgba(22,22,23,.97) !important;
+  }
+}
+
 /* Subscription checkbox fix */
 #co_sub_active{width:15px!important;height:15px!important;min-width:15px;min-height:15px;cursor:pointer;}
 
