@@ -5145,16 +5145,16 @@ body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 72px !impo
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
-  background: rgba(120,120,128,.1) !important;
-  border: none !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
   border-radius: 10px !important;
   height: 34px !important;
   padding: 0 10px !important;
-  box-shadow: none !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
   min-width: 180px !important;
   cursor: pointer !important;
 }
-.header-search-wrap:hover { background: rgba(120,120,128,.16) !important; }
+.header-search-wrap:hover { background: #f9fafb !important; border-color: #b0b7c3 !important; }
 /* Input inside wrap must be transparent — override global iOS input rule */
 .header-search-input {
   background: transparent !important;
@@ -5183,9 +5183,8 @@ body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 72px !impo
   white-space: nowrap !important;
   flex-shrink: 0 !important;
 }
-body.theme-dark .header-search-wrap { background: rgba(255,255,255,.1) !important; }
+body.theme-dark .header-search-wrap { background: rgba(255,255,255,.1) !important; border-color: rgba(255,255,255,.15) !important; }
 body.theme-dark .header-search-input { color: #fff !important; }
-body.theme-dark .header-search-hint { background: rgba(255,255,255,.1) !important; color: rgba(255,255,255,.5) !important; }
 
 /* ── iOS Language switcher ── */
 .lang-switcher {
