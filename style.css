@@ -5305,6 +5305,97 @@ body.theme-dark select, body.theme-dark textarea {
 body.theme-dark input:not([type=checkbox]):not([type=radio]):focus,
 body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 
+/* ══════════════════════════════════════════════════════════════
+   Liquid Glass — Apple visionOS / iOS 26 style
+   ══════════════════════════════════════════════════════════════ */
+
+/* Topbar */
+.app-header {
+  background: rgba(255,255,255,.72) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border: 1px solid rgba(255,255,255,.6) !important;
+  box-shadow: 0 2px 20px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.8) !important;
+}
+body.theme-dark .app-header {
+  background: rgba(30,30,32,.72) !important;
+  border-color: rgba(255,255,255,.1) !important;
+  box-shadow: 0 2px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+/* Sidebar */
+aside {
+  background: rgba(255,255,255,.78) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border-right: 1px solid rgba(255,255,255,.55) !important;
+  box-shadow: 2px 0 24px rgba(0,0,0,.06), inset -1px 0 0 rgba(255,255,255,.7) !important;
+}
+body.theme-dark aside {
+  background: rgba(28,28,30,.78) !important;
+  border-right-color: rgba(255,255,255,.08) !important;
+  box-shadow: 2px 0 24px rgba(0,0,0,.4) !important;
+}
+
+/* Cards */
+.card {
+  background: rgba(255,255,255,.82) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,.7) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+body.theme-dark .card {
+  background: rgba(44,44,46,.82) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+/* Slideover modal body */
+.modal.modal--slideover .modal-body {
+  background: rgba(242,242,247,.88) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+}
+body.theme-dark .modal.modal--slideover .modal-body {
+  background: rgba(28,28,30,.88) !important;
+}
+
+/* Popup modal */
+.modal-body {
+  background: rgba(242,242,247,.92) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+}
+body.theme-dark .modal-body {
+  background: rgba(28,28,30,.92) !important;
+}
+
+/* Form cards */
+.form-card {
+  background: rgba(255,255,255,.75) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255,255,255,.6) !important;
+  box-shadow: 0 1px 8px rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.85) !important;
+}
+body.theme-dark .form-card {
+  background: rgba(44,44,46,.75) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Info blocks */
+.info-block, .perm-list {
+  background: rgba(255,255,255,.78) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255,255,255,.65) !important;
+}
+body.theme-dark .info-block, body.theme-dark .perm-list {
+  background: rgba(44,44,46,.78) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+
 /* ── Tables ── */
 .card table { border: none !important; border-radius: 0 !important; }
 .card table thead th,
