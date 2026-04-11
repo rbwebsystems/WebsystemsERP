@@ -5246,8 +5246,8 @@ body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 /* ── Tables ── */
 .card table { border: none !important; border-radius: 0 !important; }
 .card table thead th {
-  background: rgba(242,242,247,.9) !important;
-  color: #8E8E93 !important;
+  background: #E2E2E8 !important;
+  color: #6C6C72 !important;
   font-size: .72rem !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
