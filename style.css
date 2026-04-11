@@ -5133,19 +5133,6 @@ body, input, select, textarea, button {
   -moz-osx-font-smoothing: grayscale !important;
   text-rendering: optimizeLegibility !important;
 }
-/* Global: remove bold from everything */
-* { font-weight: 400 !important; }
-
-/* Exceptions: page titles */
-.content-header h1 { font-weight: 600 !important; }
-
-/* Exceptions: sidebar nav */
-.nav-link,
-.sidebar-user-name,
-.sidebar-brand { font-weight: 500 !important; }
-
-/* Exceptions: table total/sum row numbers */
-tr.total-row td { font-weight: 600 !important; }
 
 /* ── Page background ── */
 body { background: #F2F2F7 !important; }
