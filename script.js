@@ -3607,8 +3607,7 @@ function pageNext(key) {
 }
 
 function getPageSize(selectId, def = 50) {
-  const v = Number(byId(selectId)?.value);
-  return v > 0 ? v : def;
+  return 9999;
 }
 
 function parseDateOnly(v) {
