@@ -10510,13 +10510,20 @@ function openQrTool() {
 function renderSettingsPage() {
   const s = db.settings || {};
   const setVal = (id, v) => { const el = byId(id); if (el) el.value = v || ""; };
-  setVal("pg_set_name",  s.companyName    || "");
-  setVal("pg_set_addr",  s.companyAddress || "");
-  setVal("pg_set_phone", s.companyPhone   || "");
-  setVal("pg_set_curr",  s.currency       || "AZN");
-  setVal("pg_set_sym",   s.currencySymbol || "₼");
-  setVal("pg_tg_token",  s.telegramToken  || "");
-  setVal("pg_tg_chat",   s.telegramChatId || "");
+  setVal("pg_set_name",      s.companyName      || "");
+  setVal("pg_set_legal_name",s.companyLegalName || "");
+  setVal("pg_set_addr",      s.companyAddress   || "");
+  setVal("pg_set_phone",     s.companyPhone     || "");
+  setVal("pg_set_curr",      s.currency         || "AZN");
+  setVal("pg_set_sym",       s.currencySymbol   || "₼");
+  setVal("pg_set_voen",      s.companyVoen      || "");
+  setVal("pg_set_director",  s.companyDirector  || "");
+  setVal("pg_set_bank",      s.companyBank      || "");
+  setVal("pg_set_bank_acc",  s.companyBankAcc   || "");
+  setVal("pg_set_swift",     s.companySwift     || "");
+  setVal("pg_set_corr_acc",  s.companyCorrAcc   || "");
+  setVal("pg_tg_token",      s.telegramToken    || "");
+  setVal("pg_tg_chat",       s.telegramChatId   || "");
   const chk = byId("pg_tg_enabled");
   if (chk) chk.checked = s.telegramEnabled !== false;
 }
@@ -10524,14 +10531,21 @@ function renderSettingsPage() {
 function saveSettingsPage() {
   if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
   db.settings = db.settings || {};
-  db.settings.companyName    = (byId("pg_set_name")?.value  || "").trim();
-  db.settings.companyAddress = (byId("pg_set_addr")?.value  || "").trim();
-  db.settings.companyPhone   = (byId("pg_set_phone")?.value || "").trim();
-  db.settings.currency       = (byId("pg_set_curr")?.value  || "AZN").trim();
-  db.settings.currencySymbol = (byId("pg_set_sym")?.value   || "₼").trim();
-  db.settings.telegramToken  = (byId("pg_tg_token")?.value  || "").trim();
-  db.settings.telegramChatId = (byId("pg_tg_chat")?.value   || "").trim();
-  db.settings.telegramEnabled = byId("pg_tg_enabled")?.checked !== false;
+  db.settings.companyName      = (byId("pg_set_name")?.value       || "").trim();
+  db.settings.companyLegalName = (byId("pg_set_legal_name")?.value || "").trim();
+  db.settings.companyAddress   = (byId("pg_set_addr")?.value       || "").trim();
+  db.settings.companyPhone     = (byId("pg_set_phone")?.value      || "").trim();
+  db.settings.currency         = (byId("pg_set_curr")?.value       || "AZN").trim();
+  db.settings.currencySymbol   = (byId("pg_set_sym")?.value        || "₼").trim();
+  db.settings.companyVoen      = (byId("pg_set_voen")?.value       || "").trim();
+  db.settings.companyDirector  = (byId("pg_set_director")?.value   || "").trim();
+  db.settings.companyBank      = (byId("pg_set_bank")?.value       || "").trim();
+  db.settings.companyBankAcc   = (byId("pg_set_bank_acc")?.value   || "").trim();
+  db.settings.companySwift     = (byId("pg_set_swift")?.value      || "").trim();
+  db.settings.companyCorrAcc   = (byId("pg_set_corr_acc")?.value   || "").trim();
+  db.settings.telegramToken    = (byId("pg_tg_token")?.value       || "").trim();
+  db.settings.telegramChatId   = (byId("pg_tg_chat")?.value        || "").trim();
+  db.settings.telegramEnabled  = byId("pg_tg_enabled")?.checked !== false;
   logEvent("update", "settings", {});
   saveDB();
   toast("Ayarlar yadda saxlandı", "ok");
