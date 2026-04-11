@@ -3827,32 +3827,28 @@ body.theme-dark .btn-cancel{background:#374151;color:#e5e7eb;border-color:#4b556
 body.theme-dark .btn-cancel:hover{background:#4b5563;}
 
 /* ===== Geri (back) button — distinctive teal outline ===== */
-.btn-back{
-  background:#eef9fb;
-  color:#0e7490;
-  border:1.5px solid #67c9dc;
-  height:38px;padding:0 16px;
-  border-radius:var(--btn-radius);
-  font-weight:600;cursor:pointer;
-  display:inline-flex;align-items:center;gap:6px;
-  transition:background .15s,border-color .15s,box-shadow .15s;
-  font-size:.875rem;
+/* ── iOS-style back button (global) ── */
+.btn-back {
+  background: none;
+  color: #007AFF;
+  border: none;
+  box-shadow: none;
+  height: auto;
+  padding: 4px 2px;
+  border-radius: 0;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .9rem;
+  transition: color .12s;
 }
-.btn-back:hover{
-  background:#d0f1f7;
-  border-color:#0e7490;
-  box-shadow:0 1px 6px rgba(14,116,144,.18);
-}
-body.theme-dark .btn-back{
-  background:#0c3a45;
-  color:#67c9dc;
-  border-color:#1a6b80;
-}
-body.theme-dark .btn-back:hover{
-  background:#0e4d5e;
-  border-color:#67c9dc;
-}
-.header-actions .btn-back{height:34px;padding:0 14px;font-size:.86rem;}
+.btn-back i { font-size: .8rem; }
+.btn-back:hover { color: #0055cc; background: none; }
+body.theme-dark .btn-back { color: #0A84FF; }
+body.theme-dark .btn-back:hover { color: #409cff; }
+.header-actions .btn-back { font-size: .86rem; }
 .btn-secondary{
   background:transparent;color:var(--accent);border:1.5px solid var(--accent);height:38px;padding:0 16px;border-radius:var(--btn-radius);
   font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
@@ -4359,28 +4355,42 @@ body.theme-dark .modal.modal--slideover .modal-nav-top .btn-cancel:hover,
 body.theme-dark .modal.modal--popup .modal-nav-top .btn-cancel:hover{
   background:#f1f5f9 !important;
 }
-/* btn-back inside modals — keep its teal identity, don't override */
+/* btn-back — iOS style: chevron + blue text, no border/background */
 .modal-nav-top .btn-back,
-.modal-footer .btn-back{
-  background:#eef9fb !important;
-  color:#0e7490 !important;
-  border:1.5px solid #67c9dc !important;
+.modal-footer .btn-back {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #007AFF !important;
+  font-size: .9rem !important;
+  font-weight: 500 !important;
+  padding: 4px 2px !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  cursor: pointer !important;
 }
 .modal-nav-top .btn-back:hover,
-.modal-footer .btn-back:hover{
-  background:#d0f1f7 !important;
-  border-color:#0e7490 !important;
+.modal-footer .btn-back:hover {
+  color: #0055cc !important;
+  background: none !important;
+  border: none !important;
+}
+.modal-nav-top .btn-back i,
+.modal-footer .btn-back i {
+  font-size: .8rem !important;
 }
 body.theme-dark .modal-nav-top .btn-back,
-body.theme-dark .modal-footer .btn-back{
-  background:#0c3a45 !important;
-  color:#67c9dc !important;
-  border-color:#1a6b80 !important;
+body.theme-dark .modal-footer .btn-back {
+  color: #0A84FF !important;
+  background: none !important;
+  border: none !important;
 }
 body.theme-dark .modal-nav-top .btn-back:hover,
-body.theme-dark .modal-footer .btn-back:hover{
-  background:#0e4d5e !important;
-  border-color:#67c9dc !important;
+body.theme-dark .modal-footer .btn-back:hover {
+  color: #409cff !important;
 }
 .modal-footer-actions{
   padding-top:16px;
@@ -5498,8 +5508,8 @@ aside {
 
 /* ── Sidebar collapse toggle button (brand alanında) ── */
 .sidebar-collapse-btn {
-  width: 22px !important;
-  height: 22px !important;
+  width: 28px !important;
+  height: 28px !important;
   border-radius: 50% !important;
   border: 1px solid rgba(0,0,0,.13) !important;
   background: #f2f2f7 !important;
@@ -5508,7 +5518,7 @@ aside {
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  font-size: .55rem !important;
+  font-size: .72rem !important;
   flex-shrink: 0 !important;
   margin-left: auto !important;
   padding: 0 !important;
