@@ -12074,11 +12074,11 @@ function updateHeaderWelcome() {
   if (!titleEl) return;
   if (!meta?.session) return;
   const u = currentUser();
-  const fullName = u ? (String(u.fullName || "").trim() || String(u.username || "").trim()) : "";
+  const fullName = u ? String(u.fullName || "").trim() : "";
   const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
   const compName = String(db.settings?.companyName || comp?.name || "").trim();
-  const display = compName && fullName ? `${compName} ${fullName}` : fullName || compName;
-  if (display) titleEl.textContent = t("welcome_title", { name: display });
+  const display = [compName, fullName].filter(Boolean).join(" ");
+  titleEl.textContent = display ? `Xoş gəldiniz ${display}` : "Xoş gəldiniz";
 }
 
 function initApp() {
