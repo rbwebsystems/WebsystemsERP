@@ -5388,37 +5388,37 @@ aside {
 /* ── Sidebar collapse toggle button ── */
 .sidebar-collapse-btn {
   position: absolute !important;
-  top: 10px !important;
-  right: 8px !important;
-  width: 24px !important;
-  height: 24px !important;
+  bottom: 56px !important;
+  right: -10px !important;
+  width: 20px !important;
+  height: 20px !important;
   border-radius: 50% !important;
-  border: 1px solid rgba(0,0,0,.12) !important;
-  background: #f2f2f7 !important;
-  color: #636366 !important;
+  border: 1px solid rgba(0,0,0,.13) !important;
+  background: #fff !important;
+  color: #8e8e93 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  font-size: .65rem !important;
-  z-index: 10 !important;
-  transition: background .15s, transform .22s cubic-bezier(.4,0,.2,1) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.1) !important;
+  font-size: .55rem !important;
+  z-index: 300 !important;
+  transition: background .15s, color .15s, transform .22s cubic-bezier(.4,0,.2,1) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.14) !important;
   flex-shrink: 0 !important;
+  padding: 0 !important;
 }
 .sidebar-collapse-btn:hover {
-  background: #e5e5ea !important;
+  background: #f2f2f7 !important;
   color: #1c1c1e !important;
 }
 body.sidebar-collapsed .sidebar-collapse-btn {
   transform: rotate(180deg) !important;
-  right: auto !important;
-  left: 50% !important;
-  translate: -50% 0 !important;
+  right: -10px !important;
+  left: auto !important;
 }
 body.theme-dark .sidebar-collapse-btn {
   background: #3a3a3c !important;
-  border-color: rgba(255,255,255,.15) !important;
+  border-color: rgba(255,255,255,.18) !important;
   color: #ebebf5 !important;
 }
 body.theme-dark .sidebar-collapse-btn:hover {
@@ -5872,10 +5872,10 @@ body.sidebar-collapsed aside{
   overflow:hidden !important;
 }
 body.sidebar-collapsed .main-area{
-  margin-left:64px !important;
+  margin-left:72px !important;
 }
 body.sidebar-collapsed .app-header{
-  left:64px !important;
+  left:72px !important;
 }
 body.sidebar-collapsed .sidebar-user-info{padding:12px 6px;gap:6px;}
 body.sidebar-collapsed .sidebar-user-avatar{width:36px;height:36px;font-size:.85rem;}
@@ -6546,12 +6546,50 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
     border-radius: 0 !important;
     margin: 0 !important;
     height: 56px !important;
-    padding: 0 12px !important;
+    padding: 0 8px !important;
     box-shadow: 0 1px 4px rgba(0,0,0,.1) !important;
     z-index: 1100 !important;
+    overflow: hidden !important;
+  }
+  .header-rest {
+    padding: 0 4px !important;
+    overflow: hidden !important;
+  }
+  .app-header-right {
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
   }
   .header-search-wrap { display: none !important; }
   .header-datetime, .last-saved, .realtime-indicator { display: none !important; }
+  /* Compact lang-switcher on mobile */
+  .lang-switcher { padding: 0 !important; border: none !important; background: transparent !important; }
+  .lang-select {
+    font-size: .72rem !important;
+    padding: 4px 18px 4px 6px !important;
+    height: 30px !important;
+    min-width: 46px !important;
+    max-width: 56px !important;
+  }
+  /* Section-level search compact — disable collapsible, always show */
+  .header-actions .search-container.search-collapsible {
+    width: auto !important;
+    min-width: 0 !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+  .header-actions .search-container.search-collapsible input {
+    position: static !important;
+    width: 100% !important;
+    min-width: 120px !important;
+    opacity: 1 !important;
+    height: 32px !important;
+    padding: 0 32px 0 10px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    pointer-events: auto !important;
+  }
 
   /* ── 4. Content header — düymələr sarılsın ── */
   .content-header {
