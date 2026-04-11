@@ -9379,6 +9379,57 @@ function openQrTool() {
   `);
 }
 
+function openTelegramSettings() {
+  if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
+  const s = db.settings || {};
+  openModal(`
+    <h2>📣 Telegram Ayarları</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">Bu ayarlar yalnız bu şirkətə aiddir. Hər şirkətin öz botu ola bilər.</p>
+    <form onsubmit="saveTelegramSettings(event)">
+      <div class="form-card">
+        <div class="grid-2">
+          <div class="f-group"><label>Bot Token</label><input id="tg_token" placeholder="123456:AAFxxx..." value="${escapeHtml(s.telegramToken || "")}" autocomplete="off"></div>
+          <div class="f-group"><label>Chat ID (qrup və ya şəxsi)</label><input id="tg_chat" placeholder="8358360181" value="${escapeHtml(s.telegramChatId || "")}"></div>
+        </div>
+        <button type="button" class="btn-cancel" onclick="testTelegramModal()" style="margin-top:8px"><i class="fas fa-paper-plane"></i> Test göndər</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveTelegramSettings(e) {
+  e.preventDefault();
+  if (!isAdmin() && !isDeveloper()) return;
+  db.settings = db.settings || {};
+  db.settings.telegramToken = (byId("tg_token")?.value || "").trim();
+  db.settings.telegramChatId = (byId("tg_chat")?.value || "").trim();
+  saveDB();
+  closeMdl();
+  toast("Telegram ayarları yadda saxlandı", "ok");
+}
+
+async function testTelegramModal() {
+  const token = (byId("tg_token")?.value || "").trim();
+  const chatId = (byId("tg_chat")?.value || "").trim();
+  if (!token || !chatId) return alert("Token və Chat ID daxil edin.");
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: `✅ <b>${db.settings?.companyName || "ERP"}</b> — Telegram bildirişi aktiv edildi!`, parse_mode: "HTML" }),
+    });
+    const j = await r.json();
+    if (j.ok) alert("✅ Test mesajı göndərildi!");
+    else alert("❌ Xəta: " + j.description);
+  } catch (err) {
+    alert("❌ Bağlantı xətası: " + err.message);
+  }
+}
+
 function openSettings() {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   ensureAuditTrash();
@@ -11799,6 +11850,9 @@ Object.assign(window, {
   openSettings,
   saveSettings,
   testTelegram,
+  openTelegramSettings,
+  saveTelegramSettings,
+  testTelegramModal,
   openSkins,
   setSkin,
   openLoginModal,
