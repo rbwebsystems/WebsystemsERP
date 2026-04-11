@@ -6984,6 +6984,7 @@ function openSaleInfo(idx) {
       <button class="btn-main" type="button" onclick="openSalePayment(${idx})">Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="openReturnSale(${idx})">Qaytar</button>
       <button class="btn-cancel" type="button" onclick="printSale(${idx})">Çap</button>
+      <button class="btn-cancel" type="button" onclick="printSaleContract(${idx})"><i class="fas fa-file-contract" style="margin-right:5px;"></i>Müqavilə</button>
       ${s.saleType === "kredit" ? `<button class="btn-cancel" type="button" data-credit-doc-btn onclick="openCreditDocMenu(${idx})"><i class="fas fa-file-lines" style="margin-right:5px;"></i>Sənədlər</button>` : ""}
       <button class="btn-cancel" type="button" onclick="openPaymentHistory('sale', ${idx})">Ödəniş tarixçəsi</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
@@ -9906,6 +9907,148 @@ function saveReturnSale(e, idx) {
   logEvent("return", "sales", { uid: s.uid, invNo: s.invNo || invFallback("sales", s.uid), refund });
   saveDB();
   openSaleInfo(idx);
+}
+
+function printSaleContract(idx) {
+  const s = db.sales[idx];
+  if (!s) return;
+  const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
+  const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
+  const st = db.settings || {};
+
+  const today = fmtDT(new Date().toISOString()).split(" ")[0];
+  const saleDate = fmtDT(s.date).split(" ")[0];
+  const docNo  = escapeHtml(String(s.invNo || s.uid));
+
+  const co      = escapeHtml(st.companyName    || "Şirkət");
+  const coAddr  = escapeHtml(st.companyAddress || "");
+  const coPhone = escapeHtml(st.companyPhone   || "");
+  const coVoen  = escapeHtml(st.companyVoen    || "");
+  const emekdas = escapeHtml(s.employeeName || operationActorName(s, "-"));
+
+  const custFull = escapeHtml(`${cust.sur||""} ${cust.name||""} ${cust.father||""}`.trim());
+  const custFin  = escapeHtml(cust.fin      || "-");
+  const custSer  = escapeHtml(cust.seriaNum || "-");
+  const custPh   = escapeHtml(cust.ph1      || "-");
+  const custAddr = escapeHtml(cust.addr     || "-");
+
+  const zamFull  = guarantor ? escapeHtml(`${guarantor.sur||""} ${guarantor.name||""} ${guarantor.father||""}`.trim()) : null;
+  const zamFin   = guarantor ? escapeHtml(guarantor.fin || "-") : null;
+  const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : null;
+  const zamPh    = guarantor ? escapeHtml(guarantor.ph1 || "-") : null;
+
+  const prod  = escapeHtml(s.productName || "-");
+  const imei1 = escapeHtml(s.imei1 || "-");
+  const imei2 = escapeHtml(s.imei2 || "-");
+  const seria = escapeHtml(s.seria || "-");
+  const total = money(s.amount);
+  const paid  = money(s.paidTotal);
+  const saleTypeLabel = { nagd:"Nağd", post:"Post", post_taksit:"Post Taksit",
+    topdan:"Topdan", korporativ:"Korporativ", kredit:"Kredit", kocurme:"Köçürmə" };
+  const sType = escapeHtml(saleTypeLabel[String(s.saleType||"").toLowerCase()] || String(s.saleType||"").toUpperCase());
+
+  const creditRows = s.saleType === "kredit" && s.credit ? (() => {
+    const sch = buildCreditSchedule(s);
+    return `
+    <div class="section">
+      <div class="section-title">Kredit şərtləri</div>
+      <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${money(s.credit.downPayment)} AZN</span></div>
+      <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${money(sch.remAfterDown)} AZN</span></div>
+      <div class="row"><span class="lbl">Müddət:</span><span class="val">${sch.term} ay</span></div>
+      <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${money(s.credit.monthlyPayment)} AZN</span></div>
+    </div>`;
+  })() : "";
+
+  const html = `<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8">
+<title>Alqı-Satqı Müqaviləsi №${docNo}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
+  .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
+  h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+  .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
+  .section{margin-bottom:14px;}
+  .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;}
+  .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;}
+  .lbl{color:#6b7280;min-width:160px;flex-shrink:0;}
+  .val{font-weight:500;}
+  p{font-size:12px;line-height:1.75;margin-bottom:7px;}
+  .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:32px;}
+  .sign-box{flex:1;}
+  .sign-line{border-bottom:1px solid #374151;height:28px;margin-bottom:4px;}
+  .sign-label{font-size:10px;color:#6b7280;}
+  .stamp-box{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;margin:0 auto 4px;}
+  .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
+  @media print{body{background:#fff;padding:0;display:block;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
+</style></head><body>
+<div class="page">
+  <h1>Alqı-Satqı Müqaviləsi</h1>
+  <div class="subtitle">№ ${docNo} &nbsp;•&nbsp; Tarix: ${saleDate}</div>
+
+  <div class="section">
+    <div class="section-title">Satıcı</div>
+    <div class="row"><span class="lbl">Şirkət adı:</span><span class="val">${co}</span></div>
+    ${coVoen  ? `<div class="row"><span class="lbl">VÖEN:</span><span class="val">${coVoen}</span></div>` : ""}
+    ${coAddr  ? `<div class="row"><span class="lbl">Ünvan:</span><span class="val">${coAddr}</span></div>` : ""}
+    ${coPhone ? `<div class="row"><span class="lbl">Telefon:</span><span class="val">${coPhone}</span></div>` : ""}
+    <div class="row"><span class="lbl">Əməkdaş:</span><span class="val">${emekdas}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Alıcı</div>
+    <div class="row"><span class="lbl">Ad, soyad, ata adı:</span><span class="val">${custFull}</span></div>
+    <div class="row"><span class="lbl">FİN:</span><span class="val">${custFin}</span></div>
+    <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
+    <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
+    <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
+    ${zamFull ? `<div class="row"><span class="lbl">Zamin:</span><span class="val">${zamFull} (FİN: ${zamFin}, Ser.: ${zamSer}, Tel: ${zamPh})</span></div>` : ""}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Müqavilə mövzusu</div>
+    <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+    <div class="row"><span class="lbl">IMEI 1:</span><span class="val">${imei1}</span></div>
+    <div class="row"><span class="lbl">IMEI 2:</span><span class="val">${imei2}</span></div>
+    <div class="row"><span class="lbl">Seriya №:</span><span class="val">${seria}</span></div>
+    <div class="row"><span class="lbl">Satış növü:</span><span class="val">${sType}</span></div>
+    <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
+    <div class="row"><span class="lbl">Ödənilən məbləğ:</span><span class="val">${paid} AZN</span></div>
+  </div>
+
+  ${creditRows}
+
+  <div class="section">
+    <div class="section-title">Şərtlər</div>
+    <p>1. Satıcı malı Alıcıya yuxarıda göstərilən şərtlərlə satır, Alıcı isə malı qəbul edir.</p>
+    <p>2. Mal Alıcıya tam saz vəziyyətdə, yoxlanılmış olaraq təhvil verilir.</p>
+    <p>3. Malın texniki parametrləri istehsalçının rəsmi sənədlərinə uyğundur.</p>
+    <p>4. Satıcı malın zavoddan gəlmə qüsurlarına görə zəmanət öhdəliyi daşıyır.</p>
+    <p>5. Alıcı öz iradəsi ilə, heç bir məcburiyyət olmadan bu müqaviləni imzalayır.</p>
+  </div>
+
+  <div class="sign-row">
+    <div class="sign-box">
+      <div class="sign-line"></div>
+      <div class="sign-label">Satıcı — ${co}</div>
+    </div>
+    <div class="sign-box" style="max-width:100px;text-align:center;">
+      <div class="stamp-box"></div>
+      <div class="sign-label" style="text-align:center;">Möhür</div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-line"></div>
+      <div class="sign-label">Alıcı — ${custFull}</div>
+    </div>
+  </div>
+  ${zamFull ? `<div class="sign-row" style="margin-top:16px;"><div class="sign-box" style="max-width:260px;"><div class="sign-line"></div><div class="sign-label">Zamin — ${zamFull}</div></div></div>` : ""}
+
+  <div class="footer-note">Müqavilə ${today} tarixində tərtib edildi &nbsp;•&nbsp; ${co}</div>
+</div>
+<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
+</body></html>`;
+
+  const w = window.open("", "_blank", "width=900,height=700,toolbar=0,menubar=0,scrollbars=1");
+  if (w) { w.document.write(html); w.document.close(); }
 }
 
 function printSale(idx) {
