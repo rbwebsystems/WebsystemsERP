@@ -6984,7 +6984,7 @@ function openSaleInfo(idx) {
       <button class="btn-main" type="button" onclick="openSalePayment(${idx})">Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="openReturnSale(${idx})">Qaytar</button>
       <button class="btn-cancel" type="button" onclick="printSale(${idx})">Çap</button>
-      ${s.saleType === "kredit" ? `<button class="btn-cancel" type="button" data-credit-doc-btn onclick="openCreditDocMenu(${idx})"><i class="fas fa-file-lines" style="margin-right:5px;"></i>Sənədlər</button>` : ""}
+      ${s.saleType === "kredit" ? `<button class="btn-cancel" type="button" data-credit-doc-btn onclick="openCreditDocMenu(${idx},this)"><i class="fas fa-file-lines" style="margin-right:5px;"></i>Sənədlər</button>` : ""}
       <button class="btn-cancel" type="button" onclick="openPaymentHistory('sale', ${idx})">Ödəniş tarixçəsi</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
@@ -7597,40 +7597,67 @@ function printCreditDoc(idx, type) {
   if (w) { w.document.write(html); w.document.close(); }
 }
 
-function openCreditDocMenu(idx) {
+function openCreditDocMenu(idx, triggerEl) {
   const docs = [
-    { type: "satiq",    label: "Alqı-satqı müqaviləsi", icon: "fa-handshake",      fn: () => printSaleContract(idx) },
-    { type: "muqavile", label: "Kredit müqaviləsi",      icon: "fa-file-contract",  fn: () => printCreditDoc(idx, "muqavile") },
-    { type: "cedvel",   label: "Ödəniş cədvəli",         icon: "fa-table",          fn: () => printCreditDoc(idx, "cedvel") },
-    { type: "zamanet",  label: "Zəmanət talonu",          icon: "fa-shield-halved",  fn: () => printCreditDoc(idx, "zamanet") },
-    { type: "erizesi",  label: "Razılıq ərizəsi",         icon: "fa-file-signature", fn: () => printCreditDoc(idx, "erizesi") },
+    { label: "Alqı-satqı müqaviləsi", icon: "fa-handshake",      fn: () => printSaleContract(idx) },
+    { label: "Kredit müqaviləsi",      icon: "fa-file-contract",  fn: () => printCreditDoc(idx, "muqavile") },
+    { label: "Ödəniş cədvəli",         icon: "fa-table",          fn: () => printCreditDoc(idx, "cedvel") },
+    { label: "Zəmanət talonu",          icon: "fa-shield-halved",  fn: () => printCreditDoc(idx, "zamanet") },
+    { label: "Razılıq ərizəsi",         icon: "fa-file-signature", fn: () => printCreditDoc(idx, "erizesi") },
   ];
+
   const existing = document.getElementById("creditDocDropdown");
   if (existing) { existing.remove(); return; }
-  const btn = document.querySelector("[data-credit-doc-btn]");
+
   const menu = document.createElement("div");
   menu.id = "creditDocDropdown";
-  menu.style.cssText = "position:fixed;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:200px;";
-  if (btn) {
-    const r = btn.getBoundingClientRect();
-    menu.style.left = r.left + "px";
-    menu.style.top  = (r.top - docs.length * 44 - 12) + "px";
-  }
+  menu.style.cssText = [
+    "position:fixed",
+    "z-index:99999",
+    "background:#fff",
+    "border:1px solid #e2e8f0",
+    "border-radius:12px",
+    "box-shadow:0 8px 32px rgba(0,0,0,.15)",
+    "padding:6px",
+    "min-width:220px",
+  ].join(";");
+
   docs.forEach(d => {
     const item = document.createElement("button");
     item.type = "button";
-    item.style.cssText = "display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#1c1c1e;text-align:left;";
-    item.innerHTML = `<i class="fas ${d.icon}" style="width:16px;color:#6b7280;"></i>${d.label}`;
-    item.onmouseenter = () => item.style.background = "#f2f2f7";
-    item.onmouseleave = () => item.style.background = "none";
-    item.onclick = () => { menu.remove(); d.fn(); };
+    item.style.cssText = "display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#1c1c1e;text-align:left;transition:background .12s;";
+    item.innerHTML = `<i class="fas ${d.icon}" style="width:16px;color:#6b7280;flex-shrink:0;"></i>${d.label}`;
+    item.onmouseenter = () => { item.style.background = "#f2f2f7"; };
+    item.onmouseleave = () => { item.style.background = "none"; };
+    item.onclick = (e) => { e.stopPropagation(); menu.remove(); d.fn(); };
     menu.appendChild(item);
   });
+
   document.body.appendChild(menu);
+
+  // Position after appending so we know the menu height
+  const btn = triggerEl || document.querySelector("[data-credit-doc-btn]");
+  if (btn) {
+    const r   = btn.getBoundingClientRect();
+    const mh  = menu.offsetHeight || docs.length * 44;
+    const top = r.top - mh - 8 > 0 ? r.top - mh - 8 : r.bottom + 8;
+    menu.style.left = Math.max(8, r.left) + "px";
+    menu.style.top  = top + "px";
+  } else {
+    menu.style.left = "50%";
+    menu.style.top  = "50%";
+    menu.style.transform = "translate(-50%,-50%)";
+  }
+
   setTimeout(() => {
-    const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener("click", close); } };
+    const close = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener("click", close);
+      }
+    };
     document.addEventListener("click", close);
-  }, 50);
+  }, 10);
 }
 
 function printCashReceipt(uid) {
