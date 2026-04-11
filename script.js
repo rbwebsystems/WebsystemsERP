@@ -10453,32 +10453,29 @@ function saveDayClose() {
 }
 
 function _renderDayCloseRows(closes) {
-  if (!closes.length) return `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Nəticə tapılmadı</td></tr>`;
+  if (!closes.length) return `<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:.9rem;">Nəticə tapılmadı</div>`;
   return closes.map((x, i) => {
     const accs = Array.isArray(x.accounts) ? x.accounts : [];
     const accRows = accs.map(a =>
-      `<tr style="background:#f8fafc;">
-        <td></td>
-        <td style="padding-left:24px;color:var(--text-muted);font-size:.82rem;">${escapeHtml(a.name || "-")}</td>
-        <td style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(a.type || "-")}</td>
-        <td colspan="2"></td>
-        <td style="text-align:right;font-size:.85rem;font-weight:600;">${money(a.balance)} AZN</td>
-      </tr>`
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-color);">
+        <span style="color:var(--text-muted);font-size:.83rem;">${escapeHtml(a.name || "-")} <span style="font-size:.75rem;opacity:.6;">${escapeHtml(a.type||"")}</span></span>
+        <span style="font-weight:600;font-size:.88rem;">${money(a.balance)} AZN</span>
+      </div>`
     ).join("");
-    const sep = i > 0 ? `<tr><td colspan="6" style="padding:0;height:10px;background:transparent;border:none;"></td></tr>` : "";
     return `
-      ${sep}
-      <tr style="background:#f0f4f8;">
-        <td class="muted" style="font-size:.8rem;border-top:2px solid var(--border-color);">${i + 1}</td>
-        <td style="border-top:2px solid var(--border-color);">${fmtDT(x.ts)}</td>
-        <td style="border-top:2px solid var(--border-color);">${escapeHtml(x.user || "-")}</td>
-        <td style="border-top:2px solid var(--border-color);">${escapeHtml(x.note || "")}</td>
-        <td colspan="2" style="text-align:right;padding-right:12px;border-top:2px solid var(--border-color);">
-          <span style="font-size:1.15rem;font-weight:700;color:var(--text-main);">${money(x.totalBalance)}</span>
-          <span style="font-size:.8rem;color:var(--text-muted);margin-left:3px;">AZN</span>
-        </td>
-      </tr>
-      ${accRows}
+      <div style="background:#fff;border:1px solid var(--border-color);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${accs.length?'10px':'0'};">
+          <div>
+            <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:2px;">#${i+1} · ${escapeHtml(x.user||"-")}${x.note ? ` · ${escapeHtml(x.note)}` : ""}</div>
+            <div style="font-weight:600;font-size:.93rem;">${fmtDT(x.ts)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px;">Ümumi balans</div>
+            <div style="font-size:1.2rem;font-weight:700;color:var(--text-main);">${money(x.totalBalance)} <span style="font-size:.8rem;font-weight:500;color:var(--text-muted);">AZN</span></div>
+          </div>
+        </div>
+        ${accs.length ? `<div style="border-top:1px solid var(--border-color);padding-top:8px;">${accRows}</div>` : ""}
+      </div>
     `;
   }).join("");
 }
@@ -10493,8 +10490,8 @@ function filterDayCloseHistory() {
     if (to   && d > to)   return false;
     return true;
   });
-  const tbody = byId("dcHistTbody");
-  if (tbody) tbody.innerHTML = _renderDayCloseRows(filtered);
+  const list = byId("dcHistList");
+  if (list) list.innerHTML = _renderDayCloseRows(filtered);
 }
 
 function openDayCloseHistory() {
@@ -10506,23 +10503,18 @@ function openDayCloseHistory() {
   const all = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-      <div class="f-group" style="margin:0;flex:1;min-width:130px;">
-        <label style="font-size:.78rem;margin-bottom:4px;display:block;">Başlanğıc</label>
-        <input type="date" id="dcFrom" value="${firstDate}" oninput="filterDayCloseHistory()">
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+      <div style="flex:1;min-width:130px;background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:10px 14px;">
+        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;">Başlanğıc</div>
+        <input type="date" id="dcFrom" value="${firstDate}" oninput="filterDayCloseHistory()" style="background:transparent!important;border:none!important;padding:0!important;font-weight:600;font-size:.9rem;width:100%;">
       </div>
-      <div class="f-group" style="margin:0;flex:1;min-width:130px;">
-        <label style="font-size:.78rem;margin-bottom:4px;display:block;">Son</label>
-        <input type="date" id="dcTo" value="${today}" oninput="filterDayCloseHistory()">
+      <div style="flex:1;min-width:130px;background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:10px 14px;">
+        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;">Son</div>
+        <input type="date" id="dcTo" value="${today}" oninput="filterDayCloseHistory()" style="background:transparent!important;border:none!important;padding:0!important;font-weight:600;font-size:.9rem;width:100%;">
       </div>
-      <button class="btn-cancel" type="button" style="margin-top:18px;" onclick="byId('dcFrom').value='';byId('dcTo').value='';filterDayCloseHistory();">Sıfırla</button>
+      <button type="button" onclick="byId('dcFrom').value='';byId('dcTo').value='';filterDayCloseHistory();" style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:10px 16px;font-size:.85rem;font-weight:500;cursor:pointer;color:var(--text-main);white-space:nowrap;">Sıfırla</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Qeyd</th><th colspan="2" style="text-align:right;">Ümumi balans</th></tr></thead>
-        <tbody id="dcHistTbody">${_renderDayCloseRows(all)}</tbody>
-      </table>
-    </div>
+    <div id="dcHistList" style="overflow-y:auto;max-height:60vh;">${_renderDayCloseRows(all)}</div>
     <div class="modal-footer">
       <button class="btn-back" type="button" onclick="openDayClose()"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
