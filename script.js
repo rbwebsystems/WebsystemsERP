@@ -4814,6 +4814,7 @@ function saveReturnPurchInvoice(e, invNoRaw) {
 }
 
 function openPurchInvoiceEdit(invNoRaw) {
+  const invNo = String(invNoRaw || "").trim();
   if (!invNo) return;
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const rows = (db.purch || [])
