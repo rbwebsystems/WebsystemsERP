@@ -645,6 +645,105 @@ function tgLogEvent(action, target, details, user) {
   );
 }
 
+async function sendDailyOverdueReport() {
+  const today = new Date();
+  const yy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const todayISO = `${yy}-${mm}-${dd}`;
+  const todayLabel = `${dd}.${mm}.${yy}`;
+
+  const PAY_TYPE_LABEL = {
+    down: "İlkin ödəniş",
+    monthly: "Aylıq ödəniş",
+    credit_pay: "Aylıq ödəniş",
+  };
+
+  const dueList = [];
+  for (const sale of (db.sales || [])) {
+    if (sale.returnedAt) continue;
+    if (String(sale.saleType || "").toLowerCase() !== "kredit") continue;
+    const sched = buildCreditSchedule(sale);
+    const custName = sale.customerName || "-";
+    const invNo = sale.invNo || invFallback("sales", sale.uid);
+    const accName = (db.accounts || []).find((a) => a.uid === Number(sale.paymentAccountId || 1))?.name || "Kassa";
+    // down payment — check if due today (same day as sale date)
+    const saleDateISO = String(sale.date || "").slice(0, 10);
+    if (saleDateISO === todayISO && sched.down > 0.000001) {
+      const downPaid = Math.min(sched.down, n(sale.paidTotal));
+      const downRem = Math.max(0, sched.down - downPaid);
+      if (downRem > 0.000001) {
+        dueList.push({
+          customer: custName, invNo,
+          payType: "İlkin ödəniş",
+          amount: sched.down, remaining: downRem, account: accName,
+        });
+      }
+    }
+    // monthly installments
+    for (const row of sched.rows) {
+      if (row.due === todayISO && row.remaining > 0.000001) {
+        dueList.push({
+          customer: custName, invNo,
+          payType: `Aylıq ödəniş (${row.idx}/${sched.term})`,
+          amount: row.amount, remaining: row.remaining, account: accName,
+        });
+      }
+    }
+  }
+
+  const s = db.settings || {};
+  if (!(s.telegramToken || "").trim() || !(s.telegramChatId || "").trim()) return;
+
+  if (dueList.length === 0) {
+    await sendTelegram(
+      `📅 <b>Gündəlik Kredit Bildirişi — ${todayLabel}</b>\n` +
+      `Şirkət: <b>${tgCompanyName()}</b>\n\n` +
+      `✅ Bu gün ödənilməli kredit öhdəliyi yoxdur.`
+    );
+    return;
+  }
+
+  const lines = dueList.map((d, i) =>
+    `${i + 1}. 👤 <b>${d.customer}</b>  |  📄 ${d.invNo}\n` +
+    `   🏷 Növ: ${d.payType}\n` +
+    `   💰 Məbləğ: <b>${money(d.amount)} AZN</b>  (Qalıq: ${money(d.remaining)} AZN)\n` +
+    `   🏦 Hesab: ${d.account}`
+  ).join("\n\n");
+
+  await sendTelegram(
+    `📅 <b>Gündəlik Kredit Ödənişləri — ${todayLabel}</b>\n` +
+    `Şirkət: <b>${tgCompanyName()}</b>\n` +
+    `Cəmi: <b>${dueList.length}</b> ödəniş bu gün\n\n` +
+    lines
+  );
+}
+
+function startDailyReportScheduler() {
+  const HOUR = 10;
+  const MIN = 0;
+  const KEY = "__dailyCreditReportSent";
+
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function checkAndSend() {
+    const now = new Date();
+    const today = todayKey();
+    const pastTime = now.getHours() > HOUR || (now.getHours() === HOUR && now.getMinutes() >= MIN);
+    const sent = localStorage.getItem(KEY) === today;
+    if (pastTime && !sent) {
+      localStorage.setItem(KEY, today);
+      sendDailyOverdueReport();
+    }
+  }
+
+  checkAndSend();
+  setInterval(checkAndSend, 60 * 1000);
+}
+
 function auditExplain(a) {
   if (!a) return "-";
   const act = String(a.action || "");
@@ -11915,6 +12014,7 @@ Object.assign(window, {
   renderSettingsPage,
   saveSettingsPage,
   testTelegramPage,
+  sendDailyOverdueReport,
   openSkins,
   setSkin,
   openLoginModal,
@@ -12144,6 +12244,7 @@ function initApp() {
   bindSidebarNavClicks();
   renderAll();
   requestAnimationFrame(() => consumeHashDeepLink());
+  startDailyReportScheduler();
 }
 
 function hideLoading() {
