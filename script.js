@@ -2193,7 +2193,8 @@ function currentUser() {
 function userDisplay(u) {
   if (!u) return "-";
   const un = String(u.username || "").trim();
-  const company = String(db.settings?.companyName || "").trim();
+  const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
+  const company = String(db.settings?.companyName || comp?.name || "").trim();
   return company && un ? `${company}_${un}` : un || "-";
 }
 
