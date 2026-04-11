@@ -600,6 +600,21 @@ function tgUserName() {
   const u = currentUser();
   return (u?.fullName || "").trim() || userDisplay(u) || "-";
 }
+function tgAccName(accId) {
+  return (db.accounts || []).find((a) => a.uid === Number(accId || 1))?.name || "Kassa";
+}
+function tgPayKindLabel(kind) {
+  const M = {
+    monthly: "Aylıq ödəniş", down: "İlkin ödəniş", regular: "Nağd ödəniş",
+    credit_pay: "Kredit ödənişi", cash_pay: "Nağd ödəniş",
+    debtor_payment: "Müştəri ödənişi", debtor_invoice_payment: "Qaimə ödənişi",
+    expense: "Xərc", supp_pay: "Təchizatçı ödənişi",
+    creditor_payment: "Kreditor ödənişi", creditor_invoice_payment: "Kreditor qaimə ödənişi",
+    owner_income: "Təsisçidən mədaxil", owner_expense: "Təsisçiyə məxaric",
+    transfer: "Transfer",
+  };
+  return M[kind] || kind || "-";
+}
 
 function logEvent(action, target, details = {}) {
   ensureAuditTrash();
@@ -5080,6 +5095,7 @@ async function savePurch(e, idx) {
     `Qaimə: <b>${data.invNo || invFallback("purch", data.uid)}</b>\n` +
     `Təchizatçı: ${data.supp || "-"}\n` +
     `Məbləğ: <b>${money(data.amount)} AZN</b>\n` +
+    `Ödəniş hesabı: ${tgAccName(data.paymentAccountId)}\n` +
     `Tarix: ${fmtDT(data.date)}\n` +
     `Əməkdaş: <b>${tgUserName()}</b>`
   );
@@ -6622,7 +6638,8 @@ async function saveSale(e, idx) {
     `Qaimə: <b>${base.invNo || "-"}</b>\n` +
     `Müştəri: ${base.customerName || "-"}\n` +
     `Məbləğ: <b>${money(base.amount)} AZN</b>\n` +
-    `Növ: ${base.saleType || "-"}\n` +
+    `Satış növü: ${base.saleType || "-"}\n` +
+    `Ödəniş hesabı: ${tgAccName(base.paymentAccountId)}\n` +
     `Tarix: ${fmtDT(base.date)}\n` +
     `Əməkdaş: <b>${tgUserName()}</b>`
   );
@@ -7897,6 +7914,7 @@ function saveCashOp(e) {
       `💸 Xərc — <b>${tgCompanyName()}</b>\n` +
       `Kateqoriya: ${val("exp_cat") || "-"} / ${val("exp_sub") || "-"}\n` +
       `Məbləğ: <b>${money(amount)} AZN</b>\n` +
+      `Hesab: ${tgAccName(accId)}\n` +
       `Qeyd: ${note || "-"}\n` +
       `Tarix: ${fmtDT(date)}\n` +
       `Əməkdaş: <b>${tgUserName()}</b>`
@@ -8001,7 +8019,9 @@ function saveCashOp(e) {
       `💰 Müştəri ödənişi — <b>${tgCompanyName()}</b>\n` +
       `Müştəri: ${cust.sur} ${cust.name}\n` +
       `Qaimə: <b>${s.invNo || invFallback("sales", s.uid)}</b>\n` +
+      `Ödəniş növü: ${tgPayKindLabel(cashPayKind)}\n` +
       `Məbləğ: <b>${money(a)} AZN</b>\n` +
+      `Hesab: ${tgAccName(accId)}\n` +
       `Tarix: ${fmtDT(date)}\n` +
       `Əməkdaş: <b>${tgUserName()}</b>`
     );
@@ -8040,8 +8060,9 @@ function saveCashOp(e) {
   sendTelegram(
     `💰 Müştəri ödənişi — <b>${tgCompanyName()}</b>\n` +
     `Müştəri: ${cust.sur} ${cust.name}\n` +
+    `Ödəniş növü: ${kind === "credit_pay" ? "Aylıq kredit ödənişi" : "Nağd ödəniş"}\n` +
     `Məbləğ: <b>${money(applied.applied)} AZN</b>\n` +
-    `Növ: ${kind === "credit_pay" ? "Kredit" : "Nağd"}\n` +
+    `Hesab: ${tgAccName(accId)}\n` +
     `Tarix: ${fmtDT(date)}\n` +
     `Əməkdaş: <b>${tgUserName()}</b>`
   );
