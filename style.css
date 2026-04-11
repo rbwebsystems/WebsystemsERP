@@ -5538,7 +5538,60 @@ body.sidebar-collapsed .nav-link:hover::before {
 }
 
 /* Subscription checkbox fix */
-#co_sub_active{width:15px!important;height:15px!important;min-width:15px;min-height:15px;cursor:pointer;}
+/* ── iOS Toggle Switch — all checkboxes ── */
+input[type=checkbox] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 51px !important;
+  height: 31px !important;
+  min-width: 51px !important;
+  min-height: 31px !important;
+  border-radius: 100px !important;
+  background: rgba(120,120,128,.3) !important;
+  border: none !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: background .22s ease !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+input[type=checkbox]:checked {
+  background: #34C759 !important;
+}
+input[type=checkbox]::before {
+  content: '' !important;
+  position: absolute !important;
+  width: 27px !important;
+  height: 27px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  top: 2px !important;
+  left: 2px !important;
+  transition: transform .22s ease !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+input[type=checkbox]:checked::before {
+  transform: translateX(20px) !important;
+}
+input[type=checkbox]:disabled {
+  opacity: .4 !important;
+  cursor: not-allowed !important;
+}
+body.theme-dark input[type=checkbox] {
+  background: rgba(255,255,255,.2) !important;
+}
+body.theme-dark input[type=checkbox]:checked {
+  background: #30D158 !important;
+}
+/* Override the specific #co_sub_active override — let it use toggle style too */
+#co_sub_active {
+  width: 51px !important;
+  height: 31px !important;
+  min-width: 51px !important;
+  min-height: 31px !important;
+}
 
 /* Companies table action column placeholder */
 .icon-btn-placeholder{display:inline-flex;width:28px;height:28px;flex-shrink:0;}
