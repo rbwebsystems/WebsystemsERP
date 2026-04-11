@@ -4685,13 +4685,83 @@ function openPurchInfoByInv(invNoRaw) {
       <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(totalRem)} AZN</div></div>
     </div>
     <div class="modal-footer">
+      ${rows.every(p => !p.returnedAt && canDeletePurchase(p)) ? `<button class="btn-cancel" type="button" onclick="openReturnPurchInvoice('${escapeAttr(invNo)}')">Qaytar</button>` : ""}
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
 }
 
-function openPurchInvoiceEdit(invNoRaw) {
+function openReturnPurchInvoice(invNoRaw) {
+  if (!userCanEdit()) return alert("İcazə yoxdur.");
   const invNo = String(invNoRaw || "").trim();
+  const rows = (db.purch || [])
+    .map((p, idx) => ({ p, idx }))
+    .filter(x => String(x.p.invNo || "").trim() === invNo && !x.p.returnedAt);
+  if (!rows.length) return alert("Qaytarılacaq məhsul tapılmadı.");
+  for (const { p } of rows) {
+    if (!canDeletePurchase(p)) return alert(`"${p.name}" artıq satılıb. Qaytarmaq olmaz.`);
+  }
+  const totalAmt = rows.reduce((a, { p }) => a + n(p.amount), 0);
+  openModal(`
+    <h2>Alış qaytarma — ${escapeHtml(invNo)}</h2>
+    <p style="margin:8px 0 14px;font-size:13px;">Qaimədəki <strong>${rows.length}</strong> məhsulun hamısı qaytarılacaq. Cəmi məbləğ: <strong>${money(totalAmt)} AZN</strong></p>
+    <form onsubmit="saveReturnPurchInvoice(event,'${escapeAttr(invNo)}')">
+      <div class="form-stack">
+        <div class="form-card">
+          <div class="form-card-title">Qaytarma məlumatları</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="pretinv_date" value="${nowISODateTimeLocal()}" required></div>
+            <div class="f-group"><label>Geri qaytarılan məbləğ (AZN)</label><input type="number" step="0.01" id="pretinv_refund" placeholder="0.00 — sıfır ola bilər"></div>
+            <div class="f-group"><label>Hesab *</label><select id="pretinv_acc" required>${accountOptionsHtml(1)}</select></div>
+            <div class="f-group f-group--note"><label>Qeyd</label><input id="pretinv_note" placeholder="İstəyə bağlı"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit">Qaytar</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveReturnPurchInvoice(e, invNoRaw) {
+  e.preventDefault();
+  if (!userCanEdit()) return;
+  const invNo = String(invNoRaw || "").trim();
+  const rows = (db.purch || [])
+    .map((p, idx) => ({ p, idx }))
+    .filter(x => String(x.p.invNo || "").trim() === invNo && !x.p.returnedAt);
+  if (!rows.length) return;
+  const date   = val("pretinv_date");
+  const refund = Math.max(0, n(val("pretinv_refund")));
+  const accId  = Number(val("pretinv_acc") || 1);
+  const note   = val("pretinv_note");
+
+  if (refund > 0.000001) {
+    addCashOp({
+      type: "in",
+      date,
+      source: `Alış qaytarma (Qaimə ${invNo})`,
+      amount: refund,
+      note: note || `Alış qaiməsi qaytarma ${invNo}`,
+      link: { kind: "purch_return_refund", invNo },
+      meta: { invNo },
+      accountId: accId,
+    });
+    logEvent("create", "cash", { type: "in", kind: "purch_return_refund", invNo, amount: refund });
+  }
+
+  for (const { p } of rows) {
+    p.returnedAt = date;
+    p.returnNote = note || "";
+    logEvent("return", "purch", { uid: p.uid, invNo, refund: 0 });
+  }
+  saveDB();
+  closeMdl();
+}
+
+function openPurchInvoiceEdit(invNoRaw) {
   if (!invNo) return;
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const rows = (db.purch || [])
@@ -13327,6 +13397,8 @@ Object.assign(window, {
   saveReturnSale,
   openReturnPurch,
   saveReturnPurch,
+  openReturnPurchInvoice,
+  saveReturnPurchInvoice,
   printSale,
   toggleDevMenu,
 });
