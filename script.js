@@ -4843,27 +4843,32 @@ function openPurchInvoiceEdit(invNoRaw) {
   `);
 }
 
-function delPurchInvoiceRow(idx, invNoRaw) {
+async function delPurchInvoiceRow(idx, invNoRaw) {
   const invNo = String(invNoRaw || "").trim();
   const p = db.purch[idx];
   if (!p) return;
   if (!userCanDelete("purch")) return alert("Sil icazəsi yoxdur.");
   if (n(p.paidTotal) > 0.000001) return alert("Bu məhsul sətrində ödəniş var. Silmək olmaz.");
   if (!canDeletePurchase(p)) return alert("Bu məhsul satılıb. Silmək olmaz.");
-  appConfirm("Bu məhsul sətri silinsin?").then((ok) => {
-    if (!ok) return;
-    ensureAuditTrash();
-    const u = currentUser();
-    const deletedBy = u ? u.username : "-";
-    const deletedAt = nowISODateTimeLocal();
-    db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy });
-    logEvent("delete", "purch", { uid: p.uid, invNo });
-    db.purch.splice(idx, 1);
-    saveDB();
-    const left = (db.purch || []).some((x) => String(x.invNo || "").trim() === invNo);
-    if (left) openPurchInvoiceEdit(invNo);
-    else closeMdl();
-  });
+
+  const siblings = invNo ? (db.purch || []).filter(x => String(x.invNo || invFallback("purch", x.uid)) === invNo) : [p];
+  const isLastItem = siblings.length <= 1;
+  const msgSuffix = isLastItem ? `\n\nDiqqət: bu qaimədəki son məhsuldur — silindikdə bütün qaimə silinəcək.` : "";
+
+  const deleteReason = await appConfirmWithReason(`"${p.name || "-"}" alış sətrindən çıxarılacaq.${msgSuffix}`);
+  if (!deleteReason) return;
+
+  ensureAuditTrash();
+  const u = currentUser();
+  const deletedBy = u ? u.username : "-";
+  const deletedAt = nowISODateTimeLocal();
+  db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy, deleteReason });
+  logEvent("delete", "purch", { uid: p.uid, invNo, deleteReason });
+  db.purch.splice(idx, 1);
+  saveDB();
+  const left = (db.purch || []).some((x) => String(x.invNo || invFallback("purch", x.uid)) === invNo);
+  if (left) openPurchInvoiceEdit(invNo);
+  else closeMdl();
 }
 
 function delPurchInvoice(invNoRaw) {
@@ -5052,7 +5057,44 @@ function openPurch(idx = null) {
               <tfoot><tr class="total-row"><td colspan="5">Maya dəyəri cəmi</td><td id="purchDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
             </table>
           </div>
-        </div>` : ""}
+        </div>` : (() => {
+          const editInvNo = p.invNo || invFallback("purch", p.uid);
+          const invSiblings = editInvNo
+            ? (db.purch || []).map((x, xi) => ({ x, xi })).filter(({ x }) => String(x.invNo || invFallback("purch", x.uid)) === editInvNo)
+            : [{ x: p, xi: idx }];
+          if (invSiblings.length === 0) return "";
+          const sibRows = invSiblings.map(({ x, xi }, ii) => {
+            const isBulkRow = purchIsBulk(x);
+            const rowQty = isBulkRow ? Math.max(1, Math.floor(n(x.qty || 1))) : 1;
+            const hasPay = n(x.paidTotal) > 0.000001;
+            const isSold = !canDeletePurchase(x);
+            const canDelRow = !hasPay && !isSold;
+            const badge = hasPay ? `<span style="font-size:.73rem;color:var(--text-muted)">Ödəniş var</span>`
+              : isSold ? `<span style="font-size:.73rem;color:var(--text-muted)">Satılıb</span>` : "";
+            return `<tr>
+              <td>${ii + 1}</td>
+              <td>${escapeHtml(x.name || "-")}</td>
+              <td>${escapeHtml(x.code || "-")}</td>
+              <td>${escapeHtml([x.imei1, x.imei2, x.seria].filter(Boolean).join(" / ") || "-")}</td>
+              <td>${rowQty}</td>
+              <td>${money(x.amount)} AZN</td>
+              <td>${canDelRow
+                ? `<button type="button" class="icon-btn delete" onclick="delPurchInvoiceRow(${xi}, '${escapeAttr(editInvNo)}')" title="Sil"><i class="fas fa-trash"></i></button>`
+                : badge}</td>
+            </tr>`;
+          }).join("");
+          const sibTotal = invSiblings.reduce((a, { x }) => a + n(x.amount), 0);
+          return `<div class="form-card">
+            <div class="form-card-title">Qaimedəki məhsullar (${invSiblings.length} ədəd)</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Məhsul</th><th>Kod</th><th>IMEI / Seriya</th><th>Say</th><th>Məbləğ</th><th></th></tr></thead>
+                <tbody>${sibRows}</tbody>
+                <tfoot><tr class="total-row"><td colspan="5">Cəmi</td><td>${money(sibTotal)} AZN</td><td></td></tr></tfoot>
+              </table>
+            </div>
+          </div>`;
+        })()}
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Mədaxil et"}</button>
@@ -6225,7 +6267,8 @@ function openSale(idx = null) {
             ? db.sales.map((s, j) => ({ s, j })).filter(x => x.s.invNo === invNo)
             : [{ s: current, j: idx }];
           const rows = siblings.map(({ s, j }, i) => {
-            const canDel = siblings.length > 1 && !(n(s.paidTotal) > 0.000001 || (s.payments && s.payments.length));
+            const hasPay = n(s.paidTotal) > 0.000001 || (s.payments && s.payments.length);
+            const canDel = !hasPay;
             return `<tr>
               <td>${i+1}</td>
               <td>${escapeHtml(s.productName || "-")}</td>
@@ -6233,7 +6276,7 @@ function openSale(idx = null) {
               <td>${Math.max(1, Math.floor(n(s.qty || 1)))}</td>
               <td>${escapeHtml([s.imei1, s.imei2, s.seria].filter(Boolean).join(" / ") || "-")}</td>
               <td>${money(s.amount)} AZN</td>
-              <td>${canDel ? `<button type="button" class="icon-btn delete" onclick="removeSaleItemFromInvoice(${s.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}</td>
+              <td>${canDel ? `<button type="button" class="icon-btn delete" onclick="removeSaleItemFromInvoice(${s.uid})" title="Sil"><i class="fas fa-trash"></i></button>` : `<span style="font-size:.75rem;color:var(--text-muted)">Ödəniş var</span>`}</td>
             </tr>`;
           }).join("");
           const total = siblings.reduce((a, x) => a + n(x.s.amount), 0);
@@ -7182,14 +7225,33 @@ async function removeSaleItemFromInvoice(saleUid) {
   }
   const invNo = s.invNo;
   const siblings = invNo ? db.sales.filter(x => x.invNo === invNo) : [s];
-  if (siblings.length <= 1) {
-    return alert("Qaimədə yalnız bir məhsul var. Bütün qaiməni silmək üçün siyahıdan istifadə edin.");
-  }
-  const deleteReason = await appConfirmWithReason(`"${s.productName || s.code || "Məhsul"}" qaimədən çıxarılacaq.`);
+
+  const isLastItem = siblings.length <= 1;
+  const msgSuffix = isLastItem
+    ? `\n\nDiqqət: bu qaimədəki son məhsuldur — silindikdə bütün qaimə silinəcək.`
+    : "";
+
+  const deleteReason = await appConfirmWithReason(
+    `"${s.productName || s.code || "Məhsul"}" qaimədən çıxarılacaq.${msgSuffix}`
+  );
   if (!deleteReason) return;
+
   ensureAuditTrash();
   const u = currentUser();
-  db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+  const deletedAt = nowISODateTimeLocal();
+  const deletedBy = u?.username || "-";
+
+  if (isLastItem) {
+    // Delete the entire invoice (single-item)
+    db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "sales", { uid: s.uid, invNo: s.invNo, deleteReason });
+    db.sales.splice(j, 1);
+    saveDB();
+    closeMdl();
+    return;
+  }
+
+  db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt, deletedBy, deleteReason });
   logEvent("delete", "sales", { uid: s.uid, invNo, deleteReason });
   db.sales.splice(j, 1);
   saveDB();
