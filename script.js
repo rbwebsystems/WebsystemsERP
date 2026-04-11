@@ -7399,7 +7399,7 @@ function printCashReceipt(uid) {
   @media print{
     body{background:#fff;padding:0;display:block;}
     .receipt{width:210mm;min-height:148mm;border:none;border-radius:0;padding:10mm 14mm;}
-    @page{size:A4;margin:0;}
+    @page{size:A4 portrait;margin:0;}
   }
 </style></head><body>
 <div class="receipt">
