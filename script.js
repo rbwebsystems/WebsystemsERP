@@ -4737,6 +4737,10 @@ function openPurchInfoByInv(invNoRaw) {
       <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(totalRem)} AZN</div></div>
     </div>
     <div class="modal-footer">
+      ${userCanEdit() ? (() => {
+        const firstIdx = (db.purch || []).findIndex(p => String(p.invNo || "").trim() === invNo);
+        return firstIdx >= 0 ? `<button class="btn-main" type="button" onclick="closeMdl();openPurch(${firstIdx})">Redaktə</button>` : "";
+      })() : ""}
       ${rows.every(p => !p.returnedAt && canDeletePurchase(p)) ? `<button class="btn-cancel" type="button" onclick="openReturnPurchInvoice('${escapeAttr(invNo)}')">Qaytar</button>` : ""}
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
@@ -12146,7 +12150,7 @@ function renderAll() {
       const actor = latestRow ? operationActorName(latestRow, getStaffName(latestRow.employeeId) || "-") : "-";
       const actions = `
         <a class="icon-btn info" href="${erpOpHref("purch", "purchInfoInv", g.invNo)}" onclick="openPurchInfoByInv('${escapeAttr(g.invNo)}');return false;" title="Məlumat"><i class="fas fa-circle-info"></i></a>
-        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("purch", "purchInvEdit", g.invNo)}" onclick="openPurchInvoiceEdit('${escapeAttr(g.invNo)}');return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("purch", "purchInvEdit", g.invNo)}" onclick="openPurch(${g.idxList[0]});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("purch") ? `<button class="icon-btn delete" onclick="delPurchInvoice('${escapeAttr(g.invNo)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       `;
       const searchText = [
