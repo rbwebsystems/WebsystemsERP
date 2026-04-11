@@ -5212,33 +5212,11 @@ body.theme-dark .icon-btn { background: rgba(255,255,255,.08) !important; color:
   border: none !important;
   box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05) !important;
 }
-/* Table card fills remaining section height */
+/* Table card stretches to fill section height → bottom aligns with sidebar */
 .section.active > .card:not(.stat-card) {
   flex: 1 !important;
   min-height: 0 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-.section.active > .card:not(.stat-card) > table,
-.section.active > .card:not(.stat-card) > div > table {
-  flex: 1 !important;
-  min-height: 0 !important;
-}
-.section.active > .card:not(.stat-card) tbody {
-  overflow-y: auto !important;
-  display: block !important;
-  width: 100% !important;
-}
-.section.active > .card:not(.stat-card) thead {
-  display: table !important;
-  width: 100% !important;
-  table-layout: fixed !important;
-}
-.section.active > .card:not(.stat-card) tr {
-  display: table !important;
-  width: 100% !important;
-  table-layout: fixed !important;
+  overflow: auto !important;
 }
 body.theme-dark .card { background: #2C2C2E !important; box-shadow: 0 1px 3px rgba(0,0,0,.4) !important; }
 .form-card { border-radius: 14px !important; border: none !important; box-shadow: 0 1px 3px rgba(0,0,0,.06) !important; }
