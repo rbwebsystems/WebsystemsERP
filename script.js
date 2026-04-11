@@ -987,7 +987,10 @@ function setRepView(view) {
   const titleEl = byId("repContentTitle");
   if (titleEl) titleEl.textContent = REP_TITLES[view] || view;
   REP_VIEWS.forEach((v) => { const s = byId(`repSec-${v}`); if (s) s.style.display = v === view ? "" : "none"; });
-  withSectionLoading(() => renderReports());
+  withSectionLoading(() => {
+    renderReports();
+    if (window.innerWidth <= 768) requestAnimationFrame(wrapMobileTables);
+  });
 }
 
 function syncRepFilters() {
@@ -12229,6 +12232,22 @@ function renderAll() {
 
   // Re-apply active text searches so results do not reset after auto refresh/render.
   reapplyActiveSearchFilters();
+
+  // Mobil üçün cədvəlləri scroll wrapper-a al
+  if (window.innerWidth <= 768) wrapMobileTables();
+}
+
+function wrapMobileTables() {
+  document.querySelectorAll(
+    ".card table, .modal-body table, .modal-body-inner table, .table-wrap table"
+  ).forEach((tbl) => {
+    const parent = tbl.parentElement;
+    if (!parent || parent.classList.contains("tbl-scroll-wrap")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "tbl-scroll-wrap";
+    parent.insertBefore(wrap, tbl);
+    wrap.appendChild(tbl);
+  });
 }
 
 function delItem(type, i) {

@@ -6047,6 +6047,8 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
 /* ===================== #18 Mobil uyğunluq ===================== */
 .mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;color:inherit;padding:6px;font-size:1.1rem;}
 .desktop-sidebar-btn{display:none !important;}
+/* JS-injected mobile table scroll wrapper — transparent on desktop */
+.tbl-scroll-wrap { width:100%; }
 .mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1199;}
 .mobile-sidebar-overlay.open{display:block;}
 
@@ -6586,33 +6588,28 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   }
   .btn-main span, .btn-cancel span { display: inline !important; }
 
-  /* ── 5. Cədvəllər — yatay scroll ── */
-  /* Card-ı scroll konteynerinə çevir */
+  /* ── 5. Cədvəllər — yatay scroll (JS wrapper ilə) ── */
+  .tbl-scroll-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
   .card {
     border-radius: 10px !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch !important;
+    overflow: visible !important;
     max-width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
   }
   .section.active > .card:not(.stat-card) {
-    overflow-x: auto !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    overflow-x: hidden !important;
     min-width: 0 !important;
     width: 100% !important;
   }
-  /* Modal/slideover daxilindəki kartlar */
-  .modal-body .card,
-  .modal-body-inner .card {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  /* Cədvəlin özü natural eni qorunsun */
   table {
-    min-width: 540px !important;
+    min-width: 480px !important;
     width: auto !important;
     border-collapse: collapse !important;
   }
