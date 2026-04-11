@@ -7395,6 +7395,11 @@ function printCashReceipt(uid) {
   .receipt__row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:12px;}
   .receipt__row-label{color:#6b7280;flex-shrink:0;}
   .receipt__row-val{font-weight:500;text-align:right;}
+  .receipt__sign{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-top:24px;padding-top:16px;border-top:1px dashed #d1d5db;}
+  .receipt__sign-box{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .receipt__sign-line{width:100%;height:1px;background:#374151;}
+  .receipt__sign-stamp{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;}
+  .receipt__sign-label{font-size:10px;color:#6b7280;text-align:center;}
   .receipt__footer{margin-top:14px;border-top:1px dashed #d1d5db;padding-top:10px;text-align:center;color:#9ca3af;font-size:10px;}
   @media print{
     body{background:#fff;padding:0;display:block;}
@@ -7420,6 +7425,16 @@ function printCashReceipt(uid) {
     ${c.source ? `<div class="receipt__row"><span class="receipt__row-label">Mənbə</span><span class="receipt__row-val">${escapeHtml(c.source)}</span></div>` : ""}
     ${actor !== "-" ? `<div class="receipt__row"><span class="receipt__row-label">Əməkdaş</span><span class="receipt__row-val">${escapeHtml(actor)}</span></div>` : ""}
     ${c.note ? `<div class="receipt__row"><span class="receipt__row-label">Qeyd</span><span class="receipt__row-val">${escapeHtml(c.note)}</span></div>` : ""}
+  </div>
+  <div class="receipt__sign">
+    <div class="receipt__sign-box">
+      <div class="receipt__sign-line"></div>
+      <div class="receipt__sign-label">Qəbul edən (imza)</div>
+    </div>
+    <div class="receipt__sign-box">
+      <div class="receipt__sign-stamp"></div>
+      <div class="receipt__sign-label">Möhür</div>
+    </div>
   </div>
   <div class="receipt__footer">Çap edildi: ${fmtDT(new Date().toISOString())}</div>
 </div>
