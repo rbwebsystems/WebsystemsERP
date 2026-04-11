@@ -6141,6 +6141,59 @@ body.sidebar-collapsed .sidebar-brand-name{font-size:.6rem;letter-spacing:.04em;
 body.theme-dark .empty-state-icon{background:rgba(26,71,84,.18);}
 
 /* ===================== #17 Bildiriş mərkəzi ===================== */
+/* ── Notification dropdown (profile-dropdown style) ── */
+.notif-dropdown {
+  position: fixed;
+  z-index: 10001;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.15);
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  overflow: hidden;
+}
+.notif-dropdown.notif-dropdown-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.notif-dd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: .93rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.notif-dd-list {
+  max-height: 380px;
+  overflow-y: auto;
+}
+body.theme-dark .notif-dropdown {
+  background: #374151;
+  border-color: #4b5563;
+}
+body.theme-dark .notif-dd-header { color: #f9fafb; border-color: #4b5563; }
+.notif-action-btn {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: .78rem;
+  color: #007AFF;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 500;
+}
+.notif-action-btn:hover { text-decoration: underline; }
+/* keep existing notif-item styles working inside dropdown too */
 .notif-panel{display:flex;flex-direction:column;gap:0;max-height:70vh;overflow-y:auto;}
 .notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-color);cursor:default;}
 .notif-item:last-child{border-bottom:none;}
@@ -6160,7 +6213,8 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
 .notif-action{margin-top:6px;}
 .notif-action button{font-size:.75rem;padding:3px 10px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:600;}
 .notif-action button:hover{background:var(--accent);color:#fff;}
-.notif-empty{padding:28px 16px;text-align:center;color:var(--text-muted);font-size:.92rem;}
+.notif-empty{padding:28px 16px;text-align:center;color:var(--text-muted);font-size:.92rem;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.notif-empty i{font-size:1.4rem;color:var(--accent);}
 .notif-header-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border-color);background:var(--bg-main);}
 .notif-header-bar h3{font-size:.95rem;font-weight:700;color:var(--text-main);margin:0;}
 .notif-count-badge{background:var(--accent);color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 8px;}

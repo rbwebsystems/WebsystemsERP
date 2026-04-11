@@ -12849,8 +12849,31 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ===================== #17 Bildiriş mərkəzi =====================
-function openNotifications() {
+function closeNotifDropdown() {
+  const dd = byId("notifDropdown");
+  if (dd) dd.classList.remove("notif-dropdown-open");
+  document.removeEventListener("click", _notifOutsideClick);
+}
+function _notifOutsideClick(e) {
+  const dd = byId("notifDropdown");
+  const btn = document.querySelector(".header-btn-icon[onclick*='openNotifications']");
+  if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) closeNotifDropdown();
+}
+function openNotifications(ev) {
+  if (ev) { ev.preventDefault(); ev.stopPropagation(); }
   if (!meta?.session) return showLoginOverlay(true);
+  const triggerBtn = document.querySelector(".header-btn-icon[onclick*='openNotifications']");
+  let dd = byId("notifDropdown");
+  if (!dd) {
+    dd = document.createElement("div");
+    dd.id = "notifDropdown";
+    dd.className = "notif-dropdown";
+    document.body.appendChild(dd);
+  }
+  if (dd.classList.contains("notif-dropdown-open")) {
+    closeNotifDropdown();
+    return;
+  }
   const list = getNotifications();
   const iconMap = { neg: "fa-circle-exclamation", overdue: "fa-clock", stock: "fa-box", info: "fa-circle-info" };
   const rows = list.map((x) => {
@@ -12858,7 +12881,7 @@ function openNotifications() {
     const secMap = { neg: "cash", overdue: "overdue", stock: "stock" };
     const secId = secMap[x.kind];
     const actionBtn = secId
-      ? `<div class="notif-action"><button onclick="closeMdl();goSecWithLoad('${secId}',null)">Bölməyə keç →</button></div>`
+      ? `<button class="notif-action-btn" onclick="closeNotifDropdown();goSecWithLoad('${secId}',null)">Bölməyə keç →</button>`
       : "";
     return `<div class="notif-item">
       <div class="notif-icon ${x.kind}"><i class="fas ${icon}"></i></div>
@@ -12869,19 +12892,23 @@ function openNotifications() {
       </div>
     </div>`;
   }).join("");
-
-  openModal(`
-    <div class="notif-header-bar">
-      <h3>${t("notifications")}</h3>
+  dd.innerHTML = `
+    <div class="notif-dd-header">
+      <span>${t("notifications")}</span>
       ${list.length ? `<span class="notif-count-badge">${list.length}</span>` : ""}
     </div>
-    <div class="notif-panel">
-      ${rows || `<div class="notif-empty"><i class="fas fa-check-circle" style="color:var(--accent);font-size:1.5rem;margin-bottom:8px;display:block;"></i>${t("no_notifications")}</div>`}
+    <div class="notif-dd-list">
+      ${rows || `<div class="notif-empty"><i class="fas fa-check-circle"></i><span>${t("no_notifications")}</span></div>`}
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" type="button" onclick="closeMdl()">${t("close")}</button>
-    </div>
-  `);
+  `;
+  if (triggerBtn) {
+    const rect = triggerBtn.getBoundingClientRect();
+    dd.style.right = (window.innerWidth - rect.right) + "px";
+    dd.style.top = (rect.bottom + 6) + "px";
+    dd.style.left = "";
+  }
+  dd.classList.add("notif-dropdown-open");
+  setTimeout(() => document.addEventListener("click", _notifOutsideClick), 0);
 }
 
 // ===================== #18 Mobil uyğunluq =====================
