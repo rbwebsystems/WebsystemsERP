@@ -8406,6 +8406,30 @@ function openCompany(idx = null) {
             <div class="f-group"><label>ID (avtomatik)</label><input id="co_id" value="${escapeHtml(c.id || (idx === null ? "Yaradılarkən avtomatik UUID" : ""))}" disabled style="opacity:.6;font-size:.8rem;font-family:monospace"></div>
           </div>
         </div>
+        <div class="form-card">
+          <div class="form-card-title">💳 Abunəlik</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+              <input type="checkbox" id="co_sub_active" ${c.subscription?.active ? "checked" : ""} onchange="toggleSubFields(this.checked)">
+              Ödənişli abunəlik
+            </label>
+          </div>
+          <div id="co_sub_fields" style="${c.subscription?.active ? "" : "display:none"}">
+            <div class="grid-2">
+              <div class="f-group"><label>Aylıq məbləğ (AZN) *</label><input type="number" id="co_sub_amount" min="1" step="0.01" value="${c.subscription?.monthlyAmount || ""}" placeholder="100"></div>
+              <div class="f-group"><label>Ödəniş günü (hər ayın neçəsi) *</label>
+                <select id="co_sub_day">
+                  ${[1,2,3,4,5].map(d => `<option value="${d}" ${(c.subscription?.payDay||1)==d?"selected":""}>${d}-i</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="f-group" style="margin-top:4px">
+              <label>Ödənilib (son ödəniş ayı)</label>
+              <input type="month" id="co_sub_paid_until" value="${c.subscription?.paidUntil || ""}" placeholder="2026-04">
+              <small style="color:var(--text-muted)">Boş buraxılsa — bu ay hələ ödənilməyib sayılır</small>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="info-block">
         <div class="info-row">
@@ -8431,6 +8455,11 @@ function genCompanyUUID() {
   });
 }
 
+function toggleSubFields(on) {
+  const el = byId("co_sub_fields");
+  if (el) el.style.display = on ? "" : "none";
+}
+
 function saveCompany(e, idx) {
   e.preventDefault();
   if (!isDeveloper()) return;
@@ -8439,15 +8468,107 @@ function saveCompany(e, idx) {
     .filter((x) => x.checked)
     .map((x) => x.value);
   if (!name) return;
+
+  const subActive = byId("co_sub_active")?.checked || false;
+  const subscription = subActive ? {
+    active: true,
+    monthlyAmount: Math.max(0, n(byId("co_sub_amount")?.value || 0)),
+    payDay: Number(byId("co_sub_day")?.value || 1),
+    paidUntil: (byId("co_sub_paid_until")?.value || "").trim(),
+  } : { active: false };
+
   if (idx === null) {
     const id = name.trim() || genCompanyUUID();
-    meta.companies.push({ id, name, sections });
+    meta.companies.push({ id, name, sections, subscription });
   } else {
-    meta.companies[idx] = { ...meta.companies[idx], name, sections };
+    meta.companies[idx] = { ...meta.companies[idx], name, sections, subscription };
   }
   saveMeta();
   closeMdl();
   renderAll();
+}
+
+function markCompanyPaid(idx) {
+  if (!isDeveloper()) return;
+  const c = meta.companies[idx];
+  if (!c?.subscription?.active) return;
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  meta.companies[idx].subscription.paidUntil = curMonth;
+  saveMeta();
+  renderAll();
+  // Blok overlay-i götür (əgər həmin şirkət aktivdirsə)
+  if (c.id === meta?.session?.companyId) hideSubscriptionBlock();
+  toast(`${escapeHtml(c.name)} — ${curMonth} ödənişi qeyd edildi`, "ok");
+}
+
+function checkSubscriptionStatus() {
+  if (isDeveloper()) return;
+  const cid = meta?.session?.companyId;
+  if (!cid) return;
+  const company = (meta.companies || []).find((c) => c.id === cid);
+  const sub = company?.subscription;
+  if (!sub?.active) return;
+
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const day = now.getDate();
+  const isPaid = (sub.paidUntil || "") >= curMonth;
+  if (isPaid) { hideSubscriptionBlock(); return; }
+
+  const deadline = sub.payDay || 1;
+  const amount = money(sub.monthlyAmount || 0);
+  const monthLabel = now.toLocaleString("az-AZ", { month: "long", year: "numeric" });
+
+  if (day <= 5) {
+    showSubscriptionWarning(amount, deadline, monthLabel);
+  } else {
+    showSubscriptionSuspended(amount, monthLabel);
+  }
+}
+
+function showSubscriptionWarning(amount, deadline, monthLabel) {
+  let el = byId("subWarningBar");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "subWarningBar";
+    el.style.cssText = "position:fixed;top:68px;left:190px;right:0;z-index:9000;background:#fef3c7;border-bottom:2px solid #f59e0b;padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:.9rem;font-weight:600;color:#92400e;";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <i class="fas fa-bell" style="font-size:1.1rem;color:#f59e0b"></i>
+    <span>⚠️ <b>${monthLabel}</b> üçün abunəlik ödənişi gözlənilir: <b>${amount} AZN</b>. Son tarix: bu ayın <b>${deadline}-i</b>. Ödəniş edilmədikdə xidmət dayandırılacaq.</span>
+    <button onclick="byId('subWarningBar').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1rem;color:#92400e">✕</button>
+  `;
+  el.style.display = "flex";
+  // sidebar collapsed-a uyğunlaş
+  if (document.body.classList.contains("sidebar-collapsed")) el.style.left = "68px";
+}
+
+function showSubscriptionSuspended(amount, monthLabel) {
+  let el = byId("subSuspendOverlay");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "subSuspendOverlay";
+    el.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.92);display:flex;align-items:center;justify-content:center;";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+      <div style="font-size:3rem;margin-bottom:16px">🔒</div>
+      <h2 style="margin:0 0 12px;color:#1a2b3c">Xidmət dayandırıldı</h2>
+      <p style="color:#475569;margin:0 0 8px"><b>${monthLabel}</b> üçün abunəlik ödənişi edilməyib.</p>
+      <p style="color:#475569;margin:0 0 24px">Məbləğ: <b>${amount} AZN</b></p>
+      <p style="color:#94a3b8;font-size:.85rem">Ödəniş etdikdən sonra developer ilə əlaqə saxlayın.</p>
+    </div>
+  `;
+}
+
+function hideSubscriptionBlock() {
+  const bar = byId("subWarningBar");
+  if (bar) bar.style.display = "none";
+  const overlay = byId("subSuspendOverlay");
+  if (overlay) overlay.remove();
 }
 
 function useCompany(companyId) {
@@ -11230,14 +11351,28 @@ function renderAll() {
       compBody.innerHTML = meta.companies
         .map((c, i) => {
           const active = c.id === curCid;
+          const sub = c.subscription || {};
+          const now = new Date();
+          const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+          let subBadge = "";
+          if (sub.active) {
+            const paid = (sub.paidUntil || "") >= curMonth;
+            subBadge = paid
+              ? `<span class="pill paid">✅ ${money(sub.monthlyAmount)} AZN</span>`
+              : `<span class="pill overdue">⚠️ ${money(sub.monthlyAmount)} AZN — ödənilməyib</span>`;
+          } else {
+            subBadge = `<span class="pill" style="background:#f1f5f9;color:#64748b">Pulsuz</span>`;
+          }
           return `
         <tr>
           <td>${i + 1}</td>
           <td>${escapeHtml(c.name)}</td>
           <td>${escapeHtml(c.id)}</td>
           <td>${active ? '<span class="pill paid">AKTİV</span>' : "-"}</td>
+          <td>${subBadge}</td>
           <td class="tbl-actions">
             <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
+            ${sub.active && !((sub.paidUntil||"") >= curMonth) ? `<button class="btn-mini-pay" type="button" onclick="markCompanyPaid(${i})" title="Bu ay ödənildi kimi qeyd et">✅ Ödəniş qeyd et</button>` : ""}
             ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies", "companyEdit", i)}" onclick="openCompany(${i});return false;" title="Edit"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
@@ -12040,6 +12175,8 @@ Object.assign(window, {
   saveSettingsPage,
   testTelegramPage,
   sendDailyOverdueReport,
+  toggleSubFields,
+  markCompanyPaid,
   openSkins,
   setSkin,
   openLoginModal,
@@ -12270,6 +12407,7 @@ function initApp() {
   renderAll();
   requestAnimationFrame(() => consumeHashDeepLink());
   startDailyReportScheduler();
+  checkSubscriptionStatus();
 }
 
 function hideLoading() {
