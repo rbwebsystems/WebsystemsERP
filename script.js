@@ -13064,12 +13064,28 @@ function delItem(type, i) {
   if (type === "sales") {
     const s = db.sales[i];
     if (!s) return;
-    if (n(s.paidTotal) > 0.000001 || (s.payments && Array.isArray(s.payments) && s.payments.length)) {
-      return alert("Bu satışın ödənişi var. Kassa balansı pozulmasın deyə silmək olmaz. Məhsul qaytarılırsa 'Qaytarma' edin (refund varsa kassadan çıxış yazılsın).");
+
+    // Collect all sale records belonging to the same invoice
+    const invNo = s.invNo || null;
+    const siblings = invNo
+      ? db.sales.map((x, j) => ({ s: x, j })).filter(x => x.s.invNo === invNo)
+      : [{ s, j: i }];
+
+    // Block if any item in the invoice has a payment
+    const anyPaid = siblings.some(({ s: x }) =>
+      n(x.paidTotal) > 0.000001 || (Array.isArray(x.payments) && x.payments.length > 0)
+    );
+    if (anyPaid) {
+      return alert("Bu qaimənin ödənişi var. Kassa balansı pozulmasın deyə silmək olmaz. Məhsul qaytarılırsa 'Qaytarma' edin.");
     }
-    db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt, deletedBy });
-    logEvent("delete", "sales", { uid: s.uid });
-    db.sales.splice(i, 1);
+
+    // Delete all siblings (descending index to avoid splice offset issues)
+    const indices = siblings.map(x => x.j).sort((a, b) => b - a);
+    for (const j of indices) {
+      db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: db.sales[j], deletedAt, deletedBy });
+      logEvent("delete", "sales", { uid: db.sales[j].uid });
+      db.sales.splice(j, 1);
+    }
     saveDB();
     return;
   }
