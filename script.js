@@ -2860,6 +2860,7 @@ function doLoginWithCompany(companyId) {
       refreshHeaderBar();
       renderAll();
       showDashboardAfterLogin();
+      checkSubscriptionStatus();
     });
   } else {
     db = loadCompanyDB();
@@ -2870,6 +2871,7 @@ function doLoginWithCompany(companyId) {
     refreshHeaderBar();
     renderAll();
     showDashboardAfterLogin();
+    checkSubscriptionStatus();
   }
 }
 
@@ -8665,20 +8667,28 @@ function checkSubscriptionStatus() {
 }
 
 function showSubscriptionWarning(amount, monthLabel) {
-  let el = byId("subWarningBar");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "subWarningBar";
-    el.style.cssText = "position:fixed;top:68px;left:190px;right:0;z-index:9000;background:#fef3c7;border-bottom:2px solid #f59e0b;padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:.9rem;font-weight:600;color:#92400e;";
-    document.body.appendChild(el);
-  }
+  // Remove old bar if exists
+  const old = byId("subWarningBar");
+  if (old) old.remove();
+
+  let el = byId("subWarningPopup");
+  if (el) el.remove();
+  el = document.createElement("div");
+  el.id = "subWarningPopup";
+  el.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;";
   el.innerHTML = `
-    <i class="fas fa-bell" style="font-size:1.1rem;color:#f59e0b"></i>
-    <span>⚠️ <b>${monthLabel}</b> üçün abunəlik ödənişi gözlənilir: <b>${amount} AZN</b>. Son tarix: bu ayın <b>5-i</b>. Ödəniş edilmədikdə xidmət dayandırılacaq.</span>
-    <button onclick="byId('subWarningBar').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1rem;color:#92400e">✕</button>
+    <div style="background:#fff;border-radius:16px;padding:36px 44px;max-width:460px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+      <h2 style="margin:0 0 10px;color:#92400e;font-size:1.25rem">Abunəlik ödənişi gözlənilir</h2>
+      <p style="color:#475569;margin:0 0 6px"><b>${monthLabel}</b> üçün ödəniş hələ edilməyib.</p>
+      <p style="color:#475569;margin:0 0 20px">Məbləğ: <b>${amount} AZN</b></p>
+      <p style="color:#92400e;font-size:.88rem;background:#fef3c7;border-radius:8px;padding:10px 14px;margin:0 0 24px">
+        Son tarix: bu ayın <b>5-i</b>.<br>Ödəniş edilmədikdə xidmət dayandırılacaq.
+      </p>
+      <button onclick="document.getElementById('subWarningPopup').remove()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:.95rem;font-weight:600;cursor:pointer">Anladım</button>
+    </div>
   `;
-  el.style.display = "flex";
-  if (document.body.classList.contains("sidebar-collapsed")) el.style.left = "68px";
+  document.body.appendChild(el);
 }
 
 function showSubscriptionSuspended(amount, monthLabel) {
@@ -8690,21 +8700,24 @@ function showSubscriptionSuspended(amount, monthLabel) {
     document.body.appendChild(el);
   }
   el.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
       <div style="font-size:3rem;margin-bottom:16px">🔒</div>
       <h2 style="margin:0 0 12px;color:#1a2b3c">Xidmət dayandırıldı</h2>
       <p style="color:#475569;margin:0 0 8px"><b>${monthLabel}</b> üçün abunəlik ödənişi edilməyib.</p>
-      <p style="color:#475569;margin:0 0 24px">Məbləğ: <b>${amount} AZN</b></p>
-      <p style="color:#94a3b8;font-size:.85rem">Ödəniş etdikdən sonra developer ilə əlaqə saxlayın.</p>
+      <p style="color:#475569;margin:0 0 20px">Məbləğ: <b>${amount} AZN</b></p>
+      <p style="color:#94a3b8;font-size:.85rem;background:#f8fafc;border-radius:8px;padding:10px 14px">
+        Xidmetdən istifadəni bərpa etmək üçün ödəniş edin<br>və developer ilə əlaqə saxlayın.
+      </p>
     </div>
   `;
+  el.style.display = "flex";
 }
 
 function hideSubscriptionBlock() {
-  const bar = byId("subWarningBar");
-  if (bar) bar.style.display = "none";
-  const overlay = byId("subSuspendOverlay");
-  if (overlay) overlay.remove();
+  ["subWarningBar","subWarningPopup","subSuspendOverlay"].forEach(id => {
+    const el = byId(id);
+    if (el) el.remove();
+  });
 }
 
 function useCompany(companyId) {
