@@ -4131,7 +4131,7 @@ body.theme-dark .modal.modal--slideover .modal-body{
   background:#151f2b !important;
 }
 .modal.modal--slideover .modal-footer{
-  justify-content:center;
+  justify-content:flex-start;
   gap:12px;
   flex-shrink:0;
   margin-top:0;
@@ -5686,6 +5686,7 @@ body.theme-dark .modal-body { background: #1C1C1E !important; }
   border-top: 1px solid rgba(60,60,67,.12) !important;
   padding: 16px 20px !important;
   gap: 10px !important;
+  justify-content: flex-start !important;
 }
 body.theme-dark .modal-footer { border-top-color: rgba(255,255,255,.08) !important; background: transparent !important; }
 
