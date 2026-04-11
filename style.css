@@ -1463,17 +1463,18 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   pointer-events:none;
 }
 .login-v3-input-wrap input{
-  width:100%;
-  height:48px;
-  padding:0 2.75rem 0 2.65rem;
-  border-radius:1rem;
-  border:1px solid #f1f5f9;
-  background:#f8fafc;
-  font-size:.95rem;
-  font-weight:500;
-  color:#0f172a;
-  outline:none;
+  width:100% !important;
+  height:48px !important;
+  padding:0 2.75rem 0 2.65rem !important;
+  border-radius:1rem !important;
+  border:1px solid #f1f5f9 !important;
+  background:#f8fafc !important;
+  font-size:.95rem !important;
+  font-weight:500 !important;
+  color:#0f172a !important;
+  outline:none !important;
   transition:box-shadow .2s, border-color .2s, background .2s;
+  box-shadow: none !important;
 }
 .login-v3-input-wrap input:focus{
   border-color:var(--brand-green);
