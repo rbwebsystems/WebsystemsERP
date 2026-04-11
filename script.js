@@ -578,6 +578,25 @@ function saveDB() {
   });
 }
 
+// ===================== Telegram Bildirişləri =====================
+async function sendTelegram(text) {
+  const s = db.settings || {};
+  const token = (s.telegramToken || "").trim();
+  const chatId = (s.telegramChatId || "").trim();
+  if (!token || !chatId) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    });
+  } catch (_) {}
+}
+
+function tgCompanyName() {
+  return (db.settings?.companyName || "ERP") ;
+}
+
 function logEvent(action, target, details = {}) {
   ensureAuditTrash();
   const u = currentUser();
@@ -4923,6 +4942,14 @@ async function savePurch(e, idx) {
   else db.purch.push(data);
   logEvent(isNew ? "create" : "update", "purch", { uid: data.uid, invNo: data.invNo });
 
+  sendTelegram(
+    `${isNew ? "📦 Yeni alış" : "✏️ Alış yeniləndi"} — <b>${tgCompanyName()}</b>\n` +
+    `Qaimə: <b>${data.invNo || invFallback("purch", data.uid)}</b>\n` +
+    `Təchizatçı: ${data.supp || "-"}\n` +
+    `Məbləğ: <b>${money(data.amount)} AZN</b>\n` +
+    `Tarix: ${fmtDT(data.date)}`
+  );
+
   // If user entered "paid" in purchase form, reflect it in cash as an outflow.
   // (Default account is cash=1; detailed account selection can be handled from Cash module.)
   const nextPaid = n(data.paidTotal);
@@ -6456,6 +6483,15 @@ async function saveSale(e, idx) {
   else db.sales.push(base);
   logEvent(isNew ? "create" : "update", "sales", { uid: base.uid, invNo: base.invNo });
 
+  sendTelegram(
+    `${isNew ? "🧾 Yeni satış" : "✏️ Satış yeniləndi"} — <b>${tgCompanyName()}</b>\n` +
+    `Qaimə: <b>${base.invNo || "-"}</b>\n` +
+    `Müştəri: ${base.customerName || "-"}\n` +
+    `Məbləğ: <b>${money(base.amount)} AZN</b>\n` +
+    `Növ: ${base.saleType || "-"}\n` +
+    `Tarix: ${fmtDT(base.date)}`
+  );
+
   // Cash op if payNow
   if (payNow && paid > 0.000001) {
     if (!payAccountId) {
@@ -7722,6 +7758,13 @@ function saveCashOp(e) {
     logEvent("create", "cash", { type: "out", kind: "expense", amount });
     saveDB();
     closeMdl();
+    sendTelegram(
+      `💸 Xərc — <b>${tgCompanyName()}</b>\n` +
+      `Kateqoriya: ${val("exp_cat") || "-"} / ${val("exp_sub") || "-"}\n` +
+      `Məbləğ: <b>${money(amount)} AZN</b>\n` +
+      `Qeyd: ${note || "-"}\n` +
+      `Tarix: ${fmtDT(date)}`
+    );
     return;
   }
 
@@ -7818,6 +7861,13 @@ function saveCashOp(e) {
 
     saveDB();
     closeMdl();
+    sendTelegram(
+      `💰 Müştəri ödənişi — <b>${tgCompanyName()}</b>\n` +
+      `Müştəri: ${cust.sur} ${cust.name}\n` +
+      `Qaimə: <b>${s.invNo || invFallback("sales", s.uid)}</b>\n` +
+      `Məbləğ: <b>${money(a)} AZN</b>\n` +
+      `Tarix: ${fmtDT(date)}`
+    );
     return;
   }
 
@@ -7850,6 +7900,13 @@ function saveCashOp(e) {
 
   saveDB();
   closeMdl();
+  sendTelegram(
+    `💰 Müştəri ödənişi — <b>${tgCompanyName()}</b>\n` +
+    `Müştəri: ${cust.sur} ${cust.name}\n` +
+    `Məbləğ: <b>${money(applied.applied)} AZN</b>\n` +
+    `Növ: ${kind === "credit_pay" ? "Kredit" : "Nağd"}\n` +
+    `Tarix: ${fmtDT(date)}`
+  );
 }
 
 // ========= Debts filters =========
@@ -9310,6 +9367,14 @@ function openSettings() {
             <div class="f-group"><label>Valyuta simvolu</label><input id="set_sym" placeholder="₼" value="${escapeHtml(s.currencySymbol || "₼")}"></div>
           </div>
         </div>
+        <div class="form-card">
+          <div class="form-card-title">📣 Telegram Bildirişləri</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Bot Token</label><input id="set_tg_token" placeholder="123456:AAFxxx..." value="${escapeHtml(s.telegramToken || "")}" autocomplete="off"></div>
+            <div class="f-group"><label>Chat ID</label><input id="set_tg_chat" placeholder="8358360181" value="${escapeHtml(s.telegramChatId || "")}"></div>
+          </div>
+          <button type="button" class="btn-cancel" onclick="testTelegram()" style="margin-top:8px"><i class="fas fa-paper-plane"></i> Test göndər</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -9329,10 +9394,30 @@ function saveSettings(e) {
     companyPhone: val("set_phone").trim(),
     currency: val("set_curr").trim() || "AZN",
     currencySymbol: val("set_sym").trim() || "₼",
+    telegramToken: val("set_tg_token").trim(),
+    telegramChatId: val("set_tg_chat").trim(),
   };
   logEvent("update", "settings", {});
   saveDB();
   closeMdl();
+}
+
+async function testTelegram() {
+  const token = (byId("set_tg_token")?.value || "").trim();
+  const chatId = (byId("set_tg_chat")?.value || "").trim();
+  if (!token || !chatId) return alert("Token və Chat ID daxil edin.");
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: "✅ ERP Telegram bildirişi aktiv edildi!", parse_mode: "HTML" }),
+    });
+    const j = await r.json();
+    if (j.ok) alert("✅ Test mesajı göndərildi!");
+    else alert("❌ Xəta: " + j.description);
+  } catch (err) {
+    alert("❌ Bağlantı xətası: " + err.message);
+  }
 }
 
 function genQr() {
@@ -11683,6 +11768,7 @@ Object.assign(window, {
   renderSidebarBrand,
   openSettings,
   saveSettings,
+  testTelegram,
   openSkins,
   setSkin,
   openLoginModal,
