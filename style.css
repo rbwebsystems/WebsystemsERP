@@ -6254,3 +6254,125 @@ body.theme-dark .select-small {
   background-color: #1c2736;
   background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%23a0aec0%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 fill=%22none%22/%3E%3C/svg%3E") !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Apple-style Landing & Login overrides
+   ══════════════════════════════════════════════════════════════ */
+
+/* Landing background — pure white, clean */
+.public-landing.lp-home { background: #fff !important; }
+
+/* Aurora blobs — Apple blue/indigo tones */
+.lp-aurora-blob-a { background: radial-gradient(circle, rgba(0,122,255,.18) 0%, rgba(90,200,250,.08) 100%) !important; }
+.lp-aurora-blob-b { background: radial-gradient(circle, rgba(88,86,214,.15) 0%, rgba(175,82,222,.06) 100%) !important; }
+
+/* Nav — Apple.com style frosted */
+.lp-nav {
+  background: rgba(255,255,255,.85) !important;
+  backdrop-filter: saturate(180%) blur(20px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  padding: 0 !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+.lp-nav-inner { height: 52px; align-items: center; }
+.lp-nav-link {
+  color: #1d1d1f !important;
+  font-size: .78rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  opacity: .8;
+}
+.lp-nav-link:hover { color: #007AFF !important; opacity: 1; }
+
+/* Nav CTA — iOS blue pill */
+.lp-nav-cta, .lp-nav-mobile-cta {
+  background: #007AFF !important;
+  color: #fff !important;
+  border-radius: 980px !important;
+  padding: .5rem 1.2rem !important;
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+  border: none !important;
+  letter-spacing: 0 !important;
+}
+.lp-nav-cta:hover, .lp-nav-mobile-cta:hover { background: #0071e3 !important; }
+
+/* Hero headings — Apple large type */
+.lp-hero-title, .lp-hero h1, [class*="lp-hero"] h1,
+.lp-section-title, .lp-features-title {
+  font-size: clamp(2.2rem, 5vw, 4rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.05 !important;
+  color: #1d1d1f !important;
+}
+.lp-hero-sub, .lp-hero p, [class*="lp-hero"] p {
+  color: #6e6e73 !important;
+  font-size: clamp(1rem, 2vw, 1.25rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+}
+
+/* Brand accent — use Apple blue instead of teal */
+.rbsoft-brand-title .soft,
+.rbsoft-wordmark .soft,
+.lp-dash-logo-soft { color: #007AFF !important; }
+.rbsoft-digital__a, .rbsoft-digital__mid span,
+.rbsoft-digital__end span { background: #007AFF !important; box-shadow: 0 4px 14px rgba(0,122,255,.3) !important; }
+.rbsoft-brand-track-fill { background: #007AFF !important; }
+.rbsoft-brand-track-fill::after { background: #007AFF !important; border-color: #fff !important; box-shadow: 0 0 0 1px rgba(0,122,255,.2) !important; }
+.rbsoft-dot { background: #007AFF !important; box-shadow: 0 0 12px rgba(0,122,255,.5) !important; }
+.rbsoft-progress span { background: #007AFF !important; }
+
+/* Login card — Apple sheet style */
+.login-v3-card {
+  background: rgba(255,255,255,.96) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  box-shadow: 0 32px 80px rgba(0,0,0,.18), 0 0 0 1px rgba(255,255,255,.8) !important;
+}
+.login-v3-backdrop {
+  background: rgba(0,0,0,.28) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Login inputs */
+.login-v3-input-wrap input {
+  background: rgba(120,120,128,.08) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: .95rem !important;
+  color: #1d1d1f !important;
+}
+.login-v3-input-wrap input:focus {
+  background: rgba(120,120,128,.12) !important;
+  outline: 2px solid #007AFF !important;
+}
+
+/* Login submit — iOS blue pill */
+.login-v3-submit {
+  background: #007AFF !important;
+  border-radius: 14px !important;
+  font-size: .95rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  padding: .9rem 1.25rem !important;
+}
+.login-v3-submit:hover { background: #0071e3 !important; }
+
+/* Login forgot link */
+.login-v3-forgot { color: #007AFF !important; font-weight: 400 !important; }
+
+/* Login welcome */
+.login-v3-welcome h1 { color: #1d1d1f !important; font-weight: 700 !important; font-size: 1.5rem !important; }
+.login-v3-welcome p { color: #6e6e73 !important; }
+
+/* Login labels */
+.login-v3-lbl { color: #6e6e73 !important; font-size: .78rem !important; font-weight: 400 !important; }
