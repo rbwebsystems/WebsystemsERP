@@ -3561,6 +3561,10 @@ function showSec(id, el, opts) {
     sec.classList.add("active");
   }
   if (el) el.classList.add("active");
+  // Sync mobile tab bar active state
+  document.querySelectorAll(".mob-tab").forEach((t) => {
+    t.classList.toggle("active", t.getAttribute("data-sec") === id);
+  });
   if (id === "debts") {
     document.querySelectorAll(".debt-type-select").forEach((s) => {
       s.value = "";

@@ -6254,3 +6254,229 @@ body.theme-dark .select-small {
   background-color: #1c2736;
   background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%23a0aec0%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 fill=%22none%22/%3E%3C/svg%3E") !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   #A1 iOS Toast — pill style
+   ══════════════════════════════════════════════════════════════ */
+.toast-wrap {
+  position: fixed !important;
+  top: 72px !important;
+  right: 16px !important;
+  bottom: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  align-items: flex-end !important;
+}
+.toast {
+  pointer-events: auto !important;
+  background: rgba(50,50,52,.92) !important;
+  color: #fff !important;
+  padding: 10px 18px !important;
+  border-radius: 980px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,.18) !important;
+  font-size: .88rem !important;
+  font-weight: 500 !important;
+  max-width: 340px !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  animation: toastIn .22s cubic-bezier(.34,1.56,.64,1) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+}
+.toast.ok   { background: rgba(52,199,89,.92)  !important; }
+.toast.warn { background: rgba(255,159,10,.92) !important; }
+.toast.err  { background: rgba(255,59,48,.92)  !important; }
+.toast.small { font-size: .85rem !important; font-weight: 400 !important; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   #A2 iOS Empty State
+   ══════════════════════════════════════════════════════════════ */
+.empty-state {
+  padding: 56px 24px !important;
+  gap: 10px !important;
+}
+.empty-state-icon {
+  width: 68px !important;
+  height: 68px !important;
+  border-radius: 22px !important;
+  background: rgba(120,120,128,.1) !important;
+  color: #8E8E93 !important;
+  font-size: 1.7rem !important;
+  margin-bottom: 6px !important;
+  box-shadow: none !important;
+}
+.empty-state-title {
+  font-size: .95rem !important;
+  font-weight: 500 !important;
+  color: #3C3C43 !important;
+}
+.empty-state-sub {
+  font-size: .82rem !important;
+  color: #8E8E93 !important;
+  font-weight: 400 !important;
+}
+body.theme-dark .empty-state-icon { background: rgba(255,255,255,.08) !important; }
+body.theme-dark .empty-state-title { color: rgba(255,255,255,.7) !important; }
+body.theme-dark .empty-state-sub { color: rgba(255,255,255,.35) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   #A3 Form xəta — iOS inline validation
+   ══════════════════════════════════════════════════════════════ */
+input:not([type=checkbox]):not([type=radio]):invalid:not(:placeholder-shown),
+select:invalid:not(:placeholder-shown),
+textarea:invalid:not(:placeholder-shown) {
+  outline: 2px solid rgba(255,59,48,.6) !important;
+  background: rgba(255,59,48,.05) !important;
+}
+.field-error {
+  font-size: .75rem !important;
+  color: #FF3B30 !important;
+  margin-top: 4px !important;
+  padding-left: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+.field-error::before {
+  content: '\f06a' !important;
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-size: .7rem !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   #A4 Stat cards — iOS style
+   ══════════════════════════════════════════════════════════════ */
+.stat-card {
+  border-left: none !important;
+  padding: 18px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.stat-card small {
+  font-size: .72rem !important;
+  font-weight: 500 !important;
+  color: #8E8E93 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+}
+.stat-card h2 {
+  font-size: 1.65rem !important;
+  font-weight: 600 !important;
+  color: #1c1c1e !important;
+  margin-top: 2px !important;
+  letter-spacing: -.02em !important;
+}
+body.theme-dark .stat-card h2 { color: #fff !important; }
+body.theme-dark .stat-card small { color: rgba(255,255,255,.45) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   #A5 Skeleton loading
+   ══════════════════════════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(120,120,128,.1) 25%,
+    rgba(120,120,128,.2) 50%,
+    rgba(120,120,128,.1) 75%) !important;
+  background-size: 200% 100% !important;
+  animation: skeletonShimmer 1.5s infinite !important;
+  border-radius: 8px !important;
+  color: transparent !important;
+  user-select: none !important;
+}
+.skeleton * { visibility: hidden !important; }
+@keyframes skeletonShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-row {
+  height: 44px;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(60,60,67,.07);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   #A6 Mobile iOS bottom tab bar
+   ══════════════════════════════════════════════════════════════ */
+.mob-tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(249,249,249,.94);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(60,60,67,.15);
+  z-index: 500;
+  padding-bottom: env(safe-area-inset-bottom);
+  align-items: center;
+  justify-content: space-around;
+}
+body.theme-dark .mob-tab-bar {
+  background: rgba(28,28,30,.94);
+  border-top-color: rgba(255,255,255,.1);
+}
+.mob-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: #8E8E93;
+  font-size: .6rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color .15s;
+  min-width: 0;
+}
+.mob-tab i { font-size: 1.2rem; line-height: 1; }
+.mob-tab.active { color: #007AFF; }
+body.theme-dark .mob-tab { color: rgba(255,255,255,.4); }
+body.theme-dark .mob-tab.active { color: #007AFF; }
+@media (max-width: 768px) {
+  .mob-tab-bar { display: flex; }
+  .main-area { padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   #A7 Print styles
+   ══════════════════════════════════════════════════════════════ */
+@media print {
+  aside, .app-header, .mob-tab-bar, .toast-wrap,
+  .modal-overlay, .btn-main, .btn-cancel, .btn-back,
+  .header-actions, .content-header, .ios-block-overlay,
+  .ios-dialog-overlay, .loading-overlay { display: none !important; }
+  body { background: #fff !important; font-size: 11pt !important; }
+  .main-area { margin: 0 !important; padding: 0 !important; }
+  main { padding: 12px !important; overflow: visible !important; }
+  .section { display: block !important; }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    break-inside: avoid;
+  }
+  table { border-collapse: collapse !important; width: 100% !important; }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 5px 8px !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+  }
+  thead th { background: #f0f0f0 !important; color: #000 !important; font-weight: 600 !important; }
+  tr.total-row td { font-weight: 700 !important; border-top: 2px solid #999 !important; }
+  .pill, .badge { border: 1px solid #999 !important; background: #fff !important; color: #000 !important; }
+  a { color: #000 !important; text-decoration: none !important; }
+  @page { margin: 1.5cm; }
+}
