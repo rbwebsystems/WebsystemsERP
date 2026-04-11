@@ -7455,7 +7455,6 @@ function printCreditDoc(idx, type) {
         <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
         <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
         <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
-        ${guarantor ? `<div class="row"><span class="lbl">Zamin:</span><span class="val">${zamFull} (FİN: ${zamFin})</span></div>` : ""}
       </div>
       <div class="section">
         <div class="section-title">Müqavilə mövzusu</div>
@@ -7482,7 +7481,6 @@ function printCreditDoc(idx, type) {
         <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Möhür</div></div>
         <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Alıcı (${custFull})</div></div>
       </div>
-      ${guarantor ? `<div class="sign-row"><div class="sign-box" style="max-width:240px;"><div class="sign-line"></div><div class="sign-label">Zamin (${zamFull})</div></div></div>` : ""}
     `;
   }
 
@@ -7495,7 +7493,6 @@ function printCreditDoc(idx, type) {
         <td style="text-align:right;">${money(r.amount)} AZN</td>
         <td style="text-align:right;">${money(r.paid)} AZN</td>
         <td style="text-align:right;">${money(r.remaining)} AZN</td>
-        <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${r.status==="paid"?"#dcfce7":r.status==="overdue"?"#fee2e2":"#fef9c3"};color:${r.status==="paid"?"#16a34a":r.status==="overdue"?"#dc2626":"#92400e"};">${debtLabel(r.status)}</span></td>
       </tr>`).join("");
     body = `
       <div class="section">
@@ -7508,7 +7505,7 @@ function printCreditDoc(idx, type) {
         <div class="row"><span class="lbl">Müddət / Aylıq:</span><span class="val">${term} ay / ${monthly} AZN</span></div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Ödəniş tarixi</th><th>Aylıq məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th></tr></thead>
+        <thead><tr><th>#</th><th>Ödəniş tarixi</th><th>Aylıq məbləğ</th><th>Ödənilən</th><th>Qalıq</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="sign-row" style="margin-top:20px;">
@@ -7572,11 +7569,9 @@ function printCreditDoc(idx, type) {
       </div>
       <div class="section">
         <p>Kredit müqaviləsinin bütün şərtlərini oxudum, başa düşdüm və qəbul etdim. Ödənişləri vaxtında həyata keçirməyi öhdəmə götürürəm.</p>
-        ${guarantor ? `<p style="margin-top:8px;">Zamin: <strong>${zamFull}</strong>, FİN: <strong>${zamFin}</strong>, Şəx. ser.: <strong>${zamSer}</strong>, Tel: <strong>${zamPh}</strong></p>` : ""}
       </div>
       <div class="sign-row">
         <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Ərizəçi (${custFull})</div></div>
-        ${guarantor ? `<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Zamin (${zamFull})</div></div>` : ""}
         <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Şirkət möhürü</div></div>
       </div>
     `;
@@ -10028,7 +10023,6 @@ function printSaleContract(idx) {
     <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
     <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
     <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
-    ${zamFull ? `<div class="row"><span class="lbl">Zamin:</span><span class="val">${zamFull} (FİN: ${zamFin}, Ser.: ${zamSer}, Tel: ${zamPh})</span></div>` : ""}
   </div>
 
   <div class="section">
@@ -10067,8 +10061,6 @@ function printSaleContract(idx) {
       <div class="sign-label">Alıcı — ${custFull}</div>
     </div>
   </div>
-  ${zamFull ? `<div class="sign-row" style="margin-top:16px;"><div class="sign-box" style="max-width:260px;"><div class="sign-line"></div><div class="sign-label">Zamin — ${zamFull}</div></div></div>` : ""}
-
   <div class="footer-note">Müqavilə ${today} tarixində tərtib edildi &nbsp;•&nbsp; ${co}</div>
 </div>
 <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
