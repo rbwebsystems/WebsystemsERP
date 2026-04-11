@@ -11583,7 +11583,7 @@ function renderAll() {
         const net    = totIn - totOut;
         return `<tr class="total-row">
           <td colspan="4"><strong>Cəmi (${cashRowsAll.length} əməliyyat)</strong></td>
-          <td style="text-align:right"><strong style="color:${net<0?"#FF3B30":"inherit"}">${money(net)} AZN</strong></td>
+          <td><span style="font-size:1rem;font-weight:700;color:${net<0?"#FF3B30":"inherit"}">${money(net)} AZN</span></td>
           <td colspan="5"></td>
         </tr>`;
       })() : "");
