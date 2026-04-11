@@ -12073,12 +12073,9 @@ function updateHeaderWelcome() {
   const titleEl = byId("appHeaderTitle");
   if (!titleEl) return;
   if (!meta?.session) return;
-  const u = currentUser();
-  const fullName = u ? String(u.fullName || "").trim() : "";
   const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
   const compName = String(db.settings?.companyName || comp?.name || "").trim();
-  const display = [compName, fullName].filter(Boolean).join(" ");
-  titleEl.textContent = display ? `Xoş gəldiniz ${display}` : "Xoş gəldiniz";
+  titleEl.textContent = compName;
 }
 
 function initApp() {
