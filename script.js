@@ -9954,11 +9954,16 @@ function printSaleContract(idx) {
   const saleDate = fmtDT(s.date).split(" ")[0];
   const docNo  = escapeHtml(String(s.invNo || s.uid));
 
-  const co      = escapeHtml(st.companyName    || "Şirkət");
-  const coAddr  = escapeHtml(st.companyAddress || "");
-  const coPhone = escapeHtml(st.companyPhone   || "");
-  const coVoen  = escapeHtml(st.companyVoen    || "");
-  const emekdas = escapeHtml(s.employeeName || operationActorName(s, "-"));
+  const co          = escapeHtml(st.companyName       || "Şirkət");
+  const coLegal     = escapeHtml(st.companyLegalName  || st.companyName || "Şirkət");
+  const coAddr      = escapeHtml(st.companyAddress    || "");
+  const coPhone     = escapeHtml(st.companyPhone      || "");
+  const coVoen      = escapeHtml(st.companyVoen       || "");
+  const coDirector  = escapeHtml(st.companyDirector   || "______________________");
+  const coBank      = escapeHtml(st.companyBank       || "");
+  const coBankAcc   = escapeHtml(st.companyBankAcc    || "");
+  const coSwift     = escapeHtml(st.companySwift      || "");
+  const coCorrAcc   = escapeHtml(st.companyCorrAcc    || "");
 
   const custFull = escapeHtml(`${cust.sur||""} ${cust.name||""} ${cust.father||""}`.trim());
   const custFin  = escapeHtml(cust.fin      || "-");
@@ -9998,7 +10003,14 @@ function printSaleContract(idx) {
   const creditAmt  = sch ? money(sch.remAfterDown)        : "—";
   const termMonths = sch ? sch.term + " ay"               : "—";
   const monthlyAmt = sch ? money(s.credit.monthlyPayment) : "—";
-  const directorName = escapeHtml(st.companyDirector || "______________________");
+
+  const bankBlock = (coBank || coBankAcc) ? `
+    <p style="margin-top:6px;font-size:12px;">
+      ${coBank ? `Bank: <strong>${coBank}</strong>` : ""}
+      ${coBankAcc ? ` &nbsp;|&nbsp; Hesab: <strong>${coBankAcc}</strong>` : ""}
+      ${coSwift ? ` &nbsp;|&nbsp; SWIFT: <strong>${coSwift}</strong>` : ""}
+      ${coCorrAcc ? ` &nbsp;|&nbsp; Müxbir: <strong>${coCorrAcc}</strong>` : ""}
+    </p>` : "";
 
   const html = `<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8">
 <title>Nisyə Alqı-Satqı Müqaviləsi №${docNo}</title>
@@ -10033,7 +10045,7 @@ function printSaleContract(idx) {
   <div style="margin-bottom:18px;font-size:13px;">${saleDate.split(".")[2]}-cü il</div>
 
   <p>
-    Bu müqaviləni (bundan sonra «Müqavilə» adlandırılacaq), bir tərəfdən Azərbaycan Respublikasının qanunvericiliyinə əsasən qeydə alınmış və Nizamnamə əsasında fəaliyyət göstərən <strong>"${co}" Məhdud Məsuliyyətli Cəmiyyəti</strong>, Direktor <strong>${directorName}${coVoen ? ` (VÖEN:${coVoen})` : ""}</strong> şəxsində, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində, (bundan sonra "Alıcı" adlanacaq (birlikdə "Tərəflər") aşağıdakı müqaviləni (bundan sonra "Müqavilə") bağladılar.
+    Bu müqaviləni (bundan sonra «Müqavilə» adlandırılacaq), bir tərəfdən Azərbaycan Respublikasının qanunvericiliyinə əsasən qeydə alınmış və Nizamnamə əsasında fəaliyyət göstərən <strong>"${coLegal}" Məhdud Məsuliyyətli Cəmiyyəti</strong>, Direktor <strong>${coDirector}${coVoen ? ` (VÖEN:${coVoen})` : ""}</strong> şəxsində, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində, (bundan sonra "Alıcı" adlanacaq (birlikdə "Tərəflər") aşağıdakı müqaviləni (bundan sonra "Müqavilə") bağladılar.
   </p>
 
   <div class="sec-title">1. Müqavilənin predmeti</div>
@@ -10070,10 +10082,12 @@ function printSaleContract(idx) {
   <div class="sign-block">
     <div class="sign-col">
       <p><strong>SATICI:</strong></p>
-      <p>"${co}" MMC</p>
-      ${coVoen  ? `<p>VÖEN: ${coVoen}</p>`  : ""}
-      ${coAddr  ? `<p>Ünvan: ${coAddr}</p>` : ""}
-      ${coPhone ? `<p>Tel: ${coPhone}</p>`  : ""}
+      <p><strong>"${coLegal || co}"</strong> MMC</p>
+      ${coVoen    ? `<p>VÖEN: ${coVoen}</p>`       : ""}
+      ${coAddr    ? `<p>Ünvan: ${coAddr}</p>`       : ""}
+      ${coPhone   ? `<p>Tel: ${coPhone}</p>`         : ""}
+      ${coDirector !== "______________________" ? `<p>Direktor: ${coDirector}</p>` : ""}
+      ${bankBlock}
       <div class="sign-underline"></div>
       <p style="font-size:11px;margin-top:4px;">İmza / Möhür</p>
     </div>
@@ -10581,10 +10595,22 @@ function openSettings() {
           <div class="form-card-title">Şirkət məlumatları</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="set_name" placeholder="Şirkət adı" value="${escapeHtml(s.companyName || "")}" required></div>
+            <div class="f-group"><label>Hüquqi ad (tam)</label><input id="set_legal_name" placeholder="məs: Bakfon MMC" value="${escapeHtml(s.companyLegalName || "")}"></div>
             <div class="f-group"><label>Ünvan</label><input id="set_addr" placeholder="Ünvan" value="${escapeHtml(s.companyAddress || "")}"></div>
             <div class="f-group"><label>Telefon</label><input id="set_phone" placeholder="Telefon" value="${escapeHtml(s.companyPhone || "")}"></div>
             <div class="f-group"><label>Valyuta</label><input id="set_curr" placeholder="AZN" value="${escapeHtml(s.currency || "AZN")}"></div>
             <div class="f-group"><label>Valyuta simvolu</label><input id="set_sym" placeholder="₼" value="${escapeHtml(s.currencySymbol || "₼")}"></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">Rekvizitlər</div>
+          <div class="grid-2">
+            <div class="f-group"><label>VÖEN</label><input id="set_voen" placeholder="1234567890" value="${escapeHtml(s.companyVoen || "")}"></div>
+            <div class="f-group"><label>Direktor adı</label><input id="set_director" placeholder="Ad Soyad Ata adı" value="${escapeHtml(s.companyDirector || "")}"></div>
+            <div class="f-group"><label>Bank adı</label><input id="set_bank" placeholder="ABB, Kapital Bank..." value="${escapeHtml(s.companyBank || "")}"></div>
+            <div class="f-group"><label>Hesab №</label><input id="set_bank_acc" placeholder="AZ00XXXX0000000000" value="${escapeHtml(s.companyBankAcc || "")}"></div>
+            <div class="f-group"><label>SWIFT/BİK</label><input id="set_swift" placeholder="AББАЗ2Х..." value="${escapeHtml(s.companySwift || "")}"></div>
+            <div class="f-group"><label>Müxbir hesab</label><input id="set_corr_acc" placeholder="AZ00XXXX..." value="${escapeHtml(s.companyCorrAcc || "")}"></div>
           </div>
         </div>
         <div class="form-card">
@@ -10609,13 +10635,21 @@ function saveSettings(e) {
   if (!isAdmin() && !isDeveloper()) return;
   ensureAuditTrash();
   db.settings = {
-    companyName: val("set_name").trim(),
-    companyAddress: val("set_addr").trim(),
-    companyPhone: val("set_phone").trim(),
-    currency: val("set_curr").trim() || "AZN",
-    currencySymbol: val("set_sym").trim() || "₼",
-    telegramToken: val("set_tg_token").trim(),
-    telegramChatId: val("set_tg_chat").trim(),
+    companyName:      val("set_name").trim(),
+    companyLegalName: val("set_legal_name").trim(),
+    companyAddress:   val("set_addr").trim(),
+    companyPhone:     val("set_phone").trim(),
+    currency:         val("set_curr").trim() || "AZN",
+    currencySymbol:   val("set_sym").trim() || "₼",
+    companyVoen:      val("set_voen").trim(),
+    companyDirector:  val("set_director").trim(),
+    companyBank:      val("set_bank").trim(),
+    companyBankAcc:   val("set_bank_acc").trim(),
+    companySwift:     val("set_swift").trim(),
+    companyCorrAcc:   val("set_corr_acc").trim(),
+    telegramToken:    val("set_tg_token").trim(),
+    telegramChatId:   val("set_tg_chat").trim(),
+    ...(db.settings?.telegramEnabled !== undefined ? { telegramEnabled: db.settings.telegramEnabled } : {}),
   };
   logEvent("update", "settings", {});
   saveDB();
