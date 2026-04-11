@@ -8490,7 +8490,7 @@ function openCompany(idx = null) {
           <div class="form-card-title">Şirkət</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
-            <div class="f-group"><label>ID (avtomatik)</label><input id="co_id" value="${escapeHtml(c.id || (idx === null ? "Yaradılarkən avtomatik UUID" : ""))}" disabled style="opacity:.6;font-size:.8rem;font-family:monospace"></div>
+            <div class="f-group"><label>ID *</label><input id="co_id" placeholder="məs: bakfon" value="${escapeHtml(c.id || "")}" ${idx !== null ? 'disabled style="opacity:.6;font-family:monospace"' : 'required style="font-family:monospace"'}></div>
             <div class="f-group"><label>Direktor</label><input id="co_director" placeholder="Ad Soyad" value="${escapeHtml(c.director || "")}"></div>
             <div class="f-group"><label>VÖEN</label><input id="co_voen" placeholder="0000000000" value="${escapeHtml(c.voen || "")}"></div>
             <div class="f-group grid-span-2"><label>Ünvan</label><input id="co_address" placeholder="Şəhər, küçə, bina" value="${escapeHtml(c.address || "")}"></div>
@@ -8568,7 +8568,9 @@ function saveCompany(e, idx) {
   const requisites = (byId("co_requisites")?.value || "").trim();
 
   if (idx === null) {
-    const id = name.trim() || genCompanyUUID();
+    const id = val("co_id").trim().toLowerCase().replace(/\s+/g, "_");
+    if (!id) return alert("Şirkət ID-sini daxil edin.");
+    if (meta.companies.some(c => c.id === id)) return alert("Bu ID artıq mövcuddur. Başqa ID seçin.");
     meta.companies.push({ id, name, director, voen, address, requisites, sections, subscription });
   } else {
     meta.companies[idx] = { ...meta.companies[idx], name, director, voen, address, requisites, sections, subscription };
