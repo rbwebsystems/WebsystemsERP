@@ -11501,7 +11501,7 @@ function renderAll() {
             subBadge = `<span class="pill" style="background:#f1f5f9;color:#64748b">Pulsuz</span>`;
           }
           const paidBtn = (sub.active && !((sub.paidUntil||"") >= curMonth))
-            ? `<button class="btn-mini-pay" type="button" onclick="markCompanyPaid(${i})">✅ Ödəniş qeyd et</button>`
+            ? `<button class="icon-btn" type="button" onclick="markCompanyPaid(${i})" title="Ödəniş qeyd et" style="color:#16a34a"><i class="fas fa-credit-card"></i></button>`
             : "";
           return `<tr>
             <td>${i + 1}</td>
