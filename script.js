@@ -6560,7 +6560,14 @@ async function saveSale(e, idx) {
         base.credit = { termMonths, downPayment: downShare, monthlyPayment: termMonths > 0 ? rem / termMonths : 0 };
       }
 
-      const payForThis = payNow ? Math.min(paidLeft, amount) : 0;
+      // For credit initial down payment: each item pays its proportional share (downShare),
+      // not sequentially — prevents over-payment on first item, under-payment on others.
+      const downShare = (saleType === "kredit" && totalAmount > 0)
+        ? (Math.max(0, totalDown) * amount / totalAmount)
+        : 0;
+      const payForThis = (saleType === "kredit" && payNow && isInitialPayment)
+        ? downShare
+        : (payNow ? Math.min(paidLeft, amount) : 0);
       if (payForThis > 0.000001) {
         addSalePaymentInternal(base, payForThis, base.date, saleFormPaySource);
         base.lastPayAmount = payForThis;
