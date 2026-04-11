@@ -2714,23 +2714,10 @@ function openLoginModal() {
   const ov = byId("loginOverlay");
   if (!ov) return;
   prepareLoginForm();
-  const card = ov.querySelector(".login-v3-card");
-  if (card) {
-    card.classList.remove("login-card-open");
-    card.style.transform = "scaleY(0.03)";
-    card.style.opacity = "0";
-  }
   ov.style.display = "flex";
   document.body.classList.add("landing-login-open");
   closeLpMenu();
-  setTimeout(() => {
-    if (card) {
-      card.style.transform = "";
-      card.style.opacity = "";
-      card.classList.add("login-card-open");
-    }
-    setTimeout(() => byId("loginUser")?.focus(), 100);
-  }, 20);
+  setTimeout(() => byId("loginUser")?.focus(), 0);
 }
 
 function closeLoginModal() {
@@ -2738,8 +2725,6 @@ function closeLoginModal() {
   if (!ov) return;
   ov.style.display = "none";
   document.body.classList.remove("landing-login-open");
-  const card = ov.querySelector(".login-v3-card");
-  if (card) { card.classList.remove("login-card-open"); card.style.transform = ""; card.style.opacity = ""; }
 }
 
 function setupLandingPage() {
