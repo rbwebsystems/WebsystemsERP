@@ -6450,6 +6450,237 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
 }
 
 /* ══════════════════════════════════════════════════════════════
+   #A8 Mobile — tam responsiv override (768px və aşağı)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── 1. HTML/Body — yatay scroll tam bağla ── */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  /* ── 2. Layout: sidebar gizlə, main-area tam ekran ── */
+  aside {
+    transform: translateX(-100%) !important;
+    transition: transform .25s ease !important;
+  }
+  aside.mobile-open {
+    transform: translateX(0) !important;
+  }
+  .main-area {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 56px !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  main {
+    padding: 8px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+  }
+
+  /* ── 3. Topbar ── */
+  .app-header {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    height: 56px !important;
+    padding: 0 12px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1) !important;
+    z-index: 1100 !important;
+  }
+  .header-search-wrap { display: none !important; }
+  .header-datetime, .last-saved, .realtime-indicator { display: none !important; }
+
+  /* ── 4. Content header — düymələr sarılsın ── */
+  .content-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 0 0 10px !important;
+    align-items: flex-start !important;
+  }
+  .content-header h1 {
+    font-size: 1.1rem !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+  }
+  .header-actions {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    overflow-x: hidden !important;
+  }
+  .header-actions .date-range {
+    flex-wrap: wrap !important;
+  }
+  .header-actions .date-range input {
+    width: 130px !important;
+    min-width: 110px !important;
+    font-size: .78rem !important;
+  }
+  .btn-main, .btn-cancel, .btn-back {
+    height: 36px !important;
+    padding: 0 14px !important;
+    font-size: .82rem !important;
+    white-space: nowrap !important;
+  }
+  .btn-main span, .btn-cancel span { display: inline !important; }
+
+  /* ── 5. Cədvəllər — yatay scroll ── */
+  .card {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
+  .section.active > .card:not(.stat-card) {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  table {
+    min-width: 540px !important;
+    width: max-content !important;
+  }
+  th, td {
+    white-space: nowrap !important;
+    padding: 7px 10px !important;
+    font-size: .8rem !important;
+  }
+
+  /* ── 6. Stat kartlar ── */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .stat-card {
+    padding: 12px 14px !important;
+  }
+  .stat-card h2 {
+    font-size: 1.15rem !important;
+  }
+
+  /* ── 7. Form grid-lər ── */
+  .grid-2, .grid-3, .grid-4, .grid-5 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-span-2, .f-group.span-2, .f-group.span-3,
+  .grid-2 .grid-span-2, .grid-2 .f-group--note,
+  .grid-3 .span-2, .grid-3 .span-3 {
+    grid-column: span 1 !important;
+  }
+  .form-card { padding: 14px !important; }
+
+  /* ── 8. Info block ── */
+  .info-row {
+    grid-template-columns: 1fr !important;
+  }
+  .info-label {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 7px 12px !important;
+  }
+  .info-value {
+    padding: 7px 12px !important;
+  }
+
+  /* ── 9. Slideover modallar ── */
+  .modal.modal--slideover {
+    top: 56px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-radius: 0 !important;
+    z-index: 1050 !important;
+  }
+  .modal.modal--slideover .modal-body {
+    border-radius: 0 !important;
+    height: calc(100dvh - 56px) !important;
+    max-height: calc(100dvh - 56px) !important;
+    width: 100% !important;
+    min-width: unset !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ── 10. Popup modallar ── */
+  .modal.modal--popup .modal-body {
+    max-width: calc(100vw - 24px) !important;
+    border-radius: 14px !important;
+    max-height: 90dvh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── 11. iOS dialog ── */
+  .ios-dialog {
+    width: calc(100vw - 48px) !important;
+    max-width: 320px !important;
+  }
+  .ios-dialog-btns {
+    flex-direction: column !important;
+  }
+  .ios-btn-confirm, .ios-btn-cancel, .ios-btn-ok {
+    width: 100% !important;
+  }
+
+  /* ── 12. Permission lists ── */
+  .perm-group { margin-bottom: 16px !important; }
+  .perm-row { padding: 10px 12px !important; }
+
+  /* ── 13. Dash charts / grid ── */
+  .dash-charts { grid-template-columns: 1fr !important; }
+
+  /* ── 14. Overlay loading ── */
+  .soft-loading-center,
+  .loading-overlay.loading-overlay--soft { left: 0 !important; }
+
+  /* ── 15. Section padding ── */
+  .section.active { padding: 0 !important; min-width: 0 !important; }
+
+  /* ── 16. Modal body scroll ── */
+  .modal-body {
+    max-height: 80dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ── 17. Search in header ── */
+  .search-container input {
+    min-width: 140px !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Çox kiçik ekranlar (≤ 400px) ── */
+@media (max-width: 400px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .btn-main span, .btn-cancel span, .btn-back span {
+    display: none !important;
+  }
+  .btn-main i, .btn-cancel i, .btn-back i {
+    margin: 0 !important;
+  }
+  .btn-main, .btn-cancel, .btn-back {
+    padding: 0 12px !important;
+    min-width: 36px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    #A7 Print styles
    ══════════════════════════════════════════════════════════════ */
 @media print {
