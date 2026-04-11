@@ -544,8 +544,12 @@ function delAccount(idx) {
   if (a.uid === 1) return alert("Əsas Kassa silinə bilməz.");
   const used = db.cash.some((c) => Number(c.accountId) === Number(a.uid));
   if (used) return alert("Bu hesabda əməliyyat var, silmək olmaz.");
-  appConfirm("Hesab silinsin?").then((ok) => {
-    if (!ok) return;
+  appConfirmWithReason("Hesab silinəcək. Bu əməliyyatı geri qaytarmaq olmaz.").then((deleteReason) => {
+    if (!deleteReason) return;
+    ensureAuditTrash();
+    const u = currentUser();
+    db.trash.push({ uid: genId(db.trash, 1), type: "accounts", item: db.accounts[idx], deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+    logEvent("delete", "accounts", { uid: db.accounts[idx]?.uid, name: db.accounts[idx]?.name, deleteReason });
     db.accounts.splice(idx, 1);
     saveDB();
     renderAccountsManagerTable();
@@ -1849,9 +1853,19 @@ function saveFounder(e, idx) {
   saveDB(); closeMdl(); setRepView("founders");
 }
 
-function deleteFounder(idx) {
+async function deleteFounder(idx) {
   if (!userCanDelete("founders")) return;
-  appConfirm("Bu təsisçi silinsin?").then((ok) => { if (!ok) return; db.founders.splice(idx, 1); saveDB(); closeMdl(); setRepView("founders"); });
+  const f = db.founders?.[idx];
+  const deleteReason = await appConfirmWithReason(`"${f?.name || "Təsisçi"}" silinəcək.`);
+  if (!deleteReason) return;
+  ensureAuditTrash();
+  const u = currentUser();
+  db.trash.push({ uid: genId(db.trash, 1), type: "founders", item: f, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+  logEvent("delete", "founders", { uid: f?.uid, name: f?.name, deleteReason });
+  db.founders.splice(idx, 1);
+  saveDB();
+  closeMdl();
+  setRepView("founders");
 }
 
 function openFounderCashOp(founderIdx, direction) {
@@ -4883,8 +4897,8 @@ function delPurchInvoice(invNoRaw) {
     if (n(p.paidTotal) > 0.000001) return alert("Bu qaimədə ödəniş olan alış var. Silmək olmaz.");
     if (!canDeletePurchase(p)) return alert("Bu qaimədə satılmış məhsul var. Silmək olmaz.");
   }
-  appConfirm(`Qaimə silinsin? (${invNo})`).then((ok) => {
-    if (!ok) return;
+  appConfirmWithReason(`Qaimə silinəcək (${invNo}). Bu əməliyyatı geri qaytarmaq olmaz.`).then((deleteReason) => {
+    if (!deleteReason) return;
     ensureAuditTrash();
     const u = currentUser();
     const deletedBy = u ? u.username : "-";
@@ -4893,8 +4907,8 @@ function delPurchInvoice(invNoRaw) {
       .slice()
       .sort((a, b) => b.idx - a.idx)
       .forEach(({ p, idx }) => {
-        db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy });
-        logEvent("delete", "purch", { uid: p.uid, invNo });
+        db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy, deleteReason });
+        logEvent("delete", "purch", { uid: p.uid, invNo, deleteReason });
         db.purch.splice(idx, 1);
       });
     saveDB();
@@ -9471,16 +9485,14 @@ function deleteCompanyPayment(idx, month) {
   if (!isDeveloper()) return;
   const c = meta.companies[idx];
   if (!c?.subscription) return;
-  appConfirm(`"${month}" ödənişi silinsin?`).then(ok => {
-    if (!ok) return;
+  appConfirmWithReason(`"${month}" abunəlik ödənişi silinəcək.`).then(deleteReason => {
+    if (!deleteReason) return;
     const sub = c.subscription;
     sub.payHistory = (sub.payHistory || []).filter(h => h.month !== month);
-    // Recalculate paidUntil from remaining history
     const months = (sub.payHistory || []).map(h => h.month).sort();
     sub.paidUntil = months.length > 0 ? months[months.length - 1] : "";
     saveMeta();
     renderAll();
-    // Update subscription UI for active company without page reload
     if (c.id === meta?.session?.companyId) checkSubscriptionStatus();
     openCompanyInfo(idx);
     toast(`${month} ödənişi silindi`, "warn");
@@ -9706,8 +9718,8 @@ function delCompany(idx) {
     });
   } else {
     // Second action: permanent delete (only if already disabled)
-    appConfirm(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinsin? Bu geri alına bilməz!`).then(ok => {
-      if (!ok) return;
+    appConfirmWithReason(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinəcək. Bu geri alına bilməz!`).then(deleteReason => {
+      if (!deleteReason) return;
       meta.companies.splice(idx, 1);
       if (meta.companies.length === 0) meta.companies.push({ id: "default", name: "Default" });
       if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
@@ -10190,8 +10202,8 @@ function delUser(uid) {
   if (!isDeveloper() && cid && !userBelongsToCompany(u, cid)) return alert("Bu istifadəçi başqa şirkətə aiddir.");
   if (u.username === "developer") return alert("Developer silinə bilməz.");
   if (u.role === "admin" && !isDeveloper()) return alert("Admin istifadəçisini yalnız developer silə bilər.");
-  appConfirm("İstifadəçi silinsin?").then((ok) => {
-    if (!ok) return;
+  appConfirmWithReason(`"${u?.name || u?.username || "İstifadəçi"}" silinəcək.`).then((deleteReason) => {
+    if (!deleteReason) return;
     meta.users.splice(idx, 1);
     saveMeta();
     renderAll();
@@ -11887,26 +11899,26 @@ function exportCsvCurrent() {
   toast("CSV yükləndi", "ok");
 }
 
-function clearAudit() {
+async function clearAudit() {
   if (!userCanReset()) return alert("İcazə yoxdur.");
-  appConfirm("Audit təmizlənsin?").then((ok) => {
-    if (!ok) return;
-    db.audit = [];
-    saveDB();
-    renderAll();
-  });
-  return;
+  const deleteReason = await appConfirmWithReason("Bütün audit qeydləri silinəcək. Bu geri alına bilməz!");
+  if (!deleteReason) return;
+  const u = currentUser();
+  logEvent("delete", "audit", { action: "clearAll", count: db.audit.length, deleteReason, clearedBy: u?.username || "-" });
+  db.audit = [];
+  saveDB();
+  renderAll();
 }
 
-function emptyTrash() {
+async function emptyTrash() {
   if (!userCanReset()) return alert("İcazə yoxdur.");
-  appConfirm("Səbət tam boşaldılsın?").then((ok) => {
-    if (!ok) return;
-    db.trash = [];
-    saveDB();
-    renderAll();
-  });
-  return;
+  const deleteReason = await appConfirmWithReason("Səbətin bütün məzmunu birdəfəlik silinəcək. Bu geri alına bilməz!");
+  if (!deleteReason) return;
+  ensureAuditTrash();
+  logEvent("delete", "trash", { action: "emptyAll", count: db.trash.length, deleteReason });
+  db.trash = [];
+  saveDB();
+  renderAll();
 }
 
 function restoreTrash(uid) {
@@ -11944,18 +11956,18 @@ function restoreTrash(uid) {
   saveDB();
 }
 
-function deleteTrash(uid) {
+async function deleteTrash(uid) {
   if (!userCanDelete("trash")) return alert("Sil icazəsi yoxdur.");
   const i = db.trash.findIndex((t) => Number(t.uid) === Number(uid));
   if (i < 0) return;
-  appConfirm("Səbətdən tam silinsin?").then((ok) => {
-    if (!ok) return;
-    db.trash.splice(i, 1);
-    logEvent("delete", "trash", { uid });
-    saveDB();
-    renderAll();
-  });
-  return;
+  const t = db.trash[i];
+  const label = t.type === "sales" ? `Satış (${t.item?.invNo || "-"})` : t.type === "purch" ? `Alış (${t.item?.invNo || "-"})` : t.type === "cust" ? (t.item?.name || "Müştəri") : t.type || "Qeyd";
+  const deleteReason = await appConfirmWithReason(`"${label}" səbətdən birdəfəlik silinəcək. Bu geri alına bilməz!`);
+  if (!deleteReason) return;
+  logEvent("delete", "trash", { uid, type: t.type, deleteReason });
+  db.trash.splice(i, 1);
+  saveDB();
+  renderAll();
 }
 function openChangePassword() {
   const u = currentUser();
