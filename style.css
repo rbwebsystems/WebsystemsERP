@@ -5427,7 +5427,7 @@ body.theme-dark .form-card { background: #2C2C2E !important; }
   outline: none !important;
   box-shadow: 0 0 0 4px rgba(26,71,84,.1) !important;
 }
-input:not([type=checkbox]):not([type=radio]),
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
 select, textarea {
   background: rgba(120,120,128,.1) !important;
   border: none !important;
@@ -5438,7 +5438,7 @@ select, textarea {
   box-shadow: none !important;
   transition: background .15s !important;
 }
-input:not([type=checkbox]):not([type=radio]):focus,
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus,
 select:focus, textarea:focus {
   background: rgba(120,120,128,.14) !important;
   outline: 2px solid #007AFF !important;
@@ -5446,48 +5446,43 @@ select:focus, textarea:focus {
   box-shadow: none !important;
   border: none !important;
 }
-input:not([type=checkbox]):not([type=radio]):hover,
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):hover,
 select:hover { background: rgba(120,120,128,.13) !important; }
-body.theme-dark input:not([type=checkbox]):not([type=radio]),
+body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
 body.theme-dark select, body.theme-dark textarea {
   background: rgba(255,255,255,.1) !important;
   color: #fff !important;
 }
-body.theme-dark input:not([type=checkbox]):not([type=radio]):focus,
+body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus,
 body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 
-/* ── White overrides: date/month inputs — body prefix wins specificity race ── */
-body input[type="date"],
-body input[type="month"],
-body input[type="datetime-local"] {
+/* ── Date / month / datetime inputs — always white ── */
+input[type=date], input[type=month], input[type=datetime-local] {
   background: #fff !important;
   border: 1px solid #d1d5db !important;
   border-radius: 10px !important;
   padding: 0 10px !important;
   color: #1c1c1e !important;
   box-shadow: none !important;
-  outline: none !important;
+  font-size: .88rem !important;
 }
-body input[type="date"]:focus,
-body input[type="month"]:focus,
-body input[type="datetime-local"]:focus {
-  background: #fff !important;
+input[type=date]:focus, input[type=month]:focus, input[type=datetime-local]:focus {
   border-color: #007AFF !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
+  background: #fff !important;
 }
-body input[type="date"]:hover,
-body input[type="month"]:hover,
-body input[type="datetime-local"]:hover {
+input[type=date]:hover, input[type=month]:hover, input[type=datetime-local]:hover {
   background: #f9fafb !important;
 }
-body.theme-dark input[type="date"],
-body.theme-dark input[type="month"],
-body.theme-dark input[type="datetime-local"] {
+body.theme-dark input[type=date],
+body.theme-dark input[type=month],
+body.theme-dark input[type=datetime-local] {
   background: #2c2c2e !important;
   border-color: rgba(255,255,255,.2) !important;
   color: #fff !important;
 }
+
 /* Cancel / reset buttons — white */
 .btn-cancel, .btn-reset {
   background: #fff !important;
