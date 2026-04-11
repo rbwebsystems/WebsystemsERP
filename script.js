@@ -11577,11 +11577,16 @@ function renderAll() {
     </tr>`;
     })
     .join("")
-    + (cashRowsAll.length ? `<tr class="total-row">
-        <td colspan="4"><strong>Cəmi (${cashRowsAll.length} əməliyyat)</strong></td>
-        <td><strong class="amt-in">${money(cashRowsAll.filter(c=>c.type==="in").reduce((a,b)=>a+n(b.amount),0))} AZN</strong><br><small class="amt-out" style="font-weight:500">−${money(cashRowsAll.filter(c=>c.type==="out").reduce((a,b)=>a+n(b.amount),0))} AZN</small></td>
-        <td colspan="5"></td>
-      </tr>` : "");
+    + (cashRowsAll.length ? (() => {
+        const totIn  = cashRowsAll.filter(c=>c.type==="in").reduce((a,b)=>a+n(b.amount),0);
+        const totOut = cashRowsAll.filter(c=>c.type==="out").reduce((a,b)=>a+n(b.amount),0);
+        const net    = totIn - totOut;
+        return `<tr class="total-row">
+          <td colspan="4"><strong>Cəmi (${cashRowsAll.length} əməliyyat)</strong></td>
+          <td><strong class="${net>=0?"amt-in":"amt-out"}">${net>=0?"+":""}${money(net)} AZN</strong></td>
+          <td colspan="5"></td>
+        </tr>`;
+      })() : "");
 
   const incomeF  = cashRowsAll.filter((c) => c.type === "in").reduce((a, b) => a + n(b.amount), 0);
   const expenseF = cashRowsAll.filter((c) => c.type === "out").reduce((a, b) => a + n(b.amount), 0);
