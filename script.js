@@ -7555,10 +7555,26 @@ function printCreditDoc(idx, type) {
       </div>
       <div class="section">
         <div class="section-title">Zəmanət şərtləri</div>
-        <p class="no-indent">• Zəmanət müddəti istehsalçı tərəfindən müəyyən edilir.</p>
-        <p class="no-indent">• Zəmanət mexaniki zədələrə, su zədəsinə və istifadəçi xətalarına şamil edilmir.</p>
-        <p class="no-indent">• Zəmanət xidmətindən yararlanmaq üçün bu talon mütləq təqdim edilməlidir.</p>
-        <p class="no-indent">• Talon üzərindəki məlumatların dəyişdirilməsi zəmanəti etibarsız sayır.</p>
+        <p class="no-indent">• Zəmanət blankı əsasında təmir yalnız istehsalçı səhvindən meydana gəlmiş qüsurlara şamil edilir.</p>
+        <p class="no-indent">• Qüsurun istehsalçı tərəfindən baş verib vermədiyini yalnız <strong>"${co}"</strong> MMC və digər rəsmi şirkətlərin texniki servis mütəxəssisləri tərəfindən müəyyənləşdirilə bilər.</p>
+        <p class="no-indent">• Zəmanət müddəti məhsulun satıldığı gündən hesablanır.</p>
+        <p class="no-indent">• Hər hansı xarici zədə almamış (korpus və ekranda cızıq, batıq, əzik və s.) məhsul 14 gün ərzində müştərinin istəyi ilə qaytarıla və ya dəyişdirilə bilər.</p>
+        <p class="no-indent">• Əgər məhsulun zəmanət müddəti bitib və ya zəmanət şərtlərində göstərilən qüsurlar təyin edilməyibsə, bu zaman məhsul <strong>"${co}"</strong> MMC-nin uyğun, ödənişli tarifləri ilə təmir olunur.</p>
+        <p class="no-indent">• Təmirə təqdim olunmuş məhsul müayinə və təmir məqsədilə 2–14 iş günü ərzində texniki servis mərkəzində saxlanıla bilər.</p>
+        <p class="no-indent">• Təmir üçün lazım olan ehtiyat hissəsi tapılmadıqda, onun sifarişi müəyyən vaxt tələb etdiyindən göstərilən müddət tərəflərin razılığı ilə uzadıla bilər. Zəmanət müddəti bitməmiş məhsulun texniki baxış və təmir xidməti onun rəsmi nümayəndəliyi tərəfindən daxili təlimatlara uyğun olaraq aparılır.</p>
+      </div>
+      <div class="section">
+        <div class="section-title">Təmirə qəbul şərtləri</div>
+        <p class="no-indent">Satılmış məhsullar yalnız aşağıdakı şərtlər daxilində təmirə qəbul olunur:</p>
+        <p class="no-indent">• Təmir üçün müraciət edilmiş məhsulun yalnız bu blankda adı və soyadı qeyd olunan şəxsin şəxsiyyət vəsiqəsi ilə təqdim olunması.</p>
+        <p class="no-indent">• Zəmanət müddətinin bitməməsi.</p>
+      </div>
+      <div class="section">
+        <div class="section-title">Zəmanətli təmirə qəbul edilmir</div>
+        <p class="no-indent">Məhsullar bu hallarda zəmanətli təmirə qəbul edilmir:</p>
+        <p class="no-indent">• Əgər məhsul <strong>"${co}"</strong> MMC və digər rəsmi şirkətlərin servis mütəxəssislərinə təqdim olunmazdan əvvəl kənar şəxs tərəfindən təmir edilərsə, lazımi sənədlər verilməzsə və bu təmirin keyfiyyətsizliyi nəticəsində cihaz zədələnərsə.</p>
+        <p class="no-indent">• Daxili və xarici zədələnmə — cihazın daxilinə yad cisim və ya maye düşməsi, yaxud digər xarici zərbə nəticəsində.</p>
+        <p class="no-indent">• Sıçrayışlar və gərginliyin həddən artıq yuxarı olması nəticəsində cihazda yaranan gərginlik və digər qüsurlar.</p>
       </div>
       <div class="sign-row">
         <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${emekdas})</div></div>
