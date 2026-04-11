@@ -2603,6 +2603,7 @@ function openAuditDetails(uid) {
       <div class="info-row"><div class="info-label">Əməliyyat</div><div class="info-value">${escapeHtml(a.action || "-")}</div></div>
       <div class="info-row"><div class="info-label">Hədəf</div><div class="info-value">${escapeHtml(auditTargetLabelM[a.target] || a.target || "-")}</div></div>
       <div class="info-row"><div class="info-label">Açıqlama</div><div class="info-value">${escapeHtml(explain)}</div></div>
+      ${d2.deleteReason ? `<div class="info-row"><div class="info-label" style="color:#e53935;font-weight:600;">Silinmə səbəbi</div><div class="info-value" style="color:#e53935;font-weight:600;">${escapeHtml(d2.deleteReason)}</div></div>` : ""}
     </div>
     ${detailFields ? `<div class="info-block"><div class="info-row"><div class="info-label" style="font-weight:600">Məlumatlar</div><div class="info-value"></div></div>${detailFields}</div>` : ""}
     <div class="card" style="padding:0;">
@@ -3942,6 +3943,43 @@ function appConfirm(msg, title = "Təsdiq") {
     });
     document.body.appendChild(el);
     el.querySelector(".ios-btn-cancel").focus();
+  });
+}
+
+function appConfirmWithReason(msg, title = "Silinsin?") {
+  const text = msg == null ? "" : String(msg);
+  return new Promise((resolve) => {
+    const close = (result) => { el.remove(); resolve(result); };
+    const el = document.createElement("div");
+    el.className = "ios-dialog-overlay";
+    el.innerHTML = `
+      <div class="ios-dialog" style="min-width:320px;max-width:400px;">
+        <div class="ios-dialog-title">${escapeHtml(title)}</div>
+        ${text ? `<div class="ios-dialog-msg">${escapeHtml(text)}</div>` : ""}
+        <div style="padding:0 16px 12px;">
+          <label style="display:block;font-size:13px;color:#555;margin-bottom:6px;">Silinmə səbəbi <span style="color:#e53935;">*</span></label>
+          <textarea id="_delReasonTA" placeholder="Səbəb yazın…" style="width:100%;min-height:72px;border:1px solid #d0d0d0;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+        <div class="ios-dialog-btns">
+          <button class="ios-btn-confirm" id="_delConfirmBtn">Sil</button>
+          <button class="ios-btn-cancel" id="_delCancelBtn">Ləğv et</button>
+        </div>
+      </div>`;
+    el.querySelector("#_delCancelBtn").onclick = () => close(null);
+    el.querySelector("#_delConfirmBtn").onclick = () => {
+      const reason = (el.querySelector("#_delReasonTA")?.value || "").trim();
+      if (!reason) {
+        const ta = el.querySelector("#_delReasonTA");
+        if (ta) { ta.style.borderColor = "#e53935"; ta.focus(); }
+        return;
+      }
+      close(reason);
+    };
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close(null);
+    });
+    document.body.appendChild(el);
+    el.querySelector("#_delReasonTA").focus();
   });
 }
 
@@ -7135,7 +7173,7 @@ function openStaffReportSales(employeeUid) {
 }
 
 // ========= Sales info + payments =========
-function removeSaleItemFromInvoice(saleUid) {
+async function removeSaleItemFromInvoice(saleUid) {
   const j = db.sales.findIndex(s => String(s.uid) === String(saleUid));
   if (j < 0) return;
   const s = db.sales[j];
@@ -7147,10 +7185,12 @@ function removeSaleItemFromInvoice(saleUid) {
   if (siblings.length <= 1) {
     return alert("Qaimədə yalnız bir məhsul var. Bütün qaiməni silmək üçün siyahıdan istifadə edin.");
   }
+  const deleteReason = await appConfirmWithReason(`"${s.productName || s.code || "Məhsul"}" qaimədən çıxarılacaq.`);
+  if (!deleteReason) return;
   ensureAuditTrash();
   const u = currentUser();
-  db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-" });
-  logEvent("delete", "sales", { uid: s.uid, invNo });
+  db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: s, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+  logEvent("delete", "sales", { uid: s.uid, invNo, deleteReason });
   db.sales.splice(j, 1);
   saveDB();
   // Refresh the edit form
@@ -12731,6 +12771,9 @@ function renderAll() {
         const amount = d.amount != null ? `${money(d.amount)} AZN` : "";
         const custName = d.customerName || d.fullName || d.name || "";
         const note = [invNo, custName, amount, d.kind ? `(${d.kind})` : ""].filter(Boolean).join(" · ");
+        const reasonBadge = d.deleteReason
+          ? `<span style="color:#e53935;font-size:.75rem;font-weight:600;" title="${escapeHtml(d.deleteReason)}">🗑 ${escapeHtml(d.deleteReason.length > 30 ? d.deleteReason.slice(0, 30) + "…" : d.deleteReason)}</span>`
+          : "";
         return `
         <tr>
           <td>${i + 1}</td>
@@ -12738,7 +12781,7 @@ function renderAll() {
           <td>${escapeHtml(a.user || "-")}</td>
           <td><span class="pill ${pillClass}" style="font-size:.75rem">${escapeHtml(actLabel)}</span></td>
           <td>${escapeHtml(tgtLabel)}</td>
-          <td style="font-size:.82rem;color:var(--text-muted)">${escapeHtml(note) || "-"}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${escapeHtml(note) || "-"}${reasonBadge ? "<br>" + reasonBadge : ""}</td>
           <td><button class="btn-mini-pay" type="button" onclick="openAuditDetails(${a.uid})">Bax</button></td>
         </tr>`;
       })
@@ -12770,6 +12813,7 @@ function renderAll() {
           <td style="white-space:nowrap">${escapeHtml(amount) || "-"}</td>
           <td>${escapeHtml(t.deletedBy || "-")}</td>
           <td style="white-space:nowrap">${fmtDT(t.deletedAt)}</td>
+          <td style="font-size:.8rem;color:#e53935;max-width:180px;">${t.deleteReason ? escapeHtml(t.deleteReason) : "<span style='color:var(--text-muted)'>—</span>"}</td>
           <td class="tbl-actions">
             ${userCanEdit() ? `<button class="btn-mini-pay" type="button" onclick="restoreTrash(${t.uid})">Bərpa</button>` : ""}
             ${userCanDelete("trash") ? `<button class="icon-btn delete" onclick="deleteTrash(${t.uid})" title="Tam sil"><i class="fas fa-trash"></i></button>` : ""}
@@ -13253,7 +13297,7 @@ function wrapMobileTables() {
   });
 }
 
-function delItem(type, i) {
+async function delItem(type, i) {
   const sec = type === "cust" ? "cust"
     : type === "supp" ? "supp"
     : type === "prod" ? "prod"
@@ -13262,8 +13306,18 @@ function delItem(type, i) {
     : type === "staff" ? "staff"
     : "*";
   if (!userCanDelete(sec)) return alert("Sil icazəsi yoxdur.");
-  appConfirm("Silinsin?").then((ok) => {
-    if (!ok) return;
+
+  const typeLabel = sec === "cust" ? "Müştəri"
+    : sec === "supp" ? "Təchizatçı"
+    : sec === "prod" ? "Məhsul"
+    : sec === "purch" ? "Alış"
+    : sec === "sales" ? "Satış"
+    : sec === "staff" ? "Əməkdaş"
+    : "Qeyd";
+
+  const deleteReason = await appConfirmWithReason(`${typeLabel} silinəcək. Geri qaytarmaq olmaya bilər.`);
+  if (!deleteReason) return;
+
   ensureAuditTrash();
   const u = currentUser();
   const deletedBy = u ? u.username : "-";
@@ -13276,8 +13330,8 @@ function delItem(type, i) {
       return alert("Bu alışın ödənişi var. Kassa balansı pozulmasın deyə silmək olmaz. Lazımdırsa, əks ödəniş (geri qaytarma) əməliyyatı edin.");
     }
     if (!canDeletePurchase(p)) return alert("Bu alış satılıb (və ya say ilə satış edilib). Əvvəl satışı silin.");
-    db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy });
-    logEvent("delete", "purch", { uid: p.uid });
+    db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "purch", { uid: p.uid, deleteReason });
     db.purch.splice(i, 1);
     saveDB();
     return;
@@ -13304,8 +13358,8 @@ function delItem(type, i) {
     // Delete all siblings (descending index to avoid splice offset issues)
     const indices = siblings.map(x => x.j).sort((a, b) => b - a);
     for (const j of indices) {
-      db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: db.sales[j], deletedAt, deletedBy });
-      logEvent("delete", "sales", { uid: db.sales[j].uid });
+      db.trash.push({ uid: genId(db.trash, 1), type: "sales", item: db.sales[j], deletedAt, deletedBy, deleteReason });
+      logEvent("delete", "sales", { uid: db.sales[j].uid, invNo: db.sales[j].invNo, deleteReason });
       db.sales.splice(j, 1);
     }
     saveDB();
@@ -13315,8 +13369,8 @@ function delItem(type, i) {
   if (type === "cust") {
     const c = db.cust[i];
     if (!c) return;
-    db.trash.push({ uid: genId(db.trash, 1), type: "cust", item: c, deletedAt, deletedBy });
-    logEvent("delete", "cust", { uid: c.uid });
+    db.trash.push({ uid: genId(db.trash, 1), type: "cust", item: c, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "cust", { uid: c.uid, name: c.name, deleteReason });
     db.cust.splice(i, 1);
     saveDB();
     return;
@@ -13324,8 +13378,8 @@ function delItem(type, i) {
   if (type === "supp") {
     const s = db.supp[i];
     if (!s) return;
-    db.trash.push({ uid: genId(db.trash, 1), type: "supp", item: s, deletedAt, deletedBy });
-    logEvent("delete", "supp", { uid: s.uid });
+    db.trash.push({ uid: genId(db.trash, 1), type: "supp", item: s, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "supp", { uid: s.uid, name: s.name, deleteReason });
     db.supp.splice(i, 1);
     saveDB();
     return;
@@ -13339,8 +13393,8 @@ function delItem(type, i) {
       const usedInSales = (db.sales || []).some((x) => String(x.productName || "").trim() === nm);
       if (usedInPurch || usedInSales) return alert("Bu məhsul adı alış/satışda istifadə olunub. Silmək olmaz.");
     }
-    db.trash.push({ uid: genId(db.trash, 1), type: "prod", item: p, deletedAt, deletedBy });
-    logEvent("delete", "prod", { uid: p.uid });
+    db.trash.push({ uid: genId(db.trash, 1), type: "prod", item: p, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "prod", { uid: p.uid, name: p.name, deleteReason });
     db.prod.splice(i, 1);
     saveDB();
     return;
@@ -13348,14 +13402,12 @@ function delItem(type, i) {
   if (type === "staff") {
     const s = db.staff[i];
     if (!s) return;
-    db.trash.push({ uid: genId(db.trash, 1), type: "staff", item: s, deletedAt, deletedBy });
-    logEvent("delete", "staff", { uid: s.uid });
+    db.trash.push({ uid: genId(db.trash, 1), type: "staff", item: s, deletedAt, deletedBy, deleteReason });
+    logEvent("delete", "staff", { uid: s.uid, name: s.fullName || s.name, deleteReason });
     db.staff.splice(i, 1);
     saveDB();
     return;
   }
-  });
-  return;
 }
 
 // Utilities
