@@ -5299,7 +5299,10 @@ body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 
 /* ── Tables ── */
 .card table { border: none !important; border-radius: 0 !important; }
-.card table thead th {
+.card table thead th,
+.table-wrap th,
+.modal-body table thead th,
+.modal-body-inner table thead th {
   background: #007AFF !important;
   color: #fff !important;
   font-size: .72rem !important;
@@ -5310,7 +5313,10 @@ body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
   border-right: none !important;
   box-shadow: none !important;
 }
-body.theme-dark .card table thead th {
+body.theme-dark .card table thead th,
+body.theme-dark .table-wrap th,
+body.theme-dark .modal-body table thead th,
+body.theme-dark .modal-body-inner table thead th {
   background: rgba(44,44,46,.95) !important;
   color: rgba(255,255,255,.4) !important;
   border-bottom-color: rgba(255,255,255,.08) !important;
