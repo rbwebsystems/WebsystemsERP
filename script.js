@@ -263,6 +263,8 @@ function subscribeRealtime() {
             renderSidebarUser();
             refreshHeaderBar();
           }
+          renderAll();
+          checkSubscriptionStatus();
         }
       },
       (err) => console.warn("Firestore meta listener:", err)
