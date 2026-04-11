@@ -2193,14 +2193,8 @@ function currentUser() {
 function userDisplay(u) {
   if (!u) return "-";
   const un = String(u.username || "").trim();
-  const staffUid = u.staffUid != null && u.staffUid !== "" ? String(u.staffUid) : null;
-  if (staffUid && db.staff && db.staff.length) {
-    const staff = db.staff.find((s) => String(s.uid) === staffUid);
-    if (staff && staff.name) return `${staff.name} (${un})`;
-  }
-  const fn = String(u.fullName || "").trim();
-  if (fn && un) return `${fn} (${un})`;
-  return fn || un || "-";
+  const company = String(db.settings?.companyName || "").trim();
+  return company && un ? `${company}_${un}` : un || "-";
 }
 
 function currentActorName() {
