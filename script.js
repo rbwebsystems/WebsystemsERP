@@ -11514,7 +11514,7 @@ function renderAll() {
           }
           const paidBtn = (sub.active && !((sub.paidUntil||"") >= curMonth))
             ? `<button class="icon-btn" type="button" onclick="markCompanyPaid(${i})" title="Ödəniş qeyd et" style="color:#16a34a"><i class="fas fa-credit-card"></i></button>`
-            : "";
+            : `<span class="icon-btn-placeholder"></span>`;
           return `<tr>
             <td>${i + 1}</td>
             <td><b>${escapeHtml(c.name)}</b></td>
