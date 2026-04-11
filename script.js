@@ -8437,7 +8437,7 @@ function openCompany(idx = null) {
   const secChecks = allSections
     .map((s) => {
       const on = enabled.includes(s);
-      return `<label class="chk"><input type="checkbox" class="coSec" value="${s}" ${on ? "checked" : ""}><span>${escapeHtml(sectionLabelAz(s))}</span></label>`;
+      return `<label class="perm-row"><span class="perm-label">${escapeHtml(sectionLabelAz(s))}</span><input type="checkbox" class="coSec" value="${s}" ${on ? "checked" : ""}></label>`;
     })
     .join("");
   openModal(`
@@ -8472,12 +8472,10 @@ function openCompany(idx = null) {
           </div>
         </div>
       </div>
-      <div class="info-block">
-        <div class="info-row">
-          <div class="info-label">Modullar</div>
-          <div class="info-value" style="display:flex;flex-wrap:wrap;gap:12px;">
-            ${secChecks}
-          </div>
+      <div class="perm-group">
+        <div class="perm-group-title">Modullar</div>
+        <div class="perm-list">
+          ${secChecks}
         </div>
       </div>
       <div class="modal-footer">
