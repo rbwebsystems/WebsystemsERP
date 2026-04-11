@@ -3095,10 +3095,9 @@ function refreshHeaderBar() {
     if (!meta?.session) {
       titleEl.textContent = "";
     } else {
-      const u = currentUser();
-      const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
-      const cname = getCurrentCompanyName();
-      titleEl.textContent = firstName ? t("welcome_title", { name: firstName }) : (cname || "");
+      const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
+      const compName = String(db.settings?.companyName || comp?.name || "").trim();
+      titleEl.textContent = compName;
     }
   }
   updateHeaderDateTime();
