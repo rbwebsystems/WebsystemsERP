@@ -7648,8 +7648,8 @@ function openCashOp() {
           <div class="form-card-title">Təchizatçı</div>
           <div class="grid-2">
             <div class="f-group"><label>Təchizatçı</label><select id="cash_supplier" onchange="refreshSupplierInvoices()"><option value="">Təchizatçı seç</option></select></div>
-            <div class="f-group"><label>Qaimə</label><select id="cash_supplier_invoice">
-              <option value="">Qaimə seç (istəyə bağlı)</option>
+            <div class="f-group"><label>Qaimə *</label><select id="cash_supplier_invoice">
+              <option value="">Qaimə seçin</option>
             </select></div>
           </div>
         </div>
@@ -8012,8 +8012,9 @@ function saveCashOp(e) {
       return;
     }
     const supp = val("cash_supplier");
-    if (!supp) return;
+    if (!supp) return alert("Təchizatçı seçin.");
     const invoiceUid = val("cash_supplier_invoice");
+    if (!invoiceUid) return alert("Zəhmət olmasa qaimə seçin.");
 
     if (invoiceUid) {
       const p = db.purch.find((x) => Number(x.uid) === Number(invoiceUid));
