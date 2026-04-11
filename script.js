@@ -12027,16 +12027,9 @@ function renderSidebarUser() {
   if (!el) return;
   if (!meta?.session) { el.innerHTML = ""; return; }
   const u = currentUser();
-  const name = u ? userDisplay(u) : t("role_fallback");
-  const role =
-    u?.role === "developer"
-      ? "Developer"
-      : u?.role === "admin"
-        ? "Admin"
-        : u?.role === "owner"
-          ? t("role_owner")
-          : t("role_user");
-  const initials = name.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
+  const displayName = u ? (String(u.fullName || "").trim() || String(u.username || "").trim()) : t("role_fallback");
+  const role = u?.role === "developer" ? "Developer" : u?.role === "admin" ? "Admin" : u?.role === "owner" ? t("role_owner") : t("role_user");
+  const initials = displayName.split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "U";
   const email = u?.email || "";
   const photo = u ? getProfilePhoto(u.uid) : "";
   const avatarInner = photo
@@ -12045,7 +12038,7 @@ function renderSidebarUser() {
   el.innerHTML = `
     <div class="sidebar-user-avatar" title="${escapeAttr(t("lbl_photo_upload"))}" onclick="triggerProfilePhotoUpload()">${avatarInner}<span class="sidebar-avatar-cam"><i class="fas fa-camera"></i></span></div>
     <input type="file" id="profilePhotoFileInput" accept="image/*" style="display:none" onchange="onProfilePhotoSelected(event)">
-    <div class="sidebar-user-name">${escapeHtml(name)}</div>
+    <div class="sidebar-user-name">${escapeHtml(displayName)}</div>
     <div class="sidebar-user-role">${escapeHtml(email || role)}</div>`;
   el.onclick = (ev) => {
     if (ev.target.closest(".sidebar-user-avatar")) return;
