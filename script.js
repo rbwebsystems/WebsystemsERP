@@ -7549,30 +7549,23 @@ function printCreditDoc(idx, type) {
   }
 
   else if (type === "erizesi") {
-    title = "Kredit Razılıq Ərizəsi";
+    title = "Razılıq Ərizəsi";
+    const imeiStr = [imei1, imei2].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div class="section">
-        <p style="text-align:right;">Tarix: ${today}</p>
-        <p style="text-align:right;">${co} şirkətinə</p>
+      <div style="text-align:right;margin-bottom:24px;font-size:12px;line-height:1.7;">
+        <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
+        <div>1 saylı Əlavə</div>
       </div>
-      <div class="section" style="margin-top:16px;">
-        <p>Mən, <strong>${custFull}</strong>, FİN: <strong>${custFin}</strong>, şəxsiyyət vəsiqəsi seriya №: <strong>${custSer}</strong>, yaşayış ünvanı: <strong>${custAddr}</strong>, telefon: <strong>${custPh}</strong>,</p>
-        <p style="margin-top:10px;">aşağıdakı şərtlərlə <strong>${prod}</strong> məhsulunu kredit əsasında almağa razılıq verirəm:</p>
+      <div style="margin-bottom:32px;">
+        <p style="font-size:13px;line-height:1.9;text-align:justify;">
+          Mən (ad, soyad, Ş/V seriya və Fin kod) <strong>${custFull}</strong>, seriya: <strong>${custSer}</strong>, FİN: <strong>${custFin}</strong> — <strong>"${co}"</strong> MMC-dən aldığım qarşılıqlı razılaşma əsasında dəyərini hissə-hissə ödəmək üçün nəzərdə tutulmuş <strong>"${prod}"</strong> markalı, İMEİ kodu: <strong>${imeiStr}</strong> mobil cihazın Müqavilə şərtlərini pozduğum halda İMEİ kodunun deaktiv edilməsi və vahid şəbəkədə riskli müştərilərin siyahısına salınmasına etirazım yoxdur.
+        </p>
       </div>
-      <div class="section">
-        <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
-        <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
-        <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
-        <div class="row"><span class="lbl">Müddət:</span><span class="val">${term} ay</span></div>
-        <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${monthly} AZN</span></div>
-        <div class="row"><span class="lbl">IMEI / Seriya:</span><span class="val">${imei1}${imei2!=="-"?" / "+imei2:""}${seria!=="-"?" / "+seria:""}</span></div>
-      </div>
-      <div class="section">
-        <p>Kredit müqaviləsinin bütün şərtlərini oxudum, başa düşdüm və qəbul etdim. Ödənişləri vaxtında həyata keçirməyi öhdəmə götürürəm.</p>
-      </div>
-      <div class="sign-row">
-        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Ərizəçi (${custFull})</div></div>
-        <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Şirkət möhürü</div></div>
+      <div style="margin-top:40px;font-size:13px;line-height:2.6;">
+        <div><strong>İmza:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        <div><strong>Satıcı:</strong></div>
+        <div><strong>Alıcı:</strong></div>
+        <div><strong>Tarix:</strong></div>
       </div>
     `;
   }
