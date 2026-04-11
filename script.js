@@ -933,7 +933,7 @@ function showDebtSub(sectionId, debtType) {
     // Update section title
     const h1 = byId(realSection)?.querySelector("h1");
     if (h1) {
-      const titles = { nagd: "Borclar - Nağd satış", topdan: "Borclar - Topdan satış", korporativ: "Borclar - Korporativ satış", debts: "Borclar - Debitor", creditor: "Borclar - Kreditor", overdue: "Borclar - Kreditlər" };
+      const titles = { nagd: "Borclar - Nağd satış", topdan: "Borclar - Topdan satış", korporativ: "Borclar - Korporativ satış", debts: "Borclar", creditor: "Borclar - Kreditor", overdue: "Borclar - Kreditlər" };
       h1.textContent = titles[typeVal] || titles[realSection] || h1.textContent;
     }
     renderAll();
@@ -13207,7 +13207,7 @@ const EXTRA_LANG = {
   az: {
     lang_changed: "Dil yeniləndi",
     welcome_title: "Xoş gəldiniz, {name}!",
-    page_debts_deb: "Borclar — debitor",
+    page_debts_deb: "Borclar",
     page_debts_loans: "Borclar — kreditlər",
     page_debts_cred: "Borclar — kreditor",
     nav_users: "İstifadəçilər",
