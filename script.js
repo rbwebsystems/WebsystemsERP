@@ -8431,25 +8431,21 @@ function openCompany(idx = null) {
         </div>
         <div class="form-card">
           <div class="form-card-title">💳 Abunəlik</div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
-              <input type="checkbox" id="co_sub_active" ${c.subscription?.active ? "checked" : ""} onchange="toggleSubFields(this.checked)">
-              Ödənişli abunəlik
-            </label>
-          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
+            <input type="checkbox" id="co_sub_active" ${c.subscription?.active ? "checked" : ""} onchange="toggleSubFields(this.checked)">
+            <span style="font-weight:600;font-size:.9rem">Ödənişli abunəlik</span>
+          </label>
           <div id="co_sub_fields" style="${c.subscription?.active ? "" : "display:none"}">
             <div class="grid-2">
-              <div class="f-group"><label>Aylıq məbləğ (AZN) *</label><input type="number" id="co_sub_amount" min="1" step="0.01" value="${c.subscription?.monthlyAmount || ""}" placeholder="100"></div>
-              <div class="f-group"><label>Ödəniş günü (hər ayın neçəsi) *</label>
-                <select id="co_sub_day">
-                  ${[1,2,3,4,5].map(d => `<option value="${d}" ${(c.subscription?.payDay||1)==d?"selected":""}>${d}-i</option>`).join("")}
-                </select>
+              <div class="f-group"><label>Aylıq məbləğ (AZN)</label><input type="number" id="co_sub_amount" min="1" step="0.01" value="${c.subscription?.monthlyAmount || ""}" placeholder="100"></div>
+              <div class="f-group"><label>Ödəniş vaxtı</label>
+                <div style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:.85rem;color:var(--text-muted)">📅 Hər ayın <b>1-5-i</b> arası (standart)</div>
               </div>
             </div>
             <div class="f-group" style="margin-top:4px">
               <label>Ödənilib (son ödəniş ayı)</label>
-              <input type="month" id="co_sub_paid_until" value="${c.subscription?.paidUntil || ""}" placeholder="2026-04">
-              <small style="color:var(--text-muted)">Boş buraxılsa — bu ay hələ ödənilməyib sayılır</small>
+              <input type="month" id="co_sub_paid_until" value="${c.subscription?.paidUntil || ""}">
+              <small style="color:var(--text-muted)">Boş = bu ay hələ ödənilməyib</small>
             </div>
           </div>
         </div>
@@ -8496,8 +8492,8 @@ function saveCompany(e, idx) {
   const subscription = subActive ? {
     active: true,
     monthlyAmount: Math.max(0, n(byId("co_sub_amount")?.value || 0)),
-    payDay: Number(byId("co_sub_day")?.value || 1),
     paidUntil: (byId("co_sub_paid_until")?.value || "").trim(),
+    payHistory: (meta.companies[idx]?.subscription?.payHistory || []),
   } : { active: false };
 
   if (idx === null) {
@@ -8517,12 +8513,77 @@ function markCompanyPaid(idx) {
   if (!c?.subscription?.active) return;
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  meta.companies[idx].subscription.paidUntil = curMonth;
+  const sub = meta.companies[idx].subscription;
+  sub.paidUntil = curMonth;
+  if (!Array.isArray(sub.payHistory)) sub.payHistory = [];
+  const alreadyRecorded = sub.payHistory.some(h => h.month === curMonth);
+  if (!alreadyRecorded) {
+    sub.payHistory.push({ month: curMonth, paidAt: now.toISOString(), amount: sub.monthlyAmount || 0 });
+  }
   saveMeta();
   renderAll();
-  // Blok overlay-i götür (əgər həmin şirkət aktivdirsə)
   if (c.id === meta?.session?.companyId) hideSubscriptionBlock();
   toast(`${escapeHtml(c.name)} — ${curMonth} ödənişi qeyd edildi`, "ok");
+}
+
+function openCompanyInfo(idx) {
+  const c = meta.companies[idx];
+  if (!c) return;
+  const sub = c.subscription || {};
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const isPaid = sub.active && (sub.paidUntil || "") >= curMonth;
+
+  let subBlock = "";
+  if (sub.active) {
+    const statusBadge = isPaid
+      ? `<span class="pill paid">✅ Ödənilib</span>`
+      : `<span class="pill overdue">⚠️ Ödənilməyib</span>`;
+    const history = Array.isArray(sub.payHistory) && sub.payHistory.length
+      ? sub.payHistory.slice().reverse().map(h => {
+          const d = new Date(h.paidAt);
+          const dateStr = isNaN(d) ? h.paidAt : d.toLocaleDateString("az-AZ");
+          return `<tr><td>${h.month}</td><td>${money(h.amount)} AZN</td><td>${dateStr}</td></tr>`;
+        }).join("")
+      : `<tr><td colspan="3" style="color:var(--text-muted);text-align:center">Tarixçə yoxdur</td></tr>`;
+
+    subBlock = `
+      <div class="info-block">
+        <h4>💳 Abunəlik</h4>
+        <div class="info-row"><span>Tarif:</span><b>${money(sub.monthlyAmount || 0)} AZN / ay</b></div>
+        <div class="info-row"><span>Ödəniş vaxtı:</span><b>Hər ayın 1–5-i</b></div>
+        <div class="info-row"><span>Bu ay:</span>${statusBadge}</div>
+        ${sub.paidUntil ? `<div class="info-row"><span>Son ödəniş:</span><b>${sub.paidUntil}</b></div>` : ""}
+      </div>
+      <div class="info-block">
+        <h4>📋 Ödəniş tarixçəsi</h4>
+        <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+          <thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Ay</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Məbləğ</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Tarix</th></tr></thead>
+          <tbody>${history}</tbody>
+        </table>
+      </div>`;
+  } else {
+    subBlock = `<div class="info-block" style="color:var(--text-muted)"><i class="fas fa-circle-check"></i> Bu şirkət üçün abunəlik tələb olunmur (pulsuz)</div>`;
+  }
+
+  const sectList = (c.sections || []).map(s => `<span class="pill" style="background:var(--bg-main)">${escapeHtml(s)}</span>`).join(" ") || "—";
+
+  openMdl(`
+    <div class="mdl-header"><h2 style="margin:0">ℹ️ ${escapeHtml(c.name)}</h2><button class="icon-btn" onclick="closeMdl()"><i class="fas fa-xmark"></i></button></div>
+    <div class="mdl-body" style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto">
+      <div class="info-block">
+        <h4>🏢 Şirkət məlumatı</h4>
+        <div class="info-row"><span>Ad:</span><b>${escapeHtml(c.name)}</b></div>
+        <div class="info-row"><span>ID:</span><code>${escapeHtml(c.id)}</code></div>
+        <div class="info-row"><span>Bölmələr:</span><div style="display:flex;flex-wrap:wrap;gap:4px">${sectList}</div></div>
+      </div>
+      ${subBlock}
+      ${isDeveloper() && sub.active && !isPaid ? `
+      <button class="btn-main" style="align-self:flex-end" onclick="markCompanyPaid(${idx});closeMdl()">
+        <i class="fas fa-check-circle"></i> Bu ay ödənişi qeyd et
+      </button>` : ""}
+    </div>
+  `);
 }
 
 function checkSubscriptionStatus() {
@@ -8539,18 +8600,17 @@ function checkSubscriptionStatus() {
   const isPaid = (sub.paidUntil || "") >= curMonth;
   if (isPaid) { hideSubscriptionBlock(); return; }
 
-  const deadline = sub.payDay || 1;
   const amount = money(sub.monthlyAmount || 0);
   const monthLabel = now.toLocaleString("az-AZ", { month: "long", year: "numeric" });
 
   if (day <= 5) {
-    showSubscriptionWarning(amount, deadline, monthLabel);
+    showSubscriptionWarning(amount, monthLabel);
   } else {
     showSubscriptionSuspended(amount, monthLabel);
   }
 }
 
-function showSubscriptionWarning(amount, deadline, monthLabel) {
+function showSubscriptionWarning(amount, monthLabel) {
   let el = byId("subWarningBar");
   if (!el) {
     el = document.createElement("div");
@@ -8560,11 +8620,10 @@ function showSubscriptionWarning(amount, deadline, monthLabel) {
   }
   el.innerHTML = `
     <i class="fas fa-bell" style="font-size:1.1rem;color:#f59e0b"></i>
-    <span>⚠️ <b>${monthLabel}</b> üçün abunəlik ödənişi gözlənilir: <b>${amount} AZN</b>. Son tarix: bu ayın <b>${deadline}-i</b>. Ödəniş edilmədikdə xidmət dayandırılacaq.</span>
+    <span>⚠️ <b>${monthLabel}</b> üçün abunəlik ödənişi gözlənilir: <b>${amount} AZN</b>. Son tarix: bu ayın <b>5-i</b>. Ödəniş edilmədikdə xidmət dayandırılacaq.</span>
     <button onclick="byId('subWarningBar').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1rem;color:#92400e">✕</button>
   `;
   el.style.display = "flex";
-  // sidebar collapsed-a uyğunlaş
   if (document.body.classList.contains("sidebar-collapsed")) el.style.left = "68px";
 }
 
@@ -11382,23 +11441,26 @@ function renderAll() {
             const paid = (sub.paidUntil || "") >= curMonth;
             subBadge = paid
               ? `<span class="pill paid">✅ ${money(sub.monthlyAmount)} AZN</span>`
-              : `<span class="pill overdue">⚠️ ${money(sub.monthlyAmount)} AZN — ödənilməyib</span>`;
+              : `<span class="pill overdue">⚠️ Ödənilməyib</span>`;
           } else {
             subBadge = `<span class="pill" style="background:#f1f5f9;color:#64748b">Pulsuz</span>`;
           }
-          return `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${escapeHtml(c.name)}</td>
-          <td>${escapeHtml(c.id)}</td>
-          <td>${active ? '<span class="pill paid">AKTİV</span>' : "-"}</td>
-          <td>${subBadge}</td>
-          <td class="tbl-actions">
-            <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
-            ${sub.active && !((sub.paidUntil||"") >= curMonth) ? `<button class="btn-mini-pay" type="button" onclick="markCompanyPaid(${i})" title="Bu ay ödənildi kimi qeyd et">✅ Ödəniş qeyd et</button>` : ""}
-            ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies", "companyEdit", i)}" onclick="openCompany(${i});return false;" title="Edit"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
-          </td>
-        </tr>`;
+          const paidBtn = (sub.active && !((sub.paidUntil||"") >= curMonth))
+            ? `<button class="btn-mini-pay" type="button" onclick="markCompanyPaid(${i})">✅ Ödəniş qeyd et</button>`
+            : "";
+          return `<tr>
+            <td>${i + 1}</td>
+            <td><b>${escapeHtml(c.name)}</b></td>
+            <td><code style="font-size:.78rem">${escapeHtml(c.id)}</code></td>
+            <td>${active ? '<span class="pill paid">AKTİV</span>' : "—"}</td>
+            <td>${subBadge}</td>
+            <td class="tbl-actions">
+              <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
+              <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
+              ${paidBtn}
+              ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            </td>
+          </tr>`;
         })
         .join("");
     }
@@ -12200,6 +12262,7 @@ Object.assign(window, {
   sendDailyOverdueReport,
   toggleSubFields,
   markCompanyPaid,
+  openCompanyInfo,
   openSkins,
   setSkin,
   openLoginModal,
