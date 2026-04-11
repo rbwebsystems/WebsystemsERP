@@ -5456,31 +5456,30 @@ body.theme-dark select, body.theme-dark textarea {
 body.theme-dark input:not([type=checkbox]):not([type=radio]):focus,
 body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 
-/* ── White overrides: date/month inputs + cancel/reset buttons ──────────────
-   Must come AFTER the global iOS gray rule above to win the !important race  */
-input[type="date"],
-input[type="month"],
-input[type="datetime-local"] {
+/* ── White overrides: date/month inputs — body prefix wins specificity race ── */
+body input[type="date"],
+body input[type="month"],
+body input[type="datetime-local"] {
   background: #fff !important;
   border: 1px solid #d1d5db !important;
   border-radius: 10px !important;
   padding: 0 10px !important;
-  color: var(--text-main, #1c1c1e) !important;
+  color: #1c1c1e !important;
   box-shadow: none !important;
+  outline: none !important;
 }
-input[type="date"]:focus,
-input[type="month"]:focus,
-input[type="datetime-local"]:focus {
+body input[type="date"]:focus,
+body input[type="month"]:focus,
+body input[type="datetime-local"]:focus {
   background: #fff !important;
   border-color: #007AFF !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
 }
-input[type="date"]:hover,
-input[type="month"]:hover,
-input[type="datetime-local"]:hover {
+body input[type="date"]:hover,
+body input[type="month"]:hover,
+body input[type="datetime-local"]:hover {
   background: #f9fafb !important;
-  border-color: #9ca3af !important;
 }
 body.theme-dark input[type="date"],
 body.theme-dark input[type="month"],
