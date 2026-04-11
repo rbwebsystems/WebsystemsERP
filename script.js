@@ -8305,7 +8305,7 @@ function saveCompany(e, idx) {
     .map((x) => x.value);
   if (!name) return;
   if (idx === null) {
-    const id = genCompanyUUID();
+    const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_\u0400-\u04FF]/g, "").slice(0, 40) || genCompanyUUID();
     meta.companies.push({ id, name, sections });
   } else {
     meta.companies[idx] = { ...meta.companies[idx], name, sections };
