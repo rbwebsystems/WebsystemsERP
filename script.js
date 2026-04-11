@@ -6984,7 +6984,6 @@ function openSaleInfo(idx) {
       <button class="btn-main" type="button" onclick="openSalePayment(${idx})">Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="openReturnSale(${idx})">Qaytar</button>
       <button class="btn-cancel" type="button" onclick="printSale(${idx})">Çap</button>
-      <button class="btn-cancel" type="button" onclick="printSaleContract(${idx})"><i class="fas fa-file-contract" style="margin-right:5px;"></i>Müqavilə</button>
       ${s.saleType === "kredit" ? `<button class="btn-cancel" type="button" data-credit-doc-btn onclick="openCreditDocMenu(${idx})"><i class="fas fa-file-lines" style="margin-right:5px;"></i>Sənədlər</button>` : ""}
       <button class="btn-cancel" type="button" onclick="openPaymentHistory('sale', ${idx})">Ödəniş tarixçəsi</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
@@ -7600,10 +7599,11 @@ function printCreditDoc(idx, type) {
 
 function openCreditDocMenu(idx) {
   const docs = [
-    { type: "muqavile", label: "Kredit müqaviləsi",   icon: "fa-file-contract" },
-    { type: "cedvel",   label: "Ödəniş cədvəli",      icon: "fa-table" },
-    { type: "zamanet",  label: "Zəmanət talonu",       icon: "fa-shield-halved" },
-    { type: "erizesi",  label: "Razılıq ərizəsi",      icon: "fa-file-signature" },
+    { type: "satiq",    label: "Alqı-satqı müqaviləsi", icon: "fa-handshake",      fn: () => printSaleContract(idx) },
+    { type: "muqavile", label: "Kredit müqaviləsi",      icon: "fa-file-contract",  fn: () => printCreditDoc(idx, "muqavile") },
+    { type: "cedvel",   label: "Ödəniş cədvəli",         icon: "fa-table",          fn: () => printCreditDoc(idx, "cedvel") },
+    { type: "zamanet",  label: "Zəmanət talonu",          icon: "fa-shield-halved",  fn: () => printCreditDoc(idx, "zamanet") },
+    { type: "erizesi",  label: "Razılıq ərizəsi",         icon: "fa-file-signature", fn: () => printCreditDoc(idx, "erizesi") },
   ];
   const existing = document.getElementById("creditDocDropdown");
   if (existing) { existing.remove(); return; }
@@ -7623,7 +7623,7 @@ function openCreditDocMenu(idx) {
     item.innerHTML = `<i class="fas ${d.icon}" style="width:16px;color:#6b7280;"></i>${d.label}`;
     item.onmouseenter = () => item.style.background = "#f2f2f7";
     item.onmouseleave = () => item.style.background = "none";
-    item.onclick = () => { menu.remove(); printCreditDoc(idx, d.type); };
+    item.onclick = () => { menu.remove(); d.fn(); };
     menu.appendChild(item);
   });
   document.body.appendChild(menu);
