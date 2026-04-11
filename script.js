@@ -2463,6 +2463,9 @@ function applyAccessUI() {
   document.querySelectorAll(".admin-only").forEach((el) => {
     el.style.display = (admin || dev) ? "flex" : "none";
   });
+  document.querySelectorAll(".admin-not-dev").forEach((el) => {
+    el.style.display = admin && !dev ? "flex" : "none";
+  });
 
   // Hide sections the user can't access (nav links)
   document.querySelectorAll(".nav-link[data-sec]").forEach((el) => {
@@ -12071,8 +12074,11 @@ function updateHeaderWelcome() {
   if (!titleEl) return;
   if (!meta?.session) return;
   const u = currentUser();
-  const firstName = u ? (userDisplay(u).split(" ")[0] || "") : "";
-  if (firstName) titleEl.textContent = t("welcome_title", { name: firstName });
+  const fullName = u ? (String(u.fullName || "").trim() || String(u.username || "").trim()) : "";
+  const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
+  const compName = String(db.settings?.companyName || comp?.name || "").trim();
+  const display = compName && fullName ? `${compName} ${fullName}` : fullName || compName;
+  if (display) titleEl.textContent = t("welcome_title", { name: display });
 }
 
 function initApp() {
