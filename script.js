@@ -255,9 +255,9 @@ function subscribeRealtime() {
     firestoreUnsubMeta = metaRef.onSnapshot(
       (snap) => {
         if (snap.exists) {
-          const next = { ...defaultMeta(), ...snap.data() };
-          meta.companies = next.companies || meta.companies;
-          meta.users = next.users || meta.users;
+          const next = snap.data() || {};
+          if (Array.isArray(next.companies)) meta.companies = next.companies;
+          if (Array.isArray(next.users)) meta.users = next.users;
           applyAccessUI();
           if (meta.session) {
             renderSidebarUser();
@@ -330,6 +330,19 @@ async function refreshFromCloud(silent) {
     ensureAuditTrash();
     renderAll();
     if (!silent) toast("Məlumat buluddan yeniləndi", "ok", 2000);
+    // Refresh meta subscription status from Firestore
+    const metaRef = getMetaRef();
+    if (metaRef) {
+      metaRef.get().then(msnap => {
+        if (msnap.exists) {
+          const mdata = msnap.data();
+          if (mdata.companies) meta.companies = mdata.companies;
+        }
+        checkSubscriptionStatus();
+      }).catch(() => checkSubscriptionStatus());
+    } else {
+      checkSubscriptionStatus();
+    }
   } catch (e) {
     console.warn("Buluddan yeniləmə xətası:", e);
     const msg = (e && e.message) ? String(e.message) : "Yeniləmə xətası";
@@ -12637,7 +12650,7 @@ function startRealtimeAutoRefresh() {
   realtimeAutoRefreshTimer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
     refreshFromCloud(true);
-  }, 15000);
+  }, 10000);
 }
 
 document.addEventListener("visibilitychange", () => {
