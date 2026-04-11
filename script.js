@@ -2291,6 +2291,8 @@ function userCanSection(sectionId) {
   if (!u || !u.active) return false;
   // Şirkətlər və Dev alətləri yalnız developer üçün (admin və user görməz).
   if (sectionId === "companies" || sectionId === "tools") return isDeveloper();
+  // Ayarlar bölməsi admin və developer üçün
+  if (sectionId === "settings") return isAdmin() || isDeveloper();
   if (!companyAllowsSection(sectionId) && !isDeveloper()) return false;
   if (u.role === "developer" || u.role === "admin") return true;
   const secs = u.perms?.sections || [];
@@ -3426,6 +3428,7 @@ function showSec(id, el, opts) {
     updateDebtSubEnabled();
     updateDebtSectionVisibility();
   }
+  if (id === "settings") renderSettingsPage();
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
   if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
@@ -9377,6 +9380,52 @@ function openQrTool() {
   `);
 }
 
+// ---- Settings page (sidebar section) ----
+function renderSettingsPage() {
+  const s = db.settings || {};
+  const setVal = (id, v) => { const el = byId(id); if (el) el.value = v || ""; };
+  setVal("pg_set_name",  s.companyName    || "");
+  setVal("pg_set_addr",  s.companyAddress || "");
+  setVal("pg_set_phone", s.companyPhone   || "");
+  setVal("pg_set_curr",  s.currency       || "AZN");
+  setVal("pg_set_sym",   s.currencySymbol || "₼");
+  setVal("pg_tg_token",  s.telegramToken  || "");
+  setVal("pg_tg_chat",   s.telegramChatId || "");
+}
+
+function saveSettingsPage() {
+  if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
+  db.settings = db.settings || {};
+  db.settings.companyName    = (byId("pg_set_name")?.value  || "").trim();
+  db.settings.companyAddress = (byId("pg_set_addr")?.value  || "").trim();
+  db.settings.companyPhone   = (byId("pg_set_phone")?.value || "").trim();
+  db.settings.currency       = (byId("pg_set_curr")?.value  || "AZN").trim();
+  db.settings.currencySymbol = (byId("pg_set_sym")?.value   || "₼").trim();
+  db.settings.telegramToken  = (byId("pg_tg_token")?.value  || "").trim();
+  db.settings.telegramChatId = (byId("pg_tg_chat")?.value   || "").trim();
+  logEvent("update", "settings", {});
+  saveDB();
+  toast("Ayarlar yadda saxlandı", "ok");
+}
+
+async function testTelegramPage() {
+  const token = (byId("pg_tg_token")?.value || "").trim();
+  const chatId = (byId("pg_tg_chat")?.value || "").trim();
+  if (!token || !chatId) return alert("Token və Chat ID daxil edin.");
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: `✅ <b>${db.settings?.companyName || "ERP"}</b> — Telegram aktiv edildi!`, parse_mode: "HTML" }),
+    });
+    const j = await r.json();
+    if (j.ok) alert("✅ Test mesajı göndərildi!");
+    else alert("❌ Xəta: " + j.description);
+  } catch (err) {
+    alert("❌ Bağlantı xətası: " + err.message);
+  }
+}
+
 function openTelegramSettings() {
   if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
   const s = db.settings || {};
@@ -11852,6 +11901,9 @@ Object.assign(window, {
   openTelegramSettings,
   saveTelegramSettings,
   testTelegramModal,
+  renderSettingsPage,
+  saveSettingsPage,
+  testTelegramPage,
   openSkins,
   setSkin,
   openLoginModal,

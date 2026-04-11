@@ -64,6 +64,7 @@
       <button type="button" class="nav-link admin-only" data-sec="users" data-tip="İstifadəçilər"><i class="fas fa-user-shield"></i><span class="nav-text">İstifadəçi</span></button>
       <button type="button" class="nav-link admin-only" data-sec="audit" data-tip="Audit"><i class="fas fa-shield-halved"></i><span class="nav-text">Audit</span></button>
       <button type="button" class="nav-link admin-only" data-sec="trash" data-tip="Səbət"><i class="fas fa-trash-can"></i><span class="nav-text">Səbət</span></button>
+      <button type="button" class="nav-link admin-only" data-sec="settings" data-tip="Ayarlar" onclick="showSec('settings')"><i class="fas fa-gear"></i><span class="nav-text">Ayarlar</span></button>
       <div class="nav-link dev-only dev-toggle" onclick="toggleDevMenu()" data-tip="Developer"><i class="fas fa-user-gear"></i><span class="nav-text">Dev</span></div>
       <div id="devMenu" class="dev-only dev-menu" style="display:none;">
         <button type="button" class="nav-link dev-sub" data-sec="companies"><i class="fas fa-city"></i><span class="nav-text">Şirkətlər</span></button>
@@ -761,6 +762,35 @@
           <thead><tr><th>#</th><th>Tarix</th><th>Tip</th><th>Ad / Qaimə</th><th>Məbləğ</th><th>Silən</th><th>Silmə tarixi</th><th>Əməliyyat</th></tr></thead>
           <tbody id="tblTrash"></tbody>
         </table>
+      </div>
+    </div>
+
+    <div id="settings" class="section">
+      <div class="content-header">
+        <h1><i class="fas fa-gear"></i> Ayarlar</h1>
+      </div>
+      <div class="form-stack" style="max-width:680px">
+        <div class="form-card">
+          <div class="form-card-title">Şirkət məlumatları</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Şirkət adı</label><input id="pg_set_name" placeholder="Şirkət adı"></div>
+            <div class="f-group"><label>Ünvan</label><input id="pg_set_addr" placeholder="Ünvan"></div>
+            <div class="f-group"><label>Telefon</label><input id="pg_set_phone" placeholder="Telefon"></div>
+            <div class="f-group"><label>Valyuta</label><input id="pg_set_curr" placeholder="AZN"></div>
+            <div class="f-group"><label>Valyuta simvolu</label><input id="pg_set_sym" placeholder="₼"></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">📣 Telegram Bildirişləri</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Bot Token</label><input id="pg_tg_token" placeholder="123456:AAFxxx..." autocomplete="off" type="password"></div>
+            <div class="f-group"><label>Chat ID</label><input id="pg_tg_chat" placeholder="8358360181"></div>
+          </div>
+          <button type="button" class="btn-cancel" onclick="testTelegramPage()" style="margin-top:8px"><i class="fas fa-paper-plane"></i> Test göndər</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button type="button" class="btn-main" onclick="saveSettingsPage()"><i class="fas fa-save"></i> Yadda saxla</button>
+        </div>
       </div>
     </div>
 
