@@ -7417,23 +7417,24 @@ function printCreditDoc(idx, type) {
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:center;min-height:100vh;}
     .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
-    h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
-    .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
+    h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-family:'Times New Roman',Times,serif;}
+    .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;font-family:'Times New Roman',Times,serif;}
     .section{margin-bottom:14px;}
     .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;}
-    .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;}
+    .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;font-family:'Times New Roman',Times,serif;}
     .lbl{color:#6b7280;min-width:160px;flex-shrink:0;}
     .val{font-weight:600;}
-    p{font-size:13px;line-height:1.8;margin-bottom:8px;}
-    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}
+    p{font-size:13px;line-height:1.9;margin-bottom:8px;text-indent:2em;font-family:'Times New Roman',Times,serif;}
+    p.no-indent{text-indent:0;}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;font-family:'Times New Roman',Times,serif;}
     th{background:#f1f5f9;padding:5px 8px;text-align:left;border:1px solid #e2e8f0;font-weight:700;}
     td{padding:5px 8px;border:1px solid #e2e8f0;}
-    .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:30px;}
+    .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:30px;align-items:flex-end;}
     .sign-box{flex:1;}
     .sign-line{border-bottom:1px solid #374151;height:28px;margin-bottom:4px;}
-    .sign-label{font-size:11px;color:#6b7280;}
+    .sign-label{font-size:11px;color:#6b7280;font-family:'Times New Roman',Times,serif;}
     .stamp-box{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;margin:0 auto 4px;}
-    .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
+    .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;font-family:'Times New Roman',Times,serif;}
     @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
   `;
 
@@ -7486,16 +7487,18 @@ function printCreditDoc(idx, type) {
       <p style="font-size:13px;line-height:2;margin-bottom:30px;">
         3. Hazırkı Aktın doğruluğunu aşağıda öz imzalarımızla təsdiq edirik:
       </p>
-      <div style="display:flex;justify-content:space-between;margin-top:20px;font-size:13px;">
-        <div>
-          <p><strong>"SATICI"</strong></p>
-          <p style="margin-top:8px;"><strong>"${co}"</strong> MMC</p>
-          <div style="margin-top:30px;border-bottom:1px solid #374151;width:180px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;font-size:13px;gap:30px;">
+        <div style="flex:1;">
+          <p class="no-indent"><strong>"SATICI"</strong></p>
+          <p class="no-indent"><strong>"${co}"</strong> MMC</p>
+          <div style="margin-top:30px;border-bottom:1px solid #374151;width:100%;"></div>
+          <p class="no-indent" style="font-size:11px;margin-top:4px;color:#6b7280;">İmza / Möhür</p>
         </div>
-        <div>
-          <p><strong>"ALICI"</strong></p>
-          <p style="margin-top:8px;">&nbsp;</p>
-          <div style="margin-top:30px;border-bottom:1px solid #374151;width:180px;"></div>
+        <div style="flex:1;">
+          <p class="no-indent"><strong>"ALICI"</strong></p>
+          <p class="no-indent">${custFull}</p>
+          <div style="margin-top:30px;border-bottom:1px solid #374151;width:100%;"></div>
+          <p class="no-indent" style="font-size:11px;margin-top:4px;color:#6b7280;">İmza</p>
         </div>
       </div>
     `;
@@ -7552,10 +7555,10 @@ function printCreditDoc(idx, type) {
       </div>
       <div class="section">
         <div class="section-title">Zəmanət şərtləri</div>
-        <p>• Zəmanət müddəti istehsalçı tərəfindən müəyyən edilir.</p>
-        <p>• Zəmanət mexaniki zədələrə, su zədəsinə və istifadəçi xətalarına şamil edilmir.</p>
-        <p>• Zəmanət xidmətindən yararlanmaq üçün bu talon mütləq təqdim edilməlidir.</p>
-        <p>• Talon üzərindəki məlumatların dəyişdirilməsi zəmanəti etibarsız sayır.</p>
+        <p class="no-indent">• Zəmanət müddəti istehsalçı tərəfindən müəyyən edilir.</p>
+        <p class="no-indent">• Zəmanət mexaniki zədələrə, su zədəsinə və istifadəçi xətalarına şamil edilmir.</p>
+        <p class="no-indent">• Zəmanət xidmətindən yararlanmaq üçün bu talon mütləq təqdim edilməlidir.</p>
+        <p class="no-indent">• Talon üzərindəki məlumatların dəyişdirilməsi zəmanəti etibarsız sayır.</p>
       </div>
       <div class="sign-row">
         <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${emekdas})</div></div>
@@ -7581,10 +7584,10 @@ function printCreditDoc(idx, type) {
         </p>
       </div>
       <div style="margin-top:50px;font-size:13px;line-height:3.2;">
-        <div><strong>İmza:</strong></div>
-        <div><strong>Satıcı:</strong></div>
-        <div><strong>Alıcı:</strong></div>
-        <div><strong>Tarix:</strong></div>
+        <p class="no-indent"><strong>İmza:</strong></p>
+        <p class="no-indent"><strong>Satıcı:</strong></p>
+        <p class="no-indent"><strong>Alıcı:</strong></p>
+        <p class="no-indent"><strong>Tarix:</strong></p>
       </div>
     `;
   }
@@ -7683,7 +7686,7 @@ function printCashReceipt(uid) {
 <title>Qəbz #${c.uid}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;display:flex;justify-content:center;padding:20px;}
+  body{font-family:'Times New Roman',Times,serif;background:#f3f4f6;display:flex;justify-content:center;padding:20px;}
   .receipt{width:210mm;min-height:148mm;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14mm 16mm;font-size:13px;}
   .receipt__head{text-align:center;margin-bottom:14px;border-bottom:1px dashed #d1d5db;padding-bottom:12px;}
   .receipt__company{font-size:17px;font-weight:700;margin-bottom:2px;}
@@ -10020,16 +10023,17 @@ function printSaleContract(idx) {
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
   .page{width:210mm;background:#fff;padding:20mm 18mm;border-radius:8px;}
-  p{font-size:13px;line-height:1.9;margin-bottom:9px;text-align:justify;}
-  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:18px 0 8px;}
-  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:7px;font-size:13px;}
+  p{font-size:13px;line-height:1.9;margin-bottom:9px;text-align:justify;text-indent:2em;font-family:'Times New Roman',Times,serif;}
+  p.no-indent{text-indent:0;}
+  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:18px 0 8px;font-family:'Times New Roman',Times,serif;}
+  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:7px;font-size:13px;font-family:'Times New Roman',Times,serif;}
   .field-label{font-weight:700;white-space:nowrap;}
   .field-line{flex:1;border-bottom:1px solid #111;min-width:60px;padding-left:4px;}
-  .sign-block{display:flex;justify-content:space-between;margin-top:28px;gap:24px;}
-  .sign-col{flex:1;font-size:13px;}
-  .sign-col p{margin-bottom:4px;text-align:left;}
+  .sign-block{display:flex;justify-content:space-between;margin-top:28px;gap:24px;align-items:flex-end;}
+  .sign-col{flex:1;font-size:13px;font-family:'Times New Roman',Times,serif;}
+  .sign-col p{margin-bottom:4px;text-align:left;text-indent:0;}
   .sign-underline{border-bottom:1px solid #111;height:24px;margin-top:18px;}
-  .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
+  .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;font-family:'Times New Roman',Times,serif;}
   @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:15mm 18mm;}@page{size:A4 portrait;margin:0;}}
 </style></head><body>
 <div class="page">
