@@ -1401,9 +1401,6 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   box-shadow:0 50px 100px -20px rgba(0,0,0,.3);
   padding:2.5rem 2.25rem 2rem;
   transform-origin: center center;
-  /* default: invisible until animation starts */
-  opacity: 0;
-  transform: scaleY(0.03);
 }
 .login-v3-card.login-card-open {
   animation: loginCardOpen .45s cubic-bezier(.22,.68,0,1.2) forwards;
