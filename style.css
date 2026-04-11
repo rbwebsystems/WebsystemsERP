@@ -3903,17 +3903,15 @@ body.theme-dark td{border-bottom-color:#253d52;border-right-color:#253d52;color:
 body.theme-dark tbody tr:nth-child(even){background:rgba(255,255,255,.03);}
 body.theme-dark tbody tr:hover{background:rgba(26,71,84,.15) !important;}
 
-/* Sticky thead — scroll tək main-da; kart ayrıca scroll etməsin */
+/* thead — normal scroll ilə birlikdə hərəkət edir, sticky yoxdur */
 .card{max-width:100%;}
 .card table{width:100%;border:none;}
 .card table thead th{
-  position:sticky;top:0;
   background:var(--table-head-bg);
   color:var(--table-head-text);
   border-bottom-color:var(--table-head-border);
   border-right-color:var(--table-head-cell-border);
-  z-index:5;
-  box-shadow:0 1px 0 rgba(0,0,0,.12);
+  z-index:1;
 }
 body.theme-dark .card table thead th{
   background:var(--table-head-bg);
