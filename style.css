@@ -5543,10 +5543,10 @@ body.sidebar-collapsed .nav-link:hover::before {
 input[type=checkbox] {
   -webkit-appearance: none !important;
   appearance: none !important;
-  width: 36px !important;
-  height: 22px !important;
-  min-width: 36px !important;
-  min-height: 22px !important;
+  width: 28px !important;
+  height: 17px !important;
+  min-width: 28px !important;
+  min-height: 17px !important;
   border-radius: 100px !important;
   background: rgba(120,120,128,.3) !important;
   border: none !important;
@@ -5564,17 +5564,17 @@ input[type=checkbox]:checked {
 input[type=checkbox]::before {
   content: '' !important;
   position: absolute !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: 13px !important;
+  height: 13px !important;
   border-radius: 50% !important;
   background: #fff !important;
   top: 2px !important;
   left: 2px !important;
   transition: transform .22s ease !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25) !important;
 }
 input[type=checkbox]:checked::before {
-  transform: translateX(14px) !important;
+  transform: translateX(11px) !important;
 }
 input[type=checkbox]:disabled {
   opacity: .4 !important;
@@ -5582,7 +5582,7 @@ input[type=checkbox]:disabled {
 }
 body.theme-dark input[type=checkbox] { background: rgba(255,255,255,.2) !important; }
 body.theme-dark input[type=checkbox]:checked { background: #30D158 !important; }
-#co_sub_active { width: 36px !important; height: 22px !important; min-width: 36px !important; min-height: 22px !important; }
+#co_sub_active { width: 28px !important; height: 17px !important; min-width: 28px !important; min-height: 17px !important; }
 
 /* Companies table action column placeholder */
 .icon-btn-placeholder{display:inline-flex;width:28px;height:28px;flex-shrink:0;}
