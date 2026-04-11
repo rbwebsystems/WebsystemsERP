@@ -7384,19 +7384,23 @@ function printCashReceipt(uid) {
 <title>Qəbz #${c.uid}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111;padding:24px;}
-  .receipt{max-width:320px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;padding:20px;font-size:13px;}
-  .receipt__head{text-align:center;margin-bottom:16px;border-bottom:1px dashed #d1d5db;padding-bottom:14px;}
-  .receipt__company{font-size:16px;font-weight:700;margin-bottom:2px;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;display:flex;justify-content:center;padding:20px;}
+  .receipt{width:210mm;min-height:148mm;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14mm 16mm;font-size:13px;}
+  .receipt__head{text-align:center;margin-bottom:14px;border-bottom:1px dashed #d1d5db;padding-bottom:12px;}
+  .receipt__company{font-size:17px;font-weight:700;margin-bottom:2px;}
   .receipt__sub{color:#6b7280;font-size:11px;}
-  .receipt__title{margin:12px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;}
-  .receipt__amount{font-size:26px;font-weight:800;color:${color};margin:4px 0 12px;}
+  .receipt__title{margin:10px 0 2px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;}
+  .receipt__amount{font-size:28px;font-weight:800;color:${color};margin:4px 0 14px;}
   .receipt__rows{border-top:1px dashed #d1d5db;padding-top:12px;}
-  .receipt__row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px;}
+  .receipt__row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:12px;}
   .receipt__row-label{color:#6b7280;flex-shrink:0;}
   .receipt__row-val{font-weight:500;text-align:right;}
   .receipt__footer{margin-top:14px;border-top:1px dashed #d1d5db;padding-top:10px;text-align:center;color:#9ca3af;font-size:10px;}
-  @media print{body{padding:0;}@page{margin:8mm;}}
+  @media print{
+    body{background:#fff;padding:0;display:block;}
+    .receipt{width:210mm;min-height:148mm;border:none;border-radius:0;padding:10mm 14mm;}
+    @page{size:A4;margin:0;}
+  }
 </style></head><body>
 <div class="receipt">
   <div class="receipt__head">
@@ -7448,7 +7452,7 @@ function openCashInfo(uid) {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
-      <button class="btn-primary" type="button" onclick="printCashReceipt(${c.uid})"><i class="fas fa-print" style="margin-right:6px;"></i>Qəbz çap et</button>
+      <button class="btn-cancel" type="button" onclick="printCashReceipt(${c.uid})"><i class="fas fa-print" style="margin-right:6px;"></i>Qəbz çap et</button>
     </div>
   `);
 }
