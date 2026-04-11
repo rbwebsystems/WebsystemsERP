@@ -6982,3 +6982,112 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   a { color: #000 !important; text-decoration: none !important; }
   @page { margin: 1.5cm; }
 }
+
+/* ═══════════════════════════════════════════
+   Premium App Preloader
+   ═══════════════════════════════════════════ */
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .3s ease, visibility .3s ease;
+}
+.app-preloader.app-preloader--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Top progress bar */
+.app-preloader__progress {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: transparent;
+  overflow: hidden;
+}
+.app-preloader__progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--brand-green, #1a4754);
+  border-radius: 0 2px 2px 0;
+  transition: width .35s cubic-bezier(.4,0,.2,1);
+}
+
+/* Center content */
+.app-preloader__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  user-select: none;
+}
+
+/* Logo sizing for preloader */
+.rbsoft-digital--preloader {
+  height: 3.6rem;
+  gap: 0.42rem;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: preloaderLogoIn .5s .05s cubic-bezier(.22,.68,0,1.2) forwards;
+}
+.rbsoft-digital--preloader .rbsoft-digital__mid span:first-child { height: 1.5rem; }
+.rbsoft-digital--preloader .rbsoft-digital__mid span:last-child  { height: 1.8rem; }
+.rbsoft-digital--preloader .rbsoft-digital__b { display: none; }
+@keyframes preloaderLogoIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Label */
+.app-preloader__label {
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: preloaderLogoIn .4s .2s ease forwards;
+}
+
+/* ── Skeleton loading ── */
+@keyframes skeletonShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f5 25%, #e8e8ef 50%, #f0f0f5 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+.skeleton-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+}
+.skeleton-row:last-child { border-bottom: none; }
+.skeleton-cell { height: 14px; border-radius: 4px; flex-shrink: 0; }
+.skeleton-cell--sm  { width: 60px; }
+.skeleton-cell--md  { width: 120px; }
+.skeleton-cell--lg  { width: 180px; }
+.skeleton-cell--xl  { width: 240px; }
+.skeleton-cell--flex { flex: 1; }
+.skeleton-stat {
+  height: 56px; border-radius: 10px;
+  background: linear-gradient(90deg, #f0f0f5 25%, #e8e8ef 50%, #f0f0f5 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+
+/* Content fade-in when ready */
+@keyframes contentFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.app-content-ready {
+  animation: contentFadeIn .25s ease both;
+}
