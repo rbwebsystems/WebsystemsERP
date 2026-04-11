@@ -11511,8 +11511,8 @@ function renderAll() {
             <td class="tbl-actions">
               <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${active ? "disabled" : ""}>Seç</button>
               <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
-              ${paidBtn}
               ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+              ${paidBtn}
             </td>
           </tr>`;
         })
