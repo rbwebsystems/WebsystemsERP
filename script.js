@@ -10454,33 +10454,40 @@ function saveDayClose() {
 
 function openDayCloseHistory() {
   ensureAuditTrash();
-  const rows = (db.dayCloses || [])
-    .slice()
-    .sort((a, b) => String(a.ts).localeCompare(String(b.ts)) * -1)
-    .map((x) => {
-      const acc = x.accountId ? `#${x.accountId}` : "Hamısı";
-      return `
-        <tr>
-          <td>${x.uid}</td>
-          <td>${fmtDT(x.ts)}</td>
-          <td>${escapeHtml(acc)}</td>
-          <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
-          <td>${escapeHtml(x.user || "-")}</td>
-          <td>${escapeHtml(x.note || "")}</td>
-        </tr>
-      `;
-    })
-    .join("");
+  const closes = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  const rows = closes.map((x) => {
+    const accs = Array.isArray(x.accounts) ? x.accounts : [];
+    const accRows = accs.map(a =>
+      `<tr style="background:#f8fafc;">
+        <td style="padding-left:24px;color:var(--text-muted);font-size:.82rem;">${escapeHtml(a.name || "-")}</td>
+        <td style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(a.type || "-")}</td>
+        <td colspan="3"></td>
+        <td style="text-align:right;font-size:.85rem;font-weight:600;">${money(a.balance)} AZN</td>
+        <td></td>
+      </tr>`
+    ).join("");
+    return `
+      <tr style="cursor:default;">
+        <td>${x.uid}</td>
+        <td>${fmtDT(x.ts)}</td>
+        <td>${escapeHtml(x.user || "-")}</td>
+        <td colspan="2">${escapeHtml(x.note || "")}</td>
+        <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
+        <td>${accs.length ? `<span class="muted" style="font-size:.78rem;">${accs.length} hesab</span>` : ""}</td>
+      </tr>
+      ${accRows}
+    `;
+  }).join("");
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Tarix</th><th>Hesab</th><th>Ümumi balans</th><th>İstifadəçi</th><th>Qeyd</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="6">Tarixçə boşdur</td></tr>`}</tbody>
+        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th colspan="2">Qeyd</th><th>Ümumi balans</th><th></th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="7">Tarixçə boşdur</td></tr>`}</tbody>
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
+      <button class="btn-back" type="button" onclick="openDayClose()"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
