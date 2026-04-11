@@ -596,6 +596,10 @@ async function sendTelegram(text) {
 function tgCompanyName() {
   return (db.settings?.companyName || "ERP") ;
 }
+function tgUserName() {
+  const u = currentUser();
+  return (u?.fullName || "").trim() || userDisplay(u) || "-";
+}
 
 function logEvent(action, target, details = {}) {
   ensureAuditTrash();
@@ -609,7 +613,7 @@ function logEvent(action, target, details = {}) {
     details,
   });
   if (db.audit.length > 5000) db.audit = db.audit.slice(db.audit.length - 5000);
-  tgLogEvent(action, target, details, userDisplay(u));
+  tgLogEvent(action, target, details, (u?.fullName || "").trim() || userDisplay(u));
 }
 
 function tgLogEvent(action, target, details, user) {
@@ -634,7 +638,7 @@ function tgLogEvent(action, target, details, user) {
   const inv = details.invNo ? `\nQaimə: <b>${details.invNo}</b>` : "";
   const amt = details.amount ? `\nMəbləğ: <b>${money(details.amount)} AZN</b>` : "";
   const kind = details.kind ? `\nNöv: ${details.kind}` : "";
-  const usr = user ? `\nİstifadəçi: ${user}` : "";
+  const usr = user ? `\nƏməkdaş: <b>${user}</b>` : "";
 
   sendTelegram(
     `${icon} ${tgt} — <b>${tgCompanyName()}</b>${inv}${amt}${kind}${usr}`
@@ -4977,7 +4981,8 @@ async function savePurch(e, idx) {
     `Qaimə: <b>${data.invNo || invFallback("purch", data.uid)}</b>\n` +
     `Təchizatçı: ${data.supp || "-"}\n` +
     `Məbləğ: <b>${money(data.amount)} AZN</b>\n` +
-    `Tarix: ${fmtDT(data.date)}`
+    `Tarix: ${fmtDT(data.date)}\n` +
+    `Əməkdaş: <b>${tgUserName()}</b>`
   );
 
   // If user entered "paid" in purchase form, reflect it in cash as an outflow.
@@ -6519,7 +6524,8 @@ async function saveSale(e, idx) {
     `Müştəri: ${base.customerName || "-"}\n` +
     `Məbləğ: <b>${money(base.amount)} AZN</b>\n` +
     `Növ: ${base.saleType || "-"}\n` +
-    `Tarix: ${fmtDT(base.date)}`
+    `Tarix: ${fmtDT(base.date)}\n` +
+    `Əməkdaş: <b>${tgUserName()}</b>`
   );
 
   // Cash op if payNow
@@ -7793,7 +7799,8 @@ function saveCashOp(e) {
       `Kateqoriya: ${val("exp_cat") || "-"} / ${val("exp_sub") || "-"}\n` +
       `Məbləğ: <b>${money(amount)} AZN</b>\n` +
       `Qeyd: ${note || "-"}\n` +
-      `Tarix: ${fmtDT(date)}`
+      `Tarix: ${fmtDT(date)}\n` +
+      `Əməkdaş: <b>${tgUserName()}</b>`
     );
     return;
   }
@@ -7896,7 +7903,8 @@ function saveCashOp(e) {
       `Müştəri: ${cust.sur} ${cust.name}\n` +
       `Qaimə: <b>${s.invNo || invFallback("sales", s.uid)}</b>\n` +
       `Məbləğ: <b>${money(a)} AZN</b>\n` +
-      `Tarix: ${fmtDT(date)}`
+      `Tarix: ${fmtDT(date)}\n` +
+      `Əməkdaş: <b>${tgUserName()}</b>`
     );
     return;
   }
@@ -7935,7 +7943,8 @@ function saveCashOp(e) {
     `Müştəri: ${cust.sur} ${cust.name}\n` +
     `Məbləğ: <b>${money(applied.applied)} AZN</b>\n` +
     `Növ: ${kind === "credit_pay" ? "Kredit" : "Nağd"}\n` +
-    `Tarix: ${fmtDT(date)}`
+    `Tarix: ${fmtDT(date)}\n` +
+    `Əməkdaş: <b>${tgUserName()}</b>`
   );
 }
 
