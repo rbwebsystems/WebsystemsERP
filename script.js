@@ -609,6 +609,36 @@ function logEvent(action, target, details = {}) {
     details,
   });
   if (db.audit.length > 5000) db.audit = db.audit.slice(db.audit.length - 5000);
+  tgLogEvent(action, target, details, userDisplay(u));
+}
+
+function tgLogEvent(action, target, details, user) {
+  const ICONS = { create:"➕", update:"✏️", delete:"🗑️", return:"↩️", pay:"💳", login:"🔐", logout:"🚪" };
+  const TARGETS = { sales:"Satış", purch:"Alış", cash:"Kassa", cust:"Müştəri", supp:"Təchizatçı",
+    prod:"Məhsul", staff:"Əməkdaş", settings:"Ayarlar", founders:"Təsisçi", trash:"Zibil",
+    sales_locked_override:"Satış (bağlı dövr)" };
+  // skip noisy/low-value events
+  const SKIP = new Set(["settings","trash","login","logout"]);
+  if (SKIP.has(target)) return;
+  // skip update on sales/purch that were already notified directly (create/update handled by saveSale/savePurch)
+  if ((target === "sales" || target === "purch") && (action === "create" || action === "update")) return;
+  // skip individual cash creates (expense/payment already notified in saveCashOp)
+  if (target === "cash" && action === "create") {
+    const kind = String(details.kind || "");
+    const ALREADY_NOTIFIED = new Set(["expense","debtor_payment","debtor_invoice_payment"]);
+    if (ALREADY_NOTIFIED.has(kind)) return;
+  }
+
+  const icon = ICONS[action] || "🔔";
+  const tgt = TARGETS[target] || target;
+  const inv = details.invNo ? `\nQaimə: <b>${details.invNo}</b>` : "";
+  const amt = details.amount ? `\nMəbləğ: <b>${money(details.amount)} AZN</b>` : "";
+  const kind = details.kind ? `\nNöv: ${details.kind}` : "";
+  const usr = user ? `\nİstifadəçi: ${user}` : "";
+
+  sendTelegram(
+    `${icon} ${tgt} — <b>${tgCompanyName()}</b>${inv}${amt}${kind}${usr}`
+  );
 }
 
 function auditExplain(a) {
