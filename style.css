@@ -5561,10 +5561,18 @@ input[type=date], input[type=month], input[type=datetime-local] {
   background: #fff !important;
   border: 1px solid #d1d5db !important;
   border-radius: 10px !important;
-  padding: 0 10px !important;
+  padding: 0 36px 0 10px !important;
   color: #1c1c1e !important;
   box-shadow: none !important;
   font-size: .88rem !important;
+}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=month]::-webkit-calendar-picker-indicator,
+input[type=datetime-local]::-webkit-calendar-picker-indicator {
+  opacity: 0.45 !important;
+  cursor: pointer !important;
+  margin-left: 4px !important;
+  flex-shrink: 0 !important;
 }
 input[type=date]:focus, input[type=month]:focus, input[type=datetime-local]:focus {
   border-color: #007AFF !important;
