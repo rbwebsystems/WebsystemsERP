@@ -2863,7 +2863,6 @@ function doLoginWithCompany(companyId) {
   window.__pendingLogin = null;
   const c = meta.companies.find((x) => x.id === companyId);
   if (!c) return alert("Şirkət tapılmadı.");
-  if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
   if (useFirestore()) {
@@ -2925,7 +2924,6 @@ function login(e) {
   if (companyFromUsername) {
     const c = meta.companies.find((x) => norm(x.id) === norm(companyFromUsername));
     if (!c) return alert("İstifadəçi adındakı şirkət tapılmadı (format: şirkətadı_ad, məs: baktel_rustamb).");
-    if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
     if (u.companyId != null && u.companyId !== "" && norm(u.companyId) !== norm(companyFromUsername)) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
     doLoginWithCompany(c.id);
     return;
@@ -2938,8 +2936,14 @@ function login(e) {
   if (!userCid && meta.companies[0] && norm(meta.companies[0].id) !== urlCid) return alert("Bu şirkət üçün icazəniz yoxdur.");
   const c = meta.companies.find((x) => norm(x.id) === urlCid);
   if (!c) return alert("Şirkət tapılmadı.");
-  if (c.disabled) return alert("Bu şirkət deaktiv edilib. Giriş mümkün deyil. Developer ilə əlaqə saxlayın.");
   doLoginWithCompany(c.id);
+}
+
+function logoutFromDisabled() {
+  ["compDisabledOverlay","subSuspendOverlay","subWarningPopup"].forEach(id => {
+    const e = byId(id); if (e) e.remove();
+  });
+  logout();
 }
 
 function logout() {
@@ -8752,7 +8756,7 @@ function showCompanyDisabled(name) {
       <div class="ios-block-body"><b>${escapeHtml(name || "")}</b> şirkəti developer tərəfindən deaktiv edilib.</div>
       <div class="ios-block-body" style="margin-bottom:24px;font-size:.8rem">Əlavə məlumat üçün developer ilə əlaqə saxlayın.</div>
       <div class="ios-dialog-btns" style="margin:0 -28px">
-        <button class="ios-btn-cancel" onclick="logout()">Çıxış</button>
+        <button class="ios-btn-cancel" onclick="logoutFromDisabled()">Çıxış</button>
       </div>
     </div>
   `;
