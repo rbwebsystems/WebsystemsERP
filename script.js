@@ -8449,6 +8449,10 @@ function openCompany(idx = null) {
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
             <div class="f-group"><label>ID (avtomatik)</label><input id="co_id" value="${escapeHtml(c.id || (idx === null ? "Yaradılarkən avtomatik UUID" : ""))}" disabled style="opacity:.6;font-size:.8rem;font-family:monospace"></div>
+            <div class="f-group"><label>Direktor</label><input id="co_director" placeholder="Ad Soyad" value="${escapeHtml(c.director || "")}"></div>
+            <div class="f-group"><label>VÖEN</label><input id="co_voen" placeholder="0000000000" value="${escapeHtml(c.voen || "")}"></div>
+            <div class="f-group grid-span-2"><label>Ünvan</label><input id="co_address" placeholder="Şəhər, küçə, bina" value="${escapeHtml(c.address || "")}"></div>
+            <div class="f-group grid-span-2"><label>Rekvizitlər</label><textarea id="co_requisites" rows="3" placeholder="Bank, hesab nömrəsi, SWIFT...">${escapeHtml(c.requisites || "")}</textarea></div>
           </div>
         </div>
         <div class="form-card">
@@ -8516,11 +8520,16 @@ function saveCompany(e, idx) {
     payHistory: (meta.companies[idx]?.subscription?.payHistory || []),
   } : { active: false };
 
+  const director   = val("co_director").trim();
+  const voen       = val("co_voen").trim();
+  const address    = val("co_address").trim();
+  const requisites = (byId("co_requisites")?.value || "").trim();
+
   if (idx === null) {
     const id = name.trim() || genCompanyUUID();
-    meta.companies.push({ id, name, sections, subscription });
+    meta.companies.push({ id, name, director, voen, address, requisites, sections, subscription });
   } else {
-    meta.companies[idx] = { ...meta.companies[idx], name, sections, subscription };
+    meta.companies[idx] = { ...meta.companies[idx], name, director, voen, address, requisites, sections, subscription };
   }
   saveMeta();
   closeMdl();
@@ -8603,9 +8612,21 @@ function openCompanyInfo(idx) {
     ? `<button class="btn-main" type="button" onclick="markCompanyPaid(${idx});openCompanyInfo(${idx})">✅ Bu ayı ödənilib qeyd et</button>`
     : "";
 
+  const detailsBlock = `
+    <div class="info-row"><div class="info-label">Şirkət adı</div><div class="info-value">${escapeHtml(c.name || "—")}</div></div>
+    ${c.director  ? `<div class="info-row"><div class="info-label">Direktor</div><div class="info-value">${escapeHtml(c.director)}</div></div>` : ""}
+    ${c.voen      ? `<div class="info-row"><div class="info-label">VÖEN</div><div class="info-value">${escapeHtml(c.voen)}</div></div>` : ""}
+    ${c.address   ? `<div class="info-row"><div class="info-label">Ünvan</div><div class="info-value">${escapeHtml(c.address)}</div></div>` : ""}
+    ${c.requisites? `<div class="info-row"><div class="info-label">Rekvizitlər</div><div class="info-value" style="white-space:pre-line">${escapeHtml(c.requisites)}</div></div>` : ""}
+  `;
+
   openModal(`
     <h2>📋 ${escapeHtml(c.name)}</h2>
     <div class="form-stack">
+      <div class="form-card">
+        <div class="form-card-title">Şirkət məlumatları</div>
+        <div class="info-block">${detailsBlock}</div>
+      </div>
       <div class="form-card">
         <div class="form-card-title">Abunəlik məlumatı</div>
         <div class="info-block">${tariffBlock}</div>
