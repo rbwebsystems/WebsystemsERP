@@ -3937,19 +3937,22 @@ th:last-child,td:last-child{border-right:none;width:140px;text-align:center;whit
 #creditorContent>.card{
   flex:1;min-height:0;overflow:auto;
 }
-/* Complex sections: scroll as a whole unit */
+/* dash/tools/settings: scroll as a whole unit */
 #dash.section.active,
-#reports.section.active,
 #tools.section.active,
 #settings.section.active{
   display:flex;flex-direction:column;overflow-y:auto;
 }
 #dash.section.active>.card,
-#reports.section.active>.card,
 #tools.section.active>.card,
 #settings.section.active>.card{
   flex:unset;overflow:visible;min-height:unset;
 }
+/* Reports: fixed content-header, repSec scrolls internally */
+/* JS shows/hides with style.display=""/none — CSS display takes effect when "" */
+#repMenu{flex:1;min-height:0;overflow-y:auto;}
+#repContent{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+[id^="repSec-"]{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;}
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
 .stat-card{padding:22px;border-bottom:none;border-left:4px solid var(--accent);}
