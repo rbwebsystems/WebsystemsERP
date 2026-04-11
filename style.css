@@ -5012,9 +5012,180 @@ body.theme-dark .pill.nagd{
 #companies .card table td:nth-child(3) code{overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%;}
 
 /* ══════════════════════════════════════════════════════════════
+   iOS Full UI — Buttons, Cards, Inputs, Tables, Layout
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Global font ── */
+body, input, select, textarea, button {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
+}
+
+/* ── Page background ── */
+body { background: #F2F2F7 !important; }
+body.theme-dark { background: #000 !important; }
+.main-area, main { background: #F2F2F7 !important; }
+body.theme-dark .main-area, body.theme-dark main { background: #1C1C1E !important; }
+
+/* ── Content header ── */
+.content-header {
+  background: #F2F2F7 !important;
+  border-bottom: 1px solid rgba(60,60,67,.15) !important;
+  padding-bottom: 12px !important;
+}
+.content-header h1 {
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -.02em !important;
+  color: #000 !important;
+}
+body.theme-dark .content-header { background: #1C1C1E !important; border-bottom-color: rgba(255,255,255,.1) !important; }
+body.theme-dark .content-header h1 { color: #fff !important; }
+
+/* ── Buttons ── */
+.btn-main {
+  background: #007AFF !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  height: 40px !important;
+  padding: 0 20px !important;
+  font-weight: 600 !important;
+  font-size: .875rem !important;
+  box-shadow: 0 1px 4px rgba(0,122,255,.2) !important;
+  transition: background .15s, transform .1s !important;
+}
+.btn-main:hover { background: #0066CC !important; box-shadow: 0 2px 8px rgba(0,122,255,.3) !important; }
+.btn-main:active { transform: scale(.97) !important; }
+
+.btn-cancel {
+  background: rgba(120,120,128,.12) !important;
+  color: #1c1c1e !important;
+  border: none !important;
+  border-radius: 12px !important;
+  height: 40px !important;
+  font-weight: 500 !important;
+  font-size: .875rem !important;
+  box-shadow: none !important;
+}
+.btn-cancel:hover { background: rgba(120,120,128,.18) !important; }
+body.theme-dark .btn-cancel { background: rgba(255,255,255,.1) !important; color: #fff !important; }
+body.theme-dark .btn-cancel:hover { background: rgba(255,255,255,.16) !important; }
+
+.btn-back {
+  background: rgba(0,122,255,.1) !important;
+  color: #007AFF !important;
+  border: none !important;
+  border-radius: 12px !important;
+}
+.btn-back:hover { background: rgba(0,122,255,.16) !important; }
+
+/* icon-btn */
+.icon-btn {
+  border-radius: 8px !important;
+  background: rgba(120,120,128,.1) !important;
+  border: none !important;
+  color: #636366 !important;
+  transition: background .15s !important;
+}
+.icon-btn:hover { background: rgba(120,120,128,.2) !important; }
+.icon-btn.edit { background: rgba(0,122,255,.1) !important; color: #007AFF !important; }
+.icon-btn.edit:hover { background: rgba(0,122,255,.18) !important; }
+.icon-btn.delete { background: rgba(255,59,48,.08) !important; color: #FF3B30 !important; }
+.icon-btn.delete:hover { background: rgba(255,59,48,.15) !important; }
+body.theme-dark .icon-btn { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.5) !important; }
+
+/* ── Cards ── */
+.card {
+  background: #fff !important;
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05) !important;
+}
+body.theme-dark .card { background: #2C2C2E !important; box-shadow: 0 1px 3px rgba(0,0,0,.4) !important; }
+.form-card { border-radius: 14px !important; border: none !important; box-shadow: 0 1px 3px rgba(0,0,0,.06) !important; }
+body.theme-dark .form-card { background: #2C2C2E !important; }
+
+/* ── Inputs ── */
+input:not([type=checkbox]):not([type=radio]),
+select, textarea {
+  background: rgba(120,120,128,.1) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 11px 14px !important;
+  font-size: .9rem !important;
+  color: #000 !important;
+  box-shadow: none !important;
+  transition: background .15s !important;
+}
+input:not([type=checkbox]):not([type=radio]):focus,
+select:focus, textarea:focus {
+  background: rgba(120,120,128,.14) !important;
+  outline: 2px solid #007AFF !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+input:not([type=checkbox]):not([type=radio]):hover,
+select:hover { background: rgba(120,120,128,.13) !important; }
+body.theme-dark input:not([type=checkbox]):not([type=radio]),
+body.theme-dark select, body.theme-dark textarea {
+  background: rgba(255,255,255,.1) !important;
+  color: #fff !important;
+}
+body.theme-dark input:not([type=checkbox]):not([type=radio]):focus,
+body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
+
+/* ── Tables ── */
+.card table { border: none !important; border-radius: 0 !important; }
+.card table thead th {
+  background: rgba(242,242,247,.9) !important;
+  color: #8E8E93 !important;
+  font-size: .72rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  border-bottom: 1px solid rgba(60,60,67,.12) !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+body.theme-dark .card table thead th {
+  background: rgba(44,44,46,.95) !important;
+  color: rgba(255,255,255,.4) !important;
+  border-bottom-color: rgba(255,255,255,.08) !important;
+}
+.card table tbody tr { border-bottom: 1px solid rgba(60,60,67,.09) !important; }
+.card table tbody tr:last-child { border-bottom: none !important; }
+.card table tbody tr:hover { background: rgba(0,122,255,.04) !important; }
+body.theme-dark .card table tbody tr { border-bottom-color: rgba(255,255,255,.06) !important; }
+body.theme-dark .card table tbody tr:hover { background: rgba(255,255,255,.04) !important; }
+.card table td, .card table th { border: none !important; }
+
+/* ── Pills / badges ── */
+.pill {
+  border-radius: 20px !important;
+  font-size: .72rem !important;
+  font-weight: 600 !important;
+  padding: 3px 10px !important;
+  border: none !important;
+}
+
+/* ── Modal body ── */
+.modal-body {
+  background: #F2F2F7 !important;
+  border-radius: 20px !important;
+}
+body.theme-dark .modal-body { background: #1C1C1E !important; }
+.modal-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(60,60,67,.12) !important;
+  padding: 16px 20px !important;
+  gap: 10px !important;
+}
+body.theme-dark .modal-footer { border-top-color: rgba(255,255,255,.08) !important; background: transparent !important; }
+
+/* ══════════════════════════════════════════════════════════════
    iOS Sidebar — Frosted glass, light theme nav
    ══════════════════════════════════════════════════════════════ */
-aside {
   background: rgba(242,242,247,.96) !important;
   backdrop-filter: blur(24px) saturate(1.2) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
