@@ -3846,8 +3846,6 @@ body.theme-dark .btn-cancel:hover{background:#4b5563;}
   transition: background .15s, color .15s;
 }
 .btn-back i { font-size: .72rem; pointer-events: none; }
-/* hide text label — icon only */
-.btn-back span { display: none; }
 .btn-back:hover { background: #e5e5ea; color: #1c1c1e; }
 body.theme-dark .btn-back { background: #3a3a3c; border-color: rgba(255,255,255,.18); color: #ebebf5; }
 body.theme-dark .btn-back:hover { background: #48484a; }
@@ -4378,8 +4376,6 @@ body.theme-dark .modal.modal--popup .modal-nav-top .btn-cancel:hover{
 }
 .modal-nav-top .btn-back i,
 .modal-footer .btn-back i { font-size: .72rem !important; }
-.modal-nav-top .btn-back span,
-.modal-footer .btn-back span { display: none !important; }
 .modal-nav-top .btn-back:hover,
 .modal-footer .btn-back:hover { background: #e5e5ea !important; color: #1c1c1e !important; }
 body.theme-dark .modal-nav-top .btn-back,

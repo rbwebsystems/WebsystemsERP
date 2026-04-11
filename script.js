@@ -3710,7 +3710,7 @@ function renderModalWithNav(rawHtml) {
   const hist = window.__modalHistory || [];
   const canBack = hist.length > 0;
   const nav = canBack
-    ? `<div class="modal-nav-top"><button class="btn-back" type="button" onclick="modalBack()"><i class="fas fa-chevron-left"></i> Geri</button></div>`
+    ? `<div class="modal-nav-top"><button class="btn-back" type="button" onclick="modalBack()"><i class="fas fa-chevron-left"></i></button></div>`
     : "";
   return `${nav}${rawHtml}`;
 }
@@ -4784,7 +4784,7 @@ function openReturnPurch(idx) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -5516,7 +5516,7 @@ function openCustStatement(idx) {
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openPrintWindow('${escapeAttr(title)}', document.querySelector('#modalContent')?.innerHTML || '')">Print</button>
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -5604,7 +5604,7 @@ function openSuppStatement(idx) {
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openPrintWindow('${escapeAttr(title)}', document.querySelector('#modalContent')?.innerHTML || '')">Print</button>
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -5649,7 +5649,7 @@ function openSupplierPaymentHistory(idx) {
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -6992,7 +6992,7 @@ function openPaymentHistory(kind, idx) {
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openSalePayment(${idx})">Ödəniş et</button>
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
@@ -7035,7 +7035,7 @@ function openSalePayment(idx) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -7202,7 +7202,7 @@ function openDebtorPayment(customerId, saleTypeFilter) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -8245,7 +8245,7 @@ function openCreditorPayment(groupIdx) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -9460,7 +9460,7 @@ function openReturnSale(idx) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -10129,7 +10129,7 @@ function openReturnAdvancePay(saleUid) {
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Qaytar</button>
-        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+        <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
       </div>
     </form>
@@ -10447,7 +10447,7 @@ function openDayCloseHistory() {
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i> Geri</button>
+      <button class="btn-back" type="button"><i class="fas fa-chevron-left"></i></button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
   `);
