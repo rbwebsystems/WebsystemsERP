@@ -5460,36 +5460,37 @@ body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):no
   background: rgba(255,255,255,.14) !important;
 }
 
-/* modal / slideover form inputs — white with border */
-.modal-body input:not([type=checkbox]):not([type=radio]):not([type=range]),
-.modal-body select,
-.modal-body textarea {
+/* modal / slideover form inputs — white with border
+   Uses #modalContent (ID selector) to guarantee higher specificity than global gray rule */
+#modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]),
+#modalContent select,
+#modalContent textarea {
   background: #fff !important;
   border: 1px solid #d1d5db !important;
   color: #1c1c1e !important;
   box-shadow: none !important;
 }
-.modal-body input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
-.modal-body select:focus,
-.modal-body textarea:focus {
+#modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+#modalContent select:focus,
+#modalContent textarea:focus {
   background: #fff !important;
   border-color: #007AFF !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
 }
-.modal-body input:not([type=checkbox]):not([type=radio]):not([type=range]):hover {
+#modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):hover {
   background: #f9fafb !important;
 }
-body.theme-dark .modal-body input:not([type=checkbox]):not([type=radio]):not([type=range]),
-body.theme-dark .modal-body select,
-body.theme-dark .modal-body textarea {
+body.theme-dark #modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]),
+body.theme-dark #modalContent select,
+body.theme-dark #modalContent textarea {
   background: #2c2c2e !important;
   border-color: rgba(255,255,255,.2) !important;
   color: #f1f5f9 !important;
 }
-body.theme-dark .modal-body input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
-body.theme-dark .modal-body select:focus,
-body.theme-dark .modal-body textarea:focus {
+body.theme-dark #modalContent input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+body.theme-dark #modalContent select:focus,
+body.theme-dark #modalContent textarea:focus {
   border-color: #007AFF !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.18) !important;
 }
@@ -6704,8 +6705,10 @@ body.theme-dark .empty-state-sub { color: rgba(255,255,255,.35) !important; }
    #A3 Form xəta — iOS inline validation
    ══════════════════════════════════════════════════════════════ */
 input:not([type=checkbox]):not([type=radio]):invalid:not(:placeholder-shown),
-select:invalid:not(:placeholder-shown),
-textarea:invalid:not(:placeholder-shown) {
+textarea:invalid:not(:placeholder-shown),
+input:not([type=checkbox]):not([type=radio]):user-invalid,
+select:user-invalid,
+textarea:user-invalid {
   outline: 2px solid rgba(255,59,48,.6) !important;
   background: rgba(255,59,48,.05) !important;
 }
