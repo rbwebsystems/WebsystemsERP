@@ -7631,8 +7631,8 @@ function openCashOp() {
           <div class="form-card-title">Müştəri</div>
           <div class="grid-2">
             <div class="f-group"><label>Müştəri *</label><select id="cash_customer" onchange="refreshCustomerInvoices()" required><option value="">Müştəri seç</option></select></div>
-            <div class="f-group"><label>Qaimə</label><select id="cash_customer_invoice" onchange="refreshCashPayKind()">
-              <option value="">Bütün borclar üzrə bölüşdür</option>
+            <div class="f-group"><label>Qaimə *</label><select id="cash_customer_invoice" onchange="refreshCashPayKind()">
+              <option value="">Qaimə seçin</option>
             </select></div>
             <div id="cash_pay_kind_box" class="f-group" style="display:none;">
               <label>Ödəniş növü</label>
@@ -8066,9 +8066,10 @@ function saveCashOp(e) {
   // customer payment
   const customerId = val("cash_customer");
   const cust = db.cust.find((c) => String(c.uid) === String(customerId));
-  if (!cust) return;
+  if (!cust) return alert("Müştəri seçin.");
 
   const saleUid = val("cash_customer_invoice");
+  if (!saleUid) return alert("Zəhmət olmasa qaimə seçin.");
   if (saleUid) {
     const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
     if (!s) return;
