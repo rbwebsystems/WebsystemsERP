@@ -5482,7 +5482,9 @@ body.sidebar-collapsed .nav-link:hover::before {
   text-align:center;
   box-shadow:0 8px 40px rgba(0,0,0,.18);
   overflow:hidden;
-}.ios-dialog-title{
+}
+.ios-dialog-title{ margin:0 0 6px; }
+.ios-dialog-msg{ margin:0 0 16px; }.ios-dialog-title{
   font-size:1rem;
   font-weight:600;
   color:#1c1c1e;
@@ -5498,15 +5500,15 @@ body.sidebar-collapsed .nav-link:hover::before {
 }
 .ios-dialog-btns{
   display:flex;
-  flex-direction:column;
+  flex-direction:row;
   gap:8px;
-  padding:16px 16px 20px;
+  padding:0 16px 20px;
   border-top:none;
   margin:0;
 }
 .ios-dialog-btns button{
   flex:1;
-  padding:13px 16px;
+  padding:13px 8px;
   border:none;
   border-radius:12px;
   background:rgba(120,120,128,.12);
@@ -5515,37 +5517,17 @@ body.sidebar-collapsed .nav-link:hover::before {
   cursor:pointer;
   transition:background .15s,transform .1s;
   color:#1c1c1e;
-  width:100%;
 }
 .ios-dialog-btns button:not(:last-child){
   border-right:none;
 }
-.ios-dialog-btns button:hover{
-  background:rgba(120,120,128,.18);
-}
-.ios-dialog-btns button:active{
-  transform:scale(.98);
-}
-.ios-dialog-btns button.ios-btn-confirm{
-  background:#FF3B30;
-  color:#fff;
-  font-weight:600;
-}
-.ios-dialog-btns button.ios-btn-confirm:hover{
-  background:#d93025;
-}
-.ios-dialog-btns button.ios-btn-ok{
-  background:#007AFF;
-  color:#fff;
-  font-weight:600;
-}
-.ios-dialog-btns button.ios-btn-ok:hover{
-  background:#0066CC;
-}
-.ios-dialog-btns button.ios-btn-cancel{
-  color:#1c1c1e;
-  background:rgba(120,120,128,.12);
-}
+.ios-dialog-btns button:hover{ background:rgba(120,120,128,.18); }
+.ios-dialog-btns button:active{ transform:scale(.98); }
+.ios-dialog-btns button.ios-btn-confirm{ background:#FF3B30;color:#fff;font-weight:600; }
+.ios-dialog-btns button.ios-btn-confirm:hover{ background:#d93025; }
+.ios-dialog-btns button.ios-btn-ok{ background:#007AFF;color:#fff;font-weight:600; }
+.ios-dialog-btns button.ios-btn-ok:hover{ background:#0066CC; }
+.ios-dialog-btns button.ios-btn-cancel{ color:#1c1c1e;background:rgba(120,120,128,.12); }
 /* Info/warning overlay using ios style */
 .ios-block-overlay{
   position:fixed;inset:0;z-index:99999;
