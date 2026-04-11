@@ -5039,9 +5039,9 @@ body.theme-dark .header-rest { background: transparent !important; }
 body.sidebar-collapsed .app-header { left: 76px !important; }
 
 /* Main area — push down below floating header */
-.main-area { margin-left: 228px !important; padding-top: 68px !important; padding-right: 8px !important; padding-bottom: 8px !important; }
+.main-area { margin-left: 228px !important; padding-top: 68px !important; padding-right: 8px !important; padding-bottom: 8px !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; box-sizing: border-box !important; overflow: hidden !important; }
 body.sidebar-collapsed .main-area { margin-left: 76px !important; }
-main { padding-left: 0 !important; padding-right: 0 !important; }
+main { padding-left: 0 !important; padding-right: 0 !important; overflow-y: auto !important; }
 
 /* Hide pagination controls */
 .pager { display: none !important; }
