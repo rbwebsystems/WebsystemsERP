@@ -4270,11 +4270,55 @@ button.dev-company-item:hover{
   font-family:ui-monospace,monospace;
   flex-shrink:0;
 }
-.modal-nav-top{
-  display:flex;
-  justify-content:flex-start;
-  margin-bottom:10px;
+/* ── modal-nav-top — iOS back navigation ── */
+.modal-nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 6px;
+  padding-bottom: 0;
 }
+/* Apple-style back button in nav-top */
+.modal-nav-top .btn-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #007AFF !important;
+  font-size: .9rem !important;
+  font-weight: 500 !important;
+  padding: 4px 0 !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+}
+.modal-nav-top .btn-back:hover { color: #0055cc !important; background: none !important; }
+.modal-nav-top .btn-back i { font-size: .85rem !important; }
+body.theme-dark .modal-nav-top .btn-back { color: #0A84FF !important; }
+/* If top back btn exists, hide footer back btn to avoid duplication */
+.modal-body:has(.modal-nav-top) .modal-footer .btn-back,
+.modal-body-inner:has(.modal-nav-top) .modal-footer .btn-back,
+form:has(~ .modal-nav-top) .modal-footer .btn-back { display: none !important; }
+/* Footer btn-back that has no nav-top above — Apple style */
+.modal-footer .btn-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #007AFF !important;
+  font-size: .875rem !important;
+  font-weight: 500 !important;
+  padding: 0 4px !important;
+  height: 40px !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+}
+.modal-footer .btn-back:hover { color: #0055cc !important; background: none !important; }
+body.theme-dark .modal-footer .btn-back { color: #0A84FF !important; }
 .modal-footer{
   margin-top:0;
   display:flex;
