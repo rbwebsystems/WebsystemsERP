@@ -3827,28 +3827,31 @@ body.theme-dark .btn-cancel{background:#374151;color:#e5e7eb;border-color:#4b556
 body.theme-dark .btn-cancel:hover{background:#4b5563;}
 
 /* ===== Geri (back) button — distinctive teal outline ===== */
-/* ── iOS-style back button (global) ── */
+/* ── Back button — circular arrow (like sidebar-collapse-btn) ── */
 .btn-back {
-  background: none;
-  color: #007AFF;
-  border: none;
-  box-shadow: none;
-  height: auto;
-  padding: 4px 2px;
-  border-radius: 0;
-  font-weight: 500;
-  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.13);
+  background: #f2f2f7;
+  color: #8e8e93;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: .9rem;
-  transition: color .12s;
+  justify-content: center;
+  cursor: pointer;
+  font-size: .72rem;
+  flex-shrink: 0;
+  box-shadow: none;
+  padding: 0;
+  transition: background .15s, color .15s;
 }
-.btn-back i { font-size: .8rem; }
-.btn-back:hover { color: #0055cc; background: none; }
-body.theme-dark .btn-back { color: #0A84FF; }
-body.theme-dark .btn-back:hover { color: #409cff; }
-.header-actions .btn-back { font-size: .86rem; }
+.btn-back i { font-size: .72rem; pointer-events: none; }
+/* hide text label — icon only */
+.btn-back span { display: none; }
+.btn-back:hover { background: #e5e5ea; color: #1c1c1e; }
+body.theme-dark .btn-back { background: #3a3a3c; border-color: rgba(255,255,255,.18); color: #ebebf5; }
+body.theme-dark .btn-back:hover { background: #48484a; }
+.header-actions .btn-back { font-size: .72rem; }
 .btn-secondary{
   background:transparent;color:var(--accent);border:1.5px solid var(--accent);height:38px;padding:0 16px;border-radius:var(--btn-radius);
   font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
@@ -4355,43 +4358,38 @@ body.theme-dark .modal.modal--slideover .modal-nav-top .btn-cancel:hover,
 body.theme-dark .modal.modal--popup .modal-nav-top .btn-cancel:hover{
   background:#f1f5f9 !important;
 }
-/* btn-back — iOS style: chevron + blue text, no border/background */
+/* btn-back inside modals — circular icon, same as sidebar-collapse-btn */
 .modal-nav-top .btn-back,
 .modal-footer .btn-back {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #007AFF !important;
-  font-size: .9rem !important;
-  font-weight: 500 !important;
-  padding: 4px 2px !important;
-  height: auto !important;
-  border-radius: 0 !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(0,0,0,.13) !important;
+  background: #f2f2f7 !important;
+  color: #8e8e93 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  justify-content: center !important;
   cursor: pointer !important;
-}
-.modal-nav-top .btn-back:hover,
-.modal-footer .btn-back:hover {
-  color: #0055cc !important;
-  background: none !important;
-  border: none !important;
+  font-size: .72rem !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
 }
 .modal-nav-top .btn-back i,
-.modal-footer .btn-back i {
-  font-size: .8rem !important;
-}
+.modal-footer .btn-back i { font-size: .72rem !important; }
+.modal-nav-top .btn-back span,
+.modal-footer .btn-back span { display: none !important; }
+.modal-nav-top .btn-back:hover,
+.modal-footer .btn-back:hover { background: #e5e5ea !important; color: #1c1c1e !important; }
 body.theme-dark .modal-nav-top .btn-back,
 body.theme-dark .modal-footer .btn-back {
-  color: #0A84FF !important;
-  background: none !important;
-  border: none !important;
+  background: #3a3a3c !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: #ebebf5 !important;
 }
 body.theme-dark .modal-nav-top .btn-back:hover,
-body.theme-dark .modal-footer .btn-back:hover {
-  color: #409cff !important;
-}
+body.theme-dark .modal-footer .btn-back:hover { background: #48484a !important; }
 .modal-footer-actions{
   padding-top:16px;
   padding-bottom:8px;
