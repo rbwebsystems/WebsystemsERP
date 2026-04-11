@@ -5141,20 +5141,23 @@ body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 72px !impo
 
 /* ── iOS Search ── */
 /* ── iOS Topbar search wrap ── */
-.header-search-wrap {
+.header-search-icon-btn {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  background: #fff !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 10px !important;
+  justify-content: center !important;
+  width: 34px !important;
   height: 34px !important;
-  padding: 0 10px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
-  min-width: 180px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
   cursor: pointer !important;
+  color: #8E8E93 !important;
+  font-size: .95rem !important;
+  transition: background .15s !important;
 }
-.header-search-wrap:hover { background: #f9fafb !important; border-color: #b0b7c3 !important; }
+.header-search-icon-btn:hover { background: rgba(120,120,128,.12) !important; color: #1c1c1e !important; }
+body.theme-dark .header-search-icon-btn { color: rgba(255,255,255,.6) !important; }
+body.theme-dark .header-search-icon-btn:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
 /* Input inside wrap must be transparent — override global iOS input rule */
 .header-search-input {
   background: transparent !important;
@@ -5183,7 +5186,6 @@ body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 72px !impo
   white-space: nowrap !important;
   flex-shrink: 0 !important;
 }
-body.theme-dark .header-search-wrap { background: rgba(255,255,255,.1) !important; border-color: rgba(255,255,255,.15) !important; }
 body.theme-dark .header-search-input { color: #fff !important; }
 
 /* ── iOS Language switcher ── */
