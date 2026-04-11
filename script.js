@@ -10466,13 +10466,15 @@ function openDayCloseHistory() {
         <td style="text-align:right;font-size:.85rem;font-weight:600;">${money(a.balance)} AZN</td>
       </tr>`
     ).join("");
+    const sep = i > 0 ? `<tr><td colspan="6" style="padding:0;height:10px;background:transparent;border:none;"></td></tr>` : "";
     return `
-      <tr>
-        <td class="muted" style="font-size:.8rem;">${i + 1}</td>
-        <td>${fmtDT(x.ts)}</td>
-        <td>${escapeHtml(x.user || "-")}</td>
-        <td>${escapeHtml(x.note || "")}</td>
-        <td colspan="2" style="text-align:right;padding-right:12px;">
+      ${sep}
+      <tr style="background:#f0f4f8;">
+        <td class="muted" style="font-size:.8rem;border-top:2px solid var(--border-color);">${i + 1}</td>
+        <td style="border-top:2px solid var(--border-color);">${fmtDT(x.ts)}</td>
+        <td style="border-top:2px solid var(--border-color);">${escapeHtml(x.user || "-")}</td>
+        <td style="border-top:2px solid var(--border-color);">${escapeHtml(x.note || "")}</td>
+        <td colspan="2" style="text-align:right;padding-right:12px;border-top:2px solid var(--border-color);">
           <span style="font-size:1.15rem;font-weight:700;color:var(--text-main);">${money(x.totalBalance)}</span>
           <span style="font-size:.8rem;color:var(--text-muted);margin-left:3px;">AZN</span>
         </td>
