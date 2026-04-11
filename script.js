@@ -6935,27 +6935,71 @@ function openSaleInfo(idx) {
   if (!s) return;
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId));
   const guarantor = cust?.zam ? db.cust.find((c) => String(c.uid) === String(cust.zam)) : null;
-  const rem = saleRemaining(s);
-  const st = debtStatus(n(s.amount), rem);
 
+  // Gather all items with same invNo (multi-product invoice grouping)
+  const siblings = s.invNo
+    ? db.sales.map((x, i) => ({ s: x, idx: i })).filter(x => x.s.invNo === s.invNo)
+    : [{ s, idx }];
+  const isMulti = siblings.length > 1;
+
+  const totalAmount = siblings.reduce((a, x) => a + n(x.s.amount), 0);
+  const totalPaid   = siblings.reduce((a, x) => a + n(x.s.paidTotal), 0);
+  const rem = Math.max(0, totalAmount - totalPaid);
+  const st = debtStatus(totalAmount, rem);
+
+  // Products section
+  const productsHtml = isMulti
+    ? `<div class="form-card">
+        <div class="form-card-title">Məhsullar</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI / Seriya</th><th>Məbləğ</th></tr></thead>
+            <tbody>${siblings.map(({ s: gs }) => `<tr>
+              <td>${escapeHtml(gs.productName || "-")}</td>
+              <td>${escapeHtml(gs.code || "-")}</td>
+              <td>${Math.max(1, Math.floor(n(gs.qty || 1)))}</td>
+              <td>${escapeHtml([gs.imei1, gs.imei2, gs.seria].filter(Boolean).join(" / ") || "-")}</td>
+              <td>${money(gs.amount)} AZN</td>
+            </tr>`).join("")}</tbody>
+          </table>
+        </div>
+      </div>`
+    : `<div class="form-card">
+        <div class="form-card-title">Məhsul</div>
+        <div class="grid-2">
+          <div class="f-group grid-span-2"><label>Məhsul</label><div class="f-static">${escapeHtml(s.productName)}</div></div>
+          <div class="f-group"><label>Kod</label><div class="f-static">${escapeHtml(s.code || "-")}</div></div>
+          <div class="f-group"><label>Say</label><div class="f-static">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
+          <div class="f-group"><label>IMEI 1</label><div class="f-static">${escapeHtml(s.imei1 || "-")}</div></div>
+          <div class="f-group"><label>IMEI 2</label><div class="f-static">${escapeHtml(s.imei2 || "-")}</div></div>
+          <div class="f-group"><label>Seriya №</label><div class="f-static">${escapeHtml(s.seria || "-")}</div></div>
+        </div>
+      </div>`;
+
+  // Credit — use combined totals across all items
   let creditHtml = "";
   let scheduleHtml = "";
   if (s.saleType === "kredit" && s.credit) {
-    const sch = buildCreditSchedule(s);
+    const totalDown    = siblings.reduce((a, x) => a + n(x.s.credit?.downPayment || 0), 0);
+    const termMonths   = s.credit.termMonths || 1;
+    const remAfterDown = Math.max(0, totalAmount - totalDown);
+    const monthlyAmt   = termMonths > 0 ? remAfterDown / termMonths : 0;
+
     creditHtml = `
       <div class="form-card">
         <div class="form-card-title">Kredit şərtləri</div>
         <div class="grid-2">
-          <div class="f-group"><label>Kredit müddəti (ay)</label><div class="f-static">${sch.term} ay</div></div>
-          <div class="f-group"><label>İlkin ödəniş (AZN)</label><div class="f-static">${money(s.credit.downPayment)} AZN</div></div>
-          <div class="f-group"><label>Aylıq ödəniş (AZN)</label><div class="f-static">${money(s.credit.monthlyPayment)} AZN</div></div>
-          <div class="f-group"><label>Qalıq (ilkindən sonra)</label><div class="f-static">${money(sch.remAfterDown)} AZN</div></div>
+          <div class="f-group"><label>Kredit müddəti (ay)</label><div class="f-static">${termMonths} ay</div></div>
+          <div class="f-group"><label>İlkin ödəniş (AZN)</label><div class="f-static">${money(totalDown)} AZN</div></div>
+          <div class="f-group"><label>Aylıq ödəniş (AZN)</label><div class="f-static">${money(monthlyAmt)} AZN</div></div>
+          <div class="f-group"><label>Qalıq (ilkindən sonra)</label><div class="f-static">${money(remAfterDown)} AZN</div></div>
         </div>
       </div>
     `;
-    const rows = sch.rows
-      .map(
-        (r) => `
+
+    // Build a combined schedule based on totals
+    const sch = buildCreditSchedule(s);
+    const rows = sch.rows.map((r) => `
       <tr>
         <td>${r.idx}</td>
         <td>${fmtDT(r.due)}</td>
@@ -6963,9 +7007,7 @@ function openSaleInfo(idx) {
         <td>${money(r.paid)} AZN</td>
         <td>${money(r.remaining)} AZN</td>
         <td><span class="pill ${r.status}">${debtLabel(r.status)}</span></td>
-      </tr>`
-      )
-      .join("");
+      </tr>`).join("");
     scheduleHtml = `
       <div class="form-card">
         <div class="form-card-title">Ödəniş cədvəli</div>
@@ -6985,6 +7027,7 @@ function openSaleInfo(idx) {
       <div class="form-card">
         <div class="form-card-title">Əsas məlumat</div>
         <div class="grid-2">
+          <div class="f-group"><label>Qaimə №</label><div class="f-static">${escapeHtml(s.invNo || invFallback("sales", s.uid))}</div></div>
           <div class="f-group"><label>Satış tarixi</label><div class="f-static">${fmtDT(s.date)}</div></div>
           <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm} ay)` : ""}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
@@ -6992,22 +7035,12 @@ function openSaleInfo(idx) {
           <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
         </div>
       </div>
-      <div class="form-card">
-        <div class="form-card-title">Məhsul</div>
-        <div class="grid-2">
-          <div class="f-group grid-span-2"><label>Məhsul</label><div class="f-static">${escapeHtml(s.productName)}</div></div>
-          <div class="f-group"><label>Kod</label><div class="f-static">${escapeHtml(s.code || "-")}</div></div>
-          <div class="f-group"><label>Say</label><div class="f-static">${String(Math.max(1, Math.floor(n(s.qty || 1))))}</div></div>
-          <div class="f-group"><label>IMEI 1</label><div class="f-static">${escapeHtml(s.imei1 || "-")}</div></div>
-          <div class="f-group"><label>IMEI 2</label><div class="f-static">${escapeHtml(s.imei2 || "-")}</div></div>
-          <div class="f-group"><label>Seriya №</label><div class="f-static">${escapeHtml(s.seria || "-")}</div></div>
-        </div>
-      </div>
+      ${productsHtml}
       <div class="form-card">
         <div class="form-card-title">Ödəniş</div>
         <div class="grid-2">
-          <div class="f-group"><label>Məbləğ (AZN)</label><div class="f-static">${money(s.amount)} AZN</div></div>
-          <div class="f-group"><label>Ödənilən (AZN)</label><div class="f-static">${money(s.paidTotal)} AZN</div></div>
+          <div class="f-group"><label>Məbləğ (AZN)</label><div class="f-static">${money(totalAmount)} AZN</div></div>
+          <div class="f-group"><label>Ödənilən (AZN)</label><div class="f-static">${money(totalPaid)} AZN</div></div>
           <div class="f-group"><label>Qalıq (AZN)</label><div class="f-static">${money(rem)} AZN</div></div>
           <div class="f-group"><label>Status</label><div class="f-static"><span class="pill ${st}">${debtLabel(st)}</span></div></div>
         </div>
@@ -11852,15 +11885,33 @@ function renderAll() {
     .filter(({ s }) => inDateRange(s.date, "salesFrom", "salesTo"))
     .sort((a, b) => String(a.s.date).localeCompare(String(b.s.date)) * -1);
 
+  // Group by invNo — same invNo = one invoice row
+  const _invGroupMap = new Map();
+  salesListAll.forEach(item => {
+    const key = item.s.invNo ? String(item.s.invNo) : `__solo_${item.idx}`;
+    if (!_invGroupMap.has(key)) _invGroupMap.set(key, []);
+    _invGroupMap.get(key).push(item);
+  });
+  const salesListGrouped = Array.from(_invGroupMap.values()).map(group => {
+    const { s, idx } = group[0];
+    const totalAmt  = group.reduce((a, x) => a + n(x.s.amount), 0);
+    const totalPaid = group.reduce((a, x) => a + n(x.s.paidTotal), 0);
+    const prodNames = group.length === 1
+      ? (s.productName || "-")
+      : group.map(x => x.s.productName).filter(Boolean).join(" + ");
+    const totalQty  = group.reduce((a, x) => a + Math.max(1, Math.floor(n(x.s.qty || 1))), 0);
+    return { s, idx, group, totalAmt, totalPaid, prodNames, totalQty };
+  });
+
   const salesPageSize = getPageSize("salesPageSize", 50);
-  const salesList = paginate(salesListAll, "sales", salesPageSize, "salesPageInfo");
+  const salesList = paginate(salesListGrouped, "sales", salesPageSize, "salesPageInfo");
   const salesAmountTotal = salesListAll.reduce((a, { s }) => a + n(s.amount), 0);
   const salesPaidTotal = salesListAll.reduce((a, { s }) => a + n(s.paidTotal), 0);
   const salesRemTotal = Math.max(0, salesAmountTotal - salesPaidTotal);
   const salesFootEl = byId("tblSalesFoot");
   if (salesFootEl) {
     salesFootEl.innerHTML = `<tr class="total-row">
-      <td colspan="8"><strong>Cəm</strong> (Sətir: ${salesListAll.length})</td>
+      <td colspan="8"><strong>Cəm</strong> (Qaimə: ${salesListGrouped.length})</td>
       <td><strong>${money(salesAmountTotal)} AZN</strong></td>
       <td><strong>${money(salesPaidTotal)} AZN</strong></td>
       <td><strong>${money(salesRemTotal)} AZN</strong></td>
@@ -11869,48 +11920,25 @@ function renderAll() {
   }
 
   byId("tblSales").innerHTML = salesList
-    .map(({ s, idx }, i) => {
-      const rem = saleRemaining(s);
+    .map(({ s, idx, group, totalAmt, totalPaid, prodNames, totalQty }, i) => {
+      const rem = Math.max(0, totalAmt - totalPaid);
       const invNo = s.invNo || invFallback("sales", s.uid);
-      const p = s.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid)) : (s.itemKey ? db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey) : null);
-      const searchText = [
-        s.uid,
-        invNo,
-        s.date,
-        s.customerName,
-        s.customerId,
-        s.productName,
-        s.code,
-        s.qty,
-        s.saleType,
-        operationActorName(s, s.employeeName),
-        s.employeeId,
-        s.imei1,
-        s.imei2,
-        s.seria,
-        s.amount,
-        s.paidTotal,
-        // also include linked purchase identifiers so IMEI/Seriya search works even if not shown in table
-        p?.invNo,
-        p?.code,
-        p?.imei1,
-        p?.imei2,
-        p?.seria,
-      ]
-        .filter((x) => x != null && String(x).trim() !== "")
-        .join(" ");
+      const searchText = group.map(({ s: gs, idx: gi }) => {
+        const p = gs.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(gs.bulkPurchUid)) : (gs.itemKey ? db.purch.find((x) => itemKeyFromPurch(x) === gs.itemKey) : null);
+        return [gs.uid, invNo, gs.date, gs.customerName, gs.customerId, gs.productName, gs.code, gs.qty, gs.saleType, operationActorName(gs, gs.employeeName), gs.employeeId, gs.imei1, gs.imei2, gs.seria, gs.amount, gs.paidTotal, p?.invNo, p?.code, p?.imei1, p?.imei2, p?.seria].filter(x => x != null && String(x).trim() !== "").join(" ");
+      }).join(" ");
       return `
       <tr>
         <td>${i + 1}</td>
         <td>${escapeHtml(invNo)}</td>
         <td>${fmtDT(s.date)}</td>
         <td>${escapeHtml(s.customerName)}</td>
-        <td>${escapeHtml(s.productName)}</td>
-        <td>${String(Math.max(1, Math.floor(n(s.qty || 1))))}</td>
+        <td>${escapeHtml(prodNames)}</td>
+        <td>${totalQty}</td>
         <td>${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm}ay)` : ""}</td>
         <td>${escapeHtml(operationActorName(s, s.employeeName || ""))}</td>
-        <td>${money(s.amount)} AZN</td>
-        <td>${money(s.paidTotal)} AZN</td>
+        <td>${money(totalAmt)} AZN</td>
+        <td>${money(totalPaid)} AZN</td>
         <td>${money(rem)} AZN</td>
         <td class="tbl-actions">
           <a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
