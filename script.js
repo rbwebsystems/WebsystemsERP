@@ -7444,9 +7444,11 @@ function printCreditDoc(idx, type) {
     const qty = Math.max(1, Math.floor(n(s.qty || 1)));
     const imeiDisplay = [imei1, imei2, seria].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div style="text-align:right;font-size:12px;line-height:1.8;margin-bottom:20px;">
-        <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
-        <div>2 saylı Əlavə</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px;font-size:12px;line-height:1.8;">
+        <div style="text-align:right;">
+          <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
+          <div>2 saylı Əlavə</div>
+        </div>
       </div>
       <p style="text-align:center;font-size:13px;line-height:1.9;margin-bottom:6px;">
         <strong>${docNo} saylı, ${saleDate} tarixli Nisyə alqı-satqı müqaviləsi dair</strong>
@@ -7567,8 +7569,7 @@ function printCreditDoc(idx, type) {
     title = "Razılıq Ərizəsi";
     const imeiStr = [imei1, imei2].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;margin-top:10px;">
-        <div style="font-size:16px;font-weight:700;">${co}</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:40px;margin-top:10px;">
         <div style="text-align:right;font-size:12px;line-height:1.8;">
           <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
           <div>1 saylı Əlavə</div>
@@ -7591,8 +7592,8 @@ function printCreditDoc(idx, type) {
   const html = `<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8"><title>${title}</title>
   <style>${baseCSS}</style></head><body>
   <div class="page">
-    <h1>${title}</h1>
-    ${type !== "erizesi" ? `<div class="subtitle">${co}${coPhone ? " • " + coPhone : ""}${coAddr ? " • " + coAddr : ""}</div>` : ""}
+    <div style="font-size:17px;font-weight:700;font-family:'Times New Roman',Times,serif;margin-bottom:${type==="erizesi"?"0":"12px"};">${co}</div>
+    ${type !== "erizesi" ? `<h1 style="margin-top:6px;">${title}</h1><div class="subtitle">${coPhone ? coPhone : ""}${coAddr ? (coPhone?" • ":"")+coAddr : ""}</div>` : `<h1 style="display:none;">${title}</h1>`}
     ${body}
     <div class="footer-note">Çap edildi: ${fmtDT(new Date().toISOString())} • ${co}</div>
   </div>
@@ -10015,6 +10016,7 @@ function printSaleContract(idx) {
   @media print{body{background:#fff;padding:0;display:block;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
 </style></head><body>
 <div class="page">
+  <div style="font-size:17px;font-weight:700;font-family:'Times New Roman',Times,serif;margin-bottom:12px;">${co}</div>
   <h1>Alqı-Satqı Müqaviləsi</h1>
   <div class="subtitle">№ ${docNo} &nbsp;•&nbsp; Tarix: ${saleDate}</div>
 
