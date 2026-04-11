@@ -7442,13 +7442,39 @@ function openSaleInfo(idx) {
 function openPaymentHistory(kind, idx) {
   if (kind !== "sale") return;
   const s = db.sales[idx];
-  const rows = (s.payments || [])
-    .slice()
-    .sort((a, b) => (a.date > b.date ? -1 : 1))
+  if (!s) return;
+
+  const siblings = s.invNo
+    ? (db.sales || []).filter((x) => String(x.invNo || "") === String(s.invNo || ""))
+    : [s];
+  const isMulti = siblings.length > 1;
+
+  const totalAmount = siblings.reduce((a, x) => a + n(x.amount), 0);
+  const totalPaid = siblings.reduce((a, x) => a + n(x.paidTotal), 0);
+  const totalRem = siblings.reduce((a, x) => a + saleRemaining(x), 0);
+  const prodLabel = isMulti
+    ? `${siblings.length} məhsul: ${siblings.map((x) => escapeHtml(x.productName || "-")).filter(Boolean).join(" • ")}`
+    : escapeHtml(s.productName || "-");
+
+  // Çoxməhsullu qaimədə eyni əməliyyat (məs. ilkin ödəniş) hər sətirdə paylanır — tarix+mənbə üzrə cəmlə
+  const mergeKey = (p) => `${String(p.date || "").trim()}|${String(p.source || "").trim().toLowerCase()}`;
+  const mergedMap = new Map();
+  for (const row of siblings) {
+    for (const p of row.payments || []) {
+      const k = mergeKey(p);
+      const cur = mergedMap.get(k) || { date: p.date, source: p.source, amount: 0 };
+      cur.amount += n(p.amount);
+      mergedMap.set(k, cur);
+    }
+  }
+  const mergedList = Array.from(mergedMap.values()).sort((a, b) =>
+    String(b.date || "").localeCompare(String(a.date || ""))
+  );
+  const rows = mergedList
     .map(
-      (p) => `
+      (p, i) => `
       <tr>
-        <td>${p.uid}</td>
+        <td>${i + 1}</td>
         <td>${fmtDT(p.date)}</td>
         <td>${money(p.amount)} AZN</td>
         <td>${escapeHtml(salePaymentSourceLabel(p.source))}</td>
@@ -7461,8 +7487,9 @@ function openPaymentHistory(kind, idx) {
     <div class="info-block">
       <div class="info-row"><div class="info-label">Qaimə №</div><div class="info-value"><strong>${escapeHtml(sInvNo)}</strong></div></div>
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName)}</div></div>
-      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(s.productName)}</div></div>
-      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(n(s.amount))} / ${money(n(s.paidTotal))} / ${money(saleRemaining(s))} AZN</strong></div></div>
+      <div class="info-row"><div class="info-label">${isMulti ? "Məhsullar" : "Məhsul"}</div><div class="info-value">${prodLabel}</div></div>
+      ${isMulti ? `<div class="info-row"><div class="info-label">Qeyd</div><div class="info-value" style="font-size:.88rem;color:var(--text-muted)">Eyni tarix və mənbədə olan ödənişlər qaimə üzrə cəmlənib göstərilir.</div></div>` : ""}
+      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(totalAmount)} / ${money(totalPaid)} / ${money(totalRem)} AZN</strong></div></div>
     </div>
     <div class="table-wrap">
       <table>
