@@ -5042,10 +5042,19 @@ body.sidebar-collapsed .app-header { left: 76px !important; }
 .main-area { margin-left: 228px !important; padding-top: 68px !important; }
 body.sidebar-collapsed .main-area { margin-left: 76px !important; }
 
-/* Slideover — start right after sidebar gap, below header */
+/* Slideover — topbar ilə eyni sol/sağ hiza */
 .modal.modal--slideover {
   top: 68px !important;
   left: 228px !important;
+  right: 8px !important;
+  bottom: 8px !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+.modal.modal--slideover .modal-body {
+  border-radius: 14px !important;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
 }
 body.sidebar-collapsed .modal.modal--slideover { left: 76px !important; }
 
@@ -5107,7 +5116,8 @@ body.theme-dark .search-container input { background: rgba(255,255,255,.1) !impo
     box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
   }
   .main-area { margin-left: 0 !important; padding-top: 56px !important; }
-  .modal.modal--slideover { top: 56px !important; left: 0 !important; right: 0 !important; }
+  .modal.modal--slideover { top: 56px !important; left: 0 !important; right: 0 !important; bottom: 0 !important; border-radius: 0 !important; }
+  .modal.modal--slideover .modal-body { border-radius: 0 !important; height: calc(100vh - 56px) !important; max-height: calc(100vh - 56px) !important; }
   .soft-loading-center,
   .loading-overlay.loading-overlay--soft { left: 0 !important; }
 }
