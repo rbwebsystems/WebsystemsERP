@@ -5482,8 +5482,7 @@ body.sidebar-collapsed .nav-link:hover::before {
   text-align:center;
   box-shadow:0 8px 40px rgba(0,0,0,.18);
   overflow:hidden;
-}
-.ios-dialog-title{
+}.ios-dialog-title{
   font-size:1rem;
   font-weight:600;
   color:#1c1c1e;
@@ -5499,36 +5498,53 @@ body.sidebar-collapsed .nav-link:hover::before {
 }
 .ios-dialog-btns{
   display:flex;
-  border-top:1px solid rgba(60,60,67,.18);
-  margin:0 -20px;
+  flex-direction:column;
+  gap:8px;
+  padding:16px 16px 20px;
+  border-top:none;
+  margin:0;
 }
 .ios-dialog-btns button{
   flex:1;
-  padding:14px 8px;
+  padding:13px 16px;
   border:none;
-  background:transparent;
-  font-size:1rem;
-  font-weight:400;
+  border-radius:12px;
+  background:rgba(120,120,128,.12);
+  font-size:.95rem;
+  font-weight:500;
   cursor:pointer;
-  transition:background .15s;
+  transition:background .15s,transform .1s;
   color:#1c1c1e;
+  width:100%;
 }
 .ios-dialog-btns button:not(:last-child){
-  border-right:1px solid rgba(60,60,67,.18);
+  border-right:none;
 }
 .ios-dialog-btns button:hover{
-  background:rgba(60,60,67,.07);
+  background:rgba(120,120,128,.18);
+}
+.ios-dialog-btns button:active{
+  transform:scale(.98);
 }
 .ios-dialog-btns button.ios-btn-confirm{
-  color:#e53e3e;
-  font-weight:500;
+  background:#FF3B30;
+  color:#fff;
+  font-weight:600;
+}
+.ios-dialog-btns button.ios-btn-confirm:hover{
+  background:#d93025;
 }
 .ios-dialog-btns button.ios-btn-ok{
-  color:#007aff;
+  background:#007AFF;
+  color:#fff;
   font-weight:600;
+}
+.ios-dialog-btns button.ios-btn-ok:hover{
+  background:#0066CC;
 }
 .ios-dialog-btns button.ios-btn-cancel{
   color:#1c1c1e;
+  background:rgba(120,120,128,.12);
 }
 /* Info/warning overlay using ios style */
 .ios-block-overlay{
@@ -5558,7 +5574,8 @@ body.sidebar-collapsed .nav-link:hover::before {
   margin:0 0 20px;line-height:1.5;
 }
 .ios-block-card .ios-dialog-btns{
-  margin:0 -28px;
+  margin:0;
+  padding:12px 20px 20px;
 }
 
 /* Company info modal */
