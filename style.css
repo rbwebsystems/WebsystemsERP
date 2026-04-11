@@ -5311,23 +5311,30 @@ body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
 .table-wrap th,
 .modal-body table thead th,
 .modal-body-inner table thead th {
-  background: #007AFF !important;
-  color: #fff !important;
+  background: #EBEBED !important;
+  color: #3C3C43 !important;
   font-size: .72rem !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: .04em !important;
-  border-bottom: 1px solid rgba(60,60,67,.12) !important;
-  border-right: none !important;
+  border-bottom: 1px solid rgba(60,60,67,.14) !important;
+  border-right: 1px solid rgba(60,60,67,.08) !important;
   box-shadow: none !important;
+}
+.card table thead th:last-child,
+.table-wrap th:last-child,
+.modal-body table thead th:last-child,
+.modal-body-inner table thead th:last-child {
+  border-right: none !important;
 }
 body.theme-dark .card table thead th,
 body.theme-dark .table-wrap th,
 body.theme-dark .modal-body table thead th,
 body.theme-dark .modal-body-inner table thead th {
-  background: rgba(44,44,46,.95) !important;
-  color: rgba(255,255,255,.4) !important;
-  border-bottom-color: rgba(255,255,255,.08) !important;
+  background: rgba(60,60,67,.5) !important;
+  color: rgba(235,235,245,.6) !important;
+  border-bottom-color: rgba(255,255,255,.1) !important;
+  border-right-color: rgba(255,255,255,.06) !important;
 }
 .card table tbody tr { border-bottom: 1px solid rgba(60,60,67,.09) !important; }
 .card table tbody tr:last-child { border-bottom: none !important; }
