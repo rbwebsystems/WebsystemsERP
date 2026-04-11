@@ -10515,7 +10515,7 @@ function openDayCloseHistory() {
         <label style="font-size:.78rem;margin-bottom:4px;display:block;">Son</label>
         <input type="date" id="dcTo" value="${today}" oninput="filterDayCloseHistory()">
       </div>
-      <button class="btn-cancel" type="button" style="margin-top:18px;" onclick="byId('dcFrom').value='';byId('dcTo').value='';filterDayCloseHistory();">Sıfırla</button>
+      <button class="btn-reset" type="button" style="margin-top:18px;" onclick="byId('dcFrom').value='';byId('dcTo').value='';filterDayCloseHistory();">Sıfırla</button>
     </div>
     <div class="table-wrap">
       <table>
