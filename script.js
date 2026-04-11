@@ -39,6 +39,33 @@ let firestoreInitialized = false;
 let firestoreAuthReady = false;
 let firestoreAuthPromise = null;
 
+// ── Premium Preloader ──────────────────────────────
+const _pl = {
+  _done: false,
+  _bar(pct) {
+    const b = byId("preloaderBar");
+    if (b) b.style.width = pct + "%";
+  },
+  _text(t) {
+    const el = byId("preloaderText");
+    if (el) el.textContent = t;
+  },
+  step(name) {
+    const map = { auth: [25,"Autentifikasiya"], meta: [55,"Konfiqurasiya"], data: [80,"Məlumatlar"], ready: [100,"Hazır"] };
+    const [pct, label] = map[name] || [0,""];
+    this._bar(pct);
+    this._text(label);
+  },
+  hide() {
+    if (this._done) return;
+    this._done = true;
+    this._bar(100);
+    const el = byId("appPreloader");
+    if (!el) return;
+    setTimeout(() => el.classList.add("app-preloader--out"), 250);
+  },
+};
+
 function setLoading(text) {
   const el = byId("loadingText");
   const ov = byId("loadingOverlay");
@@ -12758,8 +12785,8 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   applyTheme();
-  // Offline mode is NOT allowed (avoid local-only operations / desync).
   if (!isOnline()) {
+    _pl.hide();
     showOfflineBlock(true);
     window.addEventListener("online", () => location.reload());
     return;
@@ -12771,27 +12798,28 @@ async function init() {
   window.addEventListener("offline", () => showOfflineBlock(true));
   window.addEventListener("online", () => location.reload());
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
-  /* Böyük overlay əvəzinə yalnız mərkəzi yumşaq yükləmə (təkrarlanan iki fərqli ölçü olmasın). */
-  softLoadingBegin(true);
-  const softTxt = byId("softLoadingCenterText");
-  if (softTxt) softTxt.textContent = "Yüklənir...";
 
   var loadingHidden = false;
   var timeoutId = setTimeout(function () {
     if (loadingHidden) return;
     loadingHidden = true;
+    _pl.hide();
     hideLoading();
     toast("Yüklənmə vaxtı keçdi. Yeniləyin və ya interneti yoxlayın.", "err", 5000);
     console.warn("Bakfon ERP: init timeout");
   }, 12000);
 
   try {
+    _pl.step("auth");
     initFirestore();
     if (useFirestore()) await ensureFirestoreAuth();
+
+    _pl.step("meta");
     meta = await loadMetaAsync();
     ensureMetaDefaults();
     if (useFirestore()) saveMeta();
 
+    _pl.step("data");
     if (meta.session) {
       db = await loadCompanyDBAsync();
     } else {
@@ -12799,20 +12827,22 @@ async function init() {
     }
     subscribeRealtime();
     startRealtimeAutoRefresh();
+
+    _pl.step("ready");
     if (!loadingHidden) {
       loadingHidden = true;
       clearTimeout(timeoutId);
       hideLoading();
-      initApp();
+      setTimeout(() => { _pl.hide(); initApp(); }, 200);
     }
   } catch (e) {
     if (!loadingHidden) {
       loadingHidden = true;
       clearTimeout(timeoutId);
+      _pl.hide();
       hideLoading();
       toast("Başlatma xətası: " + (e && e.message ? e.message : "Yeniləyin."), "err", 5000);
       console.error("Bakfon ERP init xətası:", e);
-      // If something fails (including network), do not fall back to offline usage.
       showOfflineBlock(true);
     }
   }

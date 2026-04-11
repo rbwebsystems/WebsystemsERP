@@ -6982,3 +6982,61 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   a { color: #000 !important; text-decoration: none !important; }
   @page { margin: 1.5cm; }
 }
+
+/* ── Premium App Preloader ── */
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .35s ease, visibility .35s ease;
+  opacity: 1;
+  visibility: visible;
+}
+.app-preloader.app-preloader--out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* top progress bar */
+.app-preloader__bar-wrap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: transparent;
+}
+.app-preloader__bar {
+  height: 2px;
+  width: 0%;
+  background: var(--brand-green, #1a4754);
+  border-radius: 0 2px 2px 0;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+/* center */
+.app-preloader__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+/* logo */
+.rbsoft-digital--preloader {
+  height: 3.2rem;
+  gap: 0.4rem;
+}
+.rbsoft-digital--preloader .rbsoft-digital__a { width: 1.1rem; }
+.rbsoft-digital--preloader .rbsoft-digital__mid span { width: 1.1rem; }
+.rbsoft-digital--preloader .rbsoft-digital__mid span:first-child { height: 1.35rem; }
+.rbsoft-digital--preloader .rbsoft-digital__mid span:last-child  { height: 1.6rem; }
+/* label */
+.app-preloader__text {
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0;
+}
