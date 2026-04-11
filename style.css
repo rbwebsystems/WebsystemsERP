@@ -3921,7 +3921,7 @@ body.theme-dark .card table thead th{
   color:var(--table-head-text);
   box-shadow:0 1px 0 rgba(0,0,0,.45);
 }
-th:last-child,td:last-child{border-right:none;width:140px;text-align:center;white-space:nowrap;}
+th:last-child,td:last-child{border-right:none;width:160px;text-align:center;white-space:nowrap;}
 
 /* === Section scroll layout === */
 /* Stats row and pager: fixed, don't grow */
@@ -5243,6 +5243,13 @@ body.theme-dark .btn-cancel:hover { background: rgba(255,255,255,.16) !important
 }
 .btn-mini + .btn-mini:last-child:hover { background: rgba(52,199,89,.18) !important; }
 body.theme-dark .btn-mini { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.7) !important; }
+/* Icon-only btn-mini inside table actions — compact square */
+.tbl-actions .btn-mini {
+  padding: 0 !important;
+  width: 30px !important;
+  min-width: 30px !important;
+  flex-shrink: 0 !important;
+}
 .icon-btn:hover { background: rgba(120,120,128,.2) !important; }
 .icon-btn.edit { background: rgba(0,122,255,.1) !important; color: #007AFF !important; }
 .icon-btn.edit:hover { background: rgba(0,122,255,.18) !important; }
