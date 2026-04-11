@@ -865,15 +865,16 @@ main{
   min-height:0;
   min-width:0;
   padding:28px 32px;
-  overflow-y:auto;
-  overflow-x:auto;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
   -webkit-overflow-scrolling:touch;
 }
 .section{display:none;min-height:0;}
-.section.active{display:block;}
+.section.active{display:flex;flex-direction:column;flex:1;min-height:0;}
 
 
-.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:20;background:var(--bg-main);}
+.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:20;background:var(--bg-main);flex-shrink:0;}
 .content-header h1{font-size:1.2rem;font-weight:700;letter-spacing:-.01em;color:var(--text-main);}
 body.theme-dark .content-header{border-bottom-color:#374151;background:var(--bg-main);}
 .header-actions{
@@ -3903,15 +3904,17 @@ body.theme-dark td{border-bottom-color:#253d52;border-right-color:#253d52;color:
 body.theme-dark tbody tr:nth-child(even){background:rgba(255,255,255,.03);}
 body.theme-dark tbody tr:hover{background:rgba(26,71,84,.15) !important;}
 
-/* thead — normal scroll ilə birlikdə hərəkət edir, sticky yoxdur */
+/* thead — sticky within scrolling card */
 .card{max-width:100%;}
 .card table{width:100%;border:none;}
 .card table thead th{
+  position:sticky;top:0;
   background:var(--table-head-bg);
   color:var(--table-head-text);
   border-bottom-color:var(--table-head-border);
   border-right-color:var(--table-head-cell-border);
-  z-index:1;
+  z-index:5;
+  box-shadow:0 1px 0 rgba(0,0,0,.12);
 }
 body.theme-dark .card table thead th{
   background:var(--table-head-bg);
@@ -3920,12 +3923,32 @@ body.theme-dark .card table thead th{
 }
 th:last-child,td:last-child{border-right:none;width:140px;text-align:center;white-space:nowrap;}
 
-/* Non-list pages can keep natural document flow */
+/* === Section scroll layout === */
+/* Stats row and pager: fixed, don't grow */
+.stats-grid,.pager{flex-shrink:0;}
+/* Wrapper divs inside debts/overdue/creditor sections */
+#debtsContent,#overdueContent,#creditorContent{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+}
+/* The main data card scrolls vertically */
+.section.active>.card:not(.stat-card),
+#debtsContent>.card,
+#overdueContent>.card,
+#creditorContent>.card{
+  flex:1;min-height:0;overflow:auto;
+}
+/* Complex sections: scroll as a whole unit */
 #dash.section.active,
+#reports.section.active,
 #tools.section.active,
-#reports.section.active{
-  display:block;
-  overflow:visible;
+#settings.section.active{
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+#dash.section.active>.card,
+#reports.section.active>.card,
+#tools.section.active>.card,
+#settings.section.active>.card{
+  flex:unset;overflow:visible;min-height:unset;
 }
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
@@ -4981,9 +5004,7 @@ body.theme-dark .pill.nagd{
     margin-left:0;
     padding:14px;
     min-height:0;
-    overflow-y:auto;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
+    overflow:hidden;
   }
   .grid-3{grid-template-columns:1fr;}
   .info-row{grid-template-columns:1fr;}
@@ -5245,11 +5266,9 @@ body.theme-dark .notif-icon.info{background:#374151;color:#9ca3af;}
   .card > .table-wrap,
   .card > table,
   .card > div > table{
-    overflow-x:visible !important;
     max-width:100%;
   }
   .table-wrap{
-    overflow:visible !important;
     max-width:100%;
   }
   table{min-width:520px;}
