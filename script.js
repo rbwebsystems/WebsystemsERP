@@ -9993,88 +9993,102 @@ function printSaleContract(idx) {
     </div>`;
   })() : "";
 
+  const sch = s.saleType === "kredit" && s.credit ? buildCreditSchedule(s) : null;
+  const downAmt    = sch ? money(s.credit.downPayment)    : "—";
+  const creditAmt  = sch ? money(sch.remAfterDown)        : "—";
+  const termMonths = sch ? sch.term + " ay"               : "—";
+  const monthlyAmt = sch ? money(s.credit.monthlyPayment) : "—";
+  const directorName = escapeHtml(st.companyDirector || "______________________");
+
   const html = `<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8">
-<title>Alqı-Satqı Müqaviləsi №${docNo}</title>
+<title>Nisyə Alqı-Satqı Müqaviləsi №${docNo}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
+  body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
   .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
-  h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
-  .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
-  .section{margin-bottom:14px;}
-  .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;}
-  .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;}
-  .lbl{color:#6b7280;min-width:160px;flex-shrink:0;}
-  .val{font-weight:500;}
-  p{font-size:12px;line-height:1.75;margin-bottom:7px;}
-  .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:32px;}
-  .sign-box{flex:1;}
-  .sign-line{border-bottom:1px solid #374151;height:28px;margin-bottom:4px;}
-  .sign-label{font-size:10px;color:#6b7280;}
-  .stamp-box{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;margin:0 auto 4px;}
+  p{font-size:13px;line-height:1.9;margin-bottom:10px;text-align:justify;}
+  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:20px 0 10px;}
+  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;font-size:13px;}
+  .field-label{font-weight:700;white-space:nowrap;}
+  .field-line{flex:1;border-bottom:1px solid #111;min-width:80px;}
+  .sign-block{display:flex;justify-content:space-between;margin-top:30px;gap:20px;}
+  .sign-col{flex:1;}
+  .sign-col p{text-align:left;margin-bottom:4px;}
+  .sign-underline{border-bottom:1px solid #111;height:22px;margin-top:16px;}
   .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
-  @media print{body{background:#fff;padding:0;display:block;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
+  @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
 </style></head><body>
 <div class="page">
-  <div style="font-size:17px;font-weight:700;font-family:'Times New Roman',Times,serif;margin-bottom:12px;">${co}</div>
-  <h1>Alqı-Satqı Müqaviləsi</h1>
-  <div class="subtitle">№ ${docNo} &nbsp;•&nbsp; Tarix: ${saleDate}</div>
 
-  <div class="section">
-    <div class="section-title">Satıcı</div>
-    <div class="row"><span class="lbl">Şirkət adı:</span><span class="val">${co}</span></div>
-    ${coVoen  ? `<div class="row"><span class="lbl">VÖEN:</span><span class="val">${coVoen}</span></div>` : ""}
-    ${coAddr  ? `<div class="row"><span class="lbl">Ünvan:</span><span class="val">${coAddr}</span></div>` : ""}
-    ${coPhone ? `<div class="row"><span class="lbl">Telefon:</span><span class="val">${coPhone}</span></div>` : ""}
-    <div class="row"><span class="lbl">Əməkdaş:</span><span class="val">${emekdas}</span></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:16px;">${co}</div>
+
+  <div style="text-align:right;font-size:13px;font-weight:700;margin-bottom:20px;">
+    Nisyə alqı-satqı müqaviləsi № ${docNo}
   </div>
 
-  <div class="section">
-    <div class="section-title">Alıcı</div>
-    <div class="row"><span class="lbl">Ad, soyad, ata adı:</span><span class="val">${custFull}</span></div>
-    <div class="row"><span class="lbl">FİN:</span><span class="val">${custFin}</span></div>
-    <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
-    <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
-    <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:18px;font-size:13px;">
+    <div><strong>Bakı şəhəri,</strong></div>
+    <div><strong>${saleDate}</strong></div>
+  </div>
+  <div style="margin-bottom:18px;font-size:13px;">${saleDate.split(".")[2]}-cü il</div>
+
+  <p>
+    Bu müqaviləni (bundan sonra «Müqavilə» adlandırılacaq), bir tərəfdən Azərbaycan Respublikasının qanunvericiliyinə əsasən qeydə alınmış və Nizamnamə əsasında fəaliyyət göstərən <strong>"${co}" Məhdud Məsuliyyətli Cəmiyyəti</strong>, Direktor <strong>${directorName}${coVoen ? ` (VÖEN:${coVoen})` : ""}</strong> şəxsində, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində, (bundan sonra "Alıcı" adlanacaq (birlikdə "Tərəflər") aşağıdakı müqaviləni (bundan sonra "Müqavilə") bağladılar.
+  </p>
+
+  <div class="sec-title">1. Müqavilənin predmeti</div>
+  <p>
+    1.1. Müqaviləyə əsasən Satıcı Alıcıya Müqaviləyə əlavə olunan, Müqavilədə və onun ayrılmaz tərkib hissəsi hesab edilən "Əlavə 1"-də göstərilən Mal(lar)ı sənədlər əsasında (qaimə, vergi hesab-fakturası, və s.) nisyə satır, Alıcı isə həmin Mal(lar)ı qəbul edir və bu müqavilə ilə razılaşdırılmış qaydada Mal(lar)ın dəyərini Satıcıya ödəməyi öhdəsinə götürür.
+  </p>
+
+  <div style="margin:14px 0 6px;">
+    <div class="field-row"><span class="field-label">Məhsulun adı:</span><span class="field-line">&nbsp;${prod}</span></div>
+    <div class="field-row"><span class="field-label">İlkin ödəniş məbləği:</span><span class="field-line">&nbsp;${downAmt} AZN</span></div>
+    <div class="field-row"><span class="field-label">Kredit məbləği:</span><span class="field-line">&nbsp;${creditAmt} AZN</span></div>
+    <div class="field-row"><span class="field-label">Kredit müddəti:</span><span class="field-line">&nbsp;${termMonths}</span></div>
+    <div class="field-row"><span class="field-label">Aylıq ödəniş məbləği:</span><span class="field-line">&nbsp;${monthlyAmt} AZN</span></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Müqavilə mövzusu</div>
-    <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
-    <div class="row"><span class="lbl">IMEI 1:</span><span class="val">${imei1}</span></div>
-    <div class="row"><span class="lbl">IMEI 2:</span><span class="val">${imei2}</span></div>
-    <div class="row"><span class="lbl">Seriya №:</span><span class="val">${seria}</span></div>
-    <div class="row"><span class="lbl">Satış növü:</span><span class="val">${sType}</span></div>
-    <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
-    <div class="row"><span class="lbl">Ödənilən məbləğ:</span><span class="val">${paid} AZN</span></div>
-  </div>
+  <div class="sec-title">2. Tərəflərin hüquq və vəzifələri</div>
+  <p><strong>2.1. Satıcının hüquqları:</strong></p>
+  <p>2.1.1. Müqavilə ilə üzərinə götürdüyü vəzifələri vaxtında və lazımınca icra etməyi və onların pozulmasına yol verməməyi Alıcıdan tələb edir;</p>
+  <p>2.1.2. Alıcı bu müqavilənin şərtlərinin pozulmasına yol verdiyi halda isə müqavilənin vaxtından əvvəl ləğv edilməsinin və Alıcının müqavilə üzrə Satıcıya olan borcunun vaxtından əvvəl ödənilməsini tələb etmək.</p>
+  <p><strong>2.2. Satıcının vəzifələri:</strong></p>
+  <p>2.2.1. Alıcının nisyə aldığı Mala görə birdəfəlik haqqın hesablanmasının və tutulmasının düzgünlüyünə riayət etmək;</p>
+  <p>2.2.2. Malı Alıcıya tam saz və qüsursuz vəziyyətdə təhvil vermək.</p>
+  <p><strong>2.3. Alıcının hüquqları:</strong></p>
+  <p>2.3.1. Satıcıdan Malın keyfiyyəti barədə tam məlumat almaq hüququna malikdir.</p>
+  <p><strong>2.4. Alıcının vəzifələri:</strong></p>
+  <p>2.4.1. Aylıq ödənişləri müqavilədə göstərilən müddətdə vaxtında ödəmək;</p>
+  <p>2.4.2. Malı qəbul etdikdən sonra onun saxlanması və istifadəsi qaydalarına riayət etmək.</p>
 
-  ${creditRows}
+  <div class="sec-title">3. Müqavilənin qüvvəsi və şərtləri</div>
+  <p>3.1. Bu Müqavilə imzalandığı andan qüvvəyə minir və Tərəflər öhdəliklərini tam yerinə yetirənədək qüvvədə qalır.</p>
+  <p>3.2. Müqavilə iki nüsxədə tərtib edilmişdir, hər bir nüsxə eyni hüquqi qüvvəyə malikdir.</p>
 
-  <div class="section">
-    <div class="section-title">Şərtlər</div>
-    <p>1. Satıcı malı Alıcıya yuxarıda göstərilən şərtlərlə satır, Alıcı isə malı qəbul edir.</p>
-    <p>2. Mal Alıcıya tam saz vəziyyətdə, yoxlanılmış olaraq təhvil verilir.</p>
-    <p>3. Malın texniki parametrləri istehsalçının rəsmi sənədlərinə uyğundur.</p>
-    <p>4. Satıcı malın zavoddan gəlmə qüsurlarına görə zəmanət öhdəliyi daşıyır.</p>
-    <p>5. Alıcı öz iradəsi ilə, heç bir məcburiyyət olmadan bu müqaviləni imzalayır.</p>
-  </div>
-
-  <div class="sign-row">
-    <div class="sign-box">
-      <div class="sign-line"></div>
-      <div class="sign-label">Satıcı — ${co}</div>
+  <div class="sec-title">4. Tərəflərin rekvizitləri və imzaları</div>
+  <div class="sign-block">
+    <div class="sign-col">
+      <p><strong>SATICI:</strong></p>
+      <p>"${co}" MMC</p>
+      ${coVoen  ? `<p>VÖEN: ${coVoen}</p>`  : ""}
+      ${coAddr  ? `<p>Ünvan: ${coAddr}</p>` : ""}
+      ${coPhone ? `<p>Tel: ${coPhone}</p>`  : ""}
+      <div class="sign-underline"></div>
+      <p style="font-size:11px;margin-top:4px;">İmza / Möhür</p>
     </div>
-    <div class="sign-box" style="max-width:100px;text-align:center;">
-      <div class="stamp-box"></div>
-      <div class="sign-label" style="text-align:center;">Möhür</div>
-    </div>
-    <div class="sign-box">
-      <div class="sign-line"></div>
-      <div class="sign-label">Alıcı — ${custFull}</div>
+    <div class="sign-col">
+      <p><strong>ALICI:</strong></p>
+      <p>${custFull}</p>
+      <p>Şəx. vəs. ser.: ${custSer}</p>
+      <p>FİN: ${custFin}</p>
+      ${custPh !== "-" ? `<p>Tel: ${custPh}</p>` : ""}
+      <div class="sign-underline"></div>
+      <p style="font-size:11px;margin-top:4px;">İmza</p>
     </div>
   </div>
-  <div class="footer-note">Müqavilə ${today} tarixində tərtib edildi &nbsp;•&nbsp; ${co}</div>
+
+  <div class="footer-note">Müqavilə ${saleDate} tarixində tərtib edildi &nbsp;•&nbsp; ${co}</div>
 </div>
 <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
 </body></html>`;
