@@ -5041,7 +5041,7 @@ body.sidebar-collapsed .app-header { left: 76px !important; }
 /* Main area — push down below floating header */
 .main-area { margin-left: 228px !important; padding-top: 68px !important; padding-right: 8px !important; padding-bottom: 8px !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; box-sizing: border-box !important; overflow: hidden !important; }
 body.sidebar-collapsed .main-area { margin-left: 76px !important; }
-main { padding-left: 0 !important; padding-right: 0 !important; overflow-y: auto !important; }
+main { padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
 
 /* Hide pagination controls */
 .pager { display: none !important; }
@@ -5211,6 +5211,34 @@ body.theme-dark .icon-btn { background: rgba(255,255,255,.08) !important; color:
   border-radius: 16px !important;
   border: none !important;
   box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05) !important;
+}
+/* Table card fills remaining section height */
+.section.active > .card:not(.stat-card) {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.section.active > .card:not(.stat-card) > table,
+.section.active > .card:not(.stat-card) > div > table {
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+.section.active > .card:not(.stat-card) tbody {
+  overflow-y: auto !important;
+  display: block !important;
+  width: 100% !important;
+}
+.section.active > .card:not(.stat-card) thead {
+  display: table !important;
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+.section.active > .card:not(.stat-card) tr {
+  display: table !important;
+  width: 100% !important;
+  table-layout: fixed !important;
 }
 body.theme-dark .card { background: #2C2C2E !important; box-shadow: 0 1px 3px rgba(0,0,0,.4) !important; }
 .form-card { border-radius: 14px !important; border: none !important; box-shadow: 0 1px 3px rgba(0,0,0,.06) !important; }
