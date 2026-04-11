@@ -5133,16 +5133,19 @@ body, input, select, textarea, button {
   -moz-osx-font-smoothing: grayscale !important;
   text-rendering: optimizeLegibility !important;
 }
-/* Headings: 600 looks crisp on Windows, still strong on Mac */
-h1, h2, h3, h4, h5, h6,
-.content-header h1,
-.modal-body > h2,
-.modal-body-inner > h2 { font-weight: 600 !important; }
-/* Table headers, labels, badges: 500 prevents heavy black look on Windows */
-.card table thead th,
-.info-label,
+/* Global: remove bold from everything */
+* { font-weight: 400 !important; }
+
+/* Exceptions: page titles */
+.content-header h1 { font-weight: 600 !important; }
+
+/* Exceptions: sidebar nav */
 .nav-link,
-.sidebar-user-name { font-weight: 500 !important; }
+.sidebar-user-name,
+.sidebar-brand { font-weight: 500 !important; }
+
+/* Exceptions: table total/sum row numbers */
+tr.total-row td { font-weight: 600 !important; }
 
 /* ── Page background ── */
 body { background: #F2F2F7 !important; }
