@@ -9431,15 +9431,16 @@ async function testTelegramModal() {
 }
 
 function openSettings() {
-  if (!isDeveloper()) return alert("İcazə yoxdur.");
+  if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
   ensureAuditTrash();
   const s = db.settings || defaultDB().settings;
+  const dev = isDeveloper();
   openModal(`
     <h2>Ayarlar</h2>
     <form onsubmit="saveSettings(event)">
       <div class="form-stack">
         <div class="form-card">
-          <div class="form-card-title">Şirkət</div>
+          <div class="form-card-title">Şirkət məlumatları</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="set_name" placeholder="Şirkət adı" value="${escapeHtml(s.companyName || "")}" required></div>
             <div class="f-group"><label>Ünvan</label><input id="set_addr" placeholder="Ünvan" value="${escapeHtml(s.companyAddress || "")}"></div>
@@ -9467,7 +9468,7 @@ function openSettings() {
 
 function saveSettings(e) {
   e.preventDefault();
-  if (!isDeveloper()) return;
+  if (!isAdmin() && !isDeveloper()) return;
   ensureAuditTrash();
   db.settings = {
     companyName: val("set_name").trim(),

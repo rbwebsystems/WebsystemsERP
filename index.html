@@ -768,17 +768,17 @@
       <div class="content-header">
         <h1 data-i18n="nav_tools">Alətlər</h1>
         <div class="header-actions">
-          <button class="btn-main" type="button" onclick="exportCompany()"><i class="fas fa-file-export"></i><span data-i18n="btn_export"> Export</span></button>
-          <label class="btn-cancel" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
+          <button class="btn-cancel dev-only" type="button" onclick="exportCompany()"><i class="fas fa-file-export"></i><span data-i18n="btn_export"> Export</span></button>
+          <label class="btn-cancel dev-only" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
             <i class="fas fa-file-import"></i><span data-i18n="btn_import"> Import</span>
             <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importCompany(event)">
           </label>
-          <button class="btn-cancel" type="button" onclick="exportCsvCurrent()"><i class="fas fa-file-csv"></i><span data-i18n="btn_csv"> CSV</span></button>
-          <button class="btn-cancel" type="button" onclick="recalcAll()"><i class="fas fa-calculator"></i><span data-i18n="btn_recalc"> Recalculate</span></button>
-          <button class="btn-cancel" type="button" onclick="openSkins()"><i class="fas fa-palette"></i><span data-i18n="btn_skins"> Skinlər</span></button>
-          <button class="btn-cancel" type="button" onclick="openQrTool()"><i class="fas fa-qrcode"></i><span data-i18n="btn_qr"> QR</span></button>
-          <button class="btn-cancel" type="button" onclick="openSettings()"><i class="fas fa-gear"></i><span data-i18n="btn_settings"> Ayarlar</span></button>
-          <button class="btn-cancel" type="button" onclick="openTelegramSettings()"><i class="fab fa-telegram"></i> Telegram</button>
+          <button class="btn-cancel dev-only" type="button" onclick="exportCsvCurrent()"><i class="fas fa-file-csv"></i><span data-i18n="btn_csv"> CSV</span></button>
+          <button class="btn-cancel dev-only" type="button" onclick="recalcAll()"><i class="fas fa-calculator"></i><span data-i18n="btn_recalc"> Recalculate</span></button>
+          <button class="btn-cancel admin-only" type="button" onclick="openSkins()"><i class="fas fa-palette"></i><span data-i18n="btn_skins"> Skinlər</span></button>
+          <button class="btn-cancel dev-only" type="button" onclick="openQrTool()"><i class="fas fa-qrcode"></i><span data-i18n="btn_qr"> QR</span></button>
+          <button class="btn-cancel admin-only" type="button" onclick="openSettings()"><i class="fas fa-gear"></i><span data-i18n="btn_settings"> Ayarlar</span></button>
+          <button class="btn-cancel admin-only" type="button" onclick="openTelegramSettings()"><i class="fab fa-telegram"></i> Telegram</button>
           <button class="btn-cancel dev-only" type="button" onclick="seedDevTestData()"><i class="fas fa-flask"></i><span data-i18n="btn_test_seed"> Test baza yüklə</span></button>
         </div>
       </div>
