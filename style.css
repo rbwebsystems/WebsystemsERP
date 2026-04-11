@@ -6260,9 +6260,9 @@ body.theme-dark .select-small {
    ══════════════════════════════════════════════════════════════ */
 .toast-wrap {
   position: fixed !important;
-  top: 72px !important;
+  top: auto !important;
   right: 16px !important;
-  bottom: auto !important;
+  bottom: 16px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 8px !important;
