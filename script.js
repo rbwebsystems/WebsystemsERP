@@ -6646,21 +6646,31 @@ async function saveSale(e, idx) {
       db.sales.push(base);
       created.push(base);
       logEvent("create", "sales", { uid: base.uid, invNo: base.invNo });
+    }
 
-      if (payNow && payForThis > 0.000001 && payAccountId) {
-        addCashOp({
-          type: "in",
-          date: base.date,
-          source: `Satış ödənişi (${base.customerName})`,
-          amount: amountAppliedToSaleLast(base) || payForThis,
-          note: (kind === "bulk" || kind === "fifo" || (samplePurch && purchIsBulk(samplePurch)))
-            ? `${base.productName} (KOD:${base.code || "-"} • SAY:${base.qty})`
-            : `${base.productName} (${base.imei1 || base.imei2 || base.seria || "-"})`,
-          link: { kind: "sale_payment", saleUid: base.uid },
-          meta: { customerId: base.customerId, invNo: base.invNo, payKind: isInitialPayment ? "down" : "regular" },
-          accountId: payAccountId,
-        });
-      }
+    // One single cash op for the entire invoice payment
+    const totalPaidNow = created.reduce((a, s) => a + n(s.paidTotal), 0);
+    if (payNow && totalPaidNow > 0.000001 && payAccountId) {
+      const custName = created[0]?.customerName || "";
+      const prodSummary = created.length === 1
+        ? (() => {
+            const s = created[0];
+            const isBulkItem = s.bulkPurchUid || (s.itemKey || "").startsWith("FIFO:");
+            return isBulkItem
+              ? `${s.productName} (KOD:${s.code || "-"} • SAY:${s.qty})`
+              : `${s.productName} (${s.imei1 || s.imei2 || s.seria || "-"})`;
+          })()
+        : created.map(s => s.productName).filter(Boolean).join(", ");
+      addCashOp({
+        type: "in",
+        date,
+        source: `Satış ödənişi (${custName})`,
+        amount: totalPaidNow,
+        note: prodSummary,
+        link: { kind: "sale_payment", invNo, saleUid: created[0]?.uid },
+        meta: { customerId: created[0]?.customerId, invNo, payKind: isInitialPayment ? "down" : "regular" },
+        accountId: payAccountId,
+      });
     }
 
     saveDB();
