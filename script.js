@@ -5296,15 +5296,49 @@ function renderSaleItemOptions(filterText = "", preferredValue = "") {
   const sel = byId("f_s_item");
   if (!sel) return;
   const q = String(filterText || "").trim().toLowerCase();
-  const items = getSaleItemCatalog().filter((item) => !q || item.searchText.includes(q));
+  const draft = window.__saleDraftItems || [];
+
+  const usedSerial = new Set(
+    draft.filter((x) => x.kind === "serial").map((x) => `serial:${x.purchUid}`)
+  );
+  const usedBulkQty = {};
+  draft.filter((x) => x.kind === "bulk" || x.kind === "fifo").forEach((x) => {
+    const k = `${x.kind}:${x.purchUid}`;
+    usedBulkQty[k] = (usedBulkQty[k] || 0) + (x.qty || 0);
+  });
+
+  const items = getSaleItemCatalog().filter((item) => {
+    if (usedSerial.has(item.value)) return false;
+    if (q && !item.searchText.includes(q)) return false;
+    return true;
+  });
+
   const fifoOptions = items
     .filter((item) => item.group === "fifo")
-    .map((item) => `<option value="${escapeAttr(item.value)}">${escapeHtml(item.optionLabel)}</option>`)
-    .join("");
+    .map((item) => {
+      const used = usedBulkQty[item.value] || 0;
+      const m = (item.optionLabel || "").match(/QALIQ:(\d+)/);
+      const rem = m ? Math.floor(n(m[1])) - used : null;
+      if (rem !== null && rem <= 0) return "";
+      const label = rem !== null
+        ? item.optionLabel.replace(/QALIQ:\d+/, `QALIQ:${rem}`)
+        : item.optionLabel;
+      return `<option value="${escapeAttr(item.value)}">${escapeHtml(label)}</option>`;
+    }).join("");
+
   const stockOptions = items
     .filter((item) => item.group === "stock")
-    .map((item) => `<option value="${escapeAttr(item.value)}">${escapeHtml(item.optionLabel)}</option>`)
-    .join("");
+    .map((item) => {
+      const used = usedBulkQty[item.value] || 0;
+      const m = (item.optionLabel || "").match(/QALIQ:(\d+)/);
+      const rem = m ? Math.floor(n(m[1])) - used : null;
+      if (rem !== null && rem <= 0) return "";
+      const label = rem !== null
+        ? item.optionLabel.replace(/QALIQ:\d+/, `QALIQ:${rem}`)
+        : item.optionLabel;
+      return `<option value="${escapeAttr(item.value)}">${escapeHtml(label)}</option>`;
+    }).join("");
+
   sel.innerHTML =
     `<option value="">Mal seçin</option>` +
     (fifoOptions ? `<optgroup label="AUTO FIFO">${fifoOptions}</optgroup>` : "") +
@@ -6305,6 +6339,7 @@ function removeSaleDraftItem(i) {
   arr.splice(i, 1);
   window.__saleDraftItems = arr;
   renderSaleDraftItems();
+  renderSaleItemOptions(byId("f_s_lookup")?.value || "", "");
 }
 
 function togglePayNow(noRender) {
