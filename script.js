@@ -6984,6 +6984,7 @@ function openSaleInfo(idx) {
       <button class="btn-main" type="button" onclick="openSalePayment(${idx})">Ödəniş et</button>
       <button class="btn-cancel" type="button" onclick="openReturnSale(${idx})">Qaytar</button>
       <button class="btn-cancel" type="button" onclick="printSale(${idx})">Çap</button>
+      ${s.saleType === "kredit" ? `<button class="btn-cancel" type="button" data-credit-doc-btn onclick="openCreditDocMenu(${idx})"><i class="fas fa-file-lines" style="margin-right:5px;"></i>Sənədlər</button>` : ""}
       <button class="btn-cancel" type="button" onclick="openPaymentHistory('sale', ${idx})">Ödəniş tarixçəsi</button>
       <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
     </div>
@@ -7366,6 +7367,269 @@ function openEditCashOp(uid) {
       </div>
     </form>
   `);
+}
+
+/* ─────────────────────────────────────────────
+   Credit document printing
+   types: muqavile | cedvel | zamanet | erizesi
+   ───────────────────────────────────────────── */
+function printCreditDoc(idx, type) {
+  const s = db.sales[idx];
+  if (!s || s.saleType !== "kredit") return;
+  const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
+  const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
+  const st = db.settings || {};
+  const sch = buildCreditSchedule(s);
+
+  const today = fmtDT(new Date().toISOString()).split(" ")[0];
+  const saleDate = fmtDT(s.date).split(" ")[0];
+
+  const co   = escapeHtml(st.companyName   || "Şirkət");
+  const coAddr  = escapeHtml(st.companyAddress || "");
+  const coPhone = escapeHtml(st.companyPhone   || "");
+  const coVoen  = escapeHtml(st.companyVoen    || "");
+
+  const custFull = escapeHtml(`${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim());
+  const custFin  = escapeHtml(cust.fin      || "-");
+  const custSer  = escapeHtml(cust.seriaNum || "-");
+  const custPh   = escapeHtml(cust.ph1      || "-");
+  const custAddr = escapeHtml(cust.addr     || "-");
+
+  const zamFull  = guarantor ? escapeHtml(`${guarantor.sur||""} ${guarantor.name||""} ${guarantor.father||""}`.trim()) : "-";
+  const zamFin   = guarantor ? escapeHtml(guarantor.fin      || "-") : "-";
+  const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : "-";
+  const zamPh    = guarantor ? escapeHtml(guarantor.ph1      || "-") : "-";
+
+  const prod     = escapeHtml(s.productName || "-");
+  const imei1    = escapeHtml(s.imei1 || "-");
+  const imei2    = escapeHtml(s.imei2 || "-");
+  const seria    = escapeHtml(s.seria || "-");
+  const docNo    = escapeHtml(String(s.invNo || s.uid));
+  const total    = money(s.amount);
+  const down     = money(s.credit?.downPayment  || 0);
+  const monthly  = money(s.credit?.monthlyPayment || 0);
+  const rem      = money(sch.remAfterDown);
+  const term     = sch.term;
+  const emekdas  = escapeHtml(s.employeeName || operationActorName(s, "-"));
+
+  // shared page CSS
+  const baseCSS = `
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;}
+    .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
+    h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+    .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
+    .section{margin-bottom:14px;}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;}
+    .row{display:flex;gap:8px;margin-bottom:5px;font-size:12px;}
+    .lbl{color:#6b7280;min-width:160px;flex-shrink:0;}
+    .val{font-weight:500;}
+    p{font-size:12px;line-height:1.7;margin-bottom:8px;}
+    table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;}
+    th{background:#f1f5f9;padding:5px 8px;text-align:left;border:1px solid #e2e8f0;font-weight:600;}
+    td{padding:4px 8px;border:1px solid #e2e8f0;}
+    .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:30px;}
+    .sign-box{flex:1;}
+    .sign-line{border-bottom:1px solid #374151;height:28px;margin-bottom:4px;}
+    .sign-label{font-size:10px;color:#6b7280;}
+    .stamp-box{width:80px;height:80px;border:1.5px dashed #d1d5db;border-radius:50%;margin:0 auto 4px;}
+    .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;}
+    @media print{body{background:#fff;padding:0;display:block;}.page{border-radius:0;padding:12mm 14mm;}@page{size:A4 portrait;margin:0;}}
+  `;
+
+  let title = "", body = "";
+
+  if (type === "muqavile") {
+    title = "Kredit Müqaviləsi";
+    body = `
+      <div class="section">
+        <div class="section-title">Tərəflər</div>
+        <div class="row"><span class="lbl">Müqavilə №:</span><span class="val">${docNo}</span></div>
+        <div class="row"><span class="lbl">Tarix:</span><span class="val">${saleDate}</span></div>
+        <div class="row"><span class="lbl">Satıcı (Şirkət):</span><span class="val">${co}</span></div>
+        ${coVoen  ? `<div class="row"><span class="lbl">VÖEN:</span><span class="val">${coVoen}</span></div>` : ""}
+        ${coAddr  ? `<div class="row"><span class="lbl">Ünvan:</span><span class="val">${coAddr}</span></div>` : ""}
+        ${coPhone ? `<div class="row"><span class="lbl">Telefon:</span><span class="val">${coPhone}</span></div>` : ""}
+        <div class="row"><span class="lbl">Alıcı:</span><span class="val">${custFull}</span></div>
+        <div class="row"><span class="lbl">FİN:</span><span class="val">${custFin}</span></div>
+        <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
+        <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
+        <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
+        ${guarantor ? `<div class="row"><span class="lbl">Zamin:</span><span class="val">${zamFull} (FİN: ${zamFin})</span></div>` : ""}
+      </div>
+      <div class="section">
+        <div class="section-title">Müqavilə mövzusu</div>
+        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+        <div class="row"><span class="lbl">IMEI / Seriya:</span><span class="val">${imei1}${imei2 !== "-" ? " / "+imei2 : ""}${seria !== "-" ? " / "+seria : ""}</span></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Maliyyə şərtləri</div>
+        <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
+        <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
+        <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
+        <div class="row"><span class="lbl">Müddət:</span><span class="val">${term} ay</span></div>
+        <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${monthly} AZN</span></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Şərtlər</div>
+        <p>1. Alıcı malı müqavilə bağlandığı tarixdən etibarən ${term} aylıq hissə-hissə ödəmə ilə qəbul edir.</p>
+        <p>2. Aylıq ödənişlər hər ayın eyni gününə qədər həyata keçirilir.</p>
+        <p>3. Ödənişlər gecikdirildikdə Satıcı xidməti dayandırmaq hüququna malikdir.</p>
+        <p>4. Mal texniki cəhətdən qüsurlu olduqda istehsalçı zəmanəti tətbiq edilir.</p>
+      </div>
+      <div class="sign-row">
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${co})</div></div>
+        <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Möhür</div></div>
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Alıcı (${custFull})</div></div>
+      </div>
+      ${guarantor ? `<div class="sign-row"><div class="sign-box" style="max-width:240px;"><div class="sign-line"></div><div class="sign-label">Zamin (${zamFull})</div></div></div>` : ""}
+    `;
+  }
+
+  else if (type === "cedvel") {
+    title = "Ödəniş Cədvəli";
+    const rows = sch.rows.map((r, i) => `
+      <tr style="${i%2===0?"":"background:#f9fafb"}">
+        <td>${r.idx}</td>
+        <td>${fmtDT(r.due).split(" ")[0]}</td>
+        <td style="text-align:right;">${money(r.amount)} AZN</td>
+        <td style="text-align:right;">${money(r.paid)} AZN</td>
+        <td style="text-align:right;">${money(r.remaining)} AZN</td>
+        <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${r.status==="paid"?"#dcfce7":r.status==="overdue"?"#fee2e2":"#fef9c3"};color:${r.status==="paid"?"#16a34a":r.status==="overdue"?"#dc2626":"#92400e"};">${debtLabel(r.status)}</span></td>
+      </tr>`).join("");
+    body = `
+      <div class="section">
+        <div class="row"><span class="lbl">Müqavilə №:</span><span class="val">${docNo}</span></div>
+        <div class="row"><span class="lbl">Alıcı:</span><span class="val">${custFull}</span></div>
+        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+        <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
+        <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
+        <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
+        <div class="row"><span class="lbl">Müddət / Aylıq:</span><span class="val">${term} ay / ${monthly} AZN</span></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Ödəniş tarixi</th><th>Aylıq məbləğ</th><th>Ödənilən</th><th>Qalıq</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="sign-row" style="margin-top:20px;">
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${co})</div></div>
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Alıcı (${custFull})</div></div>
+      </div>
+    `;
+  }
+
+  else if (type === "zamanet") {
+    title = "Zəmanət Talonu";
+    body = `
+      <div class="section">
+        <div class="row"><span class="lbl">Talonun №:</span><span class="val">${docNo}</span></div>
+        <div class="row"><span class="lbl">Satış tarixi:</span><span class="val">${saleDate}</span></div>
+        <div class="row"><span class="lbl">Alıcı:</span><span class="val">${custFull}</span></div>
+        <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Məhsul məlumatı</div>
+        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
+        <div class="row"><span class="lbl">IMEI 1:</span><span class="val">${imei1}</span></div>
+        <div class="row"><span class="lbl">IMEI 2:</span><span class="val">${imei2}</span></div>
+        <div class="row"><span class="lbl">Seriya №:</span><span class="val">${seria}</span></div>
+        <div class="row"><span class="lbl">Satıcı:</span><span class="val">${co}</span></div>
+        ${coPhone ? `<div class="row"><span class="lbl">Əlaqə:</span><span class="val">${coPhone}</span></div>` : ""}
+      </div>
+      <div class="section">
+        <div class="section-title">Zəmanət şərtləri</div>
+        <p>• Zəmanət müddəti istehsalçı tərəfindən müəyyən edilir.</p>
+        <p>• Zəmanət mexaniki zədələrə, su zədəsinə və istifadəçi xətalarına şamil edilmir.</p>
+        <p>• Zəmanət xidmətindən yararlanmaq üçün bu talon mütləq təqdim edilməlidir.</p>
+        <p>• Talon üzərindəki məlumatların dəyişdirilməsi zəmanəti etibarsız sayır.</p>
+      </div>
+      <div class="sign-row">
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${emekdas})</div></div>
+        <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Möhür</div></div>
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Alıcı (${custFull})</div></div>
+      </div>
+    `;
+  }
+
+  else if (type === "erizesi") {
+    title = "Kredit Razılıq Ərizəsi";
+    body = `
+      <div class="section">
+        <p style="text-align:right;">Tarix: ${today}</p>
+        <p style="text-align:right;">${co} şirkətinə</p>
+      </div>
+      <div class="section" style="margin-top:16px;">
+        <p>Mən, <strong>${custFull}</strong>, FİN: <strong>${custFin}</strong>, şəxsiyyət vəsiqəsi seriya №: <strong>${custSer}</strong>, yaşayış ünvanı: <strong>${custAddr}</strong>, telefon: <strong>${custPh}</strong>,</p>
+        <p style="margin-top:10px;">aşağıdakı şərtlərlə <strong>${prod}</strong> məhsulunu kredit əsasında almağa razılıq verirəm:</p>
+      </div>
+      <div class="section">
+        <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
+        <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
+        <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
+        <div class="row"><span class="lbl">Müddət:</span><span class="val">${term} ay</span></div>
+        <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${monthly} AZN</span></div>
+        <div class="row"><span class="lbl">IMEI / Seriya:</span><span class="val">${imei1}${imei2!=="-"?" / "+imei2:""}${seria!=="-"?" / "+seria:""}</span></div>
+      </div>
+      <div class="section">
+        <p>Kredit müqaviləsinin bütün şərtlərini oxudum, başa düşdüm və qəbul etdim. Ödənişləri vaxtında həyata keçirməyi öhdəmə götürürəm.</p>
+        ${guarantor ? `<p style="margin-top:8px;">Zamin: <strong>${zamFull}</strong>, FİN: <strong>${zamFin}</strong>, Şəx. ser.: <strong>${zamSer}</strong>, Tel: <strong>${zamPh}</strong></p>` : ""}
+      </div>
+      <div class="sign-row">
+        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Ərizəçi (${custFull})</div></div>
+        ${guarantor ? `<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Zamin (${zamFull})</div></div>` : ""}
+        <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Şirkət möhürü</div></div>
+      </div>
+    `;
+  }
+
+  const html = `<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8"><title>${title}</title>
+  <style>${baseCSS}</style></head><body>
+  <div class="page">
+    <h1>${title}</h1>
+    <div class="subtitle">${co}${coPhone ? " • " + coPhone : ""}${coAddr ? " • " + coAddr : ""}</div>
+    ${body}
+    <div class="footer-note">Çap edildi: ${fmtDT(new Date().toISOString())} • ${co}</div>
+  </div>
+  <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
+  </body></html>`;
+
+  const w = window.open("", "_blank", "width=900,height=700,toolbar=0,menubar=0,scrollbars=1");
+  if (w) { w.document.write(html); w.document.close(); }
+}
+
+function openCreditDocMenu(idx) {
+  const docs = [
+    { type: "muqavile", label: "Kredit müqaviləsi",   icon: "fa-file-contract" },
+    { type: "cedvel",   label: "Ödəniş cədvəli",      icon: "fa-table" },
+    { type: "zamanet",  label: "Zəmanət talonu",       icon: "fa-shield-halved" },
+    { type: "erizesi",  label: "Razılıq ərizəsi",      icon: "fa-file-signature" },
+  ];
+  const existing = document.getElementById("creditDocDropdown");
+  if (existing) { existing.remove(); return; }
+  const btn = document.querySelector("[data-credit-doc-btn]");
+  const menu = document.createElement("div");
+  menu.id = "creditDocDropdown";
+  menu.style.cssText = "position:fixed;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:200px;";
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    menu.style.left = r.left + "px";
+    menu.style.top  = (r.top - docs.length * 44 - 12) + "px";
+  }
+  docs.forEach(d => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.style.cssText = "display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#1c1c1e;text-align:left;";
+    item.innerHTML = `<i class="fas ${d.icon}" style="width:16px;color:#6b7280;"></i>${d.label}`;
+    item.onmouseenter = () => item.style.background = "#f2f2f7";
+    item.onmouseleave = () => item.style.background = "none";
+    item.onclick = () => { menu.remove(); printCreditDoc(idx, d.type); };
+    menu.appendChild(item);
+  });
+  document.body.appendChild(menu);
+  setTimeout(() => {
+    const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener("click", close); } };
+    document.addEventListener("click", close);
+  }, 50);
 }
 
 function printCashReceipt(uid) {
