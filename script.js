@@ -8534,64 +8534,24 @@ function markCompanyPaid(idx) {
   toast(`${escapeHtml(c.name)} — ${curMonth} ödənişi qeyd edildi`, "ok");
 }
 
-function openCompanyInfo(idx) {
+function deleteCompanyPayment(idx, month) {
+  if (!isDeveloper()) return;
   const c = meta.companies[idx];
-  if (!c) return;
-  const sub = c.subscription || {};
-  const now = new Date();
-  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const isPaid = sub.active && (sub.paidUntil || "") >= curMonth;
-
-  let subBlock = "";
-  if (sub.active) {
-    const statusBadge = isPaid
-      ? `<span class="pill paid">✅ Ödənilib</span>`
-      : `<span class="pill overdue">⚠️ Ödənilməyib</span>`;
-    const history = Array.isArray(sub.payHistory) && sub.payHistory.length
-      ? sub.payHistory.slice().reverse().map(h => {
-          const d = new Date(h.paidAt);
-          const dateStr = isNaN(d) ? h.paidAt : d.toLocaleDateString("az-AZ");
-          return `<tr><td>${h.month}</td><td>${money(h.amount)} AZN</td><td>${dateStr}</td></tr>`;
-        }).join("")
-      : `<tr><td colspan="3" style="color:var(--text-muted);text-align:center">Tarixçə yoxdur</td></tr>`;
-
-    subBlock = `
-      <div class="info-block">
-        <h4>💳 Abunəlik</h4>
-        <div class="info-row"><span>Tarif:</span><b>${money(sub.monthlyAmount || 0)} AZN / ay</b></div>
-        <div class="info-row"><span>Ödəniş vaxtı:</span><b>Hər ayın 1–5-i</b></div>
-        <div class="info-row"><span>Bu ay:</span>${statusBadge}</div>
-        ${sub.paidUntil ? `<div class="info-row"><span>Son ödəniş:</span><b>${sub.paidUntil}</b></div>` : ""}
-      </div>
-      <div class="info-block">
-        <h4>📋 Ödəniş tarixçəsi</h4>
-        <table style="width:100%;font-size:.85rem;border-collapse:collapse">
-          <thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Ay</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Məbləğ</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Tarix</th></tr></thead>
-          <tbody>${history}</tbody>
-        </table>
-      </div>`;
-  } else {
-    subBlock = `<div class="info-block" style="color:var(--text-muted)"><i class="fas fa-circle-check"></i> Bu şirkət üçün abunəlik tələb olunmur (pulsuz)</div>`;
-  }
-
-  const sectList = (c.sections || []).map(s => `<span class="pill" style="background:var(--bg-main)">${escapeHtml(s)}</span>`).join(" ") || "—";
-
-  openMdl(`
-    <div class="mdl-header"><h2 style="margin:0">ℹ️ ${escapeHtml(c.name)}</h2><button class="icon-btn" onclick="closeMdl()"><i class="fas fa-xmark"></i></button></div>
-    <div class="mdl-body" style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto">
-      <div class="info-block">
-        <h4>🏢 Şirkət məlumatı</h4>
-        <div class="info-row"><span>Ad:</span><b>${escapeHtml(c.name)}</b></div>
-        <div class="info-row"><span>ID:</span><code>${escapeHtml(c.id)}</code></div>
-        <div class="info-row"><span>Bölmələr:</span><div style="display:flex;flex-wrap:wrap;gap:4px">${sectList}</div></div>
-      </div>
-      ${subBlock}
-      ${isDeveloper() && sub.active && !isPaid ? `
-      <button class="btn-main" style="align-self:flex-end" onclick="markCompanyPaid(${idx});closeMdl()">
-        <i class="fas fa-check-circle"></i> Bu ay ödənişi qeyd et
-      </button>` : ""}
-    </div>
-  `);
+  if (!c?.subscription) return;
+  appConfirm(`"${month}" ödənişi silinsin?`).then(ok => {
+    if (!ok) return;
+    const sub = c.subscription;
+    sub.payHistory = (sub.payHistory || []).filter(h => h.month !== month);
+    // Recalculate paidUntil from remaining history
+    const months = (sub.payHistory || []).map(h => h.month).sort();
+    sub.paidUntil = months.length > 0 ? months[months.length - 1] : "";
+    saveMeta();
+    renderAll();
+    // Update subscription UI for active company without page reload
+    if (c.id === meta?.session?.companyId) checkSubscriptionStatus();
+    openCompanyInfo(idx);
+    toast(`${month} ödənişi silindi`, "warn");
+  });
 }
 
 function openCompanyInfo(idx) {
@@ -8611,12 +8571,18 @@ function openCompanyInfo(idx) {
 
   const hist = Array.isArray(sub.payHistory) && sub.payHistory.length > 0
     ? sub.payHistory.slice().reverse().map(p =>
-        `<tr><td>${p.month}</td><td>${money(p.amount)} AZN</td><td>${p.note || "—"}</td><td>${p.by || "—"}</td></tr>`
+        `<tr>
+          <td>${p.month}</td>
+          <td>${money(p.amount)} AZN</td>
+          <td>${p.note || "—"}</td>
+          <td>${p.by || "—"}</td>
+          ${isDeveloper() ? `<td><button class="icon-btn delete" type="button" onclick="deleteCompanyPayment(${idx},'${escapeAttr(p.month)}')" title="Sil"><i class="fas fa-trash"></i></button></td>` : ""}
+        </tr>`
       ).join("")
-    : `<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Ödəniş tarixçəsi yoxdur</td></tr>`;
+    : `<tr><td colspan="${isDeveloper() ? 5 : 4}" style="text-align:center;color:var(--text-muted)">Ödəniş tarixçəsi yoxdur</td></tr>`;
 
   const payBtn = (sub.active && !isPaid && isDeveloper())
-    ? `<button class="btn-main" type="button" onclick="markCompanyPaid(${idx});closeMdl()">✅ Bu ayı ödənilib qeyd et</button>`
+    ? `<button class="btn-main" type="button" onclick="markCompanyPaid(${idx});openCompanyInfo(${idx})">✅ Bu ayı ödənilib qeyd et</button>`
     : "";
 
   openModal(`
@@ -8630,7 +8596,7 @@ function openCompanyInfo(idx) {
         <div class="form-card-title">Ödəniş tarixçəsi</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Ay</th><th>Məbləğ</th><th>Qeyd</th><th>Qeyd edən</th></tr></thead>
+            <thead><tr><th>Ay</th><th>Məbləğ</th><th>Qeyd</th><th>Qeyd edən</th>${isDeveloper() ? "<th></th>" : ""}</tr></thead>
             <tbody>${hist}</tbody>
           </table>
         </div>
@@ -12330,6 +12296,7 @@ Object.assign(window, {
   toggleSubFields,
   markCompanyPaid,
   openCompanyInfo,
+  deleteCompanyPayment,
   openSkins,
   setSkin,
   openLoginModal,
