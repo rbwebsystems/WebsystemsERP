@@ -5135,14 +5135,14 @@ body, input, select, textarea, button {
 }
 
 /* ── Page background ── */
-body { background: #7393B3 !important; }
+body { background: #D3D3D3 !important; }
 body.theme-dark { background: #000 !important; }
-.main-area, main { background: #7393B3 !important; }
+.main-area, main { background: #D3D3D3 !important; }
 body.theme-dark .main-area, body.theme-dark main { background: #1C1C1E !important; }
 
 /* ── Content header ── */
 .content-header {
-  background: #7393B3 !important;
+  background: #D3D3D3 !important;
   border-bottom: 1px solid rgba(60,60,67,.15) !important;
   padding-bottom: 12px !important;
   flex-wrap: nowrap !important;
