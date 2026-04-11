@@ -3860,8 +3860,8 @@ function appConfirm(msg, title = "Təsdiq") {
         <div class="ios-dialog-title">${escapeHtml(title)}</div>
         ${text ? `<div class="ios-dialog-msg">${escapeHtml(text)}</div>` : ""}
         <div class="ios-dialog-btns">
-          <button class="ios-btn-cancel">Ləğv et</button>
           <button class="ios-btn-confirm">Bəli</button>
+          <button class="ios-btn-cancel">Ləğv et</button>
         </div>
       </div>`;
     el.querySelector(".ios-btn-cancel").onclick = () => close(false);
