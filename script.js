@@ -6190,7 +6190,29 @@ function openSale(idx = null) {
               <tfoot><tr class="total-row"><td colspan="5">Qaimə cəmi</td><td id="saleDraftTotal">0.00 AZN</td><td></td></tr></tfoot>
             </table>
           </div>
-        </div>` : ""}
+        </div>` : ""}${isEdit && current?.invNo ? (() => {
+          const siblings = db.sales.filter(s => s.invNo === current.invNo);
+          if (siblings.length <= 1) return "";
+          const rows = siblings.map((s, i) => `<tr>
+            <td>${i+1}</td>
+            <td>${escapeHtml(s.productName || "-")}</td>
+            <td>${escapeHtml(s.code || "-")}</td>
+            <td>${Math.max(1, Math.floor(n(s.qty || 1)))}</td>
+            <td>${escapeHtml([s.imei1, s.imei2, s.seria].filter(Boolean).join(" / ") || "-")}</td>
+            <td>${money(s.amount)} AZN</td>
+          </tr>`).join("");
+          const total = siblings.reduce((a, s) => a + n(s.amount), 0);
+          return `<div class="form-card">
+            <div class="form-card-title">Qaimedəki məhsullar (${siblings.length} ədəd)</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Məhsul</th><th>Kod</th><th>Say</th><th>IMEI / Seriya</th><th>Məbləğ</th></tr></thead>
+                <tbody>${rows}</tbody>
+                <tfoot><tr class="total-row"><td colspan="5">Cəmi</td><td>${money(total)} AZN</td></tr></tfoot>
+              </table>
+            </div>
+          </div>`;
+        })() : ""}
         <div id="creditBox" class="form-card" style="display:none;">
           <div class="form-card-title">Kredit şərtləri</div>
           <div class="grid-2">
