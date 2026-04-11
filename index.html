@@ -9,12 +9,6 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='30' fill='%2310b981'/%3E%3Cpath d='M28 92V28H62 C79 28 90 37 90 52 C90 64 83 73 70 76 L91 92H72L54 78H43V92H28ZM43 65H60 C69 65 75 60 75 53 C75 45 69 41 60 41H43V65Z' fill='white'/%3E%3Cpath d='M66 28 C86 28 97 38 97 52 C97 61 92 68 83 72 C93 75 100 83 100 94 C100 110 87 120 66 120' fill='none' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'/%3E%3Ccircle cx='88' cy='26' r='5' fill='white'/%3E%3Ccircle cx='104' cy='38' r='5' fill='white'/%3E%3Cline x1='88' y1='26' x2='104' y2='38' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* hide main UI until preloader finishes — prevents flash */
-    body:not(.app-ready) aside,
-    body:not(.app-ready) .main-area,
-    body:not(.app-ready) #publicLanding { opacity: 0; }
-  </style>
 </head>
 <body class="login-open">
   <script>
@@ -1659,29 +1653,10 @@
     <button class="mob-tab" data-sec="reports" onclick="showSec('reports')"><i class="fas fa-chart-bar"></i><span>Hesabat</span></button>
   </nav>
 
-  <!-- ── Premium Preloader ── -->
-  <div id="appPreloader" class="app-preloader">
-    <div class="app-preloader__progress" id="preloaderProgress">
-      <div class="app-preloader__progress-bar" id="preloaderBar"></div>
-    </div>
-    <div class="app-preloader__body">
-      <div class="app-preloader__logo" aria-hidden="true">
-        <div class="rbsoft rbsoft--preloader">
-          <div class="rbsoft-digital rbsoft-digital--preloader">
-            <div class="rbsoft-digital__a"></div>
-            <div class="rbsoft-digital__mid"><span></span><span></span></div>
-            <div class="rbsoft-digital__b"></div>
-          </div>
-        </div>
-      </div>
-      <p class="app-preloader__label" id="preloaderLabel">Yüklənir</p>
-    </div>
-  </div>
-
-  <!-- legacy loading ids kept for backward compat (hidden by default) -->
   <div id="loadingOverlay" class="loading-overlay loading-overlay--soft hidden">
     <div class="loading-card loading-card--compact">
-      <p id="loadingText"></p>
+      <div class="loading-spinner"></div>
+      <p id="loadingText">Yüklənir...</p>
     </div>
   </div>
 

@@ -39,38 +39,6 @@ let firestoreInitialized = false;
 let firestoreAuthReady = false;
 let firestoreAuthPromise = null;
 
-// ── Premium Preloader ──────────────────────────────────────────────
-const _preloader = {
-  _bar: null, _label: null, _el: null, _progress: 0, _hidden: false,
-  _steps: { start: 5, auth: 30, meta: 60, data: 85, ready: 100 },
-  init() {
-    this._el    = byId("appPreloader");
-    this._bar   = byId("preloaderBar");
-    this._label = byId("preloaderLabel");
-    this._set(this._steps.start, "");
-  },
-  _set(pct, label) {
-    this._progress = pct;
-    if (this._bar)   this._bar.style.width = pct + "%";
-    if (this._label && label) this._label.textContent = label;
-  },
-  step(name) {
-    const pct = this._steps[name] ?? this._progress;
-    const labels = { auth: "Autentifikasiya", meta: "Konfiqurasiya", data: "Məlumatlar", ready: "Hazır" };
-    this._set(pct, labels[name] || "");
-  },
-  hide() {
-    if (this._hidden) return;
-    this._hidden = true;
-    this._set(100, "");
-    const el = this._el;
-    setTimeout(() => {
-      document.body.classList.add("app-ready");
-      if (el) el.classList.add("app-preloader--hidden");
-    }, 220);
-  },
-};
-
 function setLoading(text) {
   const el = byId("loadingText");
   const ov = byId("loadingOverlay");
@@ -12774,7 +12742,6 @@ function hideLoading() {
   }
   _softOpDepth = 0;
   byId("softLoadingCenter")?.classList.add("hidden");
-  _preloader.hide();
 }
 
 function getLoginCompanyFromUrl() {
@@ -12791,11 +12758,8 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   applyTheme();
-  _preloader.init();
-
   // Offline mode is NOT allowed (avoid local-only operations / desync).
   if (!isOnline()) {
-    _preloader.hide();
     showOfflineBlock(true);
     window.addEventListener("online", () => location.reload());
     return;
@@ -12807,28 +12771,27 @@ async function init() {
   window.addEventListener("offline", () => showOfflineBlock(true));
   window.addEventListener("online", () => location.reload());
   window.__loginCompanyFromUrl = getLoginCompanyFromUrl();
+  /* Böyük overlay əvəzinə yalnız mərkəzi yumşaq yükləmə (təkrarlanan iki fərqli ölçü olmasın). */
+  softLoadingBegin(true);
+  const softTxt = byId("softLoadingCenterText");
+  if (softTxt) softTxt.textContent = "Yüklənir...";
 
   var loadingHidden = false;
   var timeoutId = setTimeout(function () {
     if (loadingHidden) return;
     loadingHidden = true;
-    _preloader.hide();
     hideLoading();
     toast("Yüklənmə vaxtı keçdi. Yeniləyin və ya interneti yoxlayın.", "err", 5000);
     console.warn("Bakfon ERP: init timeout");
   }, 12000);
 
   try {
-    _preloader.step("auth");
     initFirestore();
     if (useFirestore()) await ensureFirestoreAuth();
-
-    _preloader.step("meta");
     meta = await loadMetaAsync();
     ensureMetaDefaults();
     if (useFirestore()) saveMeta();
 
-    _preloader.step("data");
     if (meta.session) {
       db = await loadCompanyDBAsync();
     } else {
@@ -12836,23 +12799,20 @@ async function init() {
     }
     subscribeRealtime();
     startRealtimeAutoRefresh();
-
-    _preloader.step("ready");
     if (!loadingHidden) {
       loadingHidden = true;
       clearTimeout(timeoutId);
       hideLoading();
-      // short pause so progress bar reaches 100% visually
-      setTimeout(() => { _preloader.hide(); initApp(); }, 180);
+      initApp();
     }
   } catch (e) {
     if (!loadingHidden) {
       loadingHidden = true;
       clearTimeout(timeoutId);
-      _preloader.hide();
       hideLoading();
       toast("Başlatma xətası: " + (e && e.message ? e.message : "Yeniləyin."), "err", 5000);
       console.error("Bakfon ERP init xətası:", e);
+      // If something fails (including network), do not fall back to offline usage.
       showOfflineBlock(true);
     }
   }
