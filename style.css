@@ -5142,11 +5142,19 @@ body.theme-dark .main-area, body.theme-dark main { background: #1C1C1E !importan
   background: #F2F2F7 !important;
   border-bottom: 1px solid rgba(60,60,67,.15) !important;
   padding-bottom: 12px !important;
+  flex-wrap: nowrap !important;
 }
 .content-header h1 {
   font-size: 1.35rem !important;
   font-weight: 700 !important;
   letter-spacing: -.02em !important;
+  flex-shrink: 0 !important;
+}
+.header-actions {
+  width: auto !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
   color: #000 !important;
 }
 body.theme-dark .content-header { background: #1C1C1E !important; border-bottom-color: rgba(255,255,255,.1) !important; }
