@@ -10471,20 +10471,20 @@ function openDayCloseHistory() {
         <td class="muted" style="font-size:.8rem;">${i + 1}</td>
         <td>${fmtDT(x.ts)}</td>
         <td>${escapeHtml(x.user || "-")}</td>
-        <td colspan="3">${escapeHtml(x.note || "")}</td>
+        <td>${escapeHtml(x.note || "")}</td>
+        <td colspan="2" style="text-align:right;padding-right:12px;">
+          <span style="font-size:1.15rem;font-weight:700;color:var(--text-main);">${money(x.totalBalance)}</span>
+          <span style="font-size:.8rem;color:var(--text-muted);margin-left:3px;">AZN</span>
+        </td>
       </tr>
       ${accRows}
-      <tr class="total-row">
-        <td colspan="5"><strong>Ümumi balans</strong></td>
-        <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
-      </tr>
     `;
   }).join("");
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th colspan="3">Qeyd</th><th>Balans</th></tr></thead>
+        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Qeyd</th><th colspan="2" style="text-align:right;">Ümumi balans</th></tr></thead>
         <tbody>${rows || `<tr><td colspan="7">Tarixçə boşdur</td></tr>`}</tbody>
       </table>
     </div>
