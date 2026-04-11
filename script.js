@@ -7439,47 +7439,62 @@ function printCreditDoc(idx, type) {
 
   let title = "", body = "";
 
-  if (type === "muqavile") {
-    title = "Kredit Müqaviləsi";
+  if (type === "tehvil") {
+    title = "Təhvil-Təslim Aktı";
+    const qty = Math.max(1, Math.floor(n(s.qty || 1)));
+    const imeiDisplay = [imei1, imei2, seria].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div class="section">
-        <div class="section-title">Tərəflər</div>
-        <div class="row"><span class="lbl">Müqavilə №:</span><span class="val">${docNo}</span></div>
-        <div class="row"><span class="lbl">Tarix:</span><span class="val">${saleDate}</span></div>
-        <div class="row"><span class="lbl">Satıcı (Şirkət):</span><span class="val">${co}</span></div>
-        ${coVoen  ? `<div class="row"><span class="lbl">VÖEN:</span><span class="val">${coVoen}</span></div>` : ""}
-        ${coAddr  ? `<div class="row"><span class="lbl">Ünvan:</span><span class="val">${coAddr}</span></div>` : ""}
-        ${coPhone ? `<div class="row"><span class="lbl">Telefon:</span><span class="val">${coPhone}</span></div>` : ""}
-        <div class="row"><span class="lbl">Alıcı:</span><span class="val">${custFull}</span></div>
-        <div class="row"><span class="lbl">FİN:</span><span class="val">${custFin}</span></div>
-        <div class="row"><span class="lbl">Şəxsiyyət seriya №:</span><span class="val">${custSer}</span></div>
-        <div class="row"><span class="lbl">Telefon:</span><span class="val">${custPh}</span></div>
-        <div class="row"><span class="lbl">Ünvan:</span><span class="val">${custAddr}</span></div>
+      <div style="text-align:right;font-size:12px;line-height:1.8;margin-bottom:20px;">
+        <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
+        <div>2 saylı Əlavə</div>
       </div>
-      <div class="section">
-        <div class="section-title">Müqavilə mövzusu</div>
-        <div class="row"><span class="lbl">Məhsul:</span><span class="val">${prod}</span></div>
-        <div class="row"><span class="lbl">IMEI / Seriya:</span><span class="val">${imei1}${imei2 !== "-" ? " / "+imei2 : ""}${seria !== "-" ? " / "+seria : ""}</span></div>
-      </div>
-      <div class="section">
-        <div class="section-title">Maliyyə şərtləri</div>
-        <div class="row"><span class="lbl">Ümumi məbləğ:</span><span class="val">${total} AZN</span></div>
-        <div class="row"><span class="lbl">İlkin ödəniş:</span><span class="val">${down} AZN</span></div>
-        <div class="row"><span class="lbl">Kredit məbləği:</span><span class="val">${rem} AZN</span></div>
-        <div class="row"><span class="lbl">Müddət:</span><span class="val">${term} ay</span></div>
-        <div class="row"><span class="lbl">Aylıq ödəniş:</span><span class="val">${monthly} AZN</span></div>
-      </div>
-      <div class="section">
-        <div class="section-title">Şərtlər</div>
-        <p>1. Alıcı malı müqavilə bağlandığı tarixdən etibarən ${term} aylıq hissə-hissə ödəmə ilə qəbul edir.</p>
-        <p>2. Aylıq ödənişlər hər ayın eyni gününə qədər həyata keçirilir.</p>
-        <p>3. Ödənişlər gecikdirildikdə Satıcı xidməti dayandırmaq hüququna malikdir.</p>
-        <p>4. Mal texniki cəhətdən qüsurlu olduqda istehsalçı zəmanəti tətbiq edilir.</p>
-      </div>
-      <div class="sign-row">
-        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Satıcı (${co})</div></div>
-        <div class="sign-box"><div class="stamp-box"></div><div class="sign-label" style="text-align:center;font-size:10px;">Möhür</div></div>
-        <div class="sign-box"><div class="sign-line"></div><div class="sign-label">Alıcı (${custFull})</div></div>
+      <p style="text-align:center;font-size:13px;line-height:1.9;margin-bottom:6px;">
+        <strong>${docNo} saylı, ${saleDate} tarixli Nisyə alqı-satqı müqaviləsi dair</strong>
+      </p>
+      <p style="text-align:center;font-size:15px;font-weight:700;margin-bottom:20px;">Təhvil-Təslim Aktı</p>
+      <p style="margin-bottom:4px;">Bakı şəhəri</p>
+      <p style="margin-bottom:20px;">${saleDate.split(".")[2]}-cü il</p>
+      <p style="font-size:13px;line-height:2;text-align:justify;margin-bottom:16px;">
+        Hazırkı Təhvil-Təslim Aktı, bir tərəfdən (bundan sonra ayrılıqda Tərəf, birlikdə isə Tərəflər adlanacaq) <strong>"${co}"</strong> MMC, (bundan sonra "Satıcı" adlanacaq) və digər tərəfdən, şəxsiyyət vəsiqəsinin seriya nömrəsi <strong>${custSer}</strong>, <strong>${custFull}</strong> şəxsində (bundan sonra "Alıcı" adlanacaq) arasında aşağıdakılar barəsində imzalanmışdır:
+      </p>
+      <p style="font-size:13px;line-height:2;text-align:justify;margin-bottom:16px;">
+        1. Tərəflər hazırkı Təhvil-Təslim Aktını tərtib edərək təsdiq edirlər ki, Tərəflər arasında imzalanmış <strong>${docNo}</strong> saylı, <strong>${saleDate}</strong> tarixli Nisyə alqı-satqı müqaviləsinə (bundan sonra – Müqavilə) əsasən, aşağıdakı cədvəldə göstərilən Mal(lar)ı Müqavilənin şərtlərinə uyğun şəkildə Alıcıya təhvil vermiş, Alıcı isə həmin Mal(lar)ı Satıcıdan tam və qüsursuz şəkildə təhvil almışdır:
+      </p>
+      <table style="margin-bottom:16px;">
+        <thead>
+          <tr>
+            <th style="width:36px;">№</th>
+            <th>Malların adları və təsviri (IMEI kodu)</th>
+            <th style="width:60px;text-align:center;">Miqdar</th>
+            <th style="width:80px;text-align:right;">Məbləğ AZN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1.</td>
+            <td>${prod}${imeiDisplay !== "-" ? ` (${imeiDisplay})` : ""}</td>
+            <td style="text-align:center;">${qty}</td>
+            <td style="text-align:right;">${total}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;line-height:2;text-align:justify;margin-bottom:16px;">
+        2. Bu Aktın imzalandığı tarixdən etibarən Müqaviləyə uyğun olaraq Alıcı təsdiq və qəbul edir ki, Satıcı tərəfindən təhvil verilmiş Mallar işlək və qüsursuz vəziyyətdədir.
+      </p>
+      <p style="font-size:13px;line-height:2;margin-bottom:30px;">
+        3. Hazırkı Aktın doğruluğunu aşağıda öz imzalarımızla təsdiq edirik:
+      </p>
+      <div style="display:flex;justify-content:space-between;margin-top:20px;font-size:13px;">
+        <div>
+          <p><strong>"SATICI"</strong></p>
+          <p style="margin-top:8px;"><strong>"${co}"</strong> MMC</p>
+          <div style="margin-top:30px;border-bottom:1px solid #374151;width:180px;"></div>
+        </div>
+        <div>
+          <p><strong>"ALICI"</strong></p>
+          <p style="margin-top:8px;">&nbsp;</p>
+          <div style="margin-top:30px;border-bottom:1px solid #374151;width:180px;"></div>
+        </div>
       </div>
     `;
   }
@@ -7590,8 +7605,8 @@ function printCreditDoc(idx, type) {
 
 function openCreditDocMenu(idx, triggerEl) {
   const docs = [
-    { label: "Alqı-satqı müqaviləsi", icon: "fa-handshake",      fn: () => printSaleContract(idx) },
-    { label: "Kredit müqaviləsi",      icon: "fa-file-contract",  fn: () => printCreditDoc(idx, "muqavile") },
+    { label: "Alqı-satqı müqaviləsi",  icon: "fa-handshake",      fn: () => printSaleContract(idx) },
+    { label: "Təhvil-Təslim Aktı",     icon: "fa-file-contract",  fn: () => printCreditDoc(idx, "tehvil") },
     { label: "Ödəniş cədvəli",         icon: "fa-table",          fn: () => printCreditDoc(idx, "cedvel") },
     { label: "Zəmanət talonu",          icon: "fa-shield-halved",  fn: () => printCreditDoc(idx, "zamanet") },
     { label: "Razılıq ərizəsi",         icon: "fa-file-signature", fn: () => printCreditDoc(idx, "erizesi") },
