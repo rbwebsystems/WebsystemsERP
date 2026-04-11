@@ -12743,6 +12743,8 @@ function updateHeaderWelcome() {
 }
 
 function initApp() {
+  // mark all search inputs so CSS can target them specifically
+  document.querySelectorAll(".search-container input, .search-plain input").forEach(el => el.setAttribute("data-search","1"));
   if (!window.__slideoverPadResizeInit) {
     window.__slideoverPadResizeInit = true;
     let slideoverPadResizeT;

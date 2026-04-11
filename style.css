@@ -5428,7 +5428,7 @@ body.theme-dark .form-card { background: #2C2C2E !important; }
   box-shadow: 0 0 0 4px rgba(26,71,84,.1) !important;
 }
 /* text / number / password / search / tel / url / email inputs — gray pill */
-input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):not([data-search]),
 textarea {
   background: rgba(120,120,128,.1) !important;
   border: none !important;
@@ -5439,7 +5439,7 @@ textarea {
   box-shadow: none !important;
   transition: background .15s !important;
 }
-input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus,
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):not([data-search]):focus,
 textarea:focus {
   background: rgba(120,120,128,.14) !important;
   outline: 2px solid #007AFF !important;
@@ -5447,15 +5447,15 @@ textarea:focus {
   box-shadow: none !important;
   border: none !important;
 }
-input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):hover {
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):not([data-search]):hover {
   background: rgba(120,120,128,.13) !important;
 }
-body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
+body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):not([data-search]),
 body.theme-dark textarea {
   background: rgba(255,255,255,.1) !important;
   color: #fff !important;
 }
-body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus {
+body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):not([data-search]):focus {
   background: rgba(255,255,255,.14) !important;
 }
 
