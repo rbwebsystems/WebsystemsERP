@@ -7415,7 +7415,7 @@ function printCreditDoc(idx, type) {
   // shared page CSS
   const baseCSS = `
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
+    body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:center;min-height:100vh;}
     .page{width:210mm;background:#fff;padding:18mm 16mm;border-radius:8px;}
     h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
     .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:18px;}
@@ -7552,19 +7552,19 @@ function printCreditDoc(idx, type) {
     title = "Razılıq Ərizəsi";
     const imeiStr = [imei1, imei2].filter(x => x && x !== "-").join(" / ") || "-";
     body = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;">
-        <div style="font-size:16px;font-weight:700;font-family:'Times New Roman',Times,serif;">${co}</div>
-        <div style="text-align:right;font-size:12px;line-height:1.7;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;margin-top:10px;">
+        <div style="font-size:16px;font-weight:700;">${co}</div>
+        <div style="text-align:right;font-size:12px;line-height:1.8;">
           <div>Nisyə alqı-satqı müqaviləsi № ${docNo}</div>
           <div>1 saylı Əlavə</div>
         </div>
       </div>
-      <div style="margin-bottom:40px;">
-        <p style="font-size:13px;line-height:2;text-align:justify;font-family:'Times New Roman',Times,serif;">
+      <div style="margin-top:30px;margin-bottom:50px;">
+        <p style="font-size:14px;line-height:2.1;text-align:justify;text-indent:2em;">
           Mən (ad, soyad, Ş/V seriya və Fin kod) <strong>${custFull}</strong>, seriya: <strong>${custSer}</strong>, FİN: <strong>${custFin}</strong> — <strong>"${co}"</strong> MMC-dən aldığım qarşılıqlı razılaşma əsasında dəyərini hissə-hissə ödəmək üçün nəzərdə tutulmuş <strong>"${prod}"</strong> markalı, İMEİ kodu: <strong>${imeiStr}</strong> mobil cihazın Müqavilə şərtlərini pozduğum halda İMEİ kodunun deaktiv edilməsi və vahid şəbəkədə riskli müştərilərin siyahısına salınmasına etirazım yoxdur.
         </p>
       </div>
-      <div style="margin-top:40px;font-size:13px;font-family:'Times New Roman',Times,serif;line-height:2.8;">
+      <div style="margin-top:50px;font-size:13px;line-height:3.2;">
         <div><strong>İmza:</strong></div>
         <div><strong>Satıcı:</strong></div>
         <div><strong>Alıcı:</strong></div>
@@ -7577,7 +7577,7 @@ function printCreditDoc(idx, type) {
   <style>${baseCSS}</style></head><body>
   <div class="page">
     <h1>${title}</h1>
-    <div class="subtitle">${co}${coPhone ? " • " + coPhone : ""}${coAddr ? " • " + coAddr : ""}</div>
+    ${type !== "erizesi" ? `<div class="subtitle">${co}${coPhone ? " • " + coPhone : ""}${coAddr ? " • " + coAddr : ""}</div>` : ""}
     ${body}
     <div class="footer-note">Çap edildi: ${fmtDT(new Date().toISOString())} • ${co}</div>
   </div>
