@@ -3574,10 +3574,43 @@ function showSec(id, el, opts) {
     updateDebtSectionVisibility();
   }
   if (id === "settings") renderSettingsPage();
+  if (id === "cash") setCashDateToToday();
   refreshHeaderBar();
   if (meta?.session) try { sessionStorage.setItem("bakfon_lastSection", id); } catch (e) {}
   if (meta?.session && !(opts && opts.skipHash)) syncAppSectionHash(id);
 }
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function setCashDateToToday() {
+  const today = todayISO();
+  const fromEl = byId("cashFrom");
+  const toEl   = byId("cashTo");
+  if (fromEl && !fromEl.value) fromEl.value = today;
+  if (toEl   && !toEl.value)   toEl.value   = today;
+}
+
+// Gecə yarısı kassa tarixini yeni günə keçir
+(function scheduleCashMidnightReset() {
+  function msUntilMidnight() {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 1);
+    return midnight - now;
+  }
+  function resetAndReschedule() {
+    const today = todayISO();
+    const fromEl = byId("cashFrom");
+    const toEl   = byId("cashTo");
+    if (fromEl) { fromEl.value = today; }
+    if (toEl)   { toEl.value   = today; }
+    renderAll();
+    setTimeout(resetAndReschedule, msUntilMidnight());
+  }
+  setTimeout(resetAndReschedule, msUntilMidnight());
+})();
 
 function showDashboardAfterLogin() {
   if (!meta?.session) return;
@@ -11445,6 +11478,8 @@ function renderAll() {
   filterCreditor();
 
   // cash list + filters + pagination
+  // Tarix filteri boşdursa bu günün tarixini avtomatik qur
+  setCashDateToToday();
   fillCashAccountSelect();
   const cashType = byId("cashType")?.value || "all";
   const cashAccId = getSelectedCashAccountId();
@@ -11543,11 +11578,15 @@ function renderAll() {
     })
     .join("");
 
-  const incomeF = cashRowsAll.filter((c) => c.type === "in").reduce((a, b) => a + n(b.amount), 0);
+  const incomeF  = cashRowsAll.filter((c) => c.type === "in").reduce((a, b) => a + n(b.amount), 0);
   const expenseF = cashRowsAll.filter((c) => c.type === "out").reduce((a, b) => a + n(b.amount), 0);
+  // Balans — bütün vaxt üzrə ümumi balans (filtrə baxmayaraq)
+  const allCashForBalance = db.cash.filter((c) => cashAccId ? Number(c.accountId||1) === Number(cashAccId) : true);
+  const totalInAll  = allCashForBalance.filter((c) => c.type === "in").reduce((a, b) => a + n(b.amount), 0);
+  const totalOutAll = allCashForBalance.filter((c) => c.type === "out").reduce((a, b) => a + n(b.amount), 0);
   byId("cashIn").innerText = money(incomeF);
   byId("cashOut").innerText = money(expenseF);
-  byId("cashBal").innerText = money(incomeF - expenseF);
+  byId("cashBal").innerText = money(totalInAll - totalOutAll);
   const advEl = byId("cashAdv");
   if (advEl) advEl.innerText = money(totalReturnedSalesCreditLeft());
 
