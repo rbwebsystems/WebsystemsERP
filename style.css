@@ -5427,8 +5427,9 @@ body.theme-dark .form-card { background: #2C2C2E !important; }
   outline: none !important;
   box-shadow: 0 0 0 4px rgba(26,71,84,.1) !important;
 }
+/* text / number / password / search / tel / url / email inputs — gray pill */
 input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
-select, textarea {
+textarea {
   background: rgba(120,120,128,.1) !important;
   border: none !important;
   border-radius: 10px !important;
@@ -5439,22 +5440,46 @@ select, textarea {
   transition: background .15s !important;
 }
 input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus,
-select:focus, textarea:focus {
+textarea:focus {
   background: rgba(120,120,128,.14) !important;
   outline: 2px solid #007AFF !important;
   outline-offset: 0 !important;
   box-shadow: none !important;
   border: none !important;
 }
-input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):hover,
-select:hover { background: rgba(120,120,128,.13) !important; }
+input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):hover {
+  background: rgba(120,120,128,.13) !important;
+}
 body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]),
-body.theme-dark select, body.theme-dark textarea {
+body.theme-dark textarea {
   background: rgba(255,255,255,.1) !important;
   color: #fff !important;
 }
-body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus,
-body.theme-dark select:focus { background: rgba(255,255,255,.14) !important; }
+body.theme-dark input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=month]):not([type=datetime-local]):focus {
+  background: rgba(255,255,255,.14) !important;
+}
+
+/* select — always white with border */
+select {
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 10px !important;
+  color: #1c1c1e !important;
+  box-shadow: none !important;
+}
+select:focus {
+  border-color: #007AFF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,.12) !important;
+  background: #fff !important;
+}
+select:hover { background: #f9fafb !important; }
+body.theme-dark select {
+  background: #2c2c2e !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+body.theme-dark select:focus { background: #2c2c2e !important; }
 
 /* ── Date / month / datetime inputs — always white ── */
 input[type=date], input[type=month], input[type=datetime-local] {
