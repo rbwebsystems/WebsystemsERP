@@ -4171,6 +4171,34 @@ function buildCreditSchedule(sale) {
   return { term, down, remAfterDown, monthly, rows };
 }
 
+/** Kredit cədvəli: eyni qaimədəki (invNo) bütün satış sətirlərinin cəmi üzrə — ilkin ödəniş və məbləğ bütöv, aylar ümumi qalığa bölünür. */
+function buildCreditScheduleAggregated(salesArr, dateISO) {
+  const arr = (salesArr || []).filter(Boolean);
+  if (!arr.length) {
+    return buildCreditSchedule({
+      amount: "0",
+      paidTotal: "0",
+      date: dateISO || "",
+      credit: { termMonths: 0, downPayment: "0" },
+    });
+  }
+  const ref = arr[0];
+  const totalAmount = arr.reduce((a, x) => a + n(x.amount), 0);
+  const totalDown = arr.reduce((a, x) => a + n(x.credit?.downPayment || 0), 0);
+  const totalPaid = arr.reduce((a, x) => a + n(x.paidTotal), 0);
+  const term = Math.max(0, Math.floor(n(ref.credit?.termMonths) || 0));
+  return buildCreditSchedule({
+    amount: String(totalAmount),
+    paidTotal: String(totalPaid),
+    date: dateISO || ref.date,
+    credit: {
+      ...(ref.credit || {}),
+      termMonths: term,
+      downPayment: String(totalDown),
+    },
+  });
+}
+
 function runCreditRoundingMigration() {
   ensureAuditTrash();
   if (!db.settings) db.settings = defaultDB().settings;
@@ -7347,8 +7375,10 @@ function openSaleInfo(idx) {
       </div>
     `;
 
-    // Build a combined schedule based on totals
-    const sch = buildCreditSchedule(s);
+    // Cədvəl: çoxməhsullu qaimədə bütün sətirlərin cəmi üzrə (ilkin ödəniş bütöv çıxılır)
+    const sch = isMulti
+      ? buildCreditScheduleAggregated(siblings.map((x) => x.s), s.date)
+      : buildCreditSchedule(s);
     const rows = sch.rows.map((r) => `
       <tr>
         <td>${r.idx}</td>
@@ -7802,30 +7832,17 @@ function printCreditDoc(idx, type) {
     : [s];
   const isMulti = siblings.length > 1;
 
-  // Aggregated figures
-  const totalAmountRaw  = siblings.reduce((a, x) => a + n(x.amount), 0);
-  const totalDownRaw    = siblings.reduce((a, x) => a + n(x.credit?.downPayment || 0), 0);
-  // Use first sibling's credit terms (all siblings share the same terms)
-  const termMonthsAgg   = s.credit?.termMonths || 1;
-  const remAfterDownAgg = Math.max(0, totalAmountRaw - totalDownRaw);
-  const monthlyAgg      = termMonthsAgg > 0 ? remAfterDownAgg / termMonthsAgg : 0;
+  // Aggregated invoice figures + schedule (same logic as UI / buildCreditSchedule)
+  const totalAmountRaw = siblings.reduce((a, x) => a + n(x.amount), 0);
+  const sch = buildCreditScheduleAggregated(siblings, s.date);
+  const termMonthsAgg = sch.term;
+  const remAfterDownAgg = sch.remAfterDown;
+  const monthlyAgg = sch.monthly;
+  const totalDownRaw = sch.down;
 
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
   const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
   const st = db.settings || {};
-  // Build schedule using aggregated totals (override single-sale schedule)
-  const sch = {
-    term: termMonthsAgg,
-    remAfterDown: remAfterDownAgg,
-    rows: (() => {
-      const startDate = s.date ? new Date(s.date) : new Date();
-      return Array.from({ length: termMonthsAgg }, (_, i) => {
-        const due = new Date(startDate);
-        due.setMonth(due.getMonth() + i + 1);
-        return { idx: i + 1, due: due.toISOString(), amount: monthlyAgg };
-      });
-    })(),
-  };
 
   const today = fmtDT(new Date().toISOString()).split(" ")[0];
   const saleDate = fmtDT(s.date).split(" ")[0];
@@ -7960,8 +7977,10 @@ function printCreditDoc(idx, type) {
   else if (type === "cedvel") {
     title = "Ödəniş Cədvəli";
     const creditTotal = remAfterDownAgg;
+    let cumScheduled = 0;
     const rows = sch.rows.map((r, i) => {
-      const balance = Math.max(0, creditTotal - r.idx * n(r.amount));
+      cumScheduled += n(r.amount);
+      const balance = Math.max(0, creditTotal - cumScheduled);
       return `
       <tr style="${i%2===0?"":"background:#f9fafb"}">
         <td>${r.idx}</td>
