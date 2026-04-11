@@ -873,9 +873,9 @@ main{
 .section.active{display:block;}
 
 
-.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-color);}
+.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:20;background:var(--bg-main);}
 .content-header h1{font-size:1.2rem;font-weight:700;letter-spacing:-.01em;color:var(--text-main);}
-body.theme-dark .content-header{border-bottom-color:#374151;}
+body.theme-dark .content-header{border-bottom-color:#374151;background:var(--bg-main);}
 .header-actions{
   display:flex;
   align-items:center;
