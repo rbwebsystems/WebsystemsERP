@@ -10455,38 +10455,36 @@ function saveDayClose() {
 function openDayCloseHistory() {
   ensureAuditTrash();
   const closes = (db.dayCloses || []).slice().sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
-  const rows = closes.map((x) => {
+  const rows = closes.map((x, i) => {
     const accs = Array.isArray(x.accounts) ? x.accounts : [];
     const accRows = accs.map(a =>
       `<tr style="background:#f8fafc;">
+        <td></td>
         <td style="padding-left:24px;color:var(--text-muted);font-size:.82rem;">${escapeHtml(a.name || "-")}</td>
         <td style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(a.type || "-")}</td>
-        <td colspan="3"></td>
+        <td colspan="2"></td>
         <td style="text-align:right;font-size:.85rem;font-weight:600;">${money(a.balance)} AZN</td>
-        <td></td>
       </tr>`
     ).join("");
-    const headerRow = `
-      <tr style="cursor:default;">
-        <td>${x.uid}</td>
+    return `
+      <tr>
+        <td class="muted" style="font-size:.8rem;">${i + 1}</td>
         <td>${fmtDT(x.ts)}</td>
         <td>${escapeHtml(x.user || "-")}</td>
-        <td colspan="4">${escapeHtml(x.note || "")}</td>
+        <td colspan="3">${escapeHtml(x.note || "")}</td>
       </tr>
       ${accRows}
       <tr class="total-row">
         <td colspan="5"><strong>Ümumi balans</strong></td>
         <td style="text-align:right;"><strong>${money(x.totalBalance)} AZN</strong></td>
-        <td></td>
       </tr>
     `;
-    return headerRow;
   }).join("");
   openModal(`
     <h2>Gün sonu tarixçəsi</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th colspan="2">Qeyd</th><th>Ümumi balans</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th colspan="3">Qeyd</th><th>Balans</th></tr></thead>
         <tbody>${rows || `<tr><td colspan="7">Tarixçə boşdur</td></tr>`}</tbody>
       </table>
     </div>
