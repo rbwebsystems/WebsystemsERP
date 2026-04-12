@@ -3278,16 +3278,7 @@ function getCurrentCompanyName() {
 }
 
 function refreshHeaderBar() {
-  const titleEl = byId("appHeaderTitle");
-  if (titleEl) {
-    if (!meta?.session) {
-      titleEl.textContent = "";
-    } else {
-      const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
-      const compName = String(db.settings?.companyName || comp?.name || "").trim();
-      titleEl.textContent = compName;
-    }
-  }
+  updateHeaderWelcome();
   updateHeaderDateTime();
   updateNotificationsIndicator();
 }
@@ -9908,15 +9899,15 @@ function normalizeUsernamePart(text) {
 }
 
 function buildAutoUsernameForUser(fullName, excludeUid) {
-  const compId = meta?.session?.companyId || "";
-  const comp = (meta?.companies || []).find((c) => c.id === compId);
-  const compName = String(db.settings?.companyName || comp?.name || compId || "company").trim();
+  // Prefiks: cari şirkətin ID-si (meta.session) — sənədlərdəki "Şirkət adı" (db.settings) ilə qarışmır
+  const compId = String(meta?.session?.companyId || "").trim();
+  const prefixSlug = normalizeUsernamePart(compId).replace(/\s+/g, "") || "company";
   const cleaned = normalizeUsernamePart(fullName);
   const parts = cleaned.split(" ").filter(Boolean);
   const first = parts[0] || "user";
   const surnameInitial = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
   const suffix = `${first}${surnameInitial}` || "user";
-  const base = `${compName}_${suffix}`;
+  const base = `${prefixSlug}_${suffix}`;
   let candidate = base;
   let nIdx = 2;
   while (meta.users.some((u) => Number(u.uid) !== Number(excludeUid || 0) && String(u.username || "").trim().toLowerCase() === candidate.toLowerCase())) {
@@ -9945,9 +9936,10 @@ function syncAutoUserIdentity() {
   if (staffWrap) staffWrap.style.display = manual ? "none" : "";
   const fullName = getAutoUserFullName();
   if (isNew && !manual) fullEl.value = fullName;
-  // only auto-fill username if it's still empty (user hasn't typed manually)
-  if (isNew && !userEl.value.trim()) userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
-  else if (isNew && fullName) userEl.value = buildAutoUsernameForUser(fullName, 0);
+  // Yalnız istifadəçi adı boşdursa avtomatik doldur (əl ilə yazılıbsa toxunma)
+  if (isNew && !userEl.value.trim()) {
+    userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+  }
 }
 
 function toggleUserManualMode() {
@@ -10267,11 +10259,23 @@ function saveUser(e) {
       staffUid = "";
     }
   }
-  const username = buildAutoUsernameForUser(fullName, uidVal || 0);
+  const usernameFromForm = val("u_name").trim();
+  const username =
+    usernameFromForm ||
+    buildAutoUsernameForUser(fullName, uidVal || 0);
   const prefix = getCompanyIdFromUsername(username);
   if (!fullName || !username) return;
   if (isNew) {
-    if (!prefix || prefix !== cid) return alert("İstifadəçi adı şirkət adı ilə başlamalıdır: " + (meta?.session?.companyId || cid) + "_ (məs: " + (meta?.session?.companyId || cid) + "_rustamb).");
+    const norm = (x) => String(x || "").trim().toLowerCase();
+    if (!prefix || norm(prefix) !== norm(cid)) {
+      return alert(
+        "İstifadəçi adı cari şirkət kodu ilə başlamalıdır: " +
+          (meta?.session?.companyId || cid) +
+          "_ (məs: " +
+          (meta?.session?.companyId || cid) +
+          "_rustamb). Sənədlərdə göstərilən şirkət adından fərqlidir."
+      );
+    }
     if (meta.users.some((u) => u.username === username)) return alert("Bu istifadəçi adı var.");
     meta.users.push({ uid: genId(meta.users, 1), fullName, username, staffUid: staffUid || undefined, pass, role, active, companyId: cid || null, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions }, createdAt: nowISODateTimeLocal() });
   } else {
@@ -10284,7 +10288,28 @@ function saveUser(e) {
     }
     const staff = staffUid ? (db.staff || []).find((s) => String(s.uid) === String(staffUid)) : null;
     if (staff) fullName = String(staff.name || "").trim() || fullName;
-    meta.users[idx] = { ...keep, fullName, staffUid: staffUid || undefined, pass, role, active, companyId: keep.companyId || prefix || cid, perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions } };
+    const norm = (x) => String(x || "").trim().toLowerCase();
+    if (!isDeveloper() && cid && (!prefix || norm(prefix) !== norm(cid))) {
+      return alert(
+        "İstifadəçi adı cari şirkət kodu ilə başlamalıdır: " +
+          (meta?.session?.companyId || cid) +
+          "_ …"
+      );
+    }
+    if (meta.users.some((u) => String(u.uid) !== String(uidVal) && u.username === username)) {
+      return alert("Bu istifadəçi adı var.");
+    }
+    meta.users[idx] = {
+      ...keep,
+      fullName,
+      username,
+      staffUid: staffUid || undefined,
+      pass,
+      role,
+      active,
+      companyId: keep.companyId || prefix || cid,
+      perms: { sections, canEdit, canDelete, canPay, canRefund, canExport, canImport, canReset, actions },
+    };
   }
   saveMeta();
   closeMdl();
@@ -14015,9 +14040,18 @@ function renderSidebarBrand() {
 function updateHeaderWelcome() {
   const titleEl = byId("appHeaderTitle");
   if (!titleEl) return;
-  if (!meta?.session) return;
+  if (!meta?.session) {
+    titleEl.textContent = "";
+    return;
+  }
   const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
-  const compName = String(db.settings?.companyName || comp?.name || "").trim();
+  const tenantName = String(comp?.name || comp?.id || "").trim();
+  const brandName = String(db.settings?.companyName || "").trim();
+  // Başlıqda əvvəl cari tenant (rbsoft), sonra ayarlardakı ticarət adı (Bakfon) — qarışıqlığı azaltmaq üçün
+  let compName = tenantName || brandName || "ERP";
+  if (tenantName && brandName && normalizeUsernamePart(tenantName) !== normalizeUsernamePart(brandName)) {
+    compName = `${tenantName} · ${brandName}`;
+  }
   titleEl.textContent = compName;
 }
 
