@@ -14047,10 +14047,18 @@ function updateHeaderWelcome() {
   const comp = (meta?.companies || []).find((c) => c.id === (meta?.session?.companyId || ""));
   const tenantName = String(comp?.name || comp?.id || "").trim();
   const brandName = String(db.settings?.companyName || "").trim();
-  // Başlıqda əvvəl cari tenant (rbsoft), sonra ayarlardakı ticarət adı (Bakfon) — qarışıqlığı azaltmaq üçün
-  let compName = tenantName || brandName || "ERP";
-  if (tenantName && brandName && normalizeUsernamePart(tenantName) !== normalizeUsernamePart(brandName)) {
+  const namesMatch =
+    tenantName &&
+    brandName &&
+    (tenantName.toLowerCase() === brandName.toLowerCase() ||
+      normalizeUsernamePart(tenantName) === normalizeUsernamePart(brandName));
+  let compName = "ERP";
+  if (namesMatch) {
+    compName = brandName || tenantName;
+  } else if (tenantName && brandName) {
     compName = `${tenantName} · ${brandName}`;
+  } else {
+    compName = tenantName || brandName || "ERP";
   }
   titleEl.textContent = compName;
 }
