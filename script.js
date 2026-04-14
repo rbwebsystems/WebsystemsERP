@@ -1043,6 +1043,64 @@ function syncRepFilters() {
   withSectionLoading(() => renderReports());
 }
 
+/** Hesabatlarda eyni satış qaiməsi üçün açar (invNo boşdursa hər sətir ayrı). */
+function invoiceKeyForSale(s) {
+  const inv = String(s?.invNo || "").trim();
+  return inv ? `inv:${inv}` : `uid:${s?.uid}`;
+}
+
+/** Satış sətirlərini qaimə üzrə qruplaşdırır (cəmlər, nümayiş tarixi, rep sətir). */
+function groupSalesByInvoiceForReport(salesArr) {
+  const map = new Map();
+  for (const s of salesArr || []) {
+    const key = invoiceKeyForSale(s);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(s);
+  }
+  return Array.from(map.values()).map((rows) => {
+    const sorted = rows.slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+    const displayDate = sorted[sorted.length - 1].date;
+    const rep = rows.slice().sort((a, b) => Number(a.uid) - Number(b.uid))[0];
+    const totalAmt = rows.reduce((a, x) => a + n(x.amount), 0);
+    const totalPaid = rows.reduce((a, x) => a + n(x.paidTotal || 0), 0);
+    const totalRem = rows.reduce((a, x) => a + saleRemaining(x), 0);
+    const prodNames =
+      rows.length === 1
+        ? String(rows[0].productName || "-")
+        : rows.map((x) => x.productName).filter(Boolean).join(" + ");
+    const totalQty = rows.reduce((a, x) => a + Math.max(1, Math.floor(n(x.qty || 1))), 0);
+    return { rows, rep, displayDate, totalAmt, totalPaid, totalRem, prodNames, totalQty };
+  });
+}
+
+/** Alış sətirlərini qaimə üzrə qruplaşdırır. */
+function groupPurchByInvoiceForReport(purchArr) {
+  const map = new Map();
+  for (const p of purchArr || []) {
+    const inv = String(p.invNo || invFallback("purch", p.uid));
+    if (!map.has(inv)) map.set(inv, []);
+    map.get(inv).push(p);
+  }
+  return Array.from(map.entries()).map(([invNo, rows]) => {
+    const sorted = rows.slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+    const displayDate = sorted[sorted.length - 1].date;
+    const rep = rows.slice().sort((a, b) => Number(a.uid) - Number(b.uid))[0];
+    const totalAmt = rows.reduce((a, x) => a + n(x.amount), 0);
+    const totalPaid = rows.reduce((a, x) => a + n(x.paidTotal || 0), 0);
+    const totalRem = rows.reduce((a, x) => a + purchRemaining(x), 0);
+    const totalQty = rows.reduce((a, x) => {
+      if (purchIsBulk(x)) return a + Math.max(0, Math.floor(n(x.qty || 0)));
+      return a + 1;
+    }, 0);
+    const names =
+      rows.length === 1
+        ? String(rows[0].name || "-")
+        : rows.map((x) => x.name).filter(Boolean).join(" + ");
+    const supp = rows.map((x) => x.supp).find(Boolean) || "-";
+    return { invNo, rows, rep, displayDate, totalAmt, totalPaid, totalRem, names, totalQty, supp };
+  });
+}
+
 function renderReports() {
   const view = window.__repView || "";
   if (!view) return;
@@ -1071,24 +1129,25 @@ function renderReports() {
     setText("rv-salesPaid", money(salesPaid) + " AZN");
     setText("rv-salesCogs", money(cogs) + " AZN");
     setText("rv-salesPL", money(salesTotal - cogs) + " AZN");
-    setText("rv-salesCount", String(rows.length));
+    const invGroups = groupSalesByInvoiceForReport(rows);
+    invGroups.sort((a, b) => String(b.displayDate || "").localeCompare(String(a.displayDate || "")));
+    setText("rv-salesCount", String(invGroups.length));
     const body = byId("tblRepSales");
     if (body) {
-      body.innerHTML = rows.map((s, i) => {
-        const idx = (db.sales || []).findIndex((x) => x.uid === s.uid);
-        const inv = s.invNo || invFallback("sales", s.uid);
-        const rem = saleRemaining(s);
-        const typeLabel = saleTypeMap[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase();
+      body.innerHTML = invGroups.map((g, i) => {
+        const idx = (db.sales || []).findIndex((x) => Number(x.uid) === Number(g.rep.uid));
+        const inv = g.rep.invNo || invFallback("sales", g.rep.uid);
+        const typeLabel = saleTypeMap[String(g.rep.saleType || "").toLowerCase()] || String(g.rep.saleType || "").toUpperCase();
         return `<tr>
-          <td>${i + 1}</td><td>${fmtDT(s.date)}</td>
-          <td>${escapeHtml(inv)}</td><td>${escapeHtml(s.customerName)}</td>
-          <td>${escapeHtml(s.productName)}</td><td>${escapeHtml(typeLabel)}</td>
-          <td>${money(s.amount)} AZN</td><td>${money(n(s.paidTotal || 0))} AZN</td>
-          <td>${money(rem)} AZN</td>
+          <td>${i + 1}</td><td>${fmtDT(g.displayDate)}</td>
+          <td>${escapeHtml(inv)}</td><td>${escapeHtml(g.rep.customerName)}</td>
+          <td>${escapeHtml(g.prodNames)}</td><td>${escapeHtml(typeLabel)}</td>
+          <td>${money(g.totalAmt)} AZN</td><td>${money(g.totalPaid)} AZN</td>
+          <td>${money(g.totalRem)} AZN</td>
           <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
         </tr>`;
-      }).join("") + (rows.length ? `<tr class="total-row">
-        <td colspan="6"><strong>Cəmi (${rows.length} satış)</strong></td>
+      }).join("") + (invGroups.length ? `<tr class="total-row">
+        <td colspan="6"><strong>Cəmi (${invGroups.length} qaimə, ${rows.length} sətir)</strong></td>
         <td><strong>${money(salesTotal)} AZN</strong></td>
         <td><strong>${money(salesPaid)} AZN</strong></td>
         <td><strong>${money(salesRem)} AZN</strong></td>
@@ -1104,23 +1163,31 @@ function renderReports() {
     setText("rv-purchTotal", money(purchTotal) + " AZN");
     setText("rv-purchPaid", money(purchPaid) + " AZN");
     setText("rv-purchRem", money(purchRem) + " AZN");
-    setText("rv-purchCount", String(rows.length));
+    const invGroups = groupPurchByInvoiceForReport(rows);
+    invGroups.sort((a, b) => String(b.displayDate || "").localeCompare(String(a.displayDate || "")));
+    setText("rv-purchCount", String(invGroups.length));
     const body = byId("tblRepPurch");
     if (body) {
-      body.innerHTML = rows.map((p, i) => {
-        const inv = p.invNo || invFallback("purch", p.uid);
-        const rem = purchRemaining(p);
-        const purchIdx = (db.purch || []).findIndex((x) => x.uid === p.uid);
+      body.innerHTML = invGroups.map((g, i) => {
+        const purchIdx = (db.purch || []).findIndex((x) => Number(x.uid) === Number(g.rep.uid));
+        const onInfo =
+          g.rows.length > 1
+            ? `openPurchInfoByInv('${escapeAttr(g.invNo)}');return false;`
+            : `openPurchInfo(${purchIdx});return false;`;
+        const href =
+          g.rows.length > 1
+            ? erpOpHref("purch", "purchInfoInv", g.invNo)
+            : erpOpHref("purch", "purchInfo", purchIdx);
         return `<tr>
-          <td>${i + 1}</td><td>${fmtDT(p.date)}</td>
-          <td>${escapeHtml(inv)}</td><td>${escapeHtml(p.supp || "-")}</td>
-          <td>${escapeHtml(p.name)}</td><td>${n(p.qty || 1)}</td>
-          <td>${money(p.amount)} AZN</td><td>${money(n(p.paidTotal || 0))} AZN</td>
-          <td>${money(rem)} AZN</td>
-          <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("purch","purchInfo",purchIdx)}" onclick="openPurchInfo(${purchIdx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
+          <td>${i + 1}</td><td>${fmtDT(g.displayDate)}</td>
+          <td>${escapeHtml(g.invNo)}</td><td>${escapeHtml(g.supp)}</td>
+          <td>${escapeHtml(g.names)}</td><td>${g.totalQty}</td>
+          <td>${money(g.totalAmt)} AZN</td><td>${money(g.totalPaid)} AZN</td>
+          <td>${money(g.totalRem)} AZN</td>
+          <td class="tbl-actions"><a class="icon-btn info" href="${href}" onclick="${onInfo}" title="Info"><i class="fas fa-circle-info"></i></a></td>
         </tr>`;
-      }).join("") + (rows.length ? `<tr class="total-row">
-        <td colspan="6"><strong>Cəmi (${rows.length} alış)</strong></td>
+      }).join("") + (invGroups.length ? `<tr class="total-row">
+        <td colspan="6"><strong>Cəmi (${invGroups.length} qaimə, ${rows.length} sətir)</strong></td>
         <td><strong>${money(purchTotal)} AZN</strong></td>
         <td><strong>${money(purchPaid)} AZN</strong></td>
         <td><strong>${money(purchRem)} AZN</strong></td>
@@ -1132,16 +1199,18 @@ function renderReports() {
     const byEmp = new Map();
     for (const s of salesInRange) {
       const empId = String(s.employeeId || ""); if (!empId) continue;
-      if (!byEmp.has(empId)) byEmp.set(empId, { count: 0, sum: 0 });
-      byEmp.get(empId).count++;
-      byEmp.get(empId).sum += n(s.amount);
+      if (!byEmp.has(empId)) byEmp.set(empId, { invSeen: new Set(), sum: 0 });
+      const o = byEmp.get(empId);
+      o.invSeen.add(invoiceKeyForSale(s));
+      o.sum += n(s.amount);
     }
     let totalBase = 0, totalComm = 0, totalSales = 0, totalPayroll = 0;
     const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
     const body = byId("tblRepStaff");
     if (body) {
       const staffRows = staffSorted.map((st, i) => {
-        const o = byEmp.get(String(st.uid)) || { count: 0, sum: 0 };
+        const o = byEmp.get(String(st.uid)) || { invSeen: new Set(), sum: 0 };
+        const invCount = o.invSeen && o.invSeen.size !== undefined ? o.invSeen.size : 0;
         const pct = Math.max(0, n(st.commPct || 0));
         const base = Math.max(0, n(st.baseSalary || 0));
         const comm = o.sum * (pct / 100);
@@ -1149,7 +1218,7 @@ function renderReports() {
         totalBase += base; totalComm += comm; totalSales += o.sum; totalPayroll += total;
         return `<tr>
           <td>${i + 1}</td><td>${escapeHtml(st.name)}</td>
-          <td>${o.count}</td><td>${money(o.sum)} AZN</td>
+          <td>${invCount}</td><td>${money(o.sum)} AZN</td>
           <td>${money(pct)}%</td><td>${money(comm)} AZN</td>
           <td>${money(base)} AZN</td><td><strong>${money(total)} AZN</strong></td>
           <td class="tbl-actions"><button class="btn-mini" type="button" onclick="openStaffReportSales('${escapeAttr(String(st.uid))}')" title="Satış siyahısı"><i class="fas fa-list"></i> Bax</button></td>
@@ -1585,12 +1654,14 @@ function renderReports() {
     const getDay = (d) => String(d || "").slice(0, 10);
     for (const s of salesAll) {
       const d = getDay(s.date); if (!d) continue;
-      if (!dayMap.has(d)) dayMap.set(d, { salesCount: 0, salesAmt: 0, cashIn: 0, cashExp: 0 });
-      dayMap.get(d).salesCount++; dayMap.get(d).salesAmt += n(s.amount);
+      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0 });
+      const day = dayMap.get(d);
+      day.invSeen.add(invoiceKeyForSale(s));
+      day.salesAmt += n(s.amount);
     }
     for (const c of cashOps) {
       const d = getDay(c.date); if (!d) continue;
-      if (!dayMap.has(d)) dayMap.set(d, { salesCount: 0, salesAmt: 0, cashIn: 0, cashExp: 0 });
+      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0 });
       if (c.type === "in") dayMap.get(d).cashIn += n(c.amount);
       if (c.type === "out" && c.link?.kind === "expense") dayMap.get(d).cashExp += n(c.amount);
     }
@@ -1606,12 +1677,13 @@ function renderReports() {
     if (body) {
       body.innerHTML = rows.map(([d, r], i) => {
         const net = r.cashIn - r.cashExp;
-        return `<tr><td>${i+1}</td><td>${fmtDT(d)}</td><td>${r.salesCount}</td>
+        const qCount = r.invSeen ? r.invSeen.size : 0;
+        return `<tr><td>${i+1}</td><td>${fmtDT(d)}</td><td>${qCount}</td>
           <td>${money(r.salesAmt)} AZN</td><td>${money(r.cashIn)} AZN</td>
           <td>${money(r.cashExp)} AZN</td>
           <td class="${net>=0?"amt-in":"amt-out"}">${money(net)} AZN</td></tr>`;
       }).join("") + (rows.length ? `<tr class="total-row"><td colspan="2"><strong>Cəmi (${rows.length} gün)</strong></td>
-        <td><strong>${rows.reduce((a,[,r])=>a+r.salesCount,0)}</strong></td>
+        <td><strong>${rows.reduce((a,[,r])=>a+(r.invSeen?r.invSeen.size:0),0)}</strong></td>
         <td><strong>${money(totSalesAmt)} AZN</strong></td>
         <td><strong>${money(totCashIn)} AZN</strong></td>
         <td><strong>${money(totExp)} AZN</strong></td>
@@ -1623,18 +1695,27 @@ function renderReports() {
       .filter((s) => s.returnedAt && (!hasPeriod || inRange(s.returnedAt)))
       .slice().sort((a, b) => (a.returnedAt > b.returnedAt ? -1 : 1));
     const totAmt = rows.reduce((a, s) => a + n(s.amount), 0);
-    setText("rv-retCount", String(rows.length));
+    const retGroups = groupSalesByInvoiceForReport(rows);
+    retGroups.sort((a, b) => {
+      const ma = a.rows.map((x) => String(x.returnedAt || "")).reduce((x, y) => (x > y ? x : y), "");
+      const mb = b.rows.map((x) => String(x.returnedAt || "")).reduce((x, y) => (x > y ? x : y), "");
+      return mb.localeCompare(ma);
+    });
+    setText("rv-retCount", String(retGroups.length));
     setText("rv-retTotal", money(totAmt) + " AZN");
     const body = byId("tblRepReturns");
     if (body) {
-      body.innerHTML = rows.map((s, i) => {
-        const idx = (db.sales||[]).indexOf(s);
-        const inv = s.invNo || invFallback("sales", s.uid);
-        return `<tr><td>${i+1}</td><td>${fmtDT(s.returnedAt)}</td><td>${fmtDT(s.date)}</td>
-          <td>${escapeHtml(inv)}</td><td>${escapeHtml(s.customerName)}</td>
-          <td>${escapeHtml(s.productName)}</td><td>${money(n(s.amount))} AZN</td>
+      body.innerHTML = retGroups.map((g, i) => {
+        const idx = (db.sales || []).findIndex((x) => Number(x.uid) === Number(g.rep.uid));
+        const inv = g.rep.invNo || invFallback("sales", g.rep.uid);
+        const retAt = g.rows.map((x) => String(x.returnedAt || "")).reduce((a, b) => (a > b ? a : b), "");
+        const saleDates = g.rows.map((x) => String(x.date || "")).filter(Boolean);
+        const saleDt = saleDates.length ? saleDates.reduce((a, b) => (a < b ? a : b)) : String(g.rep.date || "");
+        return `<tr><td>${i + 1}</td><td>${fmtDT(retAt)}</td><td>${fmtDT(saleDt)}</td>
+          <td>${escapeHtml(inv)}</td><td>${escapeHtml(g.rep.customerName)}</td>
+          <td>${escapeHtml(g.prodNames)}</td><td>${money(g.totalAmt)} AZN</td>
           <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales","saleInfo",idx)}" onclick="openSaleInfo(${idx});return false;"><i class="fas fa-circle-info"></i></a></td></tr>`;
-      }).join("") + (rows.length ? `<tr class="total-row"><td colspan="6"><strong>Cəmi (${rows.length})</strong></td>
+      }).join("") + (retGroups.length ? `<tr class="total-row"><td colspan="6"><strong>Cəmi (${retGroups.length} qaimə, ${rows.length} sətir)</strong></td>
         <td><strong>${money(totAmt)} AZN</strong></td><td></td></tr>` : emptyRow(8));
     }
 
@@ -1656,8 +1737,10 @@ function renderReports() {
       const mk = String(s.date||"").slice(0,7);
       const empId = String(s.employeeId||"");
       const key = mk + "|" + empId;
-      if (!monthSalesMap.has(key)) monthSalesMap.set(key, { month: mk, empId, count: 0, sum: 0 });
-      const o = monthSalesMap.get(key); o.count++; o.sum += n(s.amount);
+      if (!monthSalesMap.has(key)) monthSalesMap.set(key, { month: mk, empId, invSeen: new Set(), sum: 0 });
+      const o = monthSalesMap.get(key);
+      o.invSeen.add(invoiceKeyForSale(s));
+      o.sum += n(s.amount);
     }
     const rows = Array.from(monthSalesMap.values()).sort((a,b)=>a.month>b.month?-1:1);
     let totSales = 0, totCommOnly = 0, totYekun = 0;
@@ -1670,8 +1753,9 @@ function renderReports() {
         const comm = r.sum * (pct/100);
         const yekun = base + comm;
         totSales += r.sum; totCommOnly += comm; totYekun += yekun;
+        const qCnt = r.invSeen ? r.invSeen.size : 0;
         return `<tr><td>${i+1}</td><td>${r.month}</td><td>${escapeHtml(st?.name||r.empId||"-")}</td>
-          <td>${r.count}</td><td>${money(r.sum)} AZN</td><td>${money(comm)} AZN</td>
+          <td>${qCnt}</td><td>${money(r.sum)} AZN</td><td>${money(comm)} AZN</td>
           <td>${money(base)} AZN</td><td><strong>${money(yekun)} AZN</strong></td></tr>`;
       }).join("") + (rows.length ? `<tr class="total-row"><td colspan="4"><strong>Cəmi</strong></td>
         <td><strong>${money(totSales)} AZN</strong></td>
@@ -1679,7 +1763,9 @@ function renderReports() {
         <td></td><td><strong>${money(totYekun)} AZN</strong></td></tr>` : emptyRow(8));
     }
     setText("rv-spSales", money(totSales) + " AZN");
-    setText("rv-spCount", String(salesAll.length));
+    const spInvSeen = new Set();
+    for (const s of salesAll) spInvSeen.add(invoiceKeyForSale(s));
+    setText("rv-spCount", String(spInvSeen.size));
     setText("rv-spComm", money(totCommOnly) + " AZN");
 
   } else if (view === "payments") {
@@ -7308,21 +7394,22 @@ function openStaffReportSales(employeeUid) {
   const totalSum = salesList.reduce((a, s) => a + n(s.amount), 0);
   const totalPaid = salesList.reduce((a, s) => a + n(s.paidTotal || 0), 0);
   const totalRem = totalSum - totalPaid;
-  const rows = salesList
-    .map((s, i) => {
-      const idx = db.sales.findIndex((x) => x.uid === s.uid);
-      const rem = saleRemaining(s);
-      const inv = s.invNo || invFallback("sales", s.uid);
+  const invGroups = groupSalesByInvoiceForReport(salesList);
+  invGroups.sort((a, b) => String(b.displayDate || "").localeCompare(String(a.displayDate || "")));
+  const rows = invGroups
+    .map((g, i) => {
+      const idx = db.sales.findIndex((x) => Number(x.uid) === Number(g.rep.uid));
+      const inv = g.rep.invNo || invFallback("sales", g.rep.uid);
       return `
       <tr>
         <td>${i + 1}</td>
-        <td>${fmtDT(s.date)}</td>
+        <td>${fmtDT(g.displayDate)}</td>
         <td>${escapeHtml(inv)}</td>
-        <td>${escapeHtml(s.customerName)}</td>
-        <td>${escapeHtml(s.productName)}</td>
-        <td>${money(s.amount)} AZN</td>
-        <td>${money(s.paidTotal || 0)} AZN</td>
-        <td>${money(rem)} AZN</td>
+        <td>${escapeHtml(g.rep.customerName)}</td>
+        <td>${escapeHtml(g.prodNames)}</td>
+        <td>${money(g.totalAmt)} AZN</td>
+        <td>${money(g.totalPaid)} AZN</td>
+        <td>${money(g.totalRem)} AZN</td>
         <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="closeMdl(); openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
       </tr>`;
     })
@@ -13443,20 +13530,21 @@ function renderAll() {
     if (head && body) {
       if (repView === "sales") {
         head.innerHTML = `<tr><th>#</th><th>Tarix</th><th>Qaimə</th><th>Müştəri</th><th>Məhsul</th><th>Məbləğ</th><th>Info</th></tr>`;
-        const rows = salesInRange
-          .slice()
-          .sort((a, b) => (a.date > b.date ? -1 : 1))
-          .map((s, i) => {
-            const idx = db.sales.findIndex((x) => x.uid === s.uid);
-            const inv = s.invNo || invFallback("sales", s.uid);
+        const listSorted = salesInRange.slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+        const invG = groupSalesByInvoiceForReport(listSorted);
+        invG.sort((a, b) => String(b.displayDate || "").localeCompare(String(a.displayDate || "")));
+        const rows = invG
+          .map((g, i) => {
+            const idx = db.sales.findIndex((x) => Number(x.uid) === Number(g.rep.uid));
+            const inv = g.rep.invNo || invFallback("sales", g.rep.uid);
             return `
             <tr>
               <td>${i + 1}</td>
-              <td>${fmtDT(s.date)}</td>
+              <td>${fmtDT(g.displayDate)}</td>
               <td>${escapeHtml(inv)}</td>
-              <td>${escapeHtml(s.customerName)}</td>
-              <td>${escapeHtml(s.productName)}</td>
-              <td>${money(s.amount)} AZN</td>
+              <td>${escapeHtml(g.rep.customerName)}</td>
+              <td>${escapeHtml(g.prodNames)}</td>
+              <td>${money(g.totalAmt)} AZN</td>
               <td class="tbl-actions"><a class="icon-btn info" href="${erpOpHref("sales", "saleInfo", idx)}" onclick="openSaleInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a></td>
             </tr>`;
           })
@@ -13467,19 +13555,20 @@ function renderAll() {
           .filter((p) => (useMonth ? inMonth(p.date, repMonth) : inDateRange(p.date, "repFrom", "repTo")))
           .slice()
           .sort((a, b) => (a.date > b.date ? -1 : 1));
+        const pInvG = groupPurchByInvoiceForReport(purchInRange);
+        pInvG.sort((a, b) => String(b.displayDate || "").localeCompare(String(a.displayDate || "")));
         head.innerHTML = `<tr><th>#</th><th>Tarix</th><th>Qaimə</th><th>Təchizatçı</th><th>Məhsul</th><th>Məbləğ</th></tr>`;
         body.innerHTML =
-          purchInRange
-            .map((p, i) => {
-              const inv = p.invNo || invFallback("purch", p.uid);
+          pInvG
+            .map((g, i) => {
               return `
               <tr>
                 <td>${i + 1}</td>
-                <td>${fmtDT(p.date)}</td>
-                <td>${escapeHtml(inv)}</td>
-                <td>${escapeHtml(p.supp)}</td>
-                <td>${escapeHtml(p.name)}</td>
-                <td>${money(p.amount)} AZN</td>
+                <td>${fmtDT(g.displayDate)}</td>
+                <td>${escapeHtml(g.invNo)}</td>
+                <td>${escapeHtml(g.supp)}</td>
+                <td>${escapeHtml(g.names)}</td>
+                <td>${money(g.totalAmt)} AZN</td>
               </tr>`;
             })
             .join("") || emptyRow(6);
