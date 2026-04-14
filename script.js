@@ -8092,23 +8092,23 @@ function printCreditDoc(idx, type) {
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Times New Roman',Times,serif;font-size:12px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:center;min-height:100vh;}
     .page{width:210mm;background:#fff;padding:14mm 16mm;border-radius:8px;}
-    h1{font-size:14px;font-weight:700;text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-family:'Times New Roman',Times,serif;}
-    .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:14px;font-family:'Times New Roman',Times,serif;}
-    .section{margin-bottom:10px;}
-    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:3px;margin-bottom:6px;text-align:center;}
-    .row{display:flex;gap:8px;margin-bottom:4px;font-size:12px;font-family:'Times New Roman',Times,serif;}
-    .lbl{color:#6b7280;min-width:150px;flex-shrink:0;}
+    h1{font-size:13px;font-weight:700;text-align:center;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;font-family:'Times New Roman',Times,serif;}
+    .subtitle{text-align:center;font-size:11px;color:#6b7280;margin-bottom:8px;font-family:'Times New Roman',Times,serif;}
+    .section{margin-bottom:6px;}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#374151;border-bottom:1px solid #aaa;padding-bottom:2px;margin-bottom:4px;text-align:center;}
+    .row{display:flex;gap:6px;margin-bottom:2px;font-size:11px;font-family:'Times New Roman',Times,serif;}
+    .lbl{color:#6b7280;min-width:140px;flex-shrink:0;}
     .val{font-weight:600;}
-    p{font-size:12px;line-height:1.75;margin-bottom:5px;text-indent:2em;font-family:'Times New Roman',Times,serif;}
+    p{font-size:11px;line-height:1.5;margin-bottom:3px;text-indent:2em;font-family:'Times New Roman',Times,serif;}
     p.no-indent{text-indent:0;}
-    table{width:100%;border-collapse:collapse;font-size:11px;margin-top:5px;font-family:'Times New Roman',Times,serif;}
-    th{background:#e8ecf0;padding:5px 8px;text-align:left;border:1.5px solid #555;font-weight:700;}
-    td{padding:5px 8px;border:1.5px solid #555;}
-    .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:20px;align-items:flex-end;}
+    table{width:100%;border-collapse:collapse;font-size:10px;margin-top:4px;font-family:'Times New Roman',Times,serif;}
+    th{background:#e8ecf0;padding:3px 6px;text-align:left;border:1.5px solid #555;font-weight:700;}
+    td{padding:3px 6px;border:1.5px solid #555;}
+    .sign-row{display:flex;justify-content:space-between;gap:20px;margin-top:14px;align-items:flex-end;}
     .sign-box{flex:1;}
-    .sign-line{border-bottom:1px solid #374151;height:24px;margin-bottom:4px;}
-    .sign-label{font-size:11px;color:#6b7280;font-family:'Times New Roman',Times,serif;}
-    .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:14px;border-top:1px dashed #d1d5db;padding-top:6px;font-family:'Times New Roman',Times,serif;}
+    .sign-line{border-bottom:1px solid #374151;height:20px;margin-bottom:3px;}
+    .sign-label{font-size:10px;color:#6b7280;font-family:'Times New Roman',Times,serif;}
+    .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;border-top:1px dashed #d1d5db;padding-top:4px;font-family:'Times New Roman',Times,serif;}
     @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:0;}@page{size:A4 portrait;margin:20mm 15mm;}}
   `;
 
@@ -10902,17 +10902,17 @@ function printSaleContract(idx) {
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Times New Roman',Times,serif;font-size:13px;color:#111;background:#f3f4f6;padding:20px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
   .page{width:210mm;background:#fff;padding:20mm 18mm;border-radius:8px;}
-  p{font-size:13px;line-height:1.9;margin-bottom:9px;text-align:justify;text-indent:2em;font-family:'Times New Roman',Times,serif;}
+  p{font-size:12px;line-height:1.6;margin-bottom:5px;text-align:justify;text-indent:2em;font-family:'Times New Roman',Times,serif;}
   p.no-indent{text-indent:0;}
-  .sec-title{font-size:13px;font-weight:700;text-align:center;margin:18px 0 8px;font-family:'Times New Roman',Times,serif;}
-  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:7px;font-size:13px;font-family:'Times New Roman',Times,serif;}
+  .sec-title{font-size:12px;font-weight:700;text-align:center;margin:10px 0 5px;font-family:'Times New Roman',Times,serif;}
+  .field-row{display:flex;align-items:baseline;gap:4px;margin-bottom:4px;font-size:12px;font-family:'Times New Roman',Times,serif;}
   .field-label{font-weight:700;white-space:nowrap;}
   .field-line{flex:1;border-bottom:1px solid #111;min-width:60px;padding-left:4px;}
-  .sign-block{display:flex;justify-content:space-between;margin-top:28px;gap:24px;align-items:stretch;}
-  .sign-col{flex:1;font-size:13px;font-family:'Times New Roman',Times,serif;display:flex;flex-direction:column;}
-  .sign-col p{margin-bottom:4px;text-align:left;text-indent:0;}
-  .sign-underline{border-bottom:1px solid #111;height:24px;margin-top:auto;padding-top:18px;}
-  .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;font-family:'Times New Roman',Times,serif;}
+  .sign-block{display:flex;justify-content:space-between;margin-top:16px;gap:20px;align-items:stretch;}
+  .sign-col{flex:1;font-size:12px;font-family:'Times New Roman',Times,serif;display:flex;flex-direction:column;}
+  .sign-col p{margin-bottom:3px;text-align:left;text-indent:0;}
+  .sign-underline{border-bottom:1px solid #111;height:20px;margin-top:auto;padding-top:14px;}
+  .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:12px;border-top:1px dashed #d1d5db;padding-top:6px;font-family:'Times New Roman',Times,serif;}
   @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:0;}@page{size:A4 portrait;margin:20mm 15mm;}}
 </style></head><body>
 <div class="page">
