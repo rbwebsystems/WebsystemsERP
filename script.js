@@ -8579,11 +8579,17 @@ async function delCashOp(uid) {
   if (kind === "expense") {
     // only cash record, safe to remove
   } else if (kind === "creditor_invoice_payment") {
-    const purchUid = c.link?.purchUid;
-    const p = db.purch.find((x) => Number(x.uid) === Number(purchUid));
-    if (p) {
-      const alloc = c.meta?.allocations?.reduce((a, x) => a + n(x.amount), 0) || n(c.amount);
-      p.paidTotal = String(Math.max(0, n(p.paidTotal) - alloc));
+    const allocs = c.meta?.allocations || [];
+    if (allocs.length) {
+      for (const a of allocs) {
+        const p = db.purch.find((x) => Number(x.uid) === Number(a.purchUid));
+        if (p) p.paidTotal = String(Math.max(0, n(p.paidTotal) - n(a.amount)));
+      }
+    } else {
+      // Legacy: single purchUid
+      const purchUid = c.link?.purchUid;
+      const p = db.purch.find((x) => Number(x.uid) === Number(purchUid));
+      if (p) p.paidTotal = String(Math.max(0, n(p.paidTotal) - n(c.amount)));
     }
   } else if (kind === "creditor_payment") {
     const allocs = c.meta?.allocations || [];
@@ -9366,29 +9372,42 @@ function openCreditorInfo(groupIdx) {
   if (!g) return;
   const today = Date.now();
 
-  const rows = g.purchases
-    .slice()
-    .sort((a, b) => (a.date > b.date ? -1 : 1))
-    .map((p) => {
-      const pIdx = (db.purch || []).findIndex((x) => x.uid === p.uid);
-      const invNo = p.invNo || invFallback("purch", p.uid);
-      const total = n(p.amount);
-      const paid = n(p.paidTotal);
-      const rem = purchRemaining(p);
+  // Group purchases by invNo so multi-product invoices appear as one row
+  const invMap = new Map();
+  for (const p of g.purchases) {
+    const invKey = String(p.invNo || invFallback("purch", p.uid)).trim();
+    if (!invMap.has(invKey)) invMap.set(invKey, []);
+    invMap.get(invKey).push(p);
+  }
+
+  const rows = Array.from(invMap.entries())
+    .map(([invKey, items]) => {
+      items.sort((a, b) => (a.date > b.date ? -1 : 1));
+      const rep = items[0];
+      const total = items.reduce((a, x) => a + n(x.amount), 0);
+      const paid = items.reduce((a, x) => a + n(x.paidTotal), 0);
+      const rem = items.reduce((a, x) => a + purchRemaining(x), 0);
       const st = debtStatus(total, rem);
-      const days = Math.floor((today - (parseDateOnly(p.date) || today)) / 86400000);
-      const staff = p.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(p.employeeId)) : null;
-      const actor = operationActorName(p, staff ? staff.name : (p.employeeName || "-"));
-      const payTypeLabel = p.paymentType === "qeyri_resmi" ? "Qeyri-Rəsmi" : (p.paymentType === "resmi" ? "Rəsmi" : "-");
-      const identifiers = [p.imei1, p.imei2, p.seria, p.code].filter(Boolean).join(" · ");
+      const days = Math.floor((today - (parseDateOnly(rep.date) || today)) / 86400000);
+      const staff = rep.employeeId && db.staff ? db.staff.find((s) => String(s.uid) === String(rep.employeeId)) : null;
+      const actor = operationActorName(rep, staff ? staff.name : (rep.employeeName || "-"));
+      const payTypeLabel = rep.paymentType === "qeyri_resmi" ? "Qeyri-Rəsmi" : (rep.paymentType === "resmi" ? "Rəsmi" : "-");
+      const firstIdx = (db.purch || []).findIndex((x) => x.uid === rep.uid);
+      const prodCell = items.length > 1
+        ? items.map((x) => {
+            const ids = [x.imei1, x.imei2, x.seria, x.code].filter(Boolean).join("/");
+            return `${escapeHtml(x.name)}${ids ? ` <small style="color:var(--text-muted)">(${escapeHtml(ids)})</small>` : ""}`;
+          }).join("<br>")
+        : (() => {
+            const ids = [rep.imei1, rep.imei2, rep.seria, rep.code].filter(Boolean).join(" · ");
+            return `${escapeHtml(rep.name)}${ids ? `<br><small style="color:var(--text-muted)">${escapeHtml(ids)}</small>` : ""}`;
+          })();
+      const payDis = rem <= 0.000001 ? "disabled" : "";
       return `
       <tr>
-        <td><a href="#" onclick="openPurchInfo(${pIdx});return false;" style="font-weight:600">${escapeHtml(invNo)}</a></td>
-        <td>${fmtDT(p.date)}</td>
-        <td>
-          ${escapeHtml(p.name)}
-          ${identifiers ? `<br><small style="color:var(--text-muted)">${escapeHtml(identifiers)}</small>` : ""}
-        </td>
+        <td><a href="#" onclick="openPurchInfo(${firstIdx});return false;" style="font-weight:600">${escapeHtml(invKey)}</a></td>
+        <td>${fmtDT(rep.date)}</td>
+        <td>${prodCell}</td>
         <td>${escapeHtml(actor)}</td>
         <td>${escapeHtml(payTypeLabel)}</td>
         <td>${days} gün</td>
@@ -9397,8 +9416,8 @@ function openCreditorInfo(groupIdx) {
         <td>${money(rem)} AZN</td>
         <td><span class="pill ${st}">${debtLabel(st)}</span></td>
         <td class="tbl-actions">
-          <button class="btn-mini-pay" type="button" onclick="openCreditorInvoicePayment(${p.uid})">Ödəniş et</button>
-          <button class="btn-mini" type="button" onclick="openCreditorPurchPayHistory(${p.uid})"><i class="fas fa-clock-rotate-left"></i></button>
+          <button class="btn-mini-pay" type="button" onclick="openCreditorInvoicePaymentByInv('${escapeAttr(invKey)}','${escapeAttr(g.supp)}')" ${payDis}>Ödəniş et</button>
+          <button class="btn-mini" type="button" onclick="openCreditorPurchPayHistoryByInv('${escapeAttr(invKey)}','${escapeAttr(g.supp)}')"><i class="fas fa-clock-rotate-left"></i></button>
         </td>
       </tr>`;
     })
@@ -9427,20 +9446,44 @@ function openCreditorInfo(groupIdx) {
 function openCreditorPurchPayHistory(purchUid) {
   const p = (db.purch || []).find((x) => Number(x.uid) === Number(purchUid));
   if (!p) return;
-  const invNo = p.invNo || invFallback("purch", p.uid);
+  const invNo = String(p.invNo || invFallback("purch", p.uid)).trim();
+  openCreditorPurchPayHistoryByInv(invNo, p.supp);
+}
+
+function openCreditorPurchPayHistoryByInv(invNoRaw, suppName) {
+  const invNo = String(invNoRaw || "").trim();
+  const items = (db.purch || []).filter((x) => String(x.invNo || invFallback("purch", x.uid)).trim() === invNo);
+  if (!items.length) return;
+  const supp = suppName || items[0].supp || "";
+  const total = items.reduce((a, x) => a + n(x.amount), 0);
+  const paid = items.reduce((a, x) => a + n(x.paidTotal), 0);
+  const rem = items.reduce((a, x) => a + purchRemaining(x), 0);
+  const purchUids = new Set(items.map((x) => x.uid));
+  // Collect all cash ops linked to any item in this invoice
   const ops = (db.cash || [])
-    .filter((c) => c.link && (c.link.purchUid === p.uid || Number(c.link.purchUid) === Number(p.uid)))
+    .filter((c) => {
+      if (!c.link) return false;
+      if (String(c.link.invNo || "").trim() === invNo) return true;
+      if (purchUids.has(c.link.purchUid) || purchUids.has(Number(c.link.purchUid))) return true;
+      if (c.link.meta?.allocations?.some((a) => purchUids.has(a.purchUid))) return true;
+      return false;
+    })
     .slice().sort((a, b) => (a.date > b.date ? -1 : 1));
-  const rows = ops.map((c, i) => `<tr>
+  // De-duplicate by uid in case same cash op matched multiple ways
+  const seen = new Set();
+  const uniqueOps = ops.filter((c) => { if (seen.has(c.uid)) return false; seen.add(c.uid); return true; });
+  const rows = uniqueOps.map((c, i) => `<tr>
     <td>${i+1}</td><td>${fmtDT(c.date)}</td>
     <td class="${c.type==="in"?"amt-in":"amt-out"}">${c.type==="in"?"+":"-"}${money(c.amount)} AZN</td>
     <td>${escapeHtml((db.accounts||[]).find((a)=>a.uid===Number(c.accountId||1))?.name||"Kassa")}</td>
     <td>${escapeHtml(c.note||"")}</td></tr>`).join("");
+  const prodList = items.map((x) => escapeHtml(x.name)).join(", ");
   openModal(`
     <h2>Ödəniş tarixçəsi — ${escapeHtml(invNo)}</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(p.name)}</div></div>
-      <div class="info-row"><div class="info-label">Məbləğ / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(n(p.amount))} / ${money(n(p.paidTotal))} / ${money(purchRemaining(p))} AZN</strong></div></div>
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(supp)}</div></div>
+      <div class="info-row"><div class="info-label">Məhsul(lar)</div><div class="info-value">${prodList}</div></div>
+      <div class="info-row"><div class="info-label">Cəmi / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(total)} / ${money(paid)} / ${money(rem)} AZN</strong></div></div>
     </div>
     <div class="table-wrap">
       <table>
@@ -9456,22 +9499,36 @@ function openCreditorInvoicePayment(purchUid) {
   if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const p = db.purch.find((x) => Number(x.uid) === Number(purchUid));
   if (!p) return;
-  const rem = purchRemaining(p);
+  const invNo = String(p.invNo || invFallback("purch", p.uid)).trim();
+  openCreditorInvoicePaymentByInv(invNo, p.supp);
+}
+
+function openCreditorInvoicePaymentByInv(invNoRaw, suppName) {
+  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  const invNo = String(invNoRaw || "").trim();
+  const items = (db.purch || []).filter((x) => !x.returnedAt && String(x.invNo || invFallback("purch", x.uid)).trim() === invNo);
+  if (!items.length) return;
+  const supp = suppName || items[0].supp || "";
+  const total = items.reduce((a, x) => a + n(x.amount), 0);
+  const paid = items.reduce((a, x) => a + n(x.paidTotal), 0);
+  const rem = items.reduce((a, x) => a + purchRemaining(x), 0);
+  if (rem <= 0.000001) return alert("Bu qaimə üzrə borc yoxdur.");
+  const prodList = items.map((x) => escapeHtml(x.name)).join(", ");
   openModal(`
     <h2>Qaimə ödənişi</h2>
     <div class="info-block">
-      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(p.supp)}</div></div>
-      <div class="info-row"><div class="info-label">Qaimə (Alış ID)</div><div class="info-value">${p.uid}</div></div>
-      <div class="info-row"><div class="info-label">Məhsul</div><div class="info-value">${escapeHtml(p.name)}</div></div>
-      <div class="info-row"><div class="info-label">Qalıq</div><div class="info-value">${money(rem)} AZN</div></div>
+      <div class="info-row"><div class="info-label">Təchizatçı</div><div class="info-value">${escapeHtml(supp)}</div></div>
+      <div class="info-row"><div class="info-label">Qaimə №</div><div class="info-value">${escapeHtml(invNo)}</div></div>
+      <div class="info-row"><div class="info-label">Məhsul(lar)</div><div class="info-value">${prodList}</div></div>
+      <div class="info-row"><div class="info-label">Cəmi / Ödənilən / Qalıq</div><div class="info-value"><strong>${money(total)} / ${money(paid)} / ${money(rem)} AZN</strong></div></div>
     </div>
-    <form onsubmit="saveCreditorInvoicePayment(event, ${p.uid})">
+    <form onsubmit="saveCreditorInvoicePaymentByInv(event,'${escapeAttr(invNo)}')">
       <div class="form-stack">
         <div class="form-card">
           <div class="form-card-title">Ödəniş</div>
           <div class="grid-2">
             <div class="f-group"><label>Tarix *</label><input type="datetime-local" id="inv_pay_date" value="${nowISODateTimeLocal()}" required></div>
-            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="inv_pay_amount" placeholder="0.00" required></div>
+            <div class="f-group"><label>Məbləğ (AZN) *</label><input type="number" step="0.01" id="inv_pay_amount" placeholder="0.00" max="${rem}" required></div>
             <div class="f-group"><label>Hesab *</label><select id="inv_pay_acc" required>${accountOptionsHtml(1)}</select></div>
             <div class="f-group f-group--note"><label>Qeyd</label><input id="inv_pay_note" placeholder="İstəyə bağlı"></div>
           </div>
@@ -9487,15 +9544,24 @@ function openCreditorInvoicePayment(purchUid) {
 
 function saveCreditorInvoicePayment(e, purchUid) {
   e.preventDefault();
-  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
   const p = db.purch.find((x) => Number(x.uid) === Number(purchUid));
   if (!p) return;
+  const invNo = String(p.invNo || invFallback("purch", p.uid)).trim();
+  saveCreditorInvoicePaymentByInv(e, invNo);
+}
+
+function saveCreditorInvoicePaymentByInv(e, invNoRaw) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (!userCanPay()) return alert("Ödəniş icazəsi yoxdur.");
+  const invNo = String(invNoRaw || "").trim();
+  const items = (db.purch || []).filter((x) => !x.returnedAt && String(x.invNo || invFallback("purch", x.uid)).trim() === invNo);
+  if (!items.length) return;
   const date = val("inv_pay_date");
   const amount = Math.max(0, n(val("inv_pay_amount")));
   const accId = Number(val("inv_pay_acc") || 1);
   if (amount <= 0) return;
-  const rem = purchRemaining(p);
-  const applied = Math.min(rem, amount);
+  const totalRem = items.reduce((a, x) => a + purchRemaining(x), 0);
+  const applied = Math.min(totalRem, amount);
   if (applied <= 0.000001) return;
 
   const bal = accountBalance(accId);
@@ -9504,16 +9570,29 @@ function saveCreditorInvoicePayment(e, purchUid) {
     return;
   }
 
-  p.paidTotal = String(n(p.paidTotal) + applied);
+  // Distribute payment proportionally across all items in the invoice
+  const allocations = [];
+  let leftover = applied;
+  for (let i = 0; i < items.length; i++) {
+    const rem = purchRemaining(items[i]);
+    if (rem <= 0.000001) continue;
+    const share = i === items.length - 1 ? leftover : Math.min(rem, Math.round((rem / totalRem) * applied * 100) / 100);
+    const actual = Math.min(rem, share);
+    if (actual <= 0.000001) continue;
+    items[i].paidTotal = String(n(items[i].paidTotal) + actual);
+    allocations.push({ purchUid: items[i].uid, amount: actual });
+    leftover -= actual;
+  }
 
+  const supp = items[0].supp || "";
   addCashOp({
     type: "out",
     date,
-    source: `Təchizatçı ödənişi (${p.supp})`,
+    source: `Təchizatçı ödənişi (${supp})`,
     amount: applied,
-    note: val("inv_pay_note") || `Qaimə #${p.uid}`,
-    link: { kind: "creditor_invoice_payment", supp: p.supp, purchUid: p.uid },
-    meta: { allocations: [{ purchUid: p.uid, amount: applied }] },
+    note: val("inv_pay_note") || `Qaimə ${invNo}`,
+    link: { kind: "creditor_invoice_payment", supp, invNo, purchUid: items[0].uid },
+    meta: { allocations },
     accountId: accId,
   });
 
@@ -12249,9 +12328,17 @@ function restoreTrash(uid) {
         if (s) addSalePaymentInternal(s, n(it.amount), it.date, it.meta?.payKind || "sale");
       }
     } else if (kind === "creditor_invoice_payment") {
-      const purchUid = it.link?.purchUid;
-      const p = db.purch.find(x => Number(x.uid) === Number(purchUid));
-      if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(it.amount)));
+      const allocs = it.meta?.allocations || [];
+      if (allocs.length) {
+        for (const a of allocs) {
+          const p = db.purch.find(x => Number(x.uid) === Number(a.purchUid));
+          if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(a.amount)));
+        }
+      } else {
+        const purchUid = it.link?.purchUid;
+        const p = db.purch.find(x => Number(x.uid) === Number(purchUid));
+        if (p) p.paidTotal = String(Math.min(n(p.amount), n(p.paidTotal) + n(it.amount)));
+      }
     } else if (kind === "creditor_payment") {
       const allocs = it.meta?.allocations || [];
       for (const a of allocs) {
@@ -13954,10 +14041,13 @@ Object.assign(window, {
   toggleAllUserSecs,
   openCreditorInfo,
   openCreditorPurchPayHistory,
+  openCreditorPurchPayHistoryByInv,
   openCreditorPayment,
   saveCreditorPayment,
   openCreditorInvoicePayment,
+  openCreditorInvoicePaymentByInv,
   saveCreditorInvoicePayment,
+  saveCreditorInvoicePaymentByInv,
   openSupplierPaymentHistory,
   openDebtorInfo,
   openDebtorPayment,
