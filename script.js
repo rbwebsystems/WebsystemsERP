@@ -8418,10 +8418,23 @@ function syncCashOpAmountToLinked(c, oldAmount, newAmount) {
   }
 
   if (kind === "creditor_invoice_payment") {
-    const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
-    if (!p) return;
-    const newPaid = Math.max(0, Math.min(n(p.amount), n(p.paidTotal) - oldA + newA));
-    p.paidTotal = String(newPaid);
+    const allocs = c.meta?.allocations || [];
+    const diff = newA - oldA;
+    if (Math.abs(diff) < 0.000001) return;
+    if (allocs.length > 0) {
+      // Distribute diff proportionally
+      const allocTotal = allocs.reduce((a, x) => a + n(x.amount), 0);
+      for (const alloc of allocs) {
+        const p = db.purch.find((x) => Number(x.uid) === Number(alloc.purchUid));
+        if (!p) continue;
+        const share = allocTotal > 0 ? (n(alloc.amount) / allocTotal) * diff : diff / allocs.length;
+        p.paidTotal = String(Math.max(0, Math.min(n(p.amount), n(p.paidTotal) + share)));
+      }
+    } else {
+      const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
+      if (!p) return;
+      p.paidTotal = String(Math.max(0, Math.min(n(p.amount), n(p.paidTotal) + diff)));
+    }
     return;
   }
 
@@ -13102,10 +13115,15 @@ function renderAll() {
         const pk = c.meta?.payKind || "";
         payType = pk === "down" ? "İlkin" : pk === "monthly" ? "Aylıq" : "Debitor";
       } else if (kind === "creditor_invoice_payment" || kind === "purch_payment" || kind === "purch_payment_adj") {
-        const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
-        if (p) {
-          invNo = p.invNo || invFallback("purch", p.uid);
-          customer = p.supp || "-";
+        if (c.link?.invNo) {
+          invNo = c.link.invNo;
+          customer = c.link.supp || "-";
+        } else {
+          const p = db.purch.find((x) => Number(x.uid) === Number(c.link?.purchUid));
+          if (p) {
+            invNo = p.invNo || invFallback("purch", p.uid);
+            customer = p.supp || "-";
+          }
         }
         payType = "Alış";
       } else if (kind === "creditor_payment") {
