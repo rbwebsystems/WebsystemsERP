@@ -8109,7 +8109,7 @@ function printCreditDoc(idx, type) {
     .sign-line{border-bottom:1px solid #374151;height:24px;margin-bottom:4px;}
     .sign-label{font-size:11px;color:#6b7280;font-family:'Times New Roman',Times,serif;}
     .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:14px;border-top:1px dashed #d1d5db;padding-top:6px;font-family:'Times New Roman',Times,serif;}
-    @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:15mm 14mm;}@page{size:A4 portrait;margin:0;}}
+    @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:0;}@page{size:A4 portrait;margin:20mm 15mm;}}
   `;
 
   let title = "", body = "";
@@ -8418,8 +8418,8 @@ function printCashReceipt(uid) {
   .receipt__footer{margin-top:14px;border-top:1px dashed #d1d5db;padding-top:10px;text-align:center;color:#9ca3af;font-size:10px;}
   @media print{
     body{background:#fff;padding:0;display:block;}
-    .receipt{width:210mm;min-height:148mm;border:none;border-radius:0;padding:15mm 14mm;}
-    @page{size:A4 portrait;margin:0;}
+    .receipt{width:100%;min-height:148mm;border:none;border-radius:0;padding:0;}
+    @page{size:A4 portrait;margin:20mm 15mm;}
   }
 </style></head><body>
 <div class="receipt">
@@ -10913,7 +10913,7 @@ function printSaleContract(idx) {
   .sign-col p{margin-bottom:4px;text-align:left;text-indent:0;}
   .sign-underline{border-bottom:1px solid #111;height:24px;margin-top:auto;padding-top:18px;}
   .footer-note{text-align:center;font-size:10px;color:#9ca3af;margin-top:20px;border-top:1px dashed #d1d5db;padding-top:8px;font-family:'Times New Roman',Times,serif;}
-  @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:20mm 18mm;}@page{size:A4 portrait;margin:0;}}
+  @media print{body{background:#fff;padding:0;display:block;min-height:unset;}.page{border-radius:0;padding:0;}@page{size:A4 portrait;margin:20mm 15mm;}}
 </style></head><body>
 <div class="page">
 
