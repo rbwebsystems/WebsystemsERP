@@ -8102,8 +8102,8 @@ function printCreditDoc(idx, type) {
     p{font-size:12px;line-height:1.75;margin-bottom:5px;text-indent:2em;font-family:'Times New Roman',Times,serif;}
     p.no-indent{text-indent:0;}
     table{width:100%;border-collapse:collapse;font-size:11px;margin-top:5px;font-family:'Times New Roman',Times,serif;}
-    th{background:#f1f5f9;padding:4px 7px;text-align:left;border:1px solid #e2e8f0;font-weight:700;}
-    td{padding:4px 7px;border:1px solid #e2e8f0;}
+    th{background:#e8ecf0;padding:5px 8px;text-align:left;border:1.5px solid #555;font-weight:700;}
+    td{padding:5px 8px;border:1.5px solid #555;}
     .sign-row{display:flex;justify-content:space-between;gap:30px;margin-top:20px;align-items:flex-end;}
     .sign-box{flex:1;}
     .sign-line{border-bottom:1px solid #374151;height:24px;margin-bottom:4px;}
