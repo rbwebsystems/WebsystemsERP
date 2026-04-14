@@ -61,6 +61,66 @@ function buildCreditSchedule(sale) {
   return { term, down: fromCents(downC), rows };
 }
 
+function buildCreditScheduleAggregated(salesArr, dateISO) {
+  const arr = (salesArr || []).filter(Boolean);
+  if (!arr.length) {
+    return buildCreditSchedule({
+      amount: "0",
+      paidTotal: "0",
+      date: dateISO || "",
+      credit: { termMonths: 0, downPayment: "0" },
+    });
+  }
+  const ref = arr[0];
+  const totalAmount = arr.reduce((a, x) => a + n(x.amount), 0);
+  const totalDown = arr.reduce((a, x) => a + n(x.credit?.downPayment || 0), 0);
+  const totalPaid = arr.reduce((a, x) => a + n(x.paidTotal), 0);
+  const term = Math.max(0, Math.floor(n(ref.credit?.termMonths) || 0));
+  return buildCreditSchedule({
+    amount: String(totalAmount),
+    paidTotal: String(totalPaid),
+    date: dateISO || String(ref.date || "").slice(0, 10),
+    credit: {
+      ...(ref.credit || {}),
+      termMonths: term,
+      downPayment: String(totalDown),
+    },
+  });
+}
+
+function kreditInvoiceGroupKeyCloud(sale) {
+  const inv = String(sale?.invNo || "").trim();
+  const cid = String(sale?.customerId || "");
+  if (!inv) return `kredit:uid:${sale?.uid}`;
+  return `kredit:inv:${cid}:${inv}`;
+}
+
+function kreditInvoiceSiblingsCloud(sales, sale) {
+  const inv = String(sale.invNo || "").trim();
+  const cid = String(sale.customerId || "");
+  if (!inv) return [sale];
+  return sales.filter(
+    (s) =>
+      !s.returnedAt &&
+      String(s.saleType || "").toLowerCase() === "kredit" &&
+      String(s.customerId || "") === cid &&
+      String(s.invNo || "").trim() === inv
+  );
+}
+
+function kreditInvoiceScheduleDateISOCloud(siblings) {
+  return (siblings || []).reduce((min, x) => {
+    const d = String(x.date || "").slice(0, 10);
+    if (!d) return min;
+    if (!min || d < min) return d;
+    return min;
+  }, "");
+}
+
+function saleRemainingCloud(s) {
+  return Math.max(0, n(s.amount) - n(s.paidTotal));
+}
+
 function invFallback(prefix, uid) {
   return `${prefix.toUpperCase()}-${String(uid || "").padStart(4, "0")}`;
 }
@@ -100,21 +160,32 @@ async function processCompany(companyId, companyData) {
   const accounts = companyData.accounts || [{ uid: 1, name: "Kassa" }];
 
   const dueList = [];
+  const seenInv = new Set();
 
   for (const sale of sales) {
     if (sale.returnedAt) continue;
     if (String(sale.saleType || "").toLowerCase() !== "kredit") continue;
 
-    const sched = buildCreditSchedule(sale);
-    const custName = sale.customerName || "-";
-    const invNo = sale.invNo || invFallback("ST", sale.uid);
-    const accName =
-      accounts.find((a) => a.uid === Number(sale.paymentAccountId || 1))?.name || "Kassa";
+    const gk = kreditInvoiceGroupKeyCloud(sale);
+    if (seenInv.has(gk)) continue;
+    seenInv.add(gk);
 
-    // İlkin ödəniş — satış günündə
-    const saleDateISO = String(sale.date || "").slice(0, 10);
+    const siblings = kreditInvoiceSiblingsCloud(sales, sale);
+    const anchor = kreditInvoiceScheduleDateISOCloud(siblings);
+    const invRem = siblings.reduce((a, x) => a + saleRemainingCloud(x), 0);
+    if (invRem <= 0.000001) continue;
+
+    const sched = buildCreditScheduleAggregated(siblings, anchor);
+    const rep = siblings.slice().sort((a, b) => Number(a.uid) - Number(b.uid))[0] || sale;
+    const custName = rep.customerName || "-";
+    const invNo = rep.invNo || invFallback("ST", rep.uid);
+    const accName =
+      accounts.find((a) => a.uid === Number(rep.paymentAccountId || 1))?.name || "Kassa";
+
+    const saleDateISO = anchor;
     if (saleDateISO === todayISO && sched.down > 0.000001) {
-      const downPaid = Math.min(sched.down, n(sale.paidTotal));
+      const totalPaid = siblings.reduce((a, x) => a + n(x.paidTotal), 0);
+      const downPaid = Math.min(sched.down, totalPaid);
       const downRem = Math.max(0, sched.down - downPaid);
       if (downRem > 0.000001) {
         dueList.push({
@@ -125,7 +196,6 @@ async function processCompany(companyId, companyData) {
       }
     }
 
-    // Aylıq taksitlər
     for (const row of sched.rows) {
       if (row.due === todayISO && row.remaining > 0.000001) {
         dueList.push({
