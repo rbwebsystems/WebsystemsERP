@@ -3,11 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // META (config/meta): şirkət siyahısı, istifadəçilər
-    // Oxumaq: istənilən auth (anonim də) — login səhifəsi üçün lazımdır
-    // Yazmaq: yalnız giriş etmiş (erp_session) istifadəçilər
+    // Oxumaq + Yazmaq: istənilən auth (anonim də) — mövcud davranış qorunur
+    // Əsas təhlükəsizlik: şirkət datası (aşağıda) companyId claim ilə qorunur
     match /config/meta {
-      allow read:  if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.erp_session == true;
+      allow read, write: if request.auth != null;
     }
 
     // CONFIG altındakı digər sənədlər — bağlı
