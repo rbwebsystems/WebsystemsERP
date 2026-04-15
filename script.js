@@ -2624,16 +2624,23 @@ function saveMeta() {
   if (useFirestore()) {
     const ref = getMetaRef();
     if (ref) {
-      const { session, ...rest } = meta || {};
-      const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
-      softLoadingBegin(true);
-      ref
-        .set(data)
-        .catch((e) => console.warn("Firestore meta yazma xətası:", e))
-        .finally(() => {
-          softLoadingEnd();
-          updateLastSavedEl();
-        });
+      let softBegan = false;
+      try {
+        const { session, ...rest } = meta || {};
+        const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
+        softLoadingBegin(true);
+        softBegan = true;
+        ref
+          .set(data)
+          .catch((e) => console.warn("Firestore meta yazma xətası:", e))
+          .finally(() => {
+            softLoadingEnd();
+            updateLastSavedEl();
+          });
+      } catch (e) {
+        console.warn("saveMeta (Firestore):", e);
+        if (softBegan) softLoadingEnd();
+      }
     }
     localStorage.setItem(META_KEY, JSON.stringify(meta));
     if (ref) return;
@@ -3231,23 +3238,12 @@ function doLoginWithCompany(companyId) {
   if (!c) return alert("Şirkət tapılmadı.");
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
-  if (useFirestore()) {
-    loadCompanyDBAsync({ soft: true }).then((data) => {
-      db = data;
-      unsubscribeRealtime();
-      subscribeRealtime();
-      startRealtimeAutoRefresh();
-      showLoginOverlay(false);
-      applyAccessUI();
-      logEvent("login", "auth", { companyId: c.id });
-      renderSidebarUser();
-      refreshHeaderBar();
-      renderAll();
-      showDashboardAfterLogin();
-      checkSubscriptionStatus();
-    });
-  } else {
-    db = loadCompanyDB();
+  const finishLoginUi = (data) => {
+    dismissGlobalLoadingUi();
+    db = data;
+    unsubscribeRealtime();
+    subscribeRealtime();
+    startRealtimeAutoRefresh();
     showLoginOverlay(false);
     applyAccessUI();
     logEvent("login", "auth", { companyId: c.id });
@@ -3256,11 +3252,24 @@ function doLoginWithCompany(companyId) {
     renderAll();
     showDashboardAfterLogin();
     checkSubscriptionStatus();
+  };
+  if (useFirestore()) {
+    loadCompanyDBAsync({ soft: true })
+      .then((data) => finishLoginUi(data))
+      .catch((err) => {
+        console.warn("Giriş sonrası şirkət məlumatı:", err);
+        dismissGlobalLoadingUi();
+        finishLoginUi(loadCompanyDBSync());
+      });
+  } else {
+    dismissGlobalLoadingUi();
+    finishLoginUi(loadCompanyDB());
   }
 }
 
 async function login(e) {
   e.preventDefault();
+  try {
   const username = val("loginUser").trim();
   const pass = val("loginPass");
   if (!username || !pass) return alert("İstifadəçi adı və şifrə daxil edin.");
@@ -3338,6 +3347,9 @@ async function login(e) {
   const c = meta.companies.find((x) => norm(x.id) === urlCid);
   if (!c) return alert("Şirkət tapılmadı.");
   doLoginWithCompany(c.id);
+  } finally {
+    dismissGlobalLoadingUi();
+  }
 }
 
 function logoutFromDisabled() {
@@ -3376,6 +3388,7 @@ function logout() {
       history.replaceState(null, "", location.pathname + (location.search || ""));
     }
   } catch (e) {}
+  dismissGlobalLoadingUi();
   showLoginOverlay(true);
   applyAccessUI();
 }
@@ -14734,6 +14747,15 @@ function hideLoading() {
   }
   _softOpDepth = 0;
   byId("softLoadingCenter")?.classList.add("hidden");
+}
+
+/** Giriş/çıxışdan sonra yumşaq yükləmə və overlay ilişməsinin qarşısını alır. */
+function dismissGlobalLoadingUi() {
+  hideLoading();
+  try {
+    const pre = byId("appPreloader");
+    if (pre) pre.classList.add("app-preloader--out");
+  } catch (_) {}
 }
 
 function getLoginCompanyFromUrl() {
