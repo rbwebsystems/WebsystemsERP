@@ -210,7 +210,11 @@ async function acquireCustomToken(username, password) {
       // Yanlış şifrə/istifadəçi — xəta mesajını qaldır
       throw e;
     }
-    // Şəbəkə/funksiya xətası — anonim auth ilə davam et (degraded mode)
+    // signInWithCustomToken anonim auth-u silə bilər — bərpa et
+    try {
+      if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
+    } catch (_) {}
+    firestoreAuthReady = true;
     console.warn("Custom token xətası (degraded mode):", e);
     return false;
   }
