@@ -3044,6 +3044,9 @@ function ensureDevtestTenantSeed() {
     console.log("password:", pass);
     console.log("şirkət id:", cid, "(giriş: ?company=" + cid + " və ya şirkət siyahısından seçin)");
   }
+  if (dirty) {
+    console.log("[erp-auth] ensureDevtestTenantSeed: meta dəyişdi — növbəti saveMeta() config/meta + LS yeniləyəcək");
+  }
 
   return dirty;
 }
@@ -3779,7 +3782,22 @@ async function login(e) {
       const metaUser = (meta?.users || []).find((u) => normAuthKey(u.username) === unLogin);
       if (unLogin === "developer" || (metaUser && normAuthKey(metaUser.role || "") === "developer")) {
         companyForToken = "";
+      } else if (metaUser && String(metaUser.companyId || "").trim() && !fromUserFmt) {
+        const uc = String(metaUser.companyId).trim();
+        if (!companyForToken || normAuthKey(companyForToken) !== normAuthKey(uc)) {
+          console.log("[erp-auth] login: tenant şirkət hint-i meta.user.companyId ilə uyğunlaşdırıldı", {
+            əvvəlkiHint: companyForToken || "(yox)",
+            userCompanyId: uc,
+          });
+          companyForToken = uc;
+        }
       }
+      console.log("[erp-auth] login: issueAuthToken üçün companyId", {
+        username: unLogin,
+        companyForToken: companyForToken || null,
+        fromUserFmt: fromUserFmt || null,
+        companyHint: companyHint || null,
+      });
       await acquireCustomToken(username, pass, { companyId: companyForToken || null });
     } catch (err) {
       console.error("[erp-auth] login: issueAuthToken / acquireCustomToken uğursuz", err?.code, err?.message, err);

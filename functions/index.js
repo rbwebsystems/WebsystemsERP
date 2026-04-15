@@ -535,6 +535,15 @@ export const issueAuthToken = onCall(
       throw new HttpsError("not-found", "Seçilmiş şirkət (companyId) tapılmadı.");
     }
     if (matchedCompany && normAuth(matchedCompany.id) !== hintNorm) {
+      console.warn("[issueAuthToken] tenant: client şirkət hint-i user.companyId ilə uyğun gəlmir", {
+        username: usernameNorm,
+        userCompanyId: user.companyId ?? null,
+        companyIdFromClient: hint,
+        rawId: rawId || null,
+        matchedByRawId: matchedCompany?.id ?? null,
+        matchedByHint: byHint?.id ?? null,
+        səbəb: "Brauzerdə seçilmiş/URL şirkət başqa, istifadəçinin şirkəti başqa — issueAuthToken bloklayır",
+      });
       throw new HttpsError("permission-denied", "Bu şirkət üçün giriş icazəsi yoxdur.");
     }
     matchedCompany = byHint;
