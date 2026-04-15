@@ -170,10 +170,24 @@ function ensureFirestoreAuth() {
       firebase.auth().onAuthStateChanged(
         (user) => {
           if (user) {
-            user
-              .getIdToken(true)
-              .then(() => finish(true))
-              .catch(() => finish(true));
+            void (async () => {
+              try {
+                const tr = await user.getIdTokenResult(true);
+                const uid = String(user.uid || "");
+                const role = String(tr.claims?.role || "");
+                const cid = String(tr.claims?.companyId || "").trim();
+                if (uid === "1" || (role === "developer" && !cid)) {
+                  console.warn("[erp-auth] Köhnə/etibarsız Firebase sessiya (uid=1 və ya developer+bos claim) — signOut");
+                  await firebase.auth().signOut();
+                  finish(false);
+                  return;
+                }
+                await user.getIdToken(true);
+                finish(true);
+              } catch (_) {
+                finish(true);
+              }
+            })();
             return;
           }
           // Anonymous auth söndürülüb: giriş yalnız custom token ilə (issueAuthToken)
@@ -215,15 +229,52 @@ async function logErpAuthDebug(tag) {
   }
 }
 
-// Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir (boş olmamalı)
+/** Login formundan əvvəl istifadəçi rolunu təxmin etmək (developer vs tenant callable). */
+function findUserForLoginAuth(username) {
+  const unameNorm = String(username || "").trim().toLowerCase();
+  const fromMeta = (arr) => {
+    if (!Array.isArray(arr)) return null;
+    let x = arr.find((u) => u.username === username);
+    if (!x) x = arr.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
+    return x || null;
+  };
+  let u = fromMeta(meta?.users);
+  if (!u) u = fromMeta(loadMetaSync().users);
+  if (!u && unameNorm === "developer") {
+    const pool = [...(meta?.users || []), ...(loadMetaSync().users || [])];
+    u = pool.find((x) => x && x.active && x.role === "developer") || null;
+  }
+  return u;
+}
+
+/** Tenant Firestore şirkət məlumatı: yalnız role tenant + boş olmayan companyId. */
+async function erpTenantClaimsOkForCompany(companyId) {
+  const u = firebase.auth && firebase.auth().currentUser;
+  if (!u) return false;
+  const tr = await u.getIdTokenResult(true);
+  const role = String(tr.claims?.role || "");
+  const cid = String(tr.claims?.companyId || "").trim();
+  if (role === "developer") return true;
+  if (role !== "tenant" || !cid) return false;
+  return normAuthKey(cid) === normAuthKey(companyId);
+}
+
+function normAuthKey(s) {
+  return String(s || "").trim().toLowerCase();
+}
+
+// Custom token — yalnız ERP tenant (issueAuthToken)
 async function acquireCustomToken(username, password, opts = {}) {
   if (!useFirestore() || !firestoreInitialized) return true;
   try {
     if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
     const companyIdHint = String(opts.companyId ?? "").trim();
-    console.log("[erp-auth] issueAuthToken callable", {
+    if (!companyIdHint) {
+      throw new Error("Şirkət ID daxil edin və ya URL-ə ?company= şirkət_id əlavə edin.");
+    }
+    console.log("[erp-auth] issueAuthToken (tenant) callable", {
       username: String(username || "").slice(0, 2) + "***",
-      companyIdFromUI: companyIdHint || "(yox)",
+      companyIdFromUI: companyIdHint,
     });
 
     const au = firebase.auth().currentUser;
@@ -235,22 +286,73 @@ async function acquireCustomToken(username, password, opts = {}) {
     const result = await fn({
       username,
       password,
-      companyId: companyIdHint || null,
+      companyId: companyIdHint,
     });
     const { token, companyId: companyIdFromFn } = result.data || {};
     if (!token) throw new Error("Server token qaytarmadı.");
 
     const cred = await firebase.auth().signInWithCustomToken(token);
     await cred.user.getIdToken(true);
-    await logErpAuthDebug("post signInWithCustomToken");
+    await logErpAuthDebug("post signInWithCustomToken (tenant)");
 
     const tr = await cred.user.getIdTokenResult(true);
-    const cid = String(tr?.claims?.companyId ?? "");
-    if (!cid) {
-      console.error("[erp-auth] Xəbərdarlıq: claims.companyId boşdur — Firestore qaydaları işləməyə bilər.");
+    const prov = String(tr?.signInProvider || "");
+    const cid = String(tr?.claims?.companyId ?? "").trim();
+    const role = String(tr?.claims?.role ?? "");
+    if (cred.user.isAnonymous || prov !== "custom" || !cid || role !== "tenant") {
+      console.error("[erp-auth] Tenant login yoxlaması uğursuz:", {
+        isAnonymous: cred.user.isAnonymous,
+        signInProvider: prov,
+        companyId: cid,
+        role,
+      });
+      await firebase.auth().signOut();
+      throw new Error("Tenant token alınmadı (role və ya companyId uyğun deyil).");
     }
     if (companyIdFromFn && cid && companyIdFromFn !== cid) {
       console.warn("[erp-auth] companyId uyğunsuzluğu (server vs token):", companyIdFromFn, cid);
+    }
+
+    firestoreAuthReady = true;
+    firestoreAuthPromise = null;
+    return true;
+  } catch (e) {
+    firestoreAuthReady = false;
+    firestoreAuthPromise = null;
+    throw e;
+  }
+}
+
+// Developer üçün ayrıca token (issueDeveloperAuthToken)
+async function acquireDeveloperCustomToken(username, password) {
+  if (!useFirestore() || !firestoreInitialized) return true;
+  try {
+    if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
+    console.log("[erp-auth] issueDeveloperAuthToken callable", {
+      username: String(username || "").slice(0, 2) + "***",
+    });
+
+    const au = firebase.auth().currentUser;
+    if (au) {
+      await firebase.auth().signOut();
+    }
+
+    const fn = firebase.app().functions("europe-west1").httpsCallable("issueDeveloperAuthToken");
+    const result = await fn({ username, password });
+    const { token } = result.data || {};
+    if (!token) throw new Error("Server developer token qaytarmadı.");
+
+    const cred = await firebase.auth().signInWithCustomToken(token);
+    await cred.user.getIdToken(true);
+    await logErpAuthDebug("post signInWithCustomToken (developer)");
+
+    const tr = await cred.user.getIdTokenResult(true);
+    const prov = String(tr?.signInProvider || "");
+    const role = String(tr?.claims?.role ?? "");
+    const cid = String(tr?.claims?.companyId || "").trim();
+    if (cred.user.isAnonymous || prov !== "custom" || role !== "developer" || !cid) {
+      await firebase.auth().signOut();
+      throw new Error("Developer token alınmadı.");
     }
 
     firestoreAuthReady = true;
@@ -337,6 +439,18 @@ async function loadCompanyDBAsync(opts) {
     const ref = getCompanyRef(cid);
     if (!ref) return loadCompanyDBSync();
     try {
+      const tr0 = await u.getIdTokenResult(true);
+      const r0 = String(tr0.claims?.role || "");
+      const c0 = String(tr0.claims?.companyId || "").trim();
+      if (r0 === "tenant") {
+        if (!c0 || normAuthKey(c0) !== normAuthKey(cid)) {
+          console.warn("[erp-auth] loadCompanyDBAsync: tenant claim uyğun deyil — lokal data");
+          return loadCompanyDBSync();
+        }
+      } else if (r0 !== "developer") {
+        console.warn("[erp-auth] loadCompanyDBAsync: Firestore üçün role tenant/developer deyil — lokal data");
+        return loadCompanyDBSync();
+      }
       const snap = await ref.get();
       if (snap.exists) return { ...defaultDB(), ...snap.data() };
       const local = loadCompanyDBSync();
@@ -385,19 +499,26 @@ function subscribeRealtime() {
     if (!authUser) {
       console.warn("[erp-auth] subscribeRealtime: company listener keçirildi (Firebase user yoxdur)");
     } else {
-      const companyRef = getCompanyRef(cid);
-      if (companyRef) {
-        firestoreUnsubCompany = companyRef.onSnapshot(
-          (snap) => {
-            if (snap.exists) {
-              db = { ...defaultDB(), ...snap.data() };
-              renderAll();
-              if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
-            }
-          },
-          (err) => console.warn("Firestore company listener:", err)
-        );
-      }
+      void (async () => {
+        const ok = await erpTenantClaimsOkForCompany(cid);
+        if (!ok) {
+          console.warn("[erp-auth] subscribeRealtime: tenant/developer claim uyğun deyil — company listener yoxdur");
+          return;
+        }
+        const companyRef = getCompanyRef(cid);
+        if (companyRef) {
+          firestoreUnsubCompany = companyRef.onSnapshot(
+            (snap) => {
+              if (snap.exists) {
+                db = { ...defaultDB(), ...snap.data() };
+                renderAll();
+                if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
+              }
+            },
+            (err) => console.warn("Firestore company listener:", err)
+          );
+        }
+      })();
     }
   }
 }
@@ -427,6 +548,11 @@ async function refreshFromCloud(silent) {
   }
   if (!silent) softLoadingBegin(true);
   try {
+    const ok = await erpTenantClaimsOkForCompany(cid);
+    if (!ok) {
+      if (!silent) toast("Firebase tenant icazəsi yoxdur və ya claim uyğun deyil", "err", 2500);
+      return;
+    }
     const snap = await ref.get();
     if (!snap.exists) {
       if (!silent) toast("Buluda hələ məlumat yazılmayıb", "ok", 2000);
@@ -3143,11 +3269,23 @@ async function login(e) {
     else localStorage.removeItem("loginRememberUsername");
   } catch {}
 
-  // Server-tərəfdə autentifikasiya: Cloud Function şifrəni yoxlayır, custom token verir
+  // Server-tərəfdə autentifikasiya: tenant → issueAuthToken; developer → issueDeveloperAuthToken
   if (useFirestore()) {
     try {
-      const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
-      await acquireCustomToken(username, pass, { companyId: companyHint });
+      const uAuth = findUserForLoginAuth(username);
+      if (uAuth?.role === "developer") {
+        await acquireDeveloperCustomToken(username, pass);
+      } else {
+        const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
+        const fromUserFmt = getCompanyIdFromUsername(username);
+        const companyForToken = (fromUserFmt || companyHint || "").trim();
+        if (!companyForToken) {
+          return alert(
+            "Şirkət ID lazımdır: istifadəçi adı şirkət_ad formatında olsun və ya ?company=ŞİRKƏT_ID / login sahəsində şirkət göstərin."
+          );
+        }
+        await acquireCustomToken(username, pass, { companyId: companyForToken });
+      }
     } catch (err) {
       const msg = err?.details || err?.message || "Giriş xətası.";
       return alert(msg);

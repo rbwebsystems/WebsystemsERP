@@ -10,7 +10,11 @@ service cloud.firestore {
         && request.auth.token.erp_session == true;
       allow write: if request.auth != null
         && request.auth.token.erp_session == true
-        && (request.auth.token.role == 'developer' || request.auth.token.role == 'admin');
+        && (
+          request.auth.token.role == 'developer'
+          || request.auth.token.erpRole == 'developer'
+          || request.auth.token.erpRole == 'admin'
+        );
     }
 
     // CONFIG altındakı digər sənədlər — bağlı

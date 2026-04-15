@@ -253,123 +253,153 @@ function getCompanyIdFromUsernameServer(username) {
 
 const DEVELOPER_COMPANY_SENTINEL = "__developer__";
 
+function normAuth(s) {
+  return String(s || "").trim().toLowerCase();
+}
+
+function sanitizeUidPart(s) {
+  return String(s || "x")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .replace(/_{2,}/g, "_")
+    .slice(0, 100);
+}
+
+/** Meta + şifrə yoxlaması — tenant və developer callable üçün ortaq. */
+async function verifyErpPassword(username, password) {
+  if (!username || !password) {
+    throw new HttpsError("invalid-argument", "İstifadəçi adı və şifrə tələb olunur.");
+  }
+
+  let metaData;
+  try {
+    const snap = await db.collection("config").doc("meta").get();
+    if (!snap.exists) throw new Error("meta yoxdur");
+    metaData = snap.data();
+  } catch (e) {
+    throw new HttpsError("internal", "Sistem konfiqurasiyası oxuna bilmədi.");
+  }
+
+  const users = metaData.users || [];
+  const unameNorm = String(username).trim().toLowerCase();
+
+  let user = users.find((u) => u.username === username);
+  if (!user) user = users.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
+
+  if (!user || !user.active) {
+    throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
+  }
+
+  const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
+  const inputHash = hashPass(password);
+  const stored = String(user.pass || "");
+  if (stored !== inputHash && stored !== password) {
+    throw new HttpsError("unauthenticated", "Şifrə yanlışdır.");
+  }
+
+  if (stored === password && stored !== inputHash) {
+    user.pass = inputHash;
+    try {
+      await db.collection("config").doc("meta").set(metaData);
+    } catch (_) {}
+  }
+
+  return { user, metaData, companies: metaData.companies || [] };
+}
+
+async function mintFirebaseCustomToken(firebaseUid, claims) {
+  try {
+    await getAdminAuth().getUser(firebaseUid);
+  } catch (err) {
+    if (err.code === "auth/user-not-found") {
+      await getAdminAuth().createUser({ uid: firebaseUid });
+    } else {
+      throw err;
+    }
+  }
+  await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
+  return getAdminAuth().createCustomToken(firebaseUid, claims);
+}
+
+/** Yalnız ERP tenant (developer deyil): uid tenant_<companyId>, claim role tenant. */
 export const issueAuthToken = onCall(
   { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
   async (request) => {
     const { username, password, companyId: companyIdFromClient } = request.data || {};
-    if (!username || !password) {
-      throw new HttpsError("invalid-argument", "İstifadəçi adı və şifrə tələb olunur.");
+    const hint = String(companyIdFromClient || "").trim();
+    if (!hint) {
+      throw new HttpsError("invalid-argument", "companyId mütləqdir (məs. URL ?company= şirkət_id).");
     }
 
-    const norm = (s) => String(s || "").trim().toLowerCase();
-    const sanitizeUidPart = (s) =>
-      String(s || "x")
-        .replace(/[^a-zA-Z0-9_-]/g, "_")
-        .replace(/_{2,}/g, "_")
-        .slice(0, 72);
+    console.log("[issueAuthToken:tenant]", { usernameNorm: normAuth(username), companyIdFromClient: hint });
 
-    console.log("[issueAuthToken]", {
-      usernameNorm: norm(username),
-      companyIdFromClient: companyIdFromClient != null && companyIdFromClient !== "" ? String(companyIdFromClient) : "(yox)",
-    });
-
-    // Admin SDK ilə meta oxu (Firestore Rules-u keçir)
-    let metaData;
-    try {
-      const snap = await db.collection("config").doc("meta").get();
-      if (!snap.exists) throw new Error("meta yoxdur");
-      metaData = snap.data();
-    } catch (e) {
-      throw new HttpsError("internal", "Sistem konfiqurasiyası oxuna bilmədi.");
+    const { user, companies } = await verifyErpPassword(username, password);
+    if (user.role === "developer") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Developer hesabı üçün issueDeveloperAuthToken istifadə edin."
+      );
     }
 
-    const users = metaData.users || [];
-    const companies = metaData.companies || [];
-    const unameNorm = String(username).trim().toLowerCase();
-
-    let user = users.find((u) => u.username === username);
-    if (!user) user = users.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
-
-    if (!user || !user.active) {
-      throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
-    }
-
-    const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
-    const inputHash = hashPass(password);
-    const stored = String(user.pass || "");
-    // Həm hash, həm plain-text yoxla (migration dövrü üçün)
-    if (stored !== inputHash && stored !== password) {
-      throw new HttpsError("unauthenticated", "Şifrə yanlışdır.");
-    }
-
-    // Plain-text şifrə idisə — avtomatik hash-ə çevir
-    if (stored === password && stored !== inputHash) {
-      user.pass = inputHash;
-      try {
-        await db.collection("config").doc("meta").set(metaData);
-      } catch (_) {}
-    }
-
-    const isDev = user.role === "developer";
     const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "");
-
-    // Firestore document ID ilə exact uyğunluq üçün companies array-dən götür
-    let matchedCompany = companies.find((c) => norm(c.id) === norm(rawId));
-    if (!matchedCompany && !rawId && isDev) matchedCompany = companies[0] || null;
-
-    const hintNorm = norm(companyIdFromClient);
-    if (hintNorm) {
-      const byHint = companies.find((c) => norm(c.id) === hintNorm);
-      if (!byHint) {
-        throw new HttpsError("not-found", "Seçilmiş şirkət (companyId) tapılmadı.");
-      }
-      if (!isDev) {
-        if (matchedCompany && norm(matchedCompany.id) !== hintNorm) {
-          throw new HttpsError("permission-denied", "Bu şirkət üçün giriş icazəsi yoxdur.");
-        }
-        matchedCompany = byHint;
-      }
+    let matchedCompany = companies.find((c) => normAuth(c.id) === normAuth(rawId));
+    const hintNorm = normAuth(hint);
+    const byHint = companies.find((c) => normAuth(c.id) === hintNorm);
+    if (!byHint) {
+      throw new HttpsError("not-found", "Seçilmiş şirkət (companyId) tapılmadı.");
     }
-
-    if (!isDev && !matchedCompany) {
-      throw new HttpsError("not-found", "Şirkət tapılmadı (companyId boş və ya uyğunsuzdur).");
+    if (matchedCompany && normAuth(matchedCompany.id) !== hintNorm) {
+      throw new HttpsError("permission-denied", "Bu şirkət üçün giriş icazəsi yoxdur.");
     }
+    matchedCompany = byHint;
 
-    // Token claim: tenant üçün real şirkət id; developer üçün sentinel (heç vaxt boş string deyil)
-    const exactCompanyId = isDev ? DEVELOPER_COMPANY_SENTINEL : String(matchedCompany?.id || "").trim();
+    const exactCompanyId = String(matchedCompany.id || "").trim();
     if (!exactCompanyId) {
-      throw new HttpsError("failed-precondition", "companyId token üçün müəyyən edilə bilmədi.");
+      throw new HttpsError("failed-precondition", "companyId token üçün boş ola bilməz.");
     }
 
-    const erpKey = sanitizeUidPart(user.uid != null ? String(user.uid) : String(username));
-    const compKey = sanitizeUidPart(isDev ? "dev" : exactCompanyId);
-    let firebaseUid = `tenant_${compKey}_${erpKey}`;
+    let firebaseUid = `tenant_${sanitizeUidPart(exactCompanyId)}`;
     if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
 
-    const tokenRole = isDev ? "developer" : user.role === "admin" ? "admin" : "tenant";
     const claims = {
       erp_session: true,
-      role: tokenRole,
       companyId: exactCompanyId,
+      role: "tenant",
+      erpRole: user.role === "admin" ? "admin" : "user",
     };
 
-    // İstifadəçini Firebase Auth-da yarat (yoxdursa)
-    try {
-      await getAdminAuth().getUser(firebaseUid);
-    } catch (err) {
-      if (err.code === "auth/user-not-found") {
-        await getAdminAuth().createUser({ uid: firebaseUid });
-      } else {
-        throw err;
-      }
-    }
-
-    await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
-    const customToken = await getAdminAuth().createCustomToken(firebaseUid, claims);
-
-    console.log("[issueAuthToken] ok", { firebaseUid, companyId: exactCompanyId, role: claims.role });
+    const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
+    console.log("[issueAuthToken:tenant] ok", { firebaseUid, companyId: exactCompanyId });
 
     return { token: customToken, companyId: exactCompanyId, firebaseUid };
+  }
+);
+
+/** Yalnız developer: uid developer_<username>, claim role developer (ERP tenant token ilə qarışmır). */
+export const issueDeveloperAuthToken = onCall(
+  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
+  async (request) => {
+    const { username, password } = request.data || {};
+    console.log("[issueDeveloperAuthToken]", { usernameNorm: normAuth(username) });
+
+    const { user } = await verifyErpPassword(username, password);
+    if (user.role !== "developer") {
+      throw new HttpsError("permission-denied", "Bu giriş yalnız developer hesabları üçündür.");
+    }
+
+    let firebaseUid = `developer_${sanitizeUidPart(username)}`;
+    if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
+
+    const claims = {
+      erp_session: true,
+      companyId: DEVELOPER_COMPANY_SENTINEL,
+      role: "developer",
+      erpRole: "developer",
+    };
+
+    const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
+    console.log("[issueDeveloperAuthToken] ok", { firebaseUid });
+
+    return { token: customToken, companyId: DEVELOPER_COMPANY_SENTINEL, firebaseUid };
   }
 );
 
