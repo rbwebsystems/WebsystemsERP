@@ -14,10 +14,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: yalnız issueAuthToken ilə giriş etmiş istifadəçilər
-    // (anonim istifadəçilər bloklanır, companyId izolasiyası debug sonra)
+    // ŞİRKƏT DATA:
+    // Oxumaq: istənilən auth (session bərpası üçün lazımdır)
+    // Yazmaq: yalnız erp_session tokeni olan istifadəçilər (anonim yaza bilmir)
     match /companies/{companyId} {
-      allow read, write: if request.auth != null
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
         && request.auth.token.erp_session == true;
     }
 
