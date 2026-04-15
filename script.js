@@ -193,6 +193,29 @@ function ensureFirestoreAuth() {
   return firestoreAuthPromise;
 }
 
+// Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir
+async function acquireCustomToken(username, password) {
+  if (!useFirestore() || !firestoreInitialized) return true;
+  try {
+    const fn = firebase.functions().httpsCallable("issueAuthToken");
+    const result = await fn({ username, password });
+    const { token } = result.data;
+    await firebase.auth().signInWithCustomToken(token);
+    firestoreAuthReady = true;
+    firestoreAuthPromise = null;
+    return true;
+  } catch (e) {
+    const code = e?.code || "";
+    if (code === "functions/unauthenticated" || code === "functions/invalid-argument") {
+      // Yanlış şifrə/istifadəçi — xəta mesajını qaldır
+      throw e;
+    }
+    // Şəbəkə/funksiya xətası — anonim auth ilə davam et (degraded mode)
+    console.warn("Custom token xətası (degraded mode):", e);
+    return false;
+  }
+}
+
 function getMetaRef() {
   if (!firestoreInitialized) return null;
   return firebase.firestore().collection("config").doc("meta");
@@ -3046,7 +3069,7 @@ function doLoginWithCompany(companyId) {
   }
 }
 
-function login(e) {
+async function login(e) {
   e.preventDefault();
   const username = val("loginUser").trim();
   const pass = val("loginPass");
@@ -3064,6 +3087,21 @@ function login(e) {
   }
   if (!u || !u.active) return alert("İstifadəçi tapılmadı (və ya deaktivdir).");
   if (u.pass !== pass) return alert("Şifrə yanlışdır.");
+
+  // Server-tərəfdə autentifikasiya: custom token al
+  if (useFirestore()) {
+    try {
+      const ok = await acquireCustomToken(username, pass);
+      if (!ok) console.warn("Degraded mode: custom token alınmadı, anonim auth ilə davam edilir.");
+    } catch (err) {
+      const msg = err?.details || err?.message || "";
+      if (msg.includes("tapılmadı") || msg.includes("yanlış") || msg.includes("deaktiv")) {
+        return alert(msg);
+      }
+      console.warn("Custom token xətası:", err);
+    }
+  }
+
   window.__pendingLogin = { u, pass };
   if (u.role === "developer") {
     const devCompany = meta.companies.find((x) => x.id === "devtest") || meta.companies[0];

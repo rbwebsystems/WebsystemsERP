@@ -1,31 +1,44 @@
 rules_version = '2';
 // RB Websystems ERP – Firestore Security Rules
 //
-// TƏTBIQ ETMƏK ÜÇÜN:
-// Firebase Console → https://console.firebase.google.com
-// → rbwebsystems-d2da2 layihəsi
-// → Firestore Database → Rules tab
-// → Bu faylın içindəkiləri yapışdırıb "Publish" et
+// Arxitektura:
+//  - Login → issueAuthToken Cloud Function → server-tərəfdə şifrə yoxlama
+//  - Custom token verilir: { erp_session:true, companyId, role }
+//  - Şirkət datası yalnız öz companyId-si olan istifadəçilərə açıqdır
+//  - developer role bütün şirkətlərə çıxış edir
 //
-// Arxitektura: Anonymous Auth istifadə olunur.
-// Şirkət ID-ləri UUID formatındadır → brute-force demək olar ki mümkün deyil.
+// TƏTBIQ ETMƏK ÜÇÜN:
+// Firebase Console → Firestore Database → Rules → Publish
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // META: İstifadəçilər, şirkət siyahısı, ayarlar
-    // Yalnız authenticate olmuş (anonim də daxil) istifadəçilər oxuya/yaza bilər
+    // ── META: şirkət siyahısı, istifadəçilər ─────────────────────────────
+    // Oxumaq: istənilən auth (anonim də) — login səhifəsi üçün lazımdır
+    // Yazmaq: yalnız erp_session=true olan (giriş etmiş) istifadəçilər
     match /meta/{document=**} {
-      allow read, write: if request.auth != null;
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.erp_session == true;
     }
 
-    // ŞİRKƏT DATA: Hər şirkətin öz ayrı documenti
-    // UUID-based ID olduğuna görə tahmin etmək demək olar ki mümkün deyil
+    // ── ŞİRKƏT DATA: tam izolasiya ───────────────────────────────────────
+    // Yalnız həmin şirkətin tokeni olan istifadəçi oxuya/yaza bilər
+    // developer role istisna olaraq bütün şirkətlərə çıxış edir
     match /companies/{companyId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+        && (
+          request.auth.token.companyId == companyId
+          || request.auth.token.role == 'developer'
+        );
     }
 
-    // DİGƏR: Bütün qalan path-ları bağla
+    // ── CLOUD FUNCTIONS CONFIG (read-only, yalnız Cloud Functions yazır) ─
+    match /config/{document=**} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // ── DİGƏR: bütün qalan path-ları bağla ──────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

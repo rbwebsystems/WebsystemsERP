@@ -3,8 +3,10 @@
 // Heç bir istifadəci app açmasa belə işləyir.
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
 
 initializeApp();
 const db = getFirestore();
@@ -239,6 +241,68 @@ async function processCompany(companyId, companyData) {
 }
 
 // ─── Scheduled Function: hər gün saat 06:00 UTC (= 10:00 Bakı) ────────────
+
+// ─── Auth: İstifadəçi adı + şifrəni server-tərəfdə yoxla, custom token ver ──
+
+function getCompanyIdFromUsernameServer(username) {
+  const idx = String(username || "").indexOf("_");
+  if (idx <= 0) return null;
+  return username.slice(0, idx).trim().toLowerCase();
+}
+
+export const issueAuthToken = onCall(
+  { region: "europe-west1", cors: true },
+  async (request) => {
+    const { username, password } = request.data || {};
+    if (!username || !password) {
+      throw new HttpsError("invalid-argument", "İstifadəçi adı və şifrə tələb olunur.");
+    }
+
+    // Admin SDK ilə meta oxu (Firestore Rules-u keçir)
+    let metaData;
+    try {
+      const snap = await db.collection("config").doc("meta").get();
+      if (!snap.exists) throw new Error("meta yoxdur");
+      metaData = snap.data();
+    } catch (e) {
+      throw new HttpsError("internal", "Sistem konfiqurasiyası oxuna bilmədi.");
+    }
+
+    const users = metaData.users || [];
+    const companies = metaData.companies || [];
+    const unameNorm = String(username).trim().toLowerCase();
+
+    let user = users.find((u) => u.username === username);
+    if (!user) user = users.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
+
+    if (!user || !user.active) {
+      throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
+    }
+    if (user.pass !== password) {
+      throw new HttpsError("unauthenticated", "Şifrə yanlışdır.");
+    }
+
+    const isDev = user.role === "developer";
+    let companyId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "").toLowerCase();
+
+    if (!isDev && !companyId) {
+      companyId = String(companies[0]?.id || "").toLowerCase();
+    }
+    if (!isDev && companyId) {
+      const exists = companies.some((c) => String(c.id || "").toLowerCase() === companyId);
+      if (!exists) throw new HttpsError("not-found", "Şirkət tapılmadı.");
+    }
+
+    const claims = {
+      erp_session: true,
+      role: user.role || "user",
+      companyId: isDev ? "" : companyId,
+    };
+
+    const customToken = await getAdminAuth().createCustomToken(String(user.uid || username), claims);
+    return { token: customToken, companyId: isDev ? "" : companyId };
+  }
+);
 
 export const dailyCreditReminder = onSchedule(
   {
