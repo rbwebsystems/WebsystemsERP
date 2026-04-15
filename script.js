@@ -141,7 +141,7 @@ function initFirestore() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     // Long polling bəzən WebSocket-dən daha etibarlı sinxron verir (şəbəkə/brauzerə görə)
-    firebase.firestore().settings({ experimentalForceLongPolling: true, merge: true });
+    firebase.firestore().settings({ experimentalAutoDetectLongPolling: true, merge: true });
     firestoreInitialized = true;
   } catch (e) {
     console.warn("Firebase init xətası:", e);
