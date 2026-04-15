@@ -356,8 +356,14 @@ async function mintFirebaseCustomToken(firebaseUid, claims) {
         mapAuthAdminError(err, firebaseUid);
       }
     }
-    await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
-    return await getAdminAuth().createCustomToken(firebaseUid, claims);
+    const safeClaims = {};
+    for (const [k, v] of Object.entries(claims || {})) {
+      if (typeof v === "boolean") safeClaims[k] = v;
+      else if (v == null) continue;
+      else safeClaims[k] = typeof v === "string" ? v : String(v);
+    }
+    await getAdminAuth().setCustomUserClaims(firebaseUid, safeClaims);
+    return await getAdminAuth().createCustomToken(firebaseUid, safeClaims);
   } catch (err) {
     mapAuthAdminError(err, firebaseUid);
   }

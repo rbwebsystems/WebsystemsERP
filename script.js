@@ -303,16 +303,43 @@ async function acquireCustomToken(username, password, opts = {}) {
 
     const cred = await firebase.auth().signInWithCustomToken(token);
     await cred.user.getIdToken(true);
+
+    /** Custom claim bəzi SDK-da getIdTokenResult ilk dəfə boş ola bilər; provider də həmişə "custom" olmur. */
+    let tr = await cred.user.getIdTokenResult(true);
+    let cid = String(tr?.claims?.companyId ?? "").trim();
+    let prov = String(tr?.signInProvider || "");
+    const hasCustomProvider = () =>
+      prov === "custom" ||
+      (Array.isArray(cred.user?.providerData) &&
+        cred.user.providerData.some((p) => String(p?.providerId || "") === "custom"));
+
+    for (let i = 0; i < 8 && (!cid || (!hasCustomProvider() && prov)); i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      await cred.user.getIdToken(true);
+      tr = await cred.user.getIdTokenResult(true);
+      cid = String(tr?.claims?.companyId ?? "").trim();
+      prov = String(tr?.signInProvider || "");
+    }
+
     await logErpAuthDebug("post signInWithCustomToken");
 
-    const tr = await cred.user.getIdTokenResult(true);
-    const prov = String(tr?.signInProvider || "");
-    const cid = String(tr?.claims?.companyId ?? "").trim();
     const role = String(tr?.claims?.role ?? "");
-    if (cred.user.isAnonymous || prov !== "custom" || !cid) {
-      console.error("[erp-auth] Token yoxlaması uğursuz:", { isAnonymous: cred.user.isAnonymous, prov, companyId: cid, role });
+    if (cred.user.isAnonymous || !cid) {
+      console.error("[erp-auth] Token yoxlaması uğursuz:", {
+        isAnonymous: cred.user.isAnonymous,
+        signInProvider: prov,
+        providerData: cred.user?.providerData,
+        companyId: cid,
+        role,
+        claimsKeys: tr?.claims ? Object.keys(tr.claims) : [],
+      });
       await firebase.auth().signOut();
-      throw new Error("Token alınmadı (custom auth və ya companyId).");
+      throw new Error(
+        "Giriş tokenında companyId claim-i yoxdur və ya boşdur. Səhifəni yeniləyin; davam edərsə issueAuthToken deploy və Firebase Auth (custom claims) yoxlayın."
+      );
+    }
+    if (!hasCustomProvider() && prov && prov !== "custom") {
+      console.warn("[erp-auth] signInProvider:", prov, "(claim-lər mövcuddur)");
     }
     if (role !== "developer" && role !== "tenant") {
       await firebase.auth().signOut();
