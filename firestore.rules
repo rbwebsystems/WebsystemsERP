@@ -1,29 +1,21 @@
 rules_version = '2';
-// RB Websystems ERP – Firestore Security Rules
-//
-// Arxitektura:
-//  - Login → issueAuthToken Cloud Function → server-tərəfdə şifrə yoxlama
-//  - Custom token verilir: { erp_session:true, companyId, role }
-//  - Şirkət datası yalnız öz companyId-si olan istifadəçilərə açıqdır
-//  - developer role bütün şirkətlərə çıxış edir
-//
-// TƏTBIQ ETMƏK ÜÇÜN:
-// Firebase Console → Firestore Database → Rules → Publish
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── META: şirkət siyahısı, istifadəçilər ─────────────────────────────
+    // META (config/meta): şirkət siyahısı, istifadəçilər
     // Oxumaq: istənilən auth (anonim də) — login səhifəsi üçün lazımdır
-    // Yazmaq: yalnız erp_session=true olan (giriş etmiş) istifadəçilər
-    match /meta/{document=**} {
+    // Yazmaq: yalnız giriş etmiş (erp_session) istifadəçilər
+    match /config/meta {
       allow read:  if request.auth != null;
       allow write: if request.auth != null && request.auth.token.erp_session == true;
     }
 
-    // ── ŞİRKƏT DATA: tam izolasiya ───────────────────────────────────────
-    // Yalnız həmin şirkətin tokeni olan istifadəçi oxuya/yaza bilər
-    // developer role istisna olaraq bütün şirkətlərə çıxış edir
+    // CONFIG altındakı digər sənədlər — bağlı
+    match /config/{document=**} {
+      allow read, write: if false;
+    }
+
+    // ŞİRKƏT DATA: yalnız öz companyId-si olan istifadəçi
     match /companies/{companyId} {
       allow read, write: if request.auth != null
         && (
@@ -32,13 +24,7 @@ service cloud.firestore {
         );
     }
 
-    // ── CLOUD FUNCTIONS CONFIG (read-only, yalnız Cloud Functions yazır) ─
-    match /config/{document=**} {
-      allow read:  if false;
-      allow write: if false;
-    }
-
-    // ── DİGƏR: bütün qalan path-ları bağla ──────────────────────────────
+    // DİGƏR: tam bağlı
     match /{document=**} {
       allow read, write: if false;
     }
