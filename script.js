@@ -232,19 +232,21 @@ async function logErpAuthDebug(tag) {
 /** Login formundan əvvəl istifadəçi rolunu təxmin etmək (developer vs tenant callable). */
 function findUserForLoginAuth(username) {
   const unameNorm = String(username || "").trim().toLowerCase();
-  const fromMeta = (arr) => {
-    if (!Array.isArray(arr)) return null;
-    let x = arr.find((u) => u.username === username);
-    if (!x) x = arr.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
-    return x || null;
+  if (!unameNorm) return null;
+  const pool = [];
+  const pushUnique = (arr) => {
+    for (const x of arr || []) {
+      if (x && !pool.includes(x)) pool.push(x);
+    }
   };
-  let u = fromMeta(meta?.users);
-  if (!u) u = fromMeta(loadMetaSync().users);
+  pushUnique(meta?.users);
+  pushUnique(loadMetaSync().users);
+  let u = pool.find((x) => x.username === username);
+  if (!u) u = pool.find((x) => String(x.username || "").trim().toLowerCase() === unameNorm);
   if (!u && unameNorm === "developer") {
-    const pool = [...(meta?.users || []), ...(loadMetaSync().users || [])];
     u = pool.find((x) => x && x.active && x.role === "developer") || null;
   }
-  return u;
+  return u || null;
 }
 
 /** Tenant Firestore şirkət məlumatı: yalnız role tenant + boş olmayan companyId. */
@@ -261,6 +263,31 @@ async function erpTenantClaimsOkForCompany(companyId) {
 
 function normAuthKey(s) {
   return String(s || "").trim().toLowerCase();
+}
+
+/** Firebase httpsCallable xətası — message/details düzgün göstərilsin. */
+function formatCallableError(err) {
+  if (!err) return "Giriş xətası.";
+  const d = err.details;
+  if (typeof d === "string" && d.trim() && !/^internal$/i.test(d.trim())) return d.trim();
+  if (d && typeof d === "object" && typeof d.message === "string" && d.message.trim()) return d.message.trim();
+  const msg = String(err.message || "").trim();
+  if (msg && !/^internal$/i.test(msg) && msg !== "INTERNAL") return msg;
+  const code = String(err.code || "");
+  if (code.includes("not-found"))
+    return "Cloud Function tapılmadı. issueDeveloperAuthToken və issueAuthToken deploy olunubmu?";
+  if (code.includes("internal") || code.includes("Internal"))
+    return "Server daxili xətası. Firebase Console → Functions → Logs və Auth icazələrini yoxlayın.";
+  return msg || "Giriş xətası.";
+}
+
+function isDeveloperTokenRequiredError(err) {
+  const code = String(err?.code || "");
+  const msg = `${String(err?.message || "")} ${String(err?.details || "")}`;
+  return (
+    code.includes("failed-precondition") &&
+    (msg.includes("issueDeveloperAuthToken") || msg.includes("Developer hesabı"))
+  );
 }
 
 // Custom token — yalnız ERP tenant (issueAuthToken)
@@ -3293,11 +3320,18 @@ async function login(e) {
             "Şirkət ID lazımdır: istifadəçi adı şirkət_ad formatında olsun və ya ?company=ŞİRKƏT_ID / login sahəsində şirkət göstərin."
           );
         }
-        await acquireCustomToken(username, pass, { companyId: companyForToken });
+        try {
+          await acquireCustomToken(username, pass, { companyId: companyForToken });
+        } catch (tenantErr) {
+          if (isDeveloperTokenRequiredError(tenantErr)) {
+            await acquireDeveloperCustomToken(username, pass);
+          } else {
+            throw tenantErr;
+          }
+        }
       }
     } catch (err) {
-      const msg = err?.details || err?.message || "Giriş xətası.";
-      return alert(msg);
+      return alert(formatCallableError(err));
     }
     // Custom token alındıqdan sonra meta-nı yenidən yüklə (indi erp_session ilə oxuya bilər)
     try { meta = await loadMetaAsync(); ensureMetaDefaults(); } catch (_) {}

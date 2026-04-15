@@ -273,10 +273,20 @@ async function verifyErpPassword(username, password) {
   let metaData;
   try {
     const snap = await db.collection("config").doc("meta").get();
-    if (!snap.exists) throw new Error("meta yoxdur");
+    if (!snap.exists) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Firestore-da config/meta sənədi yoxdur. Admin panelindən və ya bir dəfəlik migrasiya ilə meta yaradın."
+      );
+    }
     metaData = snap.data();
   } catch (e) {
-    throw new HttpsError("internal", "Sistem konfiqurasiyası oxuna bilmədi.");
+    if (e instanceof HttpsError) throw e;
+    console.error("[verifyErpPassword] config/meta oxuma:", e);
+    throw new HttpsError(
+      "unavailable",
+      `Meta oxuna bilmədi (${e?.code || e?.message || "xəta"}). Firestore əlçatanlığını və Functions service account icazəsini yoxlayın.`
+    );
   }
 
   const users = metaData.users || [];
@@ -308,16 +318,26 @@ async function verifyErpPassword(username, password) {
 
 async function mintFirebaseCustomToken(firebaseUid, claims) {
   try {
-    await getAdminAuth().getUser(firebaseUid);
-  } catch (err) {
-    if (err.code === "auth/user-not-found") {
-      await getAdminAuth().createUser({ uid: firebaseUid });
-    } else {
-      throw err;
+    try {
+      await getAdminAuth().getUser(firebaseUid);
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        await getAdminAuth().createUser({ uid: firebaseUid });
+      } else {
+        throw err;
+      }
     }
+    await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
+    return await getAdminAuth().createCustomToken(firebaseUid, claims);
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    console.error("[mintFirebaseCustomToken]", firebaseUid, err);
+    const authMsg = err?.errorInfo?.message || err?.message || String(err);
+    throw new HttpsError(
+      "internal",
+      `Firebase Auth token yaradıla bilmədi: ${authMsg}`
+    );
   }
-  await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
-  return getAdminAuth().createCustomToken(firebaseUid, claims);
 }
 
 /** Yalnız ERP tenant (developer deyil): uid tenant_<companyId>, claim role tenant. */
