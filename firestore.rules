@@ -2,9 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // META (config/meta):
-    // Oxumaq: giriş etmiş istifadəçilər
-    // Yazmaq: developer və ya admin (istifadəçi/şirkət idarəetməsi)
+    // META (config/meta): şirkətlər, istifadəçilər, abunəlik — idarəetmə (session clientdə qalır).
+    // Oxumaq: tenant + developer (erp_session).
+    // Yazmaq: developer JWT və ya tenant tokenında erpRole admin (şirkət admini).
     match /config/meta {
       allow read:  if request.auth != null
         && request.auth.token.erp_session == true;

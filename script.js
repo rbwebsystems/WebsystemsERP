@@ -673,6 +673,9 @@ function subscribeRealtime() {
           const next = snap.data() || {};
           if (Array.isArray(next.companies)) meta.companies = next.companies;
           if (Array.isArray(next.users)) meta.users = next.users;
+          try {
+            localStorage.setItem(META_KEY, JSON.stringify(meta));
+          } catch (_) {}
           applyAccessUI();
           if (meta.session) {
             renderSidebarUser();
@@ -2867,51 +2870,91 @@ function loadMeta() {
   }
 }
 
-/** `loadingMessage` — yalnız Firestore .set gözlənəndə mərkəz mətni (məs. aktiv/deaktiv). */
+/**
+ * Şirkətlər/istifadəçilər və digər idarəetmə — Firestore `config/meta` (session buluda yazılmır).
+ * Tenant company DB-dən ayrıdır; developer və meta-ya yazma icazəsi olan tenant admin eyni sənədi istifadə edir.
+ */
 function saveMeta(loadingMessage) {
-  if (useFirestore()) {
-    const ref = getMetaRef();
-    if (ref) {
-      const authUser = erpFirebaseCurrentUser();
-      if (!authUser) {
+  if (!useFirestore()) {
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    } catch (_) {}
+    updateLastSavedEl();
+    return;
+  }
+  const ref = getMetaRef();
+  if (!ref) {
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    } catch (_) {}
+    updateLastSavedEl();
+    return;
+  }
+  const authUser = erpFirebaseCurrentUser();
+  if (!authUser) {
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    } catch (_) {}
+    updateLastSavedEl();
+    return;
+  }
+  let softBegan = false;
+  try {
+    const { session, ...rest } = meta || {};
+    const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
+    softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
+    softBegan = true;
+    ref
+      .set(data)
+      .then(() => {
         try {
           localStorage.setItem(META_KEY, JSON.stringify(meta));
         } catch (_) {}
+        console.log("[erp-auth] saveMeta: Firestore config/meta uğurla yeniləndi (idarəetmə məlumatı)");
+      })
+      .catch((e) => {
+        console.warn("Firestore meta yazma xətası:", e);
+        try {
+          localStorage.setItem(META_KEY, JSON.stringify(meta));
+        } catch (_) {}
+      })
+      .finally(() => {
+        softLoadingEnd();
         updateLastSavedEl();
-        return;
-      }
-      let softBegan = false;
-      try {
-        const { session, ...rest } = meta || {};
-        const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
-        softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
-        softBegan = true;
-        ref
-          .set(data)
-          .catch((e) => console.warn("Firestore meta yazma xətası:", e))
-          .finally(() => {
-            softLoadingEnd();
-            updateLastSavedEl();
-          });
-      } catch (e) {
-        console.warn("saveMeta (Firestore):", e);
-        if (softBegan) softLoadingEnd();
-      }
-    }
-    localStorage.setItem(META_KEY, JSON.stringify(meta));
-    if (ref) return;
-  } else {
-    localStorage.setItem(META_KEY, JSON.stringify(meta));
+      });
+  } catch (e) {
+    console.warn("saveMeta (Firestore):", e);
+    if (softBegan) softLoadingEnd();
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    } catch (_) {}
+    updateLastSavedEl();
   }
-  updateLastSavedEl();
 }
 
+/** İdarəetmə meta-sı — `saveMeta` ilə eyni (bulud əsas, LS yalnız sessiya + keş). */
+function saveAdminMetaToCloud(loadingMessage) {
+  saveMeta(loadingMessage);
+}
+
+/**
+ * Default şirkət/developer user və s. — `true` qaytarırsa, çağıran `saveMeta()` ilə buluda yazmalıdır.
+ * Əvvəlki davranış: hər çağırışda saveMeta init/login-də köhnə lokal ilə buludu əzə bilərdi.
+ */
 function ensureMetaDefaults() {
-  if (!meta.companies || !Array.isArray(meta.companies)) meta.companies = [];
-  if (!meta.users || !Array.isArray(meta.users)) meta.users = [];
+  let dirty = false;
+  if (!meta.companies || !Array.isArray(meta.companies)) {
+    meta.companies = [];
+    dirty = true;
+  }
+  if (!meta.users || !Array.isArray(meta.users)) {
+    meta.users = [];
+    dirty = true;
+  }
 
   if (meta.companies.length === 0) {
     meta.companies.push({ id: "bakfon", name: "Bakfon" });
+    dirty = true;
   }
   const devIdx = meta.users.findIndex((u) => u.username === "developer");
   if (devIdx === -1) {
@@ -2926,28 +2969,64 @@ function ensureMetaDefaults() {
       perms: { sections: ["*"] },
       createdAt: nowISODateTimeLocal(),
     });
+    dirty = true;
   } else {
     const u = meta.users[devIdx];
-    if (!u.uid) u.uid = 1;
-    u.role = "developer";
-    u.active = true;
+    if (!u.uid) {
+      u.uid = 1;
+      dirty = true;
+    }
+    if (u.role !== "developer") {
+      u.role = "developer";
+      dirty = true;
+    }
+    if (!u.active) {
+      u.active = true;
+      dirty = true;
+    }
+    if (u.companyId != null && u.companyId !== "") {
+      dirty = true;
+    }
     u.companyId = null;
-    if (!u.perms) u.perms = { sections: ["*"] };
-    if (!Array.isArray(u.perms.sections) || u.perms.sections.length === 0) u.perms.sections = ["*"];
-    if (!u.perms.sections.includes("*")) u.perms.sections.unshift("*");
-    if (!u.pass) u.pass = "developer";
-    if (!u.fullName) u.fullName = "Developer";
-    if (!u.createdAt) u.createdAt = nowISODateTimeLocal();
+    if (!u.perms) {
+      u.perms = { sections: ["*"] };
+      dirty = true;
+    } else {
+      if (!Array.isArray(u.perms.sections) || u.perms.sections.length === 0) {
+        u.perms.sections = ["*"];
+        dirty = true;
+      } else if (!u.perms.sections.includes("*")) {
+        u.perms.sections.unshift("*");
+        dirty = true;
+      }
+    }
+    if (!u.pass) {
+      u.pass = "developer";
+      dirty = true;
+    }
+    if (!u.fullName) {
+      u.fullName = "Developer";
+      dirty = true;
+    }
+    if (!u.createdAt) {
+      u.createdAt = nowISODateTimeLocal();
+      dirty = true;
+    }
   }
   meta.users.forEach((u) => {
     if (u.role !== "developer" && (u.companyId == null || u.companyId === "")) {
-      u.companyId = getCompanyIdFromUsername(u.username) || meta.companies[0]?.id || null;
+      const nextCid = getCompanyIdFromUsername(u.username) || meta.companies[0]?.id || null;
+      if (u.companyId !== nextCid) {
+        u.companyId = nextCid;
+        dirty = true;
+      }
     }
   });
   if (!meta.session || !meta.session.companyId) {
+    if (meta.session != null) dirty = true;
     meta.session = null;
   }
-  saveMeta();
+  return dirty;
 }
 
 function currentUser() {
@@ -3603,7 +3682,8 @@ async function login(e) {
     // Custom token alındıqdan sonra meta-nı yenidən yüklə (indi erp_session ilə oxuya bilər)
     try {
       meta = await loadMetaAsync();
-      ensureMetaDefaults();
+      const metaDefaultsDirty = ensureMetaDefaults();
+      if (metaDefaultsDirty && erpFirebaseCurrentUser()) saveMeta();
     } catch (me) {
       console.error("[erp-auth] login: loadMetaAsync / ensureMetaDefaults", me);
     }
@@ -15164,7 +15244,7 @@ async function init() {
 
     _pl.step("meta");
     meta = await loadMetaAsync();
-    ensureMetaDefaults();
+    const metaDefaultsDirty = ensureMetaDefaults();
     if (useFirestore() && meta.session && erpFirebaseCurrentUser()) {
       await erpNormalizeSessionForFirebaseClaims();
     }
@@ -15175,7 +15255,9 @@ async function init() {
         localStorage.setItem(META_KEY, JSON.stringify(meta));
       } catch (_) {}
     }
-    if (useFirestore()) saveMeta();
+    if (useFirestore() && erpFirebaseCurrentUser() && metaDefaultsDirty) {
+      saveMeta();
+    }
 
     _pl.step("data");
     if (meta.session) {
