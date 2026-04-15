@@ -7,6 +7,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
+import { createHash } from "node:crypto";
 
 initializeApp();
 const db = getFirestore();
@@ -278,8 +279,21 @@ export const issueAuthToken = onCall(
     if (!user || !user.active) {
       throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
     }
-    if (user.pass !== password) {
+
+    const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
+    const inputHash = hashPass(password);
+    const stored = String(user.pass || "");
+    // Həm hash, həm plain-text yoxla (migration dövrü üçün)
+    if (stored !== inputHash && stored !== password) {
       throw new HttpsError("unauthenticated", "Şifrə yanlışdır.");
+    }
+
+    // Plain-text şifrə idisə — avtomatik hash-ə çevir
+    if (stored === password && stored !== inputHash) {
+      user.pass = inputHash;
+      try {
+        await db.collection("config").doc("meta").set(metaData);
+      } catch (_) {}
     }
 
     const isDev = user.role === "developer";

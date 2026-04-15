@@ -170,13 +170,7 @@ function ensureFirestoreAuth() {
       firebase.auth().onAuthStateChanged(
         (user) => {
           if (user) {
-            // Session restore: token-i refresh et ki permanent claim-lər yüklənsin
-            user.getIdToken(true).then(() => {
-              return user.getIdTokenResult();
-            }).then((tok) => {
-              console.log("[ERP Auth] Session restore claims:", JSON.stringify(tok.claims || {}));
-              finish(true);
-            }).catch(() => finish(true));
+            user.getIdToken(true).then(() => finish(true)).catch(() => finish(true));
             return;
           }
           // anonymous sign-in
@@ -205,33 +199,26 @@ function ensureFirestoreAuth() {
 // Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir
 async function acquireCustomToken(username, password) {
   if (!useFirestore() || !firestoreInitialized) return true;
-  console.log("[ERP Auth] başladı, firebase.functions:", typeof firebase.functions);
   try {
-    if (!firebase.functions) { console.warn("[ERP Auth] functions SDK yoxdur"); return false; }
+    if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
     const fn = firebase.app().functions("europe-west1").httpsCallable("issueAuthToken");
-    console.log("[ERP Auth] Cloud Function çağırılır...");
     const result = await fn({ username, password });
-    const { token, companyId: retCid } = result.data;
-    console.log("[ERP Auth] Function cavab verdi, companyId:", retCid);
+    const { token } = result.data;
     const cred = await firebase.auth().signInWithCustomToken(token);
-    // setCustomUserClaims permanent olduğundan token-i refresh et
     await cred.user.getIdToken(true);
-    const idTok = await cred.user.getIdTokenResult();
-    console.log("[ERP Auth] Token claims:", JSON.stringify(idTok.claims));
     firestoreAuthReady = true;
     firestoreAuthPromise = null;
     return true;
   } catch (e) {
-    console.error("[ERP Auth] Xəta:", e?.code, e?.message);
     const code = e?.code || "";
-    if (code === "functions/unauthenticated" || code === "functions/invalid-argument") {
+    if (code === "functions/unauthenticated" || code === "functions/invalid-argument" || code === "functions/not-found") {
       throw e;
     }
     try {
       if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
     } catch (_) {}
     firestoreAuthReady = true;
-    return false;
+    throw e;
   }
 }
 
@@ -3092,35 +3079,40 @@ async function login(e) {
   e.preventDefault();
   const username = val("loginUser").trim();
   const pass = val("loginPass");
+  if (!username || !pass) return alert("İstifadəçi adı və şifrə daxil edin.");
   try {
     if (byId("loginRemember")?.checked) localStorage.setItem("loginRememberUsername", username);
     else localStorage.removeItem("loginRememberUsername");
   } catch {}
-  const unameNorm = String(username || "").trim().toLowerCase();
-  let u = meta.users.find((x) => x.username === username);
-  if (!u) {
-    u = meta.users.find((x) => String(x.username || "").trim().toLowerCase() === unameNorm);
-  }
-  if (!u && unameNorm === "developer") {
-    u = meta.users.find((x) => x && x.active && x.role === "developer");
-  }
-  if (!u || !u.active) return alert("İstifadəçi tapılmadı (və ya deaktivdir).");
-  if (u.pass !== pass) return alert("Şifrə yanlışdır.");
 
-  // Server-tərəfdə autentifikasiya: custom token al
-  console.log("[ERP Auth] login() çağırıldı, useFirestore:", useFirestore(), "firestoreInitialized:", firestoreInitialized);
+  // Server-tərəfdə autentifikasiya: Cloud Function şifrəni yoxlayır, custom token verir
   if (useFirestore()) {
     try {
       await acquireCustomToken(username, pass);
     } catch (err) {
-      const code = err?.code || "";
-      const msg = err?.details || err?.message || "";
-      if (code === "functions/unauthenticated" || code === "functions/invalid-argument") {
-        return alert(msg || "Giriş xətası. İstifadəçi adı və ya şifrə yanlışdır.");
-      }
-      // Şəbəkə/server xətası — davam et (degraded mode)
-      console.warn("Custom token xətası (degraded):", err);
+      const msg = err?.details || err?.message || "Giriş xətası.";
+      return alert(msg);
     }
+    // Custom token alındıqdan sonra meta-nı yenidən yüklə (indi erp_session ilə oxuya bilər)
+    try { meta = await loadMetaAsync(); ensureMetaDefaults(); } catch (_) {}
+  }
+
+  // İstifadəçini meta-dan tap
+  const unameNorm = String(username || "").trim().toLowerCase();
+  let u = meta.users.find((x) => x.username === username);
+  if (!u) u = meta.users.find((x) => String(x.username || "").trim().toLowerCase() === unameNorm);
+  if (!u && unameNorm === "developer") u = meta.users.find((x) => x && x.active && x.role === "developer");
+  if (!u || !u.active) return alert("İstifadəçi tapılmadı.");
+
+  // Offline mode: Cloud Function yoxdursa, yerli yoxlama (hash və ya plain-text)
+  if (!useFirestore()) {
+    const hashPass = async (p) => {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(p)));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    };
+    const inputHash = await hashPass(pass);
+    const stored = String(u.pass || "");
+    if (stored !== pass && stored !== inputHash) return alert("Şifrə yanlışdır.");
   }
 
   window.__pendingLogin = { u, pass };
@@ -10559,7 +10551,7 @@ function toggleAllUserSecs(cb) {
   document.querySelectorAll(".permSec").forEach((el) => { el.checked = cb.checked; });
 }
 
-function saveUser(e) {
+async function saveUser(e) {
   e.preventDefault();
   if (!isDeveloper() && !isAdmin()) return;
   const uidVal = (val("u_uid") || "").trim();
@@ -10567,7 +10559,13 @@ function saveUser(e) {
   const manualMode = isNew && !!byId("u_manual_mode")?.checked;
   let fullName = val("u_full").trim();
   let staffUid = (val("u_staff") || "").trim();
-  const pass = val("u_pass");
+  const rawPass = val("u_pass");
+  // Şifrəni SHA-256 hash-lə
+  const hashPassBrowser = async (p) => {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(p)));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+  const pass = rawPass ? await hashPassBrowser(rawPass) : "";
   const role = val("u_role");
   const active = !!byId("u_active")?.checked;
   const canEdit = !!byId("u_can_edit")?.checked;
