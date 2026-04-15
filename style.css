@@ -1567,6 +1567,63 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
 .login-v3-submit:hover{background:var(--brand-green);}
 .login-v3-submit:active{transform:scale(.97);}
 .login-v3-hint{display:block;margin-top:12px;font-size:.75rem;color:#94a3b8;line-height:1.45;text-align:center;}
+
+/* Login: issueAuthToken gözləməsi — kart üzərində spinner */
+.login-auth-busy{
+  position:absolute;
+  inset:0;
+  z-index:8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:inherit;
+  pointer-events:auto;
+}
+.login-auth-busy.hidden{display:none !important;}
+.login-auth-busy__backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(15,23,42,.35);
+  border-radius:inherit;
+}
+.login-auth-busy__box{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.65rem;
+  padding:1.25rem 1.5rem;
+  background:rgba(255,255,255,.95);
+  border-radius:1rem;
+  box-shadow:0 12px 40px rgba(15,23,42,.2);
+  max-width:min(90%,14rem);
+}
+.login-auth-busy__txt{margin:0;font-size:.85rem;font-weight:800;color:#0f172a;text-align:center;}
+.login-auth-busy__spinner{
+  width:36px;height:36px;
+  border:3px solid #e2e8f0;
+  border-top-color:var(--brand-green,#1a4754);
+  border-radius:50%;
+  animation:loginAuthSpin .7s linear infinite;
+}
+@keyframes loginAuthSpin{to{transform:rotate(360deg);}}
+.login-auth-busy-inline{
+  display:inline-block;
+  width:14px;height:14px;
+  margin-left:6px;
+  vertical-align:middle;
+  border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:loginAuthSpin .7s linear infinite;
+}
+.login-v3-submit:disabled{
+  opacity:.88;
+  cursor:not-allowed;
+}
+.login-auth-card--busy .login-v3-x{pointer-events:none;opacity:.5;}
+
 body.landing-login-open #lpMainContent{
   filter:blur(6px);
   pointer-events:none;

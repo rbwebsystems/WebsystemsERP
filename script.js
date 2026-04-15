@@ -311,6 +311,8 @@ function formatCallableError(err) {
   const code = String(err.code || "");
   if (code.includes("not-found"))
     return "Cloud Function tapılmadı. issueAuthToken deploy olunubmu?";
+  if (code.includes("permission-denied"))
+    return msg || "Bu əməliyyat üçün icazə yoxdur.";
   if (code.includes("internal") || code.includes("Internal"))
     return "Server xətası (mesaj gizlədilib). Firebase Console → Functions → issueAuthToken → Logs. Çox vaxt: service account üçün signBlob / Token Creator icazəsi.";
   return msg || "Giriş xətası.";
@@ -368,23 +370,20 @@ async function acquireCustomToken(username, password, opts = {}) {
     }
     console.log("[erp-auth] signInWithCustomToken: success", { uid: cred?.user?.uid });
     await cred.user.getIdToken(true);
-
-    /** Custom claim bəzi SDK-da getIdTokenResult ilk dəfə boş ola bilər; provider də həmişə "custom" olmur. */
     let tr = await cred.user.getIdTokenResult(true);
     let cid = String(tr?.claims?.companyId ?? "").trim();
     let prov = String(tr?.signInProvider || "");
-    const hasCustomProvider = () =>
-      prov === "custom" ||
-      (Array.isArray(cred.user?.providerData) &&
-        cred.user.providerData.some((p) => String(p?.providerId || "") === "custom"));
-
-    for (let i = 0; i < 8 && (!cid || (!hasCustomProvider() && prov)); i++) {
-      await new Promise((r) => setTimeout(r, 100));
+    if (!cid) {
+      await new Promise((r) => setTimeout(r, 50));
       await cred.user.getIdToken(true);
       tr = await cred.user.getIdTokenResult(true);
       cid = String(tr?.claims?.companyId ?? "").trim();
       prov = String(tr?.signInProvider || "");
     }
+    const hasCustomProvider = () =>
+      prov === "custom" ||
+      (Array.isArray(cred.user?.providerData) &&
+        cred.user.providerData.some((p) => String(p?.providerId || "") === "custom"));
 
     await logErpAuthDebug("post signInWithCustomToken");
     const _cuAfter = erpFirebaseCurrentUser();
@@ -3148,6 +3147,35 @@ function prepareLoginForm() {
   })();
   if (uEl && saved) uEl.value = saved;
   if (remEl) remEl.checked = !!saved;
+  setLoginSubmitBusy(false);
+}
+
+/** Login formu: overlay + submit disable (async issueAuthToken üçün). */
+function setLoginSubmitBusy(busy) {
+  const btn = document.querySelector("#loginOverlay .login-v3-submit");
+  const overlay = byId("loginAuthBusyOverlay");
+  const card = document.querySelector("#loginOverlay .login-v3-card");
+  if (!btn) return;
+  if (busy) {
+    if (!btn.dataset.loginDefaultHtml) btn.dataset.loginDefaultHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = 'Yoxlanılır... <span class="login-auth-busy-inline" aria-hidden="true"></span>';
+    if (overlay) {
+      overlay.classList.remove("hidden");
+      overlay.setAttribute("aria-hidden", "false");
+    }
+    if (card) card.classList.add("login-auth-card--busy");
+  } else {
+    btn.disabled = false;
+    btn.removeAttribute("aria-busy");
+    if (btn.dataset.loginDefaultHtml) btn.innerHTML = btn.dataset.loginDefaultHtml;
+    if (overlay) {
+      overlay.classList.add("hidden");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+    if (card) card.classList.remove("login-auth-card--busy");
+  }
 }
 
 function toggleLoginPassword() {
@@ -3363,17 +3391,21 @@ async function login(e) {
   const username = val("loginUser").trim();
   const pass = val("loginPass");
   if (!username || !pass) return alert("İstifadəçi adı və şifrə daxil edin.");
+  setLoginSubmitBusy(true);
   try {
     if (byId("loginRemember")?.checked) localStorage.setItem("loginRememberUsername", username);
     else localStorage.removeItem("loginRememberUsername");
   } catch {}
 
-  // Server: issueAuthToken — developer üçün companyId lazım deyil, tenant üçün lazımdır
+  // Server: issueAuthToken — developer tenant token almır; tenant üçün companyId lazımdır
   if (useFirestore()) {
     try {
       const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
       const fromUserFmt = getCompanyIdFromUsername(username);
-      const companyForToken = (fromUserFmt || companyHint || "").trim();
+      let companyForToken = (fromUserFmt || companyHint || "").trim();
+      if (normAuthKey(username) === "developer") {
+        companyForToken = "";
+      }
       await acquireCustomToken(username, pass, { companyId: companyForToken || null });
     } catch (err) {
       console.error("[erp-auth] login: issueAuthToken / acquireCustomToken uğursuz", err?.code, err?.message, err);
@@ -3439,6 +3471,7 @@ async function login(e) {
   if (!c) return alert("Şirkət tapılmadı.");
   doLoginWithCompany(c.id);
   } finally {
+    setLoginSubmitBusy(false);
     dismissGlobalLoadingUi();
   }
 }
