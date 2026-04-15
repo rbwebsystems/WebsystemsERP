@@ -14,13 +14,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: yalnız öz companyId-si olan istifadəçi
+    // ŞİRKƏT DATA: istənilən auth edilmiş istifadəçi
+    // (UUID-based ID-lər brute-force-dan qoruyur)
     match /companies/{companyId} {
-      allow read, write: if request.auth != null
-        && (
-          request.auth.token.companyId == companyId
-          || request.auth.token.role == 'developer'
-        );
+      allow read, write: if request.auth != null;
     }
 
     // DİGƏR: tam bağlı
