@@ -7284,3 +7284,13 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   color: #94a3b8;
   margin: 0;
 }
+
+/* Developer: şirkət Info modalı — meta istifadəçi cədvəli */
+.company-info-users-table {
+  max-height: 280px;
+  overflow: auto;
+}
+.company-info-users-table .company-info-reset-pw {
+  white-space: nowrap;
+  font-size: 0.72rem;
+}

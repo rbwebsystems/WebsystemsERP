@@ -116,10 +116,15 @@ const ERP_BUSY_AZ = {
   import: "İdxal olunur...",
   export: "İxrac olunur...",
   switchCompany: "Keçid edilir...",
+  resetPassword: "Sıfırlanır...",
+  passwordChange: "Şifrə yenilənir...",
 };
 
 /** Firebase `issueAuthToken` developer token ilə eyni olmalıdır — tenant Firestore path-ləri üçün deyil. */
 const ERP_DEV_SESSION_CID = "__developer__";
+
+/** Developer sıfırlama + məcburi şifrə dəyişmə axını üçün default şifrə (yalnız meta). */
+const ERP_DEFAULT_RESET_PASS = "1234";
 
 /**
  * Düyməni müvəqqəti məşğul göstər (modal / form submit).
@@ -398,6 +403,17 @@ async function erpNormalizeSessionForFirebaseClaims() {
 
 function normAuthKey(s) {
   return String(s || "").trim().toLowerCase();
+}
+
+async function erpHashPasswordPlain(p) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(p)));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function erpPasswordMatchesUser(plain, u) {
+  const inputHash = await erpHashPasswordPlain(plain);
+  const stored = String(u.pass || "");
+  return stored === String(plain) || stored === inputHash;
 }
 
 /** Firebase httpsCallable xətası — message/details düzgün göstərilsin. */
@@ -3738,6 +3754,109 @@ function finishPostAuthSession(data, opts) {
   checkSubscriptionStatus();
 }
 
+async function completeLoginAfterPasswordOk(u, loginPass, loginUsername) {
+  window.__pendingLogin = { u, pass: loginPass };
+  if (u.role === "developer") {
+    closeLoginModal();
+    if (useFirestore()) {
+      window.__pendingLogin = null;
+      meta.session = { companyId: ERP_DEV_SESSION_CID, userUid: u.uid };
+      saveMeta();
+      try {
+        const data = await loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.checking });
+        finishPostAuthSession(data, { logCompanyId: ERP_DEV_SESSION_CID });
+      } catch (err) {
+        console.warn("[erp-auth] developer panel yüklənməsi:", err);
+        finishPostAuthSession(loadCompanyDBSync(), { logCompanyId: ERP_DEV_SESSION_CID });
+      }
+      return;
+    }
+    const devCompany = meta.companies.find((x) => x.id === "devtest") || meta.companies[0];
+    if (!devCompany) return alert("Developer şirkəti tapılmadı.");
+    doLoginWithCompany(devCompany.id);
+    return;
+  }
+  const norm = (s) => (s == null || s === "" ? "" : String(s).trim().toLowerCase());
+  const companyFromUsername = getCompanyIdFromUsername(loginUsername);
+  if (companyFromUsername) {
+    const c = meta.companies.find((x) => norm(x.id) === norm(companyFromUsername));
+    if (!c) return alert("İstifadəçi adındakı şirkət tapılmadı (format: şirkətadı_ad, məs: baktel_rustamb).");
+    if (u.companyId != null && u.companyId !== "" && norm(u.companyId) !== norm(companyFromUsername)) {
+      return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
+    }
+    doLoginWithCompany(c.id);
+    return;
+  }
+  const companyIdFromUrl = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
+  if (!companyIdFromUrl) {
+    return alert("İstifadəçi adı şirkət_adı formatında olmalıdır (məs: baktel_rustamb) və ya keçid ünvanında ?company=ŞİRKƏT_ID göstərilməlidir.");
+  }
+  const urlCid = norm(companyIdFromUrl);
+  const userCid = norm(u.companyId);
+  if (userCid && urlCid && userCid !== urlCid) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
+  if (!userCid && meta.companies[0] && norm(meta.companies[0].id) !== urlCid) {
+    return alert("Bu şirkət üçün icazəniz yoxdur.");
+  }
+  const c = meta.companies.find((x) => norm(x.id) === urlCid);
+  if (!c) return alert("Şirkət tapılmadı.");
+  doLoginWithCompany(c.id);
+}
+
+function openForcedPasswordChangeModal(u, loginUsername) {
+  window.__forcedPwUserUid = u.uid;
+  window.__forcedPwLoginUsername = loginUsername;
+  closeLoginModal();
+  openModal(
+    `
+    <h2>Şifrəni dəyiş</h2>
+    <p class="text-muted" style="font-size:.85rem;line-height:1.45">Hazırkı şifrə ilə təsdiqləyin və yeni şifrə təyin edin (ən azı 4 simvol).</p>
+    <form class="form-stack" onsubmit="submitForcedPasswordChange(event)">
+      <label class="form-label">Hazırkı şifrə</label>
+      <input class="form-input" type="password" id="fp_cur" autocomplete="current-password" required />
+      <label class="form-label">Yeni şifrə</label>
+      <input class="form-input" type="password" id="fp_new" autocomplete="new-password" required minlength="4" />
+      <label class="form-label">Yeni şifrə (təkrar)</label>
+      <input class="form-input" type="password" id="fp_new2" autocomplete="new-password" required minlength="4" />
+      <div class="modal-footer" style="margin-top:12px;padding-bottom:0">
+        <button type="submit" class="btn-main">Şifrəni yenilə və davam et</button>
+      </div>
+    </form>
+  `,
+    { popup: true }
+  );
+  setTimeout(() => byId("fp_cur")?.focus(), 50);
+}
+
+async function submitForcedPasswordChange(ev) {
+  ev.preventDefault();
+  const uidRaw = window.__forcedPwUserUid;
+  const loginUsername = window.__forcedPwLoginUsername;
+  const u = (meta.users || []).find((x) => String(x.uid) === String(uidRaw));
+  if (!u) return alert("İstifadəçi tapılmadı.");
+  const cur = val("fp_cur");
+  const n1 = val("fp_new");
+  const n2 = val("fp_new2");
+  if (!cur || !n1 || !n2) return alert("Bütün sahələri doldurun.");
+  if (!(await erpPasswordMatchesUser(cur, u))) return alert("Hazırkı şifrə yanlışdır.");
+  if (String(n1).length < 4) return alert("Yeni şifrə ən azı 4 simvol olmalıdır.");
+  if (n1 !== n2) return alert("Yeni şifrələr uyğun gəlmir.");
+  const form = ev.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  erpSetButtonBusy(submitBtn, true, ERP_BUSY_AZ.passwordChange);
+  try {
+    u.pass = await erpHashPasswordPlain(n1);
+    u.mustChangePassword = false;
+    saveMeta(ERP_BUSY_AZ.passwordChange);
+    window.__forcedPwUserUid = null;
+    window.__forcedPwLoginUsername = null;
+    closeMdl();
+    toast("Şifrə yeniləndi", "ok", 3200);
+    await completeLoginAfterPasswordOk(u, n1, loginUsername);
+  } finally {
+    erpSetButtonBusy(submitBtn, false);
+  }
+}
+
 function doLoginWithCompany(companyId) {
   const pending = window.__pendingLogin;
   if (!pending) return;
@@ -3834,54 +3953,17 @@ async function login(e) {
 
   // Offline mode: Cloud Function yoxdursa, yerli yoxlama (hash və ya plain-text)
   if (!useFirestore()) {
-    const hashPass = async (p) => {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(p)));
-      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-    };
-    const inputHash = await hashPass(pass);
+    const inputHash = await erpHashPasswordPlain(pass);
     const stored = String(u.pass || "");
     if (stored !== pass && stored !== inputHash) return alert("Şifrə yanlışdır.");
   }
 
-  window.__pendingLogin = { u, pass };
-  if (u.role === "developer") {
-    closeLoginModal();
-    if (useFirestore()) {
-      window.__pendingLogin = null;
-      meta.session = { companyId: ERP_DEV_SESSION_CID, userUid: u.uid };
-      saveMeta();
-      try {
-        const data = await loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.checking });
-        finishPostAuthSession(data, { logCompanyId: ERP_DEV_SESSION_CID });
-      } catch (err) {
-        console.warn("[erp-auth] developer panel yüklənməsi:", err);
-        finishPostAuthSession(loadCompanyDBSync(), { logCompanyId: ERP_DEV_SESSION_CID });
-      }
-      return;
-    }
-    const devCompany = meta.companies.find((x) => x.id === "devtest") || meta.companies[0];
-    if (!devCompany) return alert("Developer şirkəti tapılmadı.");
-    doLoginWithCompany(devCompany.id);
+  if (u.mustChangePassword === true && u.role !== "developer") {
+    openForcedPasswordChangeModal(u, username);
     return;
   }
-  const norm = (s) => (s == null || s === "" ? "" : String(s).trim().toLowerCase());
-  const companyFromUsername = getCompanyIdFromUsername(username);
-  if (companyFromUsername) {
-    const c = meta.companies.find((x) => norm(x.id) === norm(companyFromUsername));
-    if (!c) return alert("İstifadəçi adındakı şirkət tapılmadı (format: şirkətadı_ad, məs: baktel_rustamb).");
-    if (u.companyId != null && u.companyId !== "" && norm(u.companyId) !== norm(companyFromUsername)) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
-    doLoginWithCompany(c.id);
-    return;
-  }
-  const companyIdFromUrl = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
-  if (!companyIdFromUrl) return alert("İstifadəçi adı şirkət_adı formatında olmalıdır (məs: baktel_rustamb) və ya keçid ünvanında ?company=ŞİRKƏT_ID göstərilməlidir.");
-  const urlCid = norm(companyIdFromUrl);
-  const userCid = norm(u.companyId);
-  if (userCid && urlCid && userCid !== urlCid) return alert("Bu istifadəçi yalnız öz şirkətinə daxil ola bilər.");
-  if (!userCid && meta.companies[0] && norm(meta.companies[0].id) !== urlCid) return alert("Bu şirkət üçün icazəniz yoxdur.");
-  const c = meta.companies.find((x) => norm(x.id) === urlCid);
-  if (!c) return alert("Şirkət tapılmadı.");
-  doLoginWithCompany(c.id);
+
+  await completeLoginAfterPasswordOk(u, pass, username);
   } finally {
     setLoginSubmitBusy(false);
     dismissGlobalLoadingUi();
@@ -10689,6 +10771,45 @@ function deleteCompanyPayment(idx, month) {
   });
 }
 
+/** `config/meta.users` — `companyId` uyğunluğu (tenant DB oxunmur). */
+function usersForCompanyMeta(companyId) {
+  const cid = normAuthKey(companyId);
+  if (!cid) return [];
+  return (meta.users || []).filter(
+    (u) => u && normAuthKey(u.companyId) === cid && normAuthKey(u.role || "") !== "developer"
+  );
+}
+
+async function resetCompanyUserPassword(btn, companyIdx, userUid) {
+  if (!isDeveloper()) return;
+  const uidStr =
+    userUid != null && String(userUid) !== ""
+      ? String(userUid)
+      : String(btn?.getAttribute("data-user-uid") || "");
+  if (!uidStr) return;
+  const c = meta.companies[companyIdx];
+  if (!c) return;
+  const u = meta.users.find((x) => String(x.uid) === uidStr);
+  if (!u) return alert("İstifadəçi tapılmadı.");
+  if (normAuthKey(u.companyId) !== normAuthKey(c.id)) return alert("Bu istifadəçi seçilmiş şirkətə aid deyil.");
+  const ok = await appConfirm(
+    `Bu istifadəçinin (${escapeHtml(u.username)}) şifrəsi ${ERP_DEFAULT_RESET_PASS} olaraq sıfırlansın?`
+  );
+  if (!ok) return;
+  erpSetButtonBusy(btn, true, ERP_BUSY_AZ.resetPassword);
+  try {
+    u.pass = ERP_DEFAULT_RESET_PASS;
+    u.mustChangePassword = true;
+    u.passwordResetAt = Date.now();
+    saveMeta(ERP_BUSY_AZ.save);
+    toast(`Şifrə ${ERP_DEFAULT_RESET_PASS} olaraq sıfırlandı`, "ok", 4000);
+    toast("İstifadəçi növbəti girişdə şifrəsini dəyişməlidir", "warn", 5200);
+    openCompanyInfo(companyIdx);
+  } finally {
+    erpSetButtonBusy(btn, false);
+  }
+}
+
 function openCompanyInfo(idx) {
   const c = meta.companies[idx];
   if (!c) return;
@@ -10722,11 +10843,50 @@ function openCompanyInfo(idx) {
 
   const detailsBlock = `
     <div class="info-row"><div class="info-label">Şirkət adı</div><div class="info-value">${escapeHtml(c.name || "—")}</div></div>
+    <div class="info-row"><div class="info-label">Şirkət ID</div><div class="info-value"><code style="font-size:.85rem">${escapeHtml(c.id)}</code></div></div>
+    <div class="info-row"><div class="info-label">Status</div><div class="info-value">${
+      c.disabled ? '<span class="pill overdue">Deaktiv</span>' : '<span class="pill paid">Aktiv</span>'
+    }</div></div>
     ${c.director  ? `<div class="info-row"><div class="info-label">Direktor</div><div class="info-value">${escapeHtml(c.director)}</div></div>` : ""}
     ${c.voen      ? `<div class="info-row"><div class="info-label">VÖEN</div><div class="info-value">${escapeHtml(c.voen)}</div></div>` : ""}
     ${c.address   ? `<div class="info-row"><div class="info-label">Ünvan</div><div class="info-value">${escapeHtml(c.address)}</div></div>` : ""}
     ${c.requisites? `<div class="info-row"><div class="info-label">Rekvizitlər</div><div class="info-value" style="white-space:pre-line">${escapeHtml(c.requisites)}</div></div>` : ""}
   `;
+
+  const companyUsers = isDeveloper() ? usersForCompanyMeta(c.id) : [];
+  const userRowsHtml =
+    companyUsers.length > 0
+      ? companyUsers
+          .slice()
+          .sort((a, b) => String(a.username || "").localeCompare(String(b.username || "")))
+          .map((u) => {
+            const un = escapeHtml(u.username || "—");
+            const role = escapeHtml(u.role || "—");
+            const st = u.active ? '<span class="pill paid">Aktiv</span>' : '<span class="pill overdue">Passiv</span>';
+            const uidAttr = escapeAttr(String(u.uid));
+            return `<tr>
+            <td>${un}</td>
+            <td>${role}</td>
+            <td>${st}</td>
+            <td class="tbl-actions"><button type="button" class="btn-mini-pay company-info-reset-pw" data-user-uid="${uidAttr}" onclick="resetCompanyUserPassword(this,${idx})">Reset Password</button></td>
+          </tr>`;
+          })
+          .join("")
+      : `<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Bu şirkətə aid istifadəçi yoxdur (meta)</td></tr>`;
+
+  const usersCard = isDeveloper()
+    ? `<div class="form-card">
+        <div class="form-card-title">Şirkət istifadəçiləri</div>
+        <p class="text-muted" style="font-size:.8rem;line-height:1.45;margin:0 0 10px">Məlumat <b>config/meta</b> daxilindəki istifadəçi siyahısındandır; tenant bazası oxunmur.</p>
+        <p class="text-muted" style="font-size:.78rem;line-height:1.45;margin:0 0 12px"><b>Reset Password</b> sonrası default şifrə <b>${ERP_DEFAULT_RESET_PASS}</b> olur; istifadəçi növbəti girişdə şifrəsini dəyişməlidir.</p>
+        <div class="table-wrap company-info-users-table">
+          <table>
+            <thead><tr><th>İstifadəçi adı</th><th>Rol</th><th>Status</th><th></th></tr></thead>
+            <tbody>${userRowsHtml}</tbody>
+          </table>
+        </div>
+      </div>`
+    : "";
 
   openModal(`
     <h2>📋 ${escapeHtml(c.name)}</h2>
@@ -10735,6 +10895,7 @@ function openCompanyInfo(idx) {
         <div class="form-card-title">Şirkət məlumatları</div>
         <div class="info-block">${detailsBlock}</div>
       </div>
+      ${usersCard}
       <div class="form-card">
         <div class="form-card-title">Abunəlik məlumatı</div>
         <div class="info-block">${tariffBlock}</div>
@@ -15061,6 +15222,8 @@ Object.assign(window, {
   toggleSubFields,
   markCompanyPaid,
   openCompanyInfo,
+  resetCompanyUserPassword,
+  submitForcedPasswordChange,
   deleteCompanyPayment,
   restoreCompany,
   openSkins,
