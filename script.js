@@ -2957,6 +2957,7 @@ function ensureDevtestTenantSeed() {
     meta.companies.push({
       id: cid,
       name: "Dev Test Company",
+      active: true,
       createdAt: nowISODateTimeLocal(),
       sections: [],
     });
