@@ -14,9 +14,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: istənilən auth edilmiş istifadəçi
+    // ŞİRKƏT DATA: yalnız həmin şirkətin tokeni olan istifadəçi
     match /companies/{companyId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+        && (
+          request.auth.token.companyId == companyId
+          || request.auth.token.role == 'developer'
+        );
     }
 
     // DİGƏR: tam bağlı
