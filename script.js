@@ -170,18 +170,15 @@ function ensureFirestoreAuth() {
       firebase.auth().onAuthStateChanged(
         (user) => {
           if (user) {
-            user.getIdToken(true).then(() => finish(true)).catch(() => finish(true));
+            user
+              .getIdToken(true)
+              .then(() => finish(true))
+              .catch(() => finish(true));
             return;
           }
-          // anonymous sign-in
-          firebase
-            .auth()
-            .signInAnonymously()
-            .then(() => finish(true))
-            .catch((e) => {
-              console.warn("Anon auth xətası:", e);
-              finish(false);
-            });
+          // Anonymous auth söndürülüb: giriş yalnız custom token ilə (issueAuthToken)
+          console.warn("[erp-auth] Firebase istifadəçi yoxdur — anonim giriş edilmir.");
+          finish(false);
         },
         (e) => {
           console.warn("Auth state xətası:", e);
@@ -196,28 +193,72 @@ function ensureFirestoreAuth() {
   return firestoreAuthPromise;
 }
 
-// Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir
-async function acquireCustomToken(username, password) {
+/** Custom token girişindən sonra qısa diaqnostika (konsol). */
+async function logErpAuthDebug(tag) {
+  try {
+    const u = firebase.auth().currentUser;
+    if (!u) {
+      console.log(`[erp-auth] ${tag}: currentUser yoxdur`);
+      return;
+    }
+    const t2 = await u.getIdTokenResult(true);
+    console.log(`[erp-auth] ${tag}`, {
+      uid: u.uid,
+      isAnonymous: u.isAnonymous,
+      signInProvider: t2?.signInProvider,
+      companyId: t2?.claims?.companyId,
+      role: t2?.claims?.role,
+      erp_session: t2?.claims?.erp_session,
+    });
+  } catch (e) {
+    console.warn(`[erp-auth] ${tag} token oxuna bilmədi:`, e);
+  }
+}
+
+// Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir (boş olmamalı)
+async function acquireCustomToken(username, password, opts = {}) {
   if (!useFirestore() || !firestoreInitialized) return true;
   try {
     if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
+    const companyIdHint = String(opts.companyId ?? "").trim();
+    console.log("[erp-auth] issueAuthToken callable", {
+      username: String(username || "").slice(0, 2) + "***",
+      companyIdFromUI: companyIdHint || "(yox)",
+    });
+
+    const au = firebase.auth().currentUser;
+    if (au) {
+      await firebase.auth().signOut();
+    }
+
     const fn = firebase.app().functions("europe-west1").httpsCallable("issueAuthToken");
-    const result = await fn({ username, password });
-    const { token } = result.data;
+    const result = await fn({
+      username,
+      password,
+      companyId: companyIdHint || null,
+    });
+    const { token, companyId: companyIdFromFn } = result.data || {};
+    if (!token) throw new Error("Server token qaytarmadı.");
+
     const cred = await firebase.auth().signInWithCustomToken(token);
     await cred.user.getIdToken(true);
+    await logErpAuthDebug("post signInWithCustomToken");
+
+    const tr = await cred.user.getIdTokenResult(true);
+    const cid = String(tr?.claims?.companyId ?? "");
+    if (!cid) {
+      console.error("[erp-auth] Xəbərdarlıq: claims.companyId boşdur — Firestore qaydaları işləməyə bilər.");
+    }
+    if (companyIdFromFn && cid && companyIdFromFn !== cid) {
+      console.warn("[erp-auth] companyId uyğunsuzluğu (server vs token):", companyIdFromFn, cid);
+    }
+
     firestoreAuthReady = true;
     firestoreAuthPromise = null;
     return true;
   } catch (e) {
-    const code = e?.code || "";
-    if (code === "functions/unauthenticated" || code === "functions/invalid-argument" || code === "functions/not-found") {
-      throw e;
-    }
-    try {
-      if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
-    } catch (_) {}
-    firestoreAuthReady = true;
+    firestoreAuthReady = false;
+    firestoreAuthPromise = null;
     throw e;
   }
 }
@@ -258,6 +299,11 @@ async function loadMetaAsync() {
   if (!useFirestore()) return loadMetaSync();
   const ref = getMetaRef();
   if (!ref) return loadMetaSync();
+  const u = firebase.auth && firebase.auth().currentUser;
+  if (!u) {
+    console.warn("[erp-auth] loadMetaAsync: Firebase user yoxdur — yalnız lokal meta");
+    return loadMetaSync();
+  }
   try {
     const snap = await ref.get();
     if (snap.exists) {
@@ -282,6 +328,11 @@ async function loadCompanyDBAsync(opts) {
   if (useSoft) softLoadingBegin(true);
   try {
     if (!useFirestore()) return loadCompanyDBSync();
+    const u = firebase.auth && firebase.auth().currentUser;
+    if (!u) {
+      console.warn("[erp-auth] loadCompanyDBAsync: Firebase user yoxdur — yalnız lokal data");
+      return loadCompanyDBSync();
+    }
     const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
     const ref = getCompanyRef(cid);
     if (!ref) return loadCompanyDBSync();
@@ -306,8 +357,9 @@ async function loadCompanyDBAsync(opts) {
 function subscribeRealtime() {
   if (!useFirestore()) return;
   unsubscribeRealtime();
+  const authUser = firebase.auth && firebase.auth().currentUser;
   const metaRef = getMetaRef();
-  if (metaRef) {
+  if (metaRef && authUser) {
     firestoreUnsubMeta = metaRef.onSnapshot(
       (snap) => {
         if (snap.exists) {
@@ -325,21 +377,27 @@ function subscribeRealtime() {
       },
       (err) => console.warn("Firestore meta listener:", err)
     );
+  } else if (metaRef && !authUser) {
+    console.warn("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
   }
   const cid = meta?.session?.companyId;
   if (cid) {
-    const companyRef = getCompanyRef(cid);
-    if (companyRef) {
-      firestoreUnsubCompany = companyRef.onSnapshot(
-        (snap) => {
-          if (snap.exists) {
-            db = { ...defaultDB(), ...snap.data() };
-            renderAll();
-            if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
-          }
-        },
-        (err) => console.warn("Firestore company listener:", err)
-      );
+    if (!authUser) {
+      console.warn("[erp-auth] subscribeRealtime: company listener keçirildi (Firebase user yoxdur)");
+    } else {
+      const companyRef = getCompanyRef(cid);
+      if (companyRef) {
+        firestoreUnsubCompany = companyRef.onSnapshot(
+          (snap) => {
+            if (snap.exists) {
+              db = { ...defaultDB(), ...snap.data() };
+              renderAll();
+              if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
+            }
+          },
+          (err) => console.warn("Firestore company listener:", err)
+        );
+      }
     }
   }
 }
@@ -3088,7 +3146,8 @@ async function login(e) {
   // Server-tərəfdə autentifikasiya: Cloud Function şifrəni yoxlayır, custom token verir
   if (useFirestore()) {
     try {
-      await acquireCustomToken(username, pass);
+      const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
+      await acquireCustomToken(username, pass, { companyId: companyHint });
     } catch (err) {
       const msg = err?.details || err?.message || "Giriş xətası.";
       return alert(msg);
@@ -3161,6 +3220,15 @@ function logout() {
   if (headerClockInterval) {
     clearInterval(headerClockInterval);
     headerClockInterval = null;
+  }
+  if (useFirestore() && typeof firebase !== "undefined" && firebase.auth) {
+    firebase
+      .auth()
+      .signOut()
+      .then(() => logErpAuthDebug("logout signOut"))
+      .catch(() => {});
+    firestoreAuthReady = false;
+    firestoreAuthPromise = null;
   }
   meta.session = null;
   saveMeta();
@@ -14576,6 +14644,13 @@ async function init() {
     _pl.step("meta");
     meta = await loadMetaAsync();
     ensureMetaDefaults();
+    if (useFirestore() && meta.session && !(firebase.auth && firebase.auth().currentUser)) {
+      console.warn("[erp-auth] init: lokal sessiya sıfırlanır (Firebase custom auth yoxdur)");
+      meta.session = null;
+      try {
+        localStorage.setItem(META_KEY, JSON.stringify(meta));
+      } catch (_) {}
+    }
     if (useFirestore()) saveMeta();
 
     _pl.step("data");

@@ -251,13 +251,27 @@ function getCompanyIdFromUsernameServer(username) {
   return username.slice(0, idx).trim().toLowerCase();
 }
 
+const DEVELOPER_COMPANY_SENTINEL = "__developer__";
+
 export const issueAuthToken = onCall(
   { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
   async (request) => {
-    const { username, password } = request.data || {};
+    const { username, password, companyId: companyIdFromClient } = request.data || {};
     if (!username || !password) {
       throw new HttpsError("invalid-argument", "İstifadəçi adı və şifrə tələb olunur.");
     }
+
+    const norm = (s) => String(s || "").trim().toLowerCase();
+    const sanitizeUidPart = (s) =>
+      String(s || "x")
+        .replace(/[^a-zA-Z0-9_-]/g, "_")
+        .replace(/_{2,}/g, "_")
+        .slice(0, 72);
+
+    console.log("[issueAuthToken]", {
+      usernameNorm: norm(username),
+      companyIdFromClient: companyIdFromClient != null && companyIdFromClient !== "" ? String(companyIdFromClient) : "(yox)",
+    });
 
     // Admin SDK ilə meta oxu (Firestore Rules-u keçir)
     let metaData;
@@ -298,39 +312,64 @@ export const issueAuthToken = onCall(
 
     const isDev = user.role === "developer";
     const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "");
-    const norm = (s) => String(s || "").trim().toLowerCase();
 
     // Firestore document ID ilə exact uyğunluq üçün companies array-dən götür
     let matchedCompany = companies.find((c) => norm(c.id) === norm(rawId));
-    if (!matchedCompany && !rawId) matchedCompany = companies[0] || null;
-    if (!isDev && !matchedCompany) {
-      throw new HttpsError("not-found", "Şirkət tapılmadı.");
-    }
-    // Tokenə exact ID yazılır (Firestore doc path ilə eyni)
-    const exactCompanyId = isDev ? "" : String(matchedCompany?.id || "");
+    if (!matchedCompany && !rawId && isDev) matchedCompany = companies[0] || null;
 
-    const uid = String(user.uid || username);
+    const hintNorm = norm(companyIdFromClient);
+    if (hintNorm) {
+      const byHint = companies.find((c) => norm(c.id) === hintNorm);
+      if (!byHint) {
+        throw new HttpsError("not-found", "Seçilmiş şirkət (companyId) tapılmadı.");
+      }
+      if (!isDev) {
+        if (matchedCompany && norm(matchedCompany.id) !== hintNorm) {
+          throw new HttpsError("permission-denied", "Bu şirkət üçün giriş icazəsi yoxdur.");
+        }
+        matchedCompany = byHint;
+      }
+    }
+
+    if (!isDev && !matchedCompany) {
+      throw new HttpsError("not-found", "Şirkət tapılmadı (companyId boş və ya uyğunsuzdur).");
+    }
+
+    // Token claim: tenant üçün real şirkət id; developer üçün sentinel (heç vaxt boş string deyil)
+    const exactCompanyId = isDev ? DEVELOPER_COMPANY_SENTINEL : String(matchedCompany?.id || "").trim();
+    if (!exactCompanyId) {
+      throw new HttpsError("failed-precondition", "companyId token üçün müəyyən edilə bilmədi.");
+    }
+
+    const erpKey = sanitizeUidPart(user.uid != null ? String(user.uid) : String(username));
+    const compKey = sanitizeUidPart(isDev ? "dev" : exactCompanyId);
+    let firebaseUid = `tenant_${compKey}_${erpKey}`;
+    if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
+
+    const tokenRole = isDev ? "developer" : user.role === "admin" ? "admin" : "tenant";
     const claims = {
       erp_session: true,
-      role: user.role || "user",
+      role: tokenRole,
       companyId: exactCompanyId,
     };
 
     // İstifadəçini Firebase Auth-da yarat (yoxdursa)
     try {
-      await getAdminAuth().getUser(uid);
+      await getAdminAuth().getUser(firebaseUid);
     } catch (err) {
       if (err.code === "auth/user-not-found") {
-        await getAdminAuth().createUser({ uid });
+        await getAdminAuth().createUser({ uid: firebaseUid });
+      } else {
+        throw err;
       }
     }
 
-    // Claim-ləri PERMANENT et — token refresh-də itmir
-    await getAdminAuth().setCustomUserClaims(uid, claims);
+    await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
+    const customToken = await getAdminAuth().createCustomToken(firebaseUid, claims);
 
-    // İlkin sign-in üçün custom token (claim-lər artıq permanent)
-    const customToken = await getAdminAuth().createCustomToken(uid, claims);
-    return { token: customToken, companyId: exactCompanyId };
+    console.log("[issueAuthToken] ok", { firebaseUid, companyId: exactCompanyId, role: claims.role });
+
+    return { token: customToken, companyId: exactCompanyId, firebaseUid };
   }
 );
 
