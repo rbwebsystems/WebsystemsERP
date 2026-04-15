@@ -229,26 +229,6 @@ async function logErpAuthDebug(tag) {
   }
 }
 
-/** Login formundan əvvəl istifadəçi rolunu təxmin etmək (developer vs tenant callable). */
-function findUserForLoginAuth(username) {
-  const unameNorm = String(username || "").trim().toLowerCase();
-  if (!unameNorm) return null;
-  const pool = [];
-  const pushUnique = (arr) => {
-    for (const x of arr || []) {
-      if (x && !pool.includes(x)) pool.push(x);
-    }
-  };
-  pushUnique(meta?.users);
-  pushUnique(loadMetaSync().users);
-  let u = pool.find((x) => x.username === username);
-  if (!u) u = pool.find((x) => String(x.username || "").trim().toLowerCase() === unameNorm);
-  if (!u && unameNorm === "developer") {
-    u = pool.find((x) => x && x.active && x.role === "developer") || null;
-  }
-  return u || null;
-}
-
 /** Tenant Firestore şirkət məlumatı: yalnız role tenant + boş olmayan companyId. */
 async function erpTenantClaimsOkForCompany(companyId) {
   const u = firebase.auth && firebase.auth().currentUser;
@@ -290,33 +270,21 @@ function formatCallableError(err) {
 
   const code = String(err.code || "");
   if (code.includes("not-found"))
-    return "Cloud Function tapılmadı. issueDeveloperAuthToken və issueAuthToken deploy olunubmu?";
+    return "Cloud Function tapılmadı. issueAuthToken deploy olunubmu?";
   if (code.includes("internal") || code.includes("Internal"))
-    return "Server daxili xətası (mesaj gizlədilib). Firebase Console → Functions → issueAuthToken/issueDeveloperAuthToken → Logs; çox vaxt səbəb: service account üçün signBlob / Token Creator icazəsi və ya Auth Admin API.";
+    return "Server xətası (mesaj gizlədilib). Firebase Console → Functions → issueAuthToken → Logs. Çox vaxt: service account üçün signBlob / Token Creator icazəsi.";
   return msg || "Giriş xətası.";
 }
 
-function isDeveloperTokenRequiredError(err) {
-  const code = String(err?.code || "");
-  const msg = `${String(err?.message || "")} ${String(err?.details || "")}`;
-  return (
-    code.includes("failed-precondition") &&
-    (msg.includes("issueDeveloperAuthToken") || msg.includes("Developer hesabı"))
-  );
-}
-
-// Custom token — yalnız ERP tenant (issueAuthToken)
+// issueAuthToken: həm developer, həm tenant (server rolə görə ayırır)
 async function acquireCustomToken(username, password, opts = {}) {
   if (!useFirestore() || !firestoreInitialized) return true;
   try {
     if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
     const companyIdHint = String(opts.companyId ?? "").trim();
-    if (!companyIdHint) {
-      throw new Error("Şirkət ID daxil edin və ya URL-ə ?company= şirkət_id əlavə edin.");
-    }
-    console.log("[erp-auth] issueAuthToken (tenant) callable", {
+    console.log("[erp-auth] issueAuthToken callable", {
       username: String(username || "").slice(0, 2) + "***",
-      companyIdFromUI: companyIdHint,
+      companyIdFromUI: companyIdHint || "(yox — developer ola bilər)",
     });
 
     const au = firebase.auth().currentUser;
@@ -328,73 +296,30 @@ async function acquireCustomToken(username, password, opts = {}) {
     const result = await fn({
       username,
       password,
-      companyId: companyIdHint,
+      companyId: companyIdHint || null,
     });
     const { token, companyId: companyIdFromFn } = result.data || {};
     if (!token) throw new Error("Server token qaytarmadı.");
 
     const cred = await firebase.auth().signInWithCustomToken(token);
     await cred.user.getIdToken(true);
-    await logErpAuthDebug("post signInWithCustomToken (tenant)");
+    await logErpAuthDebug("post signInWithCustomToken");
 
     const tr = await cred.user.getIdTokenResult(true);
     const prov = String(tr?.signInProvider || "");
     const cid = String(tr?.claims?.companyId ?? "").trim();
     const role = String(tr?.claims?.role ?? "");
-    if (cred.user.isAnonymous || prov !== "custom" || !cid || role !== "tenant") {
-      console.error("[erp-auth] Tenant login yoxlaması uğursuz:", {
-        isAnonymous: cred.user.isAnonymous,
-        signInProvider: prov,
-        companyId: cid,
-        role,
-      });
+    if (cred.user.isAnonymous || prov !== "custom" || !cid) {
+      console.error("[erp-auth] Token yoxlaması uğursuz:", { isAnonymous: cred.user.isAnonymous, prov, companyId: cid, role });
       await firebase.auth().signOut();
-      throw new Error("Tenant token alınmadı (role və ya companyId uyğun deyil).");
+      throw new Error("Token alınmadı (custom auth və ya companyId).");
     }
-    if (companyIdFromFn && cid && companyIdFromFn !== cid) {
+    if (role !== "developer" && role !== "tenant") {
+      await firebase.auth().signOut();
+      throw new Error("Token rolu gözlənilmir (tenant və ya developer): " + role);
+    }
+    if (role === "tenant" && companyIdFromFn && cid && companyIdFromFn !== cid) {
       console.warn("[erp-auth] companyId uyğunsuzluğu (server vs token):", companyIdFromFn, cid);
-    }
-
-    firestoreAuthReady = true;
-    firestoreAuthPromise = null;
-    return true;
-  } catch (e) {
-    firestoreAuthReady = false;
-    firestoreAuthPromise = null;
-    throw e;
-  }
-}
-
-// Developer üçün ayrıca token (issueDeveloperAuthToken)
-async function acquireDeveloperCustomToken(username, password) {
-  if (!useFirestore() || !firestoreInitialized) return true;
-  try {
-    if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
-    console.log("[erp-auth] issueDeveloperAuthToken callable", {
-      username: String(username || "").slice(0, 2) + "***",
-    });
-
-    const au = firebase.auth().currentUser;
-    if (au) {
-      await firebase.auth().signOut();
-    }
-
-    const fn = firebase.app().functions("europe-west1").httpsCallable("issueDeveloperAuthToken");
-    const result = await fn({ username, password });
-    const { token } = result.data || {};
-    if (!token) throw new Error("Server developer token qaytarmadı.");
-
-    const cred = await firebase.auth().signInWithCustomToken(token);
-    await cred.user.getIdToken(true);
-    await logErpAuthDebug("post signInWithCustomToken (developer)");
-
-    const tr = await cred.user.getIdTokenResult(true);
-    const prov = String(tr?.signInProvider || "");
-    const role = String(tr?.claims?.role ?? "");
-    const cid = String(tr?.claims?.companyId || "").trim();
-    if (cred.user.isAnonymous || prov !== "custom" || role !== "developer" || !cid) {
-      await firebase.auth().signOut();
-      throw new Error("Developer token alınmadı.");
     }
 
     firestoreAuthReady = true;
@@ -3320,31 +3245,13 @@ async function login(e) {
     else localStorage.removeItem("loginRememberUsername");
   } catch {}
 
-  // Server-tərəfdə autentifikasiya: tenant → issueAuthToken; developer → issueDeveloperAuthToken
+  // Server: issueAuthToken — developer üçün companyId lazım deyil, tenant üçün lazımdır
   if (useFirestore()) {
     try {
-      const uAuth = findUserForLoginAuth(username);
-      if (uAuth?.role === "developer") {
-        await acquireDeveloperCustomToken(username, pass);
-      } else {
-        const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
-        const fromUserFmt = getCompanyIdFromUsername(username);
-        const companyForToken = (fromUserFmt || companyHint || "").trim();
-        if (!companyForToken) {
-          return alert(
-            "Şirkət ID lazımdır: istifadəçi adı şirkət_ad formatında olsun və ya ?company=ŞİRKƏT_ID / login sahəsində şirkət göstərin."
-          );
-        }
-        try {
-          await acquireCustomToken(username, pass, { companyId: companyForToken });
-        } catch (tenantErr) {
-          if (isDeveloperTokenRequiredError(tenantErr)) {
-            await acquireDeveloperCustomToken(username, pass);
-          } else {
-            throw tenantErr;
-          }
-        }
-      }
+      const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
+      const fromUserFmt = getCompanyIdFromUsername(username);
+      const companyForToken = (fromUserFmt || companyHint || "").trim();
+      await acquireCustomToken(username, pass, { companyId: companyForToken || null });
     } catch (err) {
       return alert(formatCallableError(err));
     }

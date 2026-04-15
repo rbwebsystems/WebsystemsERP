@@ -363,24 +363,33 @@ async function mintFirebaseCustomToken(firebaseUid, claims) {
   }
 }
 
-/** Yalnız ERP tenant (developer deyil): uid tenant_<companyId>, claim role tenant. */
+/** ERP giriş: developer və tenant eyni callable (ayrıca issueDeveloperAuthToken lazım deyil). */
 export const issueAuthToken = onCall(
   { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
   async (request) => {
     const { username, password, companyId: companyIdFromClient } = request.data || {};
-    const hint = String(companyIdFromClient || "").trim();
-    if (!hint) {
-      throw new HttpsError("invalid-argument", "companyId mütləqdir (məs. URL ?company= şirkət_id).");
-    }
+    const hint = String(companyIdFromClient ?? "").trim();
 
-    console.log("[issueAuthToken:tenant]", { usernameNorm: normAuth(username), companyIdFromClient: hint });
+    console.log("[issueAuthToken]", { usernameNorm: normAuth(username), companyIdFromClient: hint || "(yox)" });
 
     const { user, companies } = await verifyErpPassword(username, password);
+
     if (user.role === "developer") {
-      throw new HttpsError(
-        "failed-precondition",
-        "Developer hesabı üçün issueDeveloperAuthToken istifadə edin."
-      );
+      let firebaseUid = `developer_${sanitizeUidPart(username)}`;
+      if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
+      const claims = {
+        erp_session: true,
+        companyId: DEVELOPER_COMPANY_SENTINEL,
+        role: "developer",
+        erpRole: "developer",
+      };
+      const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
+      console.log("[issueAuthToken] developer ok", { firebaseUid });
+      return { token: customToken, companyId: DEVELOPER_COMPANY_SENTINEL, firebaseUid };
+    }
+
+    if (!hint) {
+      throw new HttpsError("invalid-argument", "Tenant üçün companyId mütləqdir (məs. URL ?company= şirkət_id).");
     }
 
     const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "");
@@ -411,38 +420,9 @@ export const issueAuthToken = onCall(
     };
 
     const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
-    console.log("[issueAuthToken:tenant] ok", { firebaseUid, companyId: exactCompanyId });
+    console.log("[issueAuthToken] tenant ok", { firebaseUid, companyId: exactCompanyId });
 
     return { token: customToken, companyId: exactCompanyId, firebaseUid };
-  }
-);
-
-/** Yalnız developer: uid developer_<username>, claim role developer (ERP tenant token ilə qarışmır). */
-export const issueDeveloperAuthToken = onCall(
-  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
-  async (request) => {
-    const { username, password } = request.data || {};
-    console.log("[issueDeveloperAuthToken]", { usernameNorm: normAuth(username) });
-
-    const { user } = await verifyErpPassword(username, password);
-    if (user.role !== "developer") {
-      throw new HttpsError("permission-denied", "Bu giriş yalnız developer hesabları üçündür.");
-    }
-
-    let firebaseUid = `developer_${sanitizeUidPart(username)}`;
-    if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
-
-    const claims = {
-      erp_session: true,
-      companyId: DEVELOPER_COMPANY_SENTINEL,
-      role: "developer",
-      erpRole: "developer",
-    };
-
-    const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
-    console.log("[issueDeveloperAuthToken] ok", { firebaseUid });
-
-    return { token: customToken, companyId: DEVELOPER_COMPANY_SENTINEL, firebaseUid };
   }
 );
 
