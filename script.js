@@ -196,10 +196,14 @@ function ensureFirestoreAuth() {
 // Custom token al: server-tərəfdə şifrə yoxlanır, companyId claim verilir
 async function acquireCustomToken(username, password) {
   if (!useFirestore() || !firestoreInitialized) return true;
+  console.log("[ERP Auth] başladı, firebase.functions:", typeof firebase.functions);
   try {
+    if (!firebase.functions) { console.warn("[ERP Auth] functions SDK yoxdur"); return false; }
     const fn = firebase.functions("europe-west1").httpsCallable("issueAuthToken");
+    console.log("[ERP Auth] Cloud Function çağırılır...");
     const result = await fn({ username, password });
-    const { token } = result.data;
+    const { token, companyId: retCid } = result.data;
+    console.log("[ERP Auth] Function cavab verdi, companyId:", retCid);
     const cred = await firebase.auth().signInWithCustomToken(token);
     const idTok = await cred.user.getIdTokenResult();
     console.log("[ERP Auth] Token claims:", JSON.stringify(idTok.claims));
@@ -207,17 +211,15 @@ async function acquireCustomToken(username, password) {
     firestoreAuthPromise = null;
     return true;
   } catch (e) {
+    console.error("[ERP Auth] Xəta:", e?.code, e?.message);
     const code = e?.code || "";
     if (code === "functions/unauthenticated" || code === "functions/invalid-argument") {
-      // Yanlış şifrə/istifadəçi — xəta mesajını qaldır
       throw e;
     }
-    // signInWithCustomToken anonim auth-u silə bilər — bərpa et
     try {
       if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
     } catch (_) {}
     firestoreAuthReady = true;
-    console.warn("Custom token xətası (degraded mode):", e);
     return false;
   }
 }
