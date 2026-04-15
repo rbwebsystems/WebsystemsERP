@@ -414,7 +414,7 @@ export const issueAuthToken = onCall(
     const allowImp = allowImpersonation === true;
     const usernameNorm = normAuth(username);
 
-    console.log("[issueAuthToken] giriş", {
+    console.log("[issueAuthToken] request payload", {
       usernameNorm,
       companyIdFromClient: hint || "(yox)",
       allowImpersonation: allowImp,
@@ -479,6 +479,10 @@ export const issueAuthToken = onCall(
     };
 
     if (isDeveloperErpUser) {
+      if (hint && !allowImp) {
+        console.warn("[issueAuthToken] developer + companyId bloklandı (allowImpersonation yoxdur)", { hint });
+        throw new HttpsError("permission-denied", "Developer şirkətə birbaşa daxil ola bilməz");
+      }
       if (hint && allowImp) {
         const hintNorm = normAuth(hint);
         const byHint = companies.find((c) => normAuth(c.id) === hintNorm);
@@ -493,9 +497,7 @@ export const issueAuthToken = onCall(
         console.log("[issueAuthToken] developer impersonation → tenant token", { exactCompanyId });
         return await mintTenantToken(exactCompanyId, "admin");
       }
-      if (hint && !allowImp) {
-        console.warn("[issueAuthToken] developer: companyIdFromClient ignore edilir (tenant token verilmir)", { hint });
-      }
+      console.log("[issueAuthToken] developer token (companyId göndərilməyib)");
       return await mintDeveloperToken();
     }
 

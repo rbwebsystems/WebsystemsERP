@@ -331,10 +331,14 @@ async function acquireCustomToken(username, password, opts = {}) {
       password,
       companyId: companyIdHint || null,
     };
-    console.log("[erp-auth] issueAuthToken: request", {
+    if (opts.allowImpersonation === true) {
+      payload.allowImpersonation = true;
+    }
+    console.log("[erp-auth] issueAuthToken: request payload", {
       functionsRegion,
-      usernamePreview: String(username || "").slice(0, 2) + "***",
+      usernameNorm: normAuthKey(username),
       companyId: payload.companyId,
+      allowImpersonation: payload.allowImpersonation === true,
     });
 
     const au = firebase.auth().currentUser;
@@ -3403,7 +3407,9 @@ async function login(e) {
       const companyHint = (window.__loginCompanyFromUrl || val("loginCompany") || "").trim();
       const fromUserFmt = getCompanyIdFromUsername(username);
       let companyForToken = (fromUserFmt || companyHint || "").trim();
-      if (normAuthKey(username) === "developer") {
+      const unLogin = normAuthKey(username);
+      const metaUser = (meta?.users || []).find((u) => normAuthKey(u.username) === unLogin);
+      if (unLogin === "developer" || (metaUser && normAuthKey(metaUser.role || "") === "developer")) {
         companyForToken = "";
       }
       await acquireCustomToken(username, pass, { companyId: companyForToken || null });
