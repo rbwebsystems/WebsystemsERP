@@ -98,10 +98,69 @@ function setLoading(text) {
 
 let _softOpDepth = 0;
 let _softOpTimer = null;
+/** softLoadingBegin/End cütlükləri üçün mərkəz mətni (iç-içə əməliyyatlar). */
+const _softTextRestoreStack = [];
 
-/** Yumşaq yükləmə: səhifə mərkəzində kart; immediate=true dərhal; false ≈260ms (tez Firestore əməliyyatlarında parıltı az olsun). */
-function softLoadingBegin(immediate) {
+/** ERP: yumşaq yükləmə mətnləri (Az). */
+const ERP_BUSY_AZ = {
+  generic: "Yüklənir...",
+  login: "Daxil olunur...",
+  checking: "Yoxlanılır...",
+  logout: "Çıxış edilir...",
+  save: "Saxlanılır...",
+  refresh: "Yenilənir...",
+  delete: "Silinir...",
+  create: "Yaradılır...",
+  activate: "Aktiv edilir...",
+  deactivate: "Deaktiv edilir...",
+  import: "İdxal olunur...",
+  export: "İxrac olunur...",
+  switchCompany: "Keçid edilir...",
+};
+
+/** Firebase `issueAuthToken` developer token ilə eyni olmalıdır — tenant Firestore path-ləri üçün deyil. */
+const ERP_DEV_SESSION_CID = "__developer__";
+
+/**
+ * Düyməni müvəqqəti məşğul göstər (modal / form submit).
+ * textIdleHtml verilməsə, ilk busy anında innerHTML saxlanılır.
+ */
+function erpSetButtonBusy(btn, busy, textBusy, textIdleHtml) {
+  if (!btn || !(btn instanceof Element)) return;
+  if (busy) {
+    if (textIdleHtml != null) btn.dataset.erpIdleHtml = textIdleHtml;
+    else if (!btn.dataset.erpIdleHtml) btn.dataset.erpIdleHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add("erp-btn-busy");
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = textBusy || ERP_BUSY_AZ.generic;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove("erp-btn-busy");
+    btn.removeAttribute("aria-busy");
+    if (btn.dataset.erpIdleHtml) {
+      btn.innerHTML = btn.dataset.erpIdleHtml;
+      delete btn.dataset.erpIdleHtml;
+    }
+  }
+}
+
+const setButtonBusy = erpSetButtonBusy;
+function showBusyOverlay(immediate, message) {
+  softLoadingBegin(immediate !== false, message);
+}
+function hideBusyOverlay() {
+  softLoadingEnd();
+}
+
+/** Yumşaq yükləmə: səhifə mərkəzində kart; immediate=true dərhal; false ≈260ms. `message` — mərkəz mətni (Az). */
+function softLoadingBegin(immediate, message) {
   _softOpDepth++;
+  const t = byId("softLoadingCenterText");
+  if (t) {
+    _softTextRestoreStack.push(t.textContent);
+    if (message) t.textContent = message;
+  }
   if (_softOpDepth > 1) {
     if (immediate && _softOpTimer) {
       clearTimeout(_softOpTimer);
@@ -121,6 +180,10 @@ function softLoadingBegin(immediate) {
 
 function softLoadingEnd() {
   _softOpDepth = Math.max(0, _softOpDepth - 1);
+  const t = byId("softLoadingCenterText");
+  if (t && _softTextRestoreStack.length) {
+    t.textContent = _softTextRestoreStack.pop() || ERP_BUSY_AZ.generic;
+  }
   if (_softOpDepth > 0) return;
   if (_softOpTimer) {
     clearTimeout(_softOpTimer);
@@ -222,6 +285,15 @@ function ensureFirestoreAuth() {
                   finish(false);
                   return;
                 }
+                console.log("[erp-auth] onAuthStateChanged: claims hazır", {
+                  uid,
+                  role,
+                  companyId: cid || "(yox)",
+                  erp_session: tr.claims?.erp_session,
+                  erpRole: tr.claims?.erpRole,
+                  support_impersonation: tr.claims?.support_impersonation === true,
+                  flow: role === "developer" ? "developer_panel" : role === "tenant" ? "tenant" : "digər",
+                });
                 await user.getIdToken(true);
                 finish(true);
               } catch (_) {
@@ -262,23 +334,66 @@ async function logErpAuthDebug(tag) {
       signInProvider: t2?.signInProvider,
       companyId: t2?.claims?.companyId,
       role: t2?.claims?.role,
+      erpRole: t2?.claims?.erpRole,
       erp_session: t2?.claims?.erp_session,
+      support_impersonation: t2?.claims?.support_impersonation === true,
     });
   } catch (e) {
     console.warn(`[erp-auth] ${tag} token oxuna bilmədi:`, e);
   }
 }
 
-/** Tenant Firestore şirkət məlumatı: yalnız role tenant + boş olmayan companyId. */
+/**
+ * Firestore `companies/{id}` listener/ref üçün: yalnız tenant + claim.companyId uyğunluğu.
+ * Developer token tenant path-ə çıxış üçün true qaytarmır (support_impersonation tenant token ilə gəlir).
+ */
 async function erpTenantClaimsOkForCompany(companyId) {
   const u = erpFirebaseCurrentUser();
   if (!u) return false;
   const tr = await u.getIdTokenResult(true);
   const role = String(tr.claims?.role || "");
   const cid = String(tr.claims?.companyId || "").trim();
-  if (role === "developer") return true;
+  if (role === "developer") {
+    console.warn("[erp-auth] erpTenantClaimsOkForCompany: developer token — tenant şirkət path qadağandır", {
+      pathCompanyId: companyId,
+      claimCompanyId: cid,
+    });
+    return false;
+  }
   if (role !== "tenant" || !cid) return false;
+  if (normAuthKey(String(companyId || "")) === normAuthKey(ERP_DEV_SESSION_CID)) return false;
   return normAuthKey(cid) === normAuthKey(companyId);
+}
+
+/** Səhifə yenilənəndə JWT ilə lokal meta.session uyğunlaşdır (developer panel sentinel, tenant ↔ companyId). */
+async function erpNormalizeSessionForFirebaseClaims() {
+  if (!useFirestore() || !meta?.session || !erpFirebaseCurrentUser()) return;
+  try {
+    const tr = await erpFirebaseCurrentUser().getIdTokenResult(true);
+    const role = String(tr.claims?.role || "");
+    const cClaim = String(tr.claims?.companyId || "").trim();
+    const imp = tr.claims?.support_impersonation === true;
+    if (role === "developer" && !imp) {
+      if (normAuthKey(meta.session.companyId) !== normAuthKey(ERP_DEV_SESSION_CID)) {
+        console.log("[erp-auth] erpNormalizeSession: developer JWT — sessiya sentinelə çəkilir", {
+          əvvəlki: meta.session.companyId,
+        });
+        meta.session = { ...meta.session, companyId: ERP_DEV_SESSION_CID };
+        saveMeta();
+      }
+      return;
+    }
+    if (role === "tenant" && cClaim && normAuthKey(meta.session.companyId) !== normAuthKey(cClaim)) {
+      console.log("[erp-auth] erpNormalizeSession: tenant JWT — sessiya companyId claim ilə uyğunlaşdırıldı", {
+        əvvəlki: meta.session.companyId,
+        claim: cClaim,
+      });
+      meta.session = { ...meta.session, companyId: cClaim };
+      saveMeta();
+    }
+  } catch (e) {
+    console.warn("[erp-auth] erpNormalizeSessionForFirebaseClaims:", e);
+  }
 }
 
 function normAuthKey(s) {
@@ -418,6 +533,12 @@ async function acquireCustomToken(username, password, opts = {}) {
     if (role === "tenant" && companyIdFromFn && cid && companyIdFromFn !== cid) {
       console.warn("[erp-auth] companyId uyğunsuzluğu (server vs token):", companyIdFromFn, cid);
     }
+    console.log("[erp-auth] acquireCustomToken: JWT axını", {
+      role,
+      companyId: cid,
+      erp_session: tr.claims?.erp_session,
+      support_impersonation: tr.claims?.support_impersonation === true,
+    });
 
     firestoreAuthReady = true;
     firestoreAuthPromise = null;
@@ -501,7 +622,8 @@ async function loadMetaAsync() {
 
 async function loadCompanyDBAsync(opts) {
   const useSoft = !!(opts && opts.soft);
-  if (useSoft) softLoadingBegin(true);
+  const softMsg = opts && opts.softMessage;
+  if (useSoft) softLoadingBegin(true, softMsg || undefined);
   try {
     if (!useFirestore()) return loadCompanyDBSync();
     const u = erpFirebaseCurrentUser();
@@ -509,20 +631,28 @@ async function loadCompanyDBAsync(opts) {
       console.debug("[erp-auth] loadCompanyDBAsync: Firebase user yoxdur — yalnız lokal data");
       return loadCompanyDBSync();
     }
-    const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
-    const ref = getCompanyRef(cid);
-    if (!ref) return loadCompanyDBSync();
     try {
       const tr0 = await u.getIdTokenResult(true);
       const r0 = String(tr0.claims?.role || "");
       const c0 = String(tr0.claims?.companyId || "").trim();
+      if (r0 === "developer") {
+        console.log("[erp-auth] loadCompanyDBAsync: developer token — Firestore companies/ oxunmur (yalnız lokal panel datası)");
+        return loadCompanyDBSync();
+      }
+      const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
+      if (normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
+        console.log("[erp-auth] loadCompanyDBAsync: developer panel sessiyası — lokal");
+        return loadCompanyDBSync();
+      }
+      const ref = getCompanyRef(cid);
+      if (!ref) return loadCompanyDBSync();
       if (r0 === "tenant") {
         if (!c0 || normAuthKey(c0) !== normAuthKey(cid)) {
           console.warn("[erp-auth] loadCompanyDBAsync: tenant claim uyğun deyil — lokal data");
           return loadCompanyDBSync();
         }
-      } else if (r0 !== "developer") {
-        console.warn("[erp-auth] loadCompanyDBAsync: Firestore üçün role tenant/developer deyil — lokal data");
+      } else {
+        console.warn("[erp-auth] loadCompanyDBAsync: gözlənilməyən role — lokal data", r0);
         return loadCompanyDBSync();
       }
       const snap = await ref.get();
@@ -569,16 +699,21 @@ function subscribeRealtime() {
     console.debug("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
   }
   const cid = meta?.session?.companyId;
-  if (cid) {
+  if (cid && normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
+    console.log("[erp-auth] subscribeRealtime: developer panel — company listener qoşulmur", { path: `companies/${cid}` });
+  } else if (cid) {
     if (!authUser) {
       console.debug("[erp-auth] subscribeRealtime: company listener keçirildi (Firebase user yoxdur)");
     } else {
       void (async () => {
         const ok = await erpTenantClaimsOkForCompany(cid);
         if (!ok) {
-          console.warn("[erp-auth] subscribeRealtime: tenant/developer claim uyğun deyil — company listener yoxdur");
+          console.warn("[erp-auth] subscribeRealtime: tenant claim/path uyğunsuzluğu — company listener yoxdur", {
+            listenerPath: `companies/${cid}`,
+          });
           return;
         }
+        console.log("[erp-auth] subscribeRealtime: company listener qoşulur", { uid: authUser?.uid, listenerPath: `companies/${cid}` });
         const companyRef = getCompanyRef(cid);
         if (companyRef) {
           firestoreUnsubCompany = companyRef.onSnapshot(
@@ -619,12 +754,16 @@ async function refreshFromCloud(silent) {
     return;
   }
   const cid = meta.session.companyId;
+  if (normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
+    if (!silent) console.debug("[erp-auth] refreshFromCloud: developer panel — bulud şirkət yenilənməsi yoxdur");
+    return;
+  }
   const ref = getCompanyRef(cid);
   if (!ref) {
     if (!silent) toast("Firestore bağlantısı yoxdur", "err", 2500);
     return;
   }
-  if (!silent) softLoadingBegin(true);
+  if (!silent) softLoadingBegin(true, ERP_BUSY_AZ.refresh);
   try {
     const ok = await erpTenantClaimsOkForCompany(cid);
     if (!ok) {
@@ -869,12 +1008,17 @@ function saveCompanyDB(onDone) {
   const finish = () => {
     if (typeof onDone === "function") onDone();
   };
+  if (useFirestore() && normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
+    localStorage.setItem(companyDBKey(cid), JSON.stringify(db));
+    finish();
+    return;
+  }
   if (useFirestore()) {
     lastFirestoreWriteAt = Date.now();
     const ref = getCompanyRef(cid);
     if (ref) {
       const data = JSON.parse(JSON.stringify(db));
-      softLoadingBegin(true);
+      softLoadingBegin(true, ERP_BUSY_AZ.save);
       ref
         .set(data)
         .catch((e) => console.warn("Firestore company yazma xətası:", e))
@@ -2698,7 +2842,8 @@ function loadMeta() {
   }
 }
 
-function saveMeta() {
+/** `loadingMessage` — yalnız Firestore .set gözlənəndə mərkəz mətni (məs. aktiv/deaktiv). */
+function saveMeta(loadingMessage) {
   if (useFirestore()) {
     const ref = getMetaRef();
     if (ref) {
@@ -2714,7 +2859,7 @@ function saveMeta() {
       try {
         const { session, ...rest } = meta || {};
         const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
-        softLoadingBegin(true);
+        softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
         softBegan = true;
         ref
           .set(data)
@@ -3164,7 +3309,7 @@ function setLoginSubmitBusy(busy) {
     if (!btn.dataset.loginDefaultHtml) btn.dataset.loginDefaultHtml = btn.innerHTML;
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = 'Yoxlanılır... <span class="login-auth-busy-inline" aria-hidden="true"></span>';
+    btn.innerHTML = `${ERP_BUSY_AZ.login} <span class="login-auth-busy-inline" aria-hidden="true"></span>`;
     if (overlay) {
       overlay.classList.remove("hidden");
       overlay.setAttribute("aria-hidden", "false");
@@ -3344,47 +3489,54 @@ function closeLpMenu() {
   if (icon) icon.className = "fas fa-bars";
 }
 
+function finishPostAuthSession(data, opts) {
+  opts = opts || {};
+  if (useFirestore() && !erpFirebaseCurrentUser()) {
+    console.error("[erp-auth] finishPostAuthSession: Firebase user yoxdur — bulud sinxron dayandırılır");
+    dismissGlobalLoadingUi();
+    alert("Giriş tamamlanmadı (Firebase sessiya yoxdur). Səhifəni yeniləyib yenidən daxil olun.");
+    return;
+  }
+  dismissGlobalLoadingUi();
+  db = data;
+  unsubscribeRealtime();
+  subscribeRealtime();
+  startRealtimeAutoRefresh();
+  showLoginOverlay(false);
+  applyAccessUI();
+  const logCid = opts.logCompanyId != null ? opts.logCompanyId : meta?.session?.companyId;
+  logEvent("login", "auth", { companyId: logCid });
+  renderSidebarUser();
+  refreshHeaderBar();
+  renderAll();
+  showDashboardAfterLogin();
+  checkSubscriptionStatus();
+}
+
 function doLoginWithCompany(companyId) {
   const pending = window.__pendingLogin;
   if (!pending) return;
-  const { u, pass } = pending;
   window.__pendingLogin = null;
+  const { u, pass } = pending;
+  if (u.role === "developer" && useFirestore()) {
+    toast("Developer tenant şirkət sessiyası ilə daxil ola bilməz. İdarəetmə paneli üçün çıxıb yenidən developer ilə daxil olun.", "warn", 4200);
+    return;
+  }
   const c = meta.companies.find((x) => x.id === companyId);
   if (!c) return alert("Şirkət tapılmadı.");
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
-  const finishLoginUi = (data) => {
-    if (useFirestore() && !erpFirebaseCurrentUser()) {
-      console.error("[erp-auth] finishLoginUi: Firebase user yoxdur — bulud sinxron dayandırılır");
-      dismissGlobalLoadingUi();
-      alert("Giriş tamamlanmadı (Firebase sessiya yoxdur). Səhifəni yeniləyib yenidən daxil olun.");
-      return;
-    }
-    dismissGlobalLoadingUi();
-    db = data;
-    unsubscribeRealtime();
-    subscribeRealtime();
-    startRealtimeAutoRefresh();
-    showLoginOverlay(false);
-    applyAccessUI();
-    logEvent("login", "auth", { companyId: c.id });
-    renderSidebarUser();
-    refreshHeaderBar();
-    renderAll();
-    showDashboardAfterLogin();
-    checkSubscriptionStatus();
-  };
   if (useFirestore()) {
-    loadCompanyDBAsync({ soft: true })
-      .then((data) => finishLoginUi(data))
+    loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.switchCompany })
+      .then((data) => finishPostAuthSession(data, { logCompanyId: c.id }))
       .catch((err) => {
         console.warn("Giriş sonrası şirkət məlumatı:", err);
         dismissGlobalLoadingUi();
-        finishLoginUi(loadCompanyDBSync());
+        finishPostAuthSession(loadCompanyDBSync(), { logCompanyId: c.id });
       });
   } else {
     dismissGlobalLoadingUi();
-    finishLoginUi(loadCompanyDB());
+    finishPostAuthSession(loadCompanyDB(), { logCompanyId: c.id });
   }
 }
 
@@ -3452,9 +3604,22 @@ async function login(e) {
 
   window.__pendingLogin = { u, pass };
   if (u.role === "developer") {
+    closeLoginModal();
+    if (useFirestore()) {
+      window.__pendingLogin = null;
+      meta.session = { companyId: ERP_DEV_SESSION_CID, userUid: u.uid };
+      saveMeta();
+      try {
+        const data = await loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.checking });
+        finishPostAuthSession(data, { logCompanyId: ERP_DEV_SESSION_CID });
+      } catch (err) {
+        console.warn("[erp-auth] developer panel yüklənməsi:", err);
+        finishPostAuthSession(loadCompanyDBSync(), { logCompanyId: ERP_DEV_SESSION_CID });
+      }
+      return;
+    }
     const devCompany = meta.companies.find((x) => x.id === "devtest") || meta.companies[0];
     if (!devCompany) return alert("Developer şirkəti tapılmadı.");
-    closeLoginModal();
     doLoginWithCompany(devCompany.id);
     return;
   }
@@ -3489,38 +3654,42 @@ function logoutFromDisabled() {
   logout();
 }
 
-function logout() {
+async function logout() {
+  softLoadingBegin(true, ERP_BUSY_AZ.logout);
   try {
-    logEvent("logout", "auth", {});
-  } catch {}
-  if (realtimeAutoRefreshTimer) {
-    clearInterval(realtimeAutoRefreshTimer);
-    realtimeAutoRefreshTimer = null;
-  }
-  if (headerClockInterval) {
-    clearInterval(headerClockInterval);
-    headerClockInterval = null;
-  }
-  if (useFirestore() && typeof firebase !== "undefined" && firebase.auth) {
-    firebase
-      .auth()
-      .signOut()
-      .then(() => logErpAuthDebug("logout signOut"))
-      .catch(() => {});
-    firestoreAuthReady = false;
-    firestoreAuthPromise = null;
-  }
-  meta.session = null;
-  saveMeta();
-  closeMdl();
-  try {
-    if (location.hash && /^#\/[a-z0-9_]+$/i.test(location.hash)) {
-      history.replaceState(null, "", location.pathname + (location.search || ""));
+    try {
+      logEvent("logout", "auth", {});
+    } catch {}
+    if (realtimeAutoRefreshTimer) {
+      clearInterval(realtimeAutoRefreshTimer);
+      realtimeAutoRefreshTimer = null;
     }
-  } catch (e) {}
-  dismissGlobalLoadingUi();
-  showLoginOverlay(true);
-  applyAccessUI();
+    if (headerClockInterval) {
+      clearInterval(headerClockInterval);
+      headerClockInterval = null;
+    }
+    if (useFirestore() && typeof firebase !== "undefined" && firebase.auth) {
+      try {
+        await firebase.auth().signOut();
+        logErpAuthDebug("logout signOut");
+      } catch (_) {}
+      firestoreAuthReady = false;
+      firestoreAuthPromise = null;
+    }
+    meta.session = null;
+    saveMeta();
+    closeMdl();
+    try {
+      if (location.hash && /^#\/[a-z0-9_]+$/i.test(location.hash)) {
+        history.replaceState(null, "", location.pathname + (location.search || ""));
+      }
+    } catch (e) {}
+    dismissGlobalLoadingUi();
+    showLoginOverlay(true);
+    applyAccessUI();
+  } finally {
+    softLoadingEnd();
+  }
 }
 
 function n(v) {
@@ -5024,7 +5193,7 @@ function openCustImport() {
     const isCsv = /\.csv$/i.test(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
-      softLoadingBegin(true);
+      softLoadingBegin(true, ERP_BUSY_AZ.import);
       try {
       let rawRows = [];
       try {
@@ -10197,6 +10366,8 @@ function toggleSubFields(on) {
 function saveCompany(e, idx) {
   e.preventDefault();
   if (!isDeveloper()) return;
+  const form = e.target;
+  const submitBtn = form?.querySelector?.("button.btn-main[type='submit'], button[type='submit']");
   const name = val("co_name").trim();
   const sections = Array.from(document.querySelectorAll(".coSec"))
     .filter((x) => x.checked)
@@ -10216,17 +10387,22 @@ function saveCompany(e, idx) {
   const address    = val("co_address").trim();
   const requisites = (byId("co_requisites")?.value || "").trim();
 
-  if (idx === null) {
-    const id = val("co_id").trim().toLowerCase().replace(/\s+/g, "_");
-    if (!id) return alert("Şirkət ID-sini daxil edin.");
-    if (meta.companies.some(c => c.id === id)) return alert("Bu ID artıq mövcuddur. Başqa ID seçin.");
-    meta.companies.push({ id, name, director, voen, address, requisites, sections, subscription });
-  } else {
-    meta.companies[idx] = { ...meta.companies[idx], name, director, voen, address, requisites, sections, subscription };
+  try {
+    erpSetButtonBusy(submitBtn, true, idx === null ? ERP_BUSY_AZ.create : ERP_BUSY_AZ.save);
+    if (idx === null) {
+      const id = val("co_id").trim().toLowerCase().replace(/\s+/g, "_");
+      if (!id) return alert("Şirkət ID-sini daxil edin.");
+      if (meta.companies.some((c) => c.id === id)) return alert("Bu ID artıq mövcuddur. Başqa ID seçin.");
+      meta.companies.push({ id, name, director, voen, address, requisites, sections, subscription });
+    } else {
+      meta.companies[idx] = { ...meta.companies[idx], name, director, voen, address, requisites, sections, subscription };
+    }
+    saveMeta();
+    closeMdl();
+    renderAll();
+  } finally {
+    erpSetButtonBusy(submitBtn, false);
   }
-  saveMeta();
-  closeMdl();
-  renderAll();
 }
 
 function markCompanyPaid(idx) {
@@ -10346,7 +10522,7 @@ function restoreCompany(idx) {
   appConfirm(`"${c.name}" yenidən aktiv edilsin?`).then(ok => {
     if (!ok) return;
     meta.companies[idx].disabled = false;
-    saveMeta();
+    saveMeta(ERP_BUSY_AZ.activate);
     renderAll();
     toast(`${escapeHtml(c.name)} bərpa edildi`, "ok");
   });
@@ -10457,23 +10633,22 @@ function hideSubscriptionBlock() {
   });
 }
 
-function useCompany(companyId) {
+async function useCompany(companyId) {
   if (!isDeveloper()) return alert("İcazə yoxdur.");
   const c = meta.companies.find((x) => x.id === companyId);
   if (!c) return;
+  if (useFirestore()) {
+    toast(
+      "Bulud rejimində «Seç» tenant şirkətinə keçid etmir. Tenant məlumatına tenant hesabı ilə daxil olun; developer üçün şirkət siyahısı yalnız idarəetmədir (support/impersonation ayrıca token tələb edir).",
+      "warn",
+      5000
+    );
+    return;
+  }
   meta.session.companyId = c.id;
   saveMeta();
-  if (useFirestore()) {
-    loadCompanyDBAsync({ soft: true }).then((data) => {
-      db = data;
-      unsubscribeRealtime();
-      subscribeRealtime();
-      renderAll();
-    });
-  } else {
-    db = loadCompanyDB();
-    renderAll();
-  }
+  db = loadCompanyDB();
+  renderAll();
 }
 
 function delCompany(idx) {
@@ -10482,23 +10657,28 @@ function delCompany(idx) {
   if (!c) return;
   if (!c.disabled) {
     // First action: deactivate
-    appConfirm(`"${c.name}" deaktiv edilsin? (məlumatlar qalacaq, login bloklanacaq)`).then(ok => {
+    appConfirm(`"${c.name}" deaktiv edilsin? (məlumatlar qalacaq, login bloklanacaq)`).then((ok) => {
       if (!ok) return;
       meta.companies[idx].disabled = true;
-      saveMeta();
+      saveMeta(ERP_BUSY_AZ.deactivate);
       renderAll();
       toast(`${escapeHtml(c.name)} deaktiv edildi`, "warn");
     });
   } else {
     // Second action: permanent delete (only if already disabled)
-    appConfirmWithReason(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinəcək. Bu geri alına bilməz!`).then(deleteReason => {
+    appConfirmWithReason(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinəcək. Bu geri alına bilməz!`).then((deleteReason) => {
       if (!deleteReason) return;
       meta.companies.splice(idx, 1);
       if (meta.companies.length === 0) meta.companies.push({ id: "default", name: "Default" });
       if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
-        meta.session.companyId = meta.companies[0].id;
-        if (useFirestore()) loadCompanyDBAsync({ soft: true }).then((data) => { db = data; subscribeRealtime(); });
-        else db = loadCompanyDB();
+        meta.session.companyId =
+          isDeveloper() && useFirestore() ? ERP_DEV_SESSION_CID : meta.companies[0].id;
+        if (useFirestore()) {
+          loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.delete }).then((data) => {
+            db = data;
+            subscribeRealtime();
+          });
+        } else db = loadCompanyDB();
       }
       saveMeta();
       renderAll();
@@ -10512,13 +10692,16 @@ function resetCompanyData() {
   if (!userCanReset()) return alert("Reset icazəsi yoxdur.");
   const cid = meta?.session?.companyId;
   if (!cid) return;
+  if (normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
+    return alert("İdarəetmə paneli üçün şirkət datası sıfırlanmır.");
+  }
   appConfirm("Bu şirkətin bütün datası sıfırlansın?").then((ok) => {
     if (!ok) return;
     const empty = defaultDB();
     if (useFirestore()) {
       const ref = getCompanyRef(cid);
       if (ref) {
-        softLoadingBegin(false);
+        softLoadingBegin(false, ERP_BUSY_AZ.save);
         ref
           .set(empty)
           .then(() => {
@@ -11742,6 +11925,8 @@ function exportCompany() {
   if (!userCanExport()) return alert("Export icazəsi yoxdur.");
   const cid = meta?.session?.companyId;
   if (!cid) return;
+  softLoadingBegin(true, ERP_BUSY_AZ.export);
+  try {
   const payload = {
     _type: "bakfon-erp-backup",
     version: 1,
@@ -11756,12 +11941,16 @@ function exportCompany() {
   a.click();
   URL.revokeObjectURL(a.href);
   logEvent("export", "company", { companyId: cid });
+  } finally {
+    softLoadingEnd();
+  }
 }
 
 function importCompany(ev) {
   if (!userCanImport()) return alert("Import icazəsi yoxdur.");
   const f = ev.target.files?.[0];
   if (!f) return;
+  softLoadingBegin(true, ERP_BUSY_AZ.import);
   const r = new FileReader();
   r.onload = () => {
     try {
@@ -11769,20 +11958,32 @@ function importCompany(ev) {
       const incoming = isPlainObject(parsed) && parsed._type === "bakfon-erp-backup" ? parsed.data : parsed; // köhnə export dəstəyi
       const check = validateCompanyDBShape(incoming);
       if (!check.ok) {
-        return alert(`Import dayandırıldı.\n\nXətalar:\n- ${check.errors.join("\n- ")}`);
+        alert(`Import dayandırıldı.\n\nXətalar:\n- ${check.errors.join("\n- ")}`);
+        softLoadingEnd();
+        return;
       }
-      appConfirm("Bu import cari şirkətin bütün məlumatını yenisi ilə əvəz edəcək.\n\nDavam edək?").then((ok) => {
-        if (!ok) return;
-        db = { ...defaultDB(), ...incoming };
-        saveDB();
-        logEvent("import", "company", { companyId: meta?.session?.companyId || "-" });
-        alert("Import olundu.");
-        renderAll();
-      });
+      appConfirm("Bu import cari şirkətin bütün məlumatını yenisi ilə əvəz edəcək.\n\nDavam edək?")
+        .then((ok) => {
+          try {
+            if (!ok) return;
+            db = { ...defaultDB(), ...incoming };
+            saveDB();
+            logEvent("import", "company", { companyId: meta?.session?.companyId || "-" });
+            alert("Import olundu.");
+            renderAll();
+          } finally {
+            softLoadingEnd();
+          }
+        })
+        .catch(() => {
+          softLoadingEnd();
+        });
     } catch {
       alert("JSON oxunmadı.");
+      softLoadingEnd();
     }
   };
+  r.onerror = () => softLoadingEnd();
   r.readAsText(f);
   ev.target.value = "";
 }
@@ -13740,6 +13941,10 @@ function renderAll() {
           const restoreBtn = (c.disabled && isDeveloper())
             ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et" style="color:#16a34a"><i class="fas fa-rotate-left"></i></button>`
             : `<span class="icon-btn-placeholder"></span>`;
+          const devFsNoTenantSwitch = isDeveloper() && useFirestore();
+          const selectCell = devFsNoTenantSwitch
+            ? `<span class="text-muted" style="font-size:.75rem" title="Tenant datasına yalnız support (impersonation) rejimində keçilir">—</span>`
+            : `<button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${(active || c.disabled) ? "disabled" : ""}>Seç</button>`;
           return `<tr style="${disabledStyle}">
             <td>${i + 1}</td>
             <td><b>${escapeHtml(c.name)}</b></td>
@@ -13747,7 +13952,7 @@ function renderAll() {
             <td>${activeBadge}</td>
             <td>${subBadge}</td>
             <td class="tbl-actions">
-              <button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${(active || c.disabled) ? "disabled" : ""}>Seç</button>
+              ${selectCell}
               <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
               ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="${c.disabled ? 'Tam sil' : 'Deaktiv et'}"><i class="fas fa-${c.disabled ? 'trash' : 'ban'}"></i></button>` : ""}
               ${restoreBtn}
@@ -14876,6 +15081,7 @@ function hideLoading() {
     _softOpTimer = null;
   }
   _softOpDepth = 0;
+  _softTextRestoreStack.length = 0;
   byId("softLoadingCenter")?.classList.add("hidden");
 }
 
@@ -14934,6 +15140,9 @@ async function init() {
     _pl.step("meta");
     meta = await loadMetaAsync();
     ensureMetaDefaults();
+    if (useFirestore() && meta.session && erpFirebaseCurrentUser()) {
+      await erpNormalizeSessionForFirebaseClaims();
+    }
     if (useFirestore() && meta.session && !erpFirebaseCurrentUser()) {
       console.warn("[erp-auth] init: lokal sessiya sıfırlanır (Firebase custom auth yoxdur)");
       meta.session = null;
@@ -14989,6 +15198,7 @@ function startRealtimeAutoRefresh() {
   if (realtimeAutoRefreshTimer) clearInterval(realtimeAutoRefreshTimer);
   realtimeAutoRefreshTimer = null;
   if (!useFirestore() || !meta?.session?.companyId) return;
+  if (normAuthKey(String(meta.session.companyId)) === normAuthKey(ERP_DEV_SESSION_CID)) return;
   if (!erpFirebaseCurrentUser()) {
     console.debug("[erp-auth] startRealtimeAutoRefresh: atlandı (Firebase user yoxdur)");
     return;

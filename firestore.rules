@@ -22,16 +22,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: tam izolasiya (şirkət sənədi + alt kolleksiyalar)
+    // ŞİRKƏT DATA: yalnız tenant + token-dakı companyId ilə uyğun path (developer token buraya girmir)
     match /companies/{companyId}/{document=**} {
       allow read, write: if request.auth != null
         && request.auth.token.erp_session == true
+        && request.auth.token.role == 'tenant'
         && request.auth.token.companyId is string
         && request.auth.token.companyId != ""
-        && (
-          request.auth.token.companyId == companyId
-          || request.auth.token.role == 'developer'
-        );
+        && request.auth.token.companyId == companyId;
     }
 
     // DİGƏR: tam bağlı

@@ -449,7 +449,8 @@ export const issueAuthToken = onCall(
       return { token: customToken, companyId: DEVELOPER_COMPANY_SENTINEL, firebaseUid };
     };
 
-    const mintTenantToken = async (exactCompanyId, erpRoleClaim) => {
+    const mintTenantToken = async (exactCompanyId, erpRoleClaim, opts = {}) => {
+      const supportImpersonation = opts.supportImpersonation === true;
       const uidPart = sanitizeUidPart(exactCompanyId);
       if (!uidPart) {
         console.error("[issueAuthToken] UID üçün companyId sanitize boş", { exactCompanyId });
@@ -462,6 +463,7 @@ export const issueAuthToken = onCall(
         role: "tenant",
         erp_session: true,
         erpRole: erpRoleClaim === "admin" ? "admin" : "user",
+        ...(supportImpersonation ? { support_impersonation: true } : {}),
       };
       console.log("[issueAuthToken] createCustomToken əvvəl (tenant)", {
         login: usernameNorm,
@@ -495,7 +497,7 @@ export const issueAuthToken = onCall(
           throw new HttpsError("failed-precondition", "companyId tapılmadı");
         }
         console.log("[issueAuthToken] developer impersonation → tenant token", { exactCompanyId });
-        return await mintTenantToken(exactCompanyId, "admin");
+        return await mintTenantToken(exactCompanyId, "admin", { supportImpersonation: true });
       }
       console.log("[issueAuthToken] developer token (companyId göndərilməyib)");
       return await mintDeveloperToken();

@@ -3893,6 +3893,15 @@ body.landing-login-open .lp-aurora{
   box-shadow:0 1px 3px rgba(0,0,0,.18);font-size:.875rem;letter-spacing:.01em;
 }
 .btn-main:hover{background:var(--accent-hover);box-shadow:0 3px 8px rgba(0,0,0,.18);}
+/* ERP: async əməliyyat zamanı düymə — təkrar klik və “donmuş” hiss */
+button.erp-btn-busy,
+.btn-main.erp-btn-busy,
+.btn-cancel.erp-btn-busy{
+  opacity:.76;
+  pointer-events:none;
+  cursor:not-allowed;
+  filter:saturate(.92);
+}
 .btn-cancel{
   background:#f3f4f6;color:#374151;border:1px solid var(--border-color);height:38px;padding:0 16px;border-radius:var(--btn-radius);
   font-weight:600;cursor:pointer;display:inline-flex;align-items:center;
