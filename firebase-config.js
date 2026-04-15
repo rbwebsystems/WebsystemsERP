@@ -10,5 +10,7 @@ var FIREBASE_CONFIG = {
   storageBucket: "rbwebsystems-d2da2.firebasestorage.app",
   messagingSenderId: "148404762518",
   appId: "1:148404762518:web:55fbc2b88de4cbb91c4fb7",
-  measurementId: "G-FLSSQ8QQ8K"
+  measurementId: "G-FLSSQ8QQ8K",
+  /** Callable `issueAuthToken` regionu — functions/index.js-dəki onCall region ilə eyni olmalıdır. */
+  functionsRegion: "europe-west1",
 };

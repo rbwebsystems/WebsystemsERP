@@ -33,11 +33,24 @@ let meta = defaultMeta();
 let db = defaultDB();
 
 const useFirestore = () => typeof FIREBASE_CONFIG !== "undefined" && FIREBASE_CONFIG && typeof firebase !== "undefined";
+
+/** `issueAuthToken` və digər HTTPS callable-lar üçün region (default SDK: us-central1). */
+function getErpFunctionsRegion() {
+  try {
+    const r = typeof FIREBASE_CONFIG !== "undefined" && FIREBASE_CONFIG && FIREBASE_CONFIG.functionsRegion;
+    const s = String(r || "europe-west1").trim();
+    return s || "europe-west1";
+  } catch (_) {
+    return "europe-west1";
+  }
+}
 let firestoreUnsubMeta = null;
 let firestoreUnsubCompany = null;
 let firestoreInitialized = false;
 let firestoreAuthReady = false;
 let firestoreAuthPromise = null;
+/** >0: issueAuthToken + signInWithCustomToken arasında global listener tələsik signOut etməsin. */
+let erpAcquireCustomTokenDepth = 0;
 
 // ── Premium Preloader ──────────────────────────────
 const _pl = {
@@ -172,10 +185,26 @@ function ensureFirestoreAuth() {
           if (user) {
             void (async () => {
               try {
-                const tr = await user.getIdTokenResult(true);
-                const uid = String(user.uid || "");
-                const role = String(tr.claims?.role || "");
-                const cid = String(tr.claims?.companyId || "").trim();
+                if (erpAcquireCustomTokenDepth > 0) {
+                  try {
+                    await user.getIdToken(true);
+                  } catch (_) {}
+                  return;
+                }
+
+                let tr = await user.getIdTokenResult(true);
+                let uid = String(user.uid || "");
+                let role = String(tr.claims?.role || "");
+                let cid = String(tr.claims?.companyId || "").trim();
+
+                for (let i = 0; i < 12 && uid !== "1" && role === "developer" && !cid; i++) {
+                  if (firebase.auth().currentUser !== user) return;
+                  await new Promise((r) => setTimeout(r, 100));
+                  tr = await user.getIdTokenResult(true);
+                  role = String(tr.claims?.role || "");
+                  cid = String(tr.claims?.companyId || "").trim();
+                }
+
                 if (uid === "1" || (role === "developer" && !cid)) {
                   console.warn("[erp-auth] Köhnə/etibarsız Firebase sessiya (uid=1 və ya developer+bos claim) — signOut");
                   await firebase.auth().signOut();
@@ -279,10 +308,13 @@ function formatCallableError(err) {
 // issueAuthToken: həm developer, həm tenant (server rolə görə ayırır)
 async function acquireCustomToken(username, password, opts = {}) {
   if (!useFirestore() || !firestoreInitialized) return true;
+  erpAcquireCustomTokenDepth++;
   try {
     if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
     const companyIdHint = String(opts.companyId ?? "").trim();
+    const functionsRegion = getErpFunctionsRegion();
     console.log("[erp-auth] issueAuthToken callable", {
+      functionsRegion,
       username: String(username || "").slice(0, 2) + "***",
       companyIdFromUI: companyIdHint || "(yox — developer ola bilər)",
     });
@@ -292,7 +324,7 @@ async function acquireCustomToken(username, password, opts = {}) {
       await firebase.auth().signOut();
     }
 
-    const fn = firebase.app().functions("europe-west1").httpsCallable("issueAuthToken");
+    const fn = firebase.app().functions(functionsRegion).httpsCallable("issueAuthToken");
     const result = await fn({
       username,
       password,
@@ -356,6 +388,8 @@ async function acquireCustomToken(username, password, opts = {}) {
     firestoreAuthReady = false;
     firestoreAuthPromise = null;
     throw e;
+  } finally {
+    erpAcquireCustomTokenDepth--;
   }
 }
 
