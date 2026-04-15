@@ -3108,6 +3108,7 @@ async function login(e) {
   if (u.pass !== pass) return alert("Şifrə yanlışdır.");
 
   // Server-tərəfdə autentifikasiya: custom token al
+  console.log("[ERP Auth] login() çağırıldı, useFirestore:", useFirestore(), "firestoreInitialized:", firestoreInitialized);
   if (useFirestore()) {
     try {
       await acquireCustomToken(username, pass);
