@@ -251,7 +251,7 @@ function getCompanyIdFromUsernameServer(username) {
 }
 
 export const issueAuthToken = onCall(
-  { region: "europe-west1", cors: true },
+  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
   async (request) => {
     const { username, password } = request.data || {};
     if (!username || !password) {
