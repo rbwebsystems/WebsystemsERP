@@ -11071,12 +11071,22 @@ function delCompany(idx) {
     appConfirmWithReason(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinəcək. Bu geri alına bilməz!`).then((deleteReason) => {
       if (!deleteReason) return;
       meta.companies.splice(idx, 1);
-      if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
+      const sessCid = meta.session?.companyId;
+      const sessIsDevSentinel =
+        sessCid != null &&
+        String(sessCid).trim() !== "" &&
+        normAuthKey(sessCid) === normAuthKey(ERP_DEV_SESSION_CID);
+      // `__developer__` heç vaxt companies[] içində deyil — əks halda hər silinmədə "şirkət tapılmadı" kimi sessiya sıradan çıxarılırdı.
+      const sessionCompanyStillInList =
+        sessCid != null &&
+        String(sessCid).trim() !== "" &&
+        !sessIsDevSentinel &&
+        meta.companies.some((x) => normAuthKey(x.id) === normAuthKey(sessCid));
+      if (meta.session && !sessionCompanyStillInList) {
         if (meta.companies.length === 0) {
           meta.session = null;
         } else {
-          meta.session.companyId =
-            isDeveloper() && useFirestore() ? ERP_DEV_SESSION_CID : meta.companies[0].id;
+          meta.session.companyId = isDeveloper() ? ERP_DEV_SESSION_CID : meta.companies[0].id;
           if (useFirestore()) {
             loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.delete }).then((data) => {
               db = data;
