@@ -283,24 +283,26 @@ export const issueAuthToken = onCall(
     }
 
     const isDev = user.role === "developer";
-    let companyId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "").toLowerCase();
+    const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "");
+    const norm = (s) => String(s || "").trim().toLowerCase();
 
-    if (!isDev && !companyId) {
-      companyId = String(companies[0]?.id || "").toLowerCase();
+    // Firestore document ID ilə exact uyğunluq üçün companies array-dən götür
+    let matchedCompany = companies.find((c) => norm(c.id) === norm(rawId));
+    if (!matchedCompany && !rawId) matchedCompany = companies[0] || null;
+    if (!isDev && !matchedCompany) {
+      throw new HttpsError("not-found", "Şirkət tapılmadı.");
     }
-    if (!isDev && companyId) {
-      const exists = companies.some((c) => String(c.id || "").toLowerCase() === companyId);
-      if (!exists) throw new HttpsError("not-found", "Şirkət tapılmadı.");
-    }
+    // Tokenə exact ID yazılır (Firestore doc path ilə eyni)
+    const exactCompanyId = isDev ? "" : String(matchedCompany?.id || "");
 
     const claims = {
       erp_session: true,
       role: user.role || "user",
-      companyId: isDev ? "" : companyId,
+      companyId: exactCompanyId,
     };
 
     const customToken = await getAdminAuth().createCustomToken(String(user.uid || username), claims);
-    return { token: customToken, companyId: isDev ? "" : companyId };
+    return { token: customToken, companyId: exactCompanyId };
   }
 );
 

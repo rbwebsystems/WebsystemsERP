@@ -3091,14 +3091,15 @@ async function login(e) {
   // Server-tərəfdə autentifikasiya: custom token al
   if (useFirestore()) {
     try {
-      const ok = await acquireCustomToken(username, pass);
-      if (!ok) console.warn("Degraded mode: custom token alınmadı, anonim auth ilə davam edilir.");
+      await acquireCustomToken(username, pass);
     } catch (err) {
+      const code = err?.code || "";
       const msg = err?.details || err?.message || "";
-      if (msg.includes("tapılmadı") || msg.includes("yanlış") || msg.includes("deaktiv")) {
-        return alert(msg);
+      if (code === "functions/unauthenticated" || code === "functions/invalid-argument") {
+        return alert(msg || "Giriş xətası. İstifadəçi adı və ya şifrə yanlışdır.");
       }
-      console.warn("Custom token xətası:", err);
+      // Şəbəkə/server xətası — davam et (degraded mode)
+      console.warn("Custom token xətası (degraded):", err);
     }
   }
 
