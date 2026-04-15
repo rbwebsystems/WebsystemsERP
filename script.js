@@ -2941,12 +2941,22 @@ const ERP_DEVTEST_COMPANY_ID = "devtest";
 const ERP_DEVTEST_USERNAME = "devtest";
 const ERP_DEVTEST_PASSWORD = "1234";
 
+/** Yalnız test: brauzer konsolundan `window.__ERP_ENABLE_DEVTEST_SEED = true` + səhifə yenilə. Production-da avtomatik şirkət/user seed olmaz. */
+function erpDevtestSeedEnabled() {
+  try {
+    return typeof window !== "undefined" && window.__ERP_ENABLE_DEVTEST_SEED === true;
+  } catch (_) {
+    return false;
+  }
+}
+
 /**
  * Test tenant: `config/meta`-da şirkət devtest + istifadəçi devtest (tenant girişi).
  * Duplikat şirkət/user yaratmır; mövcud user üçün companyId/rol düzəlişi.
  * Giriş: ?company=devtest və ya şirkət seçimi + istifadəçi adı devtest, şifrə 1234.
  */
 function ensureDevtestTenantSeed() {
+  if (!erpDevtestSeedEnabled()) return false;
   let dirty = false;
   const cid = ERP_DEVTEST_COMPANY_ID;
   const uname = ERP_DEVTEST_USERNAME;
@@ -3052,8 +3062,8 @@ function ensureDevtestTenantSeed() {
 }
 
 /**
- * Default şirkət/developer user və s. — `true` qaytarırsa, çağıran `saveMeta()` ilə buluda yazmalıdır.
- * Əvvəlki davranış: hər çağırışda saveMeta init/login-də köhnə lokal ilə buludu əzə bilərdi.
+ * Developer user defaultları və s. — şirkət siyahısı boş olsa avtomatik şirkət **əlavə edilmir** (əl ilə yaradılmalıdır).
+ * `true` qaytarırsa, çağıran `saveMeta()` ilə buluda yazmalıdır.
  */
 function ensureMetaDefaults() {
   let dirty = false;
@@ -3066,10 +3076,6 @@ function ensureMetaDefaults() {
     dirty = true;
   }
 
-  if (meta.companies.length === 0) {
-    meta.companies.push({ id: "bakfon", name: "Bakfon" });
-    dirty = true;
-  }
   const devIdx = meta.users.findIndex((u) => u.username === "developer");
   if (devIdx === -1) {
     meta.users.push({
@@ -10904,16 +10910,19 @@ function delCompany(idx) {
     appConfirmWithReason(`"${c.name}" bütün məlumatları ilə BİRLİKDƏ TAM silinəcək. Bu geri alına bilməz!`).then((deleteReason) => {
       if (!deleteReason) return;
       meta.companies.splice(idx, 1);
-      if (meta.companies.length === 0) meta.companies.push({ id: "default", name: "Default" });
       if (meta.session && !meta.companies.some((x) => x.id === meta.session.companyId)) {
-        meta.session.companyId =
-          isDeveloper() && useFirestore() ? ERP_DEV_SESSION_CID : meta.companies[0].id;
-        if (useFirestore()) {
-          loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.delete }).then((data) => {
-            db = data;
-            subscribeRealtime();
-          });
-        } else db = loadCompanyDB();
+        if (meta.companies.length === 0) {
+          meta.session = null;
+        } else {
+          meta.session.companyId =
+            isDeveloper() && useFirestore() ? ERP_DEV_SESSION_CID : meta.companies[0].id;
+          if (useFirestore()) {
+            loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.delete }).then((data) => {
+              db = data;
+              subscribeRealtime();
+            });
+          } else db = loadCompanyDB();
+        }
       }
       saveMeta();
       renderAll();
