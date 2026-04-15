@@ -2937,6 +2937,116 @@ function saveAdminMetaToCloud(loadingMessage) {
   saveMeta(loadingMessage);
 }
 
+const ERP_DEVTEST_COMPANY_ID = "devtest";
+const ERP_DEVTEST_USERNAME = "devtest";
+const ERP_DEVTEST_PASSWORD = "1234";
+
+/**
+ * Test tenant: `config/meta`-da şirkət devtest + istifadəçi devtest (tenant girişi).
+ * Duplikat şirkət/user yaratmır; mövcud user üçün companyId/rol düzəlişi.
+ * Giriş: ?company=devtest və ya şirkət seçimi + istifadəçi adı devtest, şifrə 1234.
+ */
+function ensureDevtestTenantSeed() {
+  let dirty = false;
+  const cid = ERP_DEVTEST_COMPANY_ID;
+  const uname = ERP_DEVTEST_USERNAME;
+  const pass = ERP_DEVTEST_PASSWORD;
+
+  let comp = (meta.companies || []).find((c) => normAuthKey(c?.id) === normAuthKey(cid));
+  if (!comp) {
+    meta.companies.push({
+      id: cid,
+      name: "Dev Test Company",
+      createdAt: nowISODateTimeLocal(),
+      sections: [],
+    });
+    dirty = true;
+    comp = meta.companies[meta.companies.length - 1];
+  } else {
+    if (String(comp.name || "") !== "Dev Test Company") {
+      comp.name = "Dev Test Company";
+      dirty = true;
+    }
+    if (comp.disabled) {
+      delete comp.disabled;
+      dirty = true;
+    }
+    if (!comp.createdAt) {
+      comp.createdAt = nowISODateTimeLocal();
+      dirty = true;
+    }
+  }
+
+  let u = (meta.users || []).find((x) => normAuthKey(x?.username) === normAuthKey(uname));
+  if (!u) {
+    meta.users.push({
+      uid: genId(meta.users, 1),
+      username: uname,
+      pass,
+      fullName: "Dev Test Tenant",
+      role: "admin",
+      active: true,
+      companyId: cid,
+      perms: {
+        sections: ["*"],
+        canEdit: true,
+        canPay: true,
+        canRefund: true,
+        canDelete: true,
+        canExport: true,
+        canImport: true,
+        canReset: true,
+        actions: {},
+      },
+      createdAt: nowISODateTimeLocal(),
+    });
+    dirty = true;
+  } else {
+    if (normAuthKey(String(u.companyId || "")) !== normAuthKey(cid)) {
+      u.companyId = cid;
+      dirty = true;
+    }
+    if (String(u.role || "") !== "admin") {
+      u.role = "admin";
+      dirty = true;
+    }
+    if (u.active === false) {
+      u.active = true;
+      dirty = true;
+    }
+    if (!u.perms) {
+      u.perms = {
+        sections: ["*"],
+        canEdit: true,
+        canPay: true,
+        canRefund: true,
+        canDelete: true,
+        canExport: true,
+        canImport: true,
+        canReset: true,
+        actions: {},
+      };
+      dirty = true;
+    }
+  }
+
+  const ready =
+    (meta.companies || []).some((c) => normAuthKey(c?.id) === normAuthKey(cid)) &&
+    (meta.users || []).some((x) => normAuthKey(x?.username) === normAuthKey(uname));
+  if (ready && !window.__erpDevtestLoginHintLogged) {
+    window.__erpDevtestLoginHintLogged = true;
+    console.log(
+      "%cdevtest istifadəçisi hazırdır",
+      "color:#166534;font-weight:700;font-size:13px"
+    );
+    console.log("username:", uname);
+    console.log("password:", pass);
+    console.log("şirkət id:", cid, "(giriş: ?company=" + cid + " və ya şirkət siyahısından seçin)");
+  }
+
+  return dirty;
+}
+
 /**
  * Default şirkət/developer user və s. — `true` qaytarırsa, çağıran `saveMeta()` ilə buluda yazmalıdır.
  * Əvvəlki davranış: hər çağırışda saveMeta init/login-də köhnə lokal ilə buludu əzə bilərdi.
@@ -3013,6 +3123,7 @@ function ensureMetaDefaults() {
       dirty = true;
     }
   }
+  if (ensureDevtestTenantSeed()) dirty = true;
   meta.users.forEach((u) => {
     if (u.role !== "developer" && (u.companyId == null || u.companyId === "")) {
       const nextCid = getCompanyIdFromUsername(u.username) || meta.companies[0]?.id || null;
