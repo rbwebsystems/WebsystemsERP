@@ -295,13 +295,27 @@ export const issueAuthToken = onCall(
     // Tokenə exact ID yazılır (Firestore doc path ilə eyni)
     const exactCompanyId = isDev ? "" : String(matchedCompany?.id || "");
 
+    const uid = String(user.uid || username);
     const claims = {
       erp_session: true,
       role: user.role || "user",
       companyId: exactCompanyId,
     };
 
-    const customToken = await getAdminAuth().createCustomToken(String(user.uid || username), claims);
+    // İstifadəçini Firebase Auth-da yarat (yoxdursa)
+    try {
+      await getAdminAuth().getUser(uid);
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        await getAdminAuth().createUser({ uid });
+      }
+    }
+
+    // Claim-ləri PERMANENT et — token refresh-də itmir
+    await getAdminAuth().setCustomUserClaims(uid, claims);
+
+    // İlkin sign-in üçün custom token (claim-lər artıq permanent)
+    const customToken = await getAdminAuth().createCustomToken(uid, claims);
     return { token: customToken, companyId: exactCompanyId };
   }
 );

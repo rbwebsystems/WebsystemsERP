@@ -169,7 +169,11 @@ function ensureFirestoreAuth() {
     try {
       firebase.auth().onAuthStateChanged(
         (user) => {
-          if (user) return finish(true);
+          if (user) {
+            // Session restore: token-i refresh et ki permanent claim-lər yüklənsin
+            user.getIdToken(true).then(() => finish(true)).catch(() => finish(true));
+            return;
+          }
           // anonymous sign-in
           firebase
             .auth()
@@ -205,6 +209,8 @@ async function acquireCustomToken(username, password) {
     const { token, companyId: retCid } = result.data;
     console.log("[ERP Auth] Function cavab verdi, companyId:", retCid);
     const cred = await firebase.auth().signInWithCustomToken(token);
+    // setCustomUserClaims permanent olduğundan token-i refresh et
+    await cred.user.getIdToken(true);
     const idTok = await cred.user.getIdTokenResult();
     console.log("[ERP Auth] Token claims:", JSON.stringify(idTok.claims));
     firestoreAuthReady = true;
