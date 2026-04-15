@@ -581,17 +581,6 @@ function loadMetaSync() {
   }
 }
 
-function loadCompanyDBSync() {
-  try {
-    const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
-    const raw = localStorage.getItem(companyDBKey(cid));
-    if (!raw) return defaultDB();
-    return { ...defaultDB(), ...JSON.parse(raw) };
-  } catch {
-    return defaultDB();
-  }
-}
-
 async function loadMetaAsync() {
   if (!useFirestore()) return loadMetaSync();
   const ref = getMetaRef();
@@ -990,16 +979,52 @@ function companyDBKey(companyId) {
   return `${BASE_STORAGE_KEY}::${String(companyId || "").trim() || "default"}`;
 }
 
-function loadCompanyDB() {
+/** Developer panel (`__developer__`) üçün: əvvəl devtest/birinci şirkət açarında saxlanmış lokal bazanı tapmaq. */
+function erpLocalCompanyIdsToTryForLoad(sessionCid) {
+  const out = [];
+  const add = (id) => {
+    const s = String(id || "").trim();
+    if (!s) return;
+    if (out.some((x) => normAuthKey(x) === normAuthKey(s))) return;
+    out.push(s);
+  };
+  add(sessionCid);
+  if (normAuthKey(String(sessionCid || "")) === normAuthKey(ERP_DEV_SESSION_CID)) {
+    add("devtest");
+    for (const c of meta?.companies || []) add(c?.id);
+  }
+  return out;
+}
+
+function loadCompanyDBSync() {
   try {
-    const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
-    const raw = localStorage.getItem(companyDBKey(cid));
-    if (!raw) return defaultDB();
-    const parsed = JSON.parse(raw);
-    return { ...defaultDB(), ...parsed };
+    const sessionCid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
+    for (const tryId of erpLocalCompanyIdsToTryForLoad(sessionCid)) {
+      const raw = localStorage.getItem(companyDBKey(tryId));
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const merged = { ...defaultDB(), ...parsed };
+      if (
+        normAuthKey(String(sessionCid)) === normAuthKey(ERP_DEV_SESSION_CID) &&
+        normAuthKey(String(tryId)) !== normAuthKey(String(sessionCid))
+      ) {
+        try {
+          localStorage.setItem(companyDBKey(sessionCid), raw);
+          console.log("[erp-auth] developer panel: köhnə lokal baza köçürüldü", { from: tryId, to: sessionCid });
+        } catch (e) {
+          console.warn("[erp-auth] developer panel LS köçürmə:", e);
+        }
+      }
+      return merged;
+    }
+    return defaultDB();
   } catch {
     return defaultDB();
   }
+}
+
+function loadCompanyDB() {
+  return loadCompanyDBSync();
 }
 
 /** onDone: Firestore .set bitdikdən sonra (və ya LS yazıldıqdan dərhal sonra) çağırılır — UI “saxlanıldı” əvvəl yükləmə, sonra gəlsin. */
