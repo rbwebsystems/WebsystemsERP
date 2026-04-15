@@ -3,7 +3,8 @@
   "description": "Firebase Cloud Functions for Bakfon ERP",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
-    "deploy": "firebase deploy --only functions"
+    "deploy": "firebase deploy --only functions",
+    "deploy:issueAuthToken": "cd .. && firebase deploy --only functions:issueAuthToken"
   },
   "engines": { "node": "20" },
   "type": "module",
