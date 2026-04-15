@@ -316,6 +316,35 @@ async function verifyErpPassword(username, password) {
   return { user, metaData, companies: metaData.companies || [] };
 }
 
+/** Admin Auth xətalarını brauzerdə oxunaqlı HttpsError-a çevir (internal kodu mesajı gizlədir). */
+function mapAuthAdminError(err, firebaseUid) {
+  if (err instanceof HttpsError) throw err;
+  const code = String(err?.code || "");
+  const msg = String(err?.errorInfo?.message || err?.message || err || "");
+  const low = `${code} ${msg}`.toLowerCase();
+
+  if (low.includes("signblob") || (low.includes("permission") && low.includes("iam"))) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Custom token imzalanmadı: Cloud Functions xidmət hesabına «Service Account Token Creator» (iam.serviceAccounts.signBlob) icazəsi lazımdır. " +
+        "Google Cloud Console → IAM → `{PROJECT_ID}@appspot.gserviceaccount.com` və ya Functions üçün istifadə olunan hesaba `roles/iam.serviceAccountTokenCreator` verin. " +
+        `Detal: ${msg || code}`
+    );
+  }
+  if (code === "auth/invalid-argument" || code === "auth/invalid-custom-claims" || code === "auth/invalid-claims") {
+    throw new HttpsError("failed-precondition", `Auth claim/xidmət xətası: ${msg || code}`);
+  }
+  if (code === "auth/uid-already-exists") {
+    throw new HttpsError("already-exists", `UID artıq mövcuddur: ${firebaseUid}`);
+  }
+
+  console.error("[mintFirebaseCustomToken]", firebaseUid, err);
+  throw new HttpsError(
+    "failed-precondition",
+    `Firebase Auth əməliyyatı uğursuz oldu: ${msg || code || "naməlum"}. Firebase Console → Functions → Logs.`
+  );
+}
+
 async function mintFirebaseCustomToken(firebaseUid, claims) {
   try {
     try {
@@ -324,19 +353,13 @@ async function mintFirebaseCustomToken(firebaseUid, claims) {
       if (err.code === "auth/user-not-found") {
         await getAdminAuth().createUser({ uid: firebaseUid });
       } else {
-        throw err;
+        mapAuthAdminError(err, firebaseUid);
       }
     }
     await getAdminAuth().setCustomUserClaims(firebaseUid, claims);
     return await getAdminAuth().createCustomToken(firebaseUid, claims);
   } catch (err) {
-    if (err instanceof HttpsError) throw err;
-    console.error("[mintFirebaseCustomToken]", firebaseUid, err);
-    const authMsg = err?.errorInfo?.message || err?.message || String(err);
-    throw new HttpsError(
-      "internal",
-      `Firebase Auth token yaradıla bilmədi: ${authMsg}`
-    );
+    mapAuthAdminError(err, firebaseUid);
   }
 }
 

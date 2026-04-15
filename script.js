@@ -268,16 +268,31 @@ function normAuthKey(s) {
 /** Firebase httpsCallable xətası — message/details düzgün göstərilsin. */
 function formatCallableError(err) {
   if (!err) return "Giriş xətası.";
+  try {
+    console.warn("[erp-auth] callable xəta:", err?.code, err?.message, err?.details, err?.customData);
+  } catch (_) {}
+
+  const cd = err.customData;
+  if (cd && typeof cd === "object") {
+    const m = cd.message || cd.error || cd.status;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  }
+
   const d = err.details;
   if (typeof d === "string" && d.trim() && !/^internal$/i.test(d.trim())) return d.trim();
-  if (d && typeof d === "object" && typeof d.message === "string" && d.message.trim()) return d.message.trim();
+  if (d && typeof d === "object") {
+    const dm = d.message || d.error;
+    if (typeof dm === "string" && dm.trim()) return dm.trim();
+  }
+
   const msg = String(err.message || "").trim();
   if (msg && !/^internal$/i.test(msg) && msg !== "INTERNAL") return msg;
+
   const code = String(err.code || "");
   if (code.includes("not-found"))
     return "Cloud Function tapılmadı. issueDeveloperAuthToken və issueAuthToken deploy olunubmu?";
   if (code.includes("internal") || code.includes("Internal"))
-    return "Server daxili xətası. Firebase Console → Functions → Logs və Auth icazələrini yoxlayın.";
+    return "Server daxili xətası (mesaj gizlədilib). Firebase Console → Functions → issueAuthToken/issueDeveloperAuthToken → Logs; çox vaxt səbəb: service account üçün signBlob / Token Creator icazəsi və ya Auth Admin API.";
   return msg || "Giriş xətası.";
 }
 
