@@ -362,7 +362,43 @@ async function mintFirebaseCustomToken(firebaseUid, claims) {
       else if (v == null) continue;
       else safeClaims[k] = typeof v === "string" ? v : String(v);
     }
+    const roleForAssert = String(safeClaims.role || "").trim();
+    const companyIdForAssert = String(safeClaims.companyId ?? "").trim();
+    if (roleForAssert === "tenant" && !companyIdForAssert) {
+      console.error("[mintFirebaseCustomToken] tenant üçün companyId boşdur — token yaradılmır", { firebaseUid, safeClaims });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı");
+    }
+    if (roleForAssert === "developer" && !companyIdForAssert) {
+      console.error("[mintFirebaseCustomToken] developer üçün companyId boşdur — token yaradılmır", { firebaseUid, safeClaims });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı");
+    }
+
     await getAdminAuth().setCustomUserClaims(firebaseUid, safeClaims);
+
+    let persisted = {};
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const reRead = await getAdminAuth().getUser(firebaseUid);
+      persisted = reRead.customClaims || {};
+      const pc = String(persisted.companyId ?? "").trim();
+      if (roleForAssert !== "tenant" && roleForAssert !== "developer") break;
+      if (pc) break;
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    console.log("[mintFirebaseCustomToken] Auth-da saxlanmış claim-lər", {
+      firebaseUid,
+      role: persisted.role,
+      hasCompanyId: !!String(persisted.companyId ?? "").trim(),
+      companyId: persisted.companyId,
+    });
+    if (roleForAssert === "tenant" && !String(persisted.companyId ?? "").trim()) {
+      console.error("[mintFirebaseCustomToken] tenant: Auth getUser sonrası companyId boş", { firebaseUid, persisted });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı (Auth-da saxlanmadı)");
+    }
+    if (roleForAssert === "developer" && !String(persisted.companyId ?? "").trim()) {
+      console.error("[mintFirebaseCustomToken] developer: Auth getUser sonrası companyId boş", { firebaseUid, persisted });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı (Auth-da saxlanmadı)");
+    }
+
     return await getAdminAuth().createCustomToken(firebaseUid, safeClaims);
   } catch (err) {
     mapAuthAdminError(err, firebaseUid);
@@ -375,12 +411,15 @@ export const issueAuthToken = onCall(
   async (request) => {
     const { username, password, companyId: companyIdFromClient } = request.data || {};
     const hint = String(companyIdFromClient ?? "").trim();
+    const usernameNorm = normAuth(username);
 
-    console.log("[issueAuthToken]", { usernameNorm: normAuth(username), companyIdFromClient: hint || "(yox)" });
+    console.log("[issueAuthToken] giriş", { usernameNorm, companyIdFromClient: hint || "(yox)" });
 
     const { user, companies } = await verifyErpPassword(username, password);
+    const erpRoleNorm = normAuth(user.role || "");
 
-    if (user.role === "developer") {
+    // Yalnız açıq şəkildə "developer" rol — təsadüfi/boş string tenant axınına düşməsin
+    if (erpRoleNorm === "developer") {
       let firebaseUid = `developer_${sanitizeUidPart(username)}`;
       if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
       const claims = {
@@ -389,8 +428,18 @@ export const issueAuthToken = onCall(
         role: "developer",
         erpRole: "developer",
       };
+      console.log("[issueAuthToken] createCustomToken əvvəl (developer)", {
+        login: usernameNorm,
+        companyId: claims.companyId,
+        firebaseUid,
+        role: claims.role,
+      });
       const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
-      console.log("[issueAuthToken] developer ok", { firebaseUid });
+      console.log("[issueAuthToken] developer hazır", {
+        hasCompanyId: !!String(claims.companyId || "").trim(),
+        role: claims.role,
+        firebaseUid,
+      });
       return { token: customToken, companyId: DEVELOPER_COMPANY_SENTINEL, firebaseUid };
     }
 
@@ -398,10 +447,21 @@ export const issueAuthToken = onCall(
       throw new HttpsError("invalid-argument", "Tenant üçün companyId mütləqdir (məs. URL ?company= şirkət_id).");
     }
 
-    const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "");
-    let matchedCompany = companies.find((c) => normAuth(c.id) === normAuth(rawId));
+    const rawId = String(user.companyId || getCompanyIdFromUsernameServer(username) || "").trim();
     const hintNorm = normAuth(hint);
+    let matchedCompany = companies.find((c) => normAuth(c.id) === normAuth(rawId));
     const byHint = companies.find((c) => normAuth(c.id) === hintNorm);
+
+    console.log("[issueAuthToken] tenant trace", {
+      login: usernameNorm,
+      hint,
+      userCompanyId: user.companyId ?? null,
+      fromUsername: getCompanyIdFromUsernameServer(username),
+      rawId: rawId || null,
+      matchedByRawId: matchedCompany?.id ?? null,
+      matchedByHint: byHint?.id ?? null,
+    });
+
     if (!byHint) {
       throw new HttpsError("not-found", "Seçilmiş şirkət (companyId) tapılmadı.");
     }
@@ -410,23 +470,42 @@ export const issueAuthToken = onCall(
     }
     matchedCompany = byHint;
 
-    const exactCompanyId = String(matchedCompany.id || "").trim();
-    if (!exactCompanyId) {
-      throw new HttpsError("failed-precondition", "companyId token üçün boş ola bilməz.");
+    const exactCompanyId = String(matchedCompany.id ?? "").trim();
+    if (!exactCompanyId || exactCompanyId === "undefined" || exactCompanyId === "null") {
+      console.error("[issueAuthToken] exactCompanyId boş/etibarsız", { matchedCompany });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı");
     }
 
-    let firebaseUid = `tenant_${sanitizeUidPart(exactCompanyId)}`;
+    const uidPart = sanitizeUidPart(exactCompanyId);
+    if (!uidPart) {
+      console.error("[issueAuthToken] UID üçün companyId sanitize boş", { exactCompanyId });
+      throw new HttpsError("failed-precondition", "companyId tapılmadı");
+    }
+    let firebaseUid = `tenant_${uidPart}`;
     if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
 
+    // Firestore qaydaları: erp_session + erpRole; claim adı mütləq "companyId"
     const claims = {
-      erp_session: true,
-      companyId: exactCompanyId,
+      companyId: String(exactCompanyId),
       role: "tenant",
+      erp_session: true,
       erpRole: user.role === "admin" ? "admin" : "user",
     };
 
+    console.log("[issueAuthToken] createCustomToken əvvəl (tenant)", {
+      login: usernameNorm,
+      tapılanCompanyId: exactCompanyId,
+      firebaseUid,
+      role: claims.role,
+    });
+
     const customToken = await mintFirebaseCustomToken(firebaseUid, claims);
-    console.log("[issueAuthToken] tenant ok", { firebaseUid, companyId: exactCompanyId });
+
+    console.log("[issueAuthToken] tenant hazır", {
+      hasCompanyId: !!String(exactCompanyId || "").trim(),
+      role: claims.role,
+      firebaseUid,
+    });
 
     return { token: customToken, companyId: exactCompanyId, firebaseUid };
   }
