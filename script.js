@@ -171,7 +171,12 @@ function ensureFirestoreAuth() {
         (user) => {
           if (user) {
             // Session restore: token-i refresh et ki permanent claim-lər yüklənsin
-            user.getIdToken(true).then(() => finish(true)).catch(() => finish(true));
+            user.getIdToken(true).then(() => {
+              return user.getIdTokenResult();
+            }).then((tok) => {
+              console.log("[ERP Auth] Session restore claims:", JSON.stringify(tok.claims || {}));
+              finish(true);
+            }).catch(() => finish(true));
             return;
           }
           // anonymous sign-in
