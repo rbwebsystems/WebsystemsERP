@@ -44,6 +44,16 @@ function getErpFunctionsRegion() {
     return "europe-west1";
   }
 }
+
+/** Firestore yazma / listener üçün: custom token girişi olmadan null. */
+function erpFirebaseCurrentUser() {
+  try {
+    if (typeof firebase === "undefined" || !firebase.auth) return null;
+    return firebase.auth().currentUser || null;
+  } catch (_) {
+    return null;
+  }
+}
 let firestoreUnsubMeta = null;
 let firestoreUnsubCompany = null;
 let firestoreInitialized = false;
@@ -182,6 +192,7 @@ function ensureFirestoreAuth() {
     try {
       firebase.auth().onAuthStateChanged(
         (user) => {
+          console.log("[erp-auth] onAuthStateChanged", user ? { uid: user.uid, isAnonymous: !!user.isAnonymous } : { user: null });
           if (user) {
             void (async () => {
               try {
@@ -219,8 +230,8 @@ function ensureFirestoreAuth() {
             })();
             return;
           }
-          // Anonymous auth söndürülüb: giriş yalnız custom token ilə (issueAuthToken)
-          console.warn("[erp-auth] Firebase istifadəçi yoxdur — anonim giriş edilmir.");
+          // Giriş öncəsi gözlənilən vəziyyət; anonim auth söndürülüb (yalnız custom token).
+          console.debug("[erp-auth] Firebase istifadəçi yoxdur — anonim giriş edilmir.");
           finish(false);
         },
         (e) => {
@@ -260,7 +271,7 @@ async function logErpAuthDebug(tag) {
 
 /** Tenant Firestore şirkət məlumatı: yalnız role tenant + boş olmayan companyId. */
 async function erpTenantClaimsOkForCompany(companyId) {
-  const u = firebase.auth && firebase.auth().currentUser;
+  const u = erpFirebaseCurrentUser();
   if (!u) return false;
   const tr = await u.getIdTokenResult(true);
   const role = String(tr.claims?.role || "");
@@ -313,10 +324,15 @@ async function acquireCustomToken(username, password, opts = {}) {
     if (!firebase.functions) throw new Error("Firebase Functions SDK yüklənməyib.");
     const companyIdHint = String(opts.companyId ?? "").trim();
     const functionsRegion = getErpFunctionsRegion();
-    console.log("[erp-auth] issueAuthToken callable", {
+    const payload = {
+      username,
+      password,
+      companyId: companyIdHint || null,
+    };
+    console.log("[erp-auth] issueAuthToken: request", {
       functionsRegion,
-      username: String(username || "").slice(0, 2) + "***",
-      companyIdFromUI: companyIdHint || "(yox — developer ola bilər)",
+      usernamePreview: String(username || "").slice(0, 2) + "***",
+      companyId: payload.companyId,
     });
 
     const au = firebase.auth().currentUser;
@@ -325,15 +341,32 @@ async function acquireCustomToken(username, password, opts = {}) {
     }
 
     const fn = firebase.app().functions(functionsRegion).httpsCallable("issueAuthToken");
-    const result = await fn({
-      username,
-      password,
-      companyId: companyIdHint || null,
+    const result = await fn(payload);
+    const data = result?.data || {};
+    console.log("[erp-auth] issueAuthToken: response", {
+      keys: data && typeof data === "object" ? Object.keys(data) : [],
+      hasToken: typeof data.token === "string" && data.token.length > 0,
+      companyId: data.companyId,
+      firebaseUid: data.firebaseUid,
     });
-    const { token, companyId: companyIdFromFn } = result.data || {};
+    const { token, companyId: companyIdFromFn } = data;
     if (!token) throw new Error("Server token qaytarmadı.");
 
-    const cred = await firebase.auth().signInWithCustomToken(token);
+    console.log("[erp-auth] signInWithCustomToken: start");
+    let cred;
+    try {
+      cred = await firebase.auth().signInWithCustomToken(token);
+    } catch (signErr) {
+      console.error("[erp-auth] signInWithCustomToken: error", {
+        code: signErr?.code,
+        message: signErr?.message,
+        name: signErr?.name,
+        stack: signErr?.stack,
+        full: signErr,
+      });
+      throw signErr;
+    }
+    console.log("[erp-auth] signInWithCustomToken: success", { uid: cred?.user?.uid });
     await cred.user.getIdToken(true);
 
     /** Custom claim bəzi SDK-da getIdTokenResult ilk dəfə boş ola bilər; provider də həmişə "custom" olmur. */
@@ -354,6 +387,8 @@ async function acquireCustomToken(username, password, opts = {}) {
     }
 
     await logErpAuthDebug("post signInWithCustomToken");
+    const _cuAfter = erpFirebaseCurrentUser();
+    console.log("[erp-auth] acquireCustomToken: auth().currentUser", _cuAfter ? { uid: _cuAfter.uid } : null);
 
     const role = String(tr?.claims?.role ?? "");
     if (cred.user.isAnonymous || !cid) {
@@ -385,6 +420,14 @@ async function acquireCustomToken(username, password, opts = {}) {
     firestoreAuthPromise = null;
     return true;
   } catch (e) {
+    console.error("[erp-auth] acquireCustomToken: failed", {
+      code: e?.code,
+      message: e?.message,
+      details: e?.details,
+      customData: e?.customData,
+      stack: e?.stack,
+      full: e,
+    });
     firestoreAuthReady = false;
     firestoreAuthPromise = null;
     throw e;
@@ -429,9 +472,9 @@ async function loadMetaAsync() {
   if (!useFirestore()) return loadMetaSync();
   const ref = getMetaRef();
   if (!ref) return loadMetaSync();
-  const u = firebase.auth && firebase.auth().currentUser;
+  const u = erpFirebaseCurrentUser();
   if (!u) {
-    console.warn("[erp-auth] loadMetaAsync: Firebase user yoxdur — yalnız lokal meta");
+    console.debug("[erp-auth] loadMetaAsync: Firebase user yoxdur — yalnız lokal meta");
     return loadMetaSync();
   }
   try {
@@ -458,9 +501,9 @@ async function loadCompanyDBAsync(opts) {
   if (useSoft) softLoadingBegin(true);
   try {
     if (!useFirestore()) return loadCompanyDBSync();
-    const u = firebase.auth && firebase.auth().currentUser;
+    const u = erpFirebaseCurrentUser();
     if (!u) {
-      console.warn("[erp-auth] loadCompanyDBAsync: Firebase user yoxdur — yalnız lokal data");
+      console.debug("[erp-auth] loadCompanyDBAsync: Firebase user yoxdur — yalnız lokal data");
       return loadCompanyDBSync();
     }
     const cid = meta?.session?.companyId || meta?.companies?.[0]?.id || "default";
@@ -499,7 +542,7 @@ async function loadCompanyDBAsync(opts) {
 function subscribeRealtime() {
   if (!useFirestore()) return;
   unsubscribeRealtime();
-  const authUser = firebase.auth && firebase.auth().currentUser;
+  const authUser = erpFirebaseCurrentUser();
   const metaRef = getMetaRef();
   if (metaRef && authUser) {
     firestoreUnsubMeta = metaRef.onSnapshot(
@@ -520,12 +563,12 @@ function subscribeRealtime() {
       (err) => console.warn("Firestore meta listener:", err)
     );
   } else if (metaRef && !authUser) {
-    console.warn("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
+    console.debug("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
   }
   const cid = meta?.session?.companyId;
   if (cid) {
     if (!authUser) {
-      console.warn("[erp-auth] subscribeRealtime: company listener keçirildi (Firebase user yoxdur)");
+      console.debug("[erp-auth] subscribeRealtime: company listener keçirildi (Firebase user yoxdur)");
     } else {
       void (async () => {
         const ok = await erpTenantClaimsOkForCompany(cid);
@@ -566,6 +609,10 @@ function unsubscribeRealtime() {
 async function refreshFromCloud(silent) {
   if (!useFirestore() || !meta?.session?.companyId) {
     if (!silent) toast("Realtime aktiv deyil və ya şirkət seçilməyib", "err", 2500);
+    return;
+  }
+  if (!erpFirebaseCurrentUser()) {
+    if (!silent) console.debug("[erp-auth] refreshFromCloud: atlandı (Firebase user yoxdur)");
     return;
   }
   const cid = meta.session.companyId;
@@ -2652,6 +2699,14 @@ function saveMeta() {
   if (useFirestore()) {
     const ref = getMetaRef();
     if (ref) {
+      const authUser = erpFirebaseCurrentUser();
+      if (!authUser) {
+        try {
+          localStorage.setItem(META_KEY, JSON.stringify(meta));
+        } catch (_) {}
+        updateLastSavedEl();
+        return;
+      }
       let softBegan = false;
       try {
         const { session, ...rest } = meta || {};
@@ -3267,6 +3322,12 @@ function doLoginWithCompany(companyId) {
   meta.session = { companyId: c.id, userUid: u.uid };
   saveMeta();
   const finishLoginUi = (data) => {
+    if (useFirestore() && !erpFirebaseCurrentUser()) {
+      console.error("[erp-auth] finishLoginUi: Firebase user yoxdur — bulud sinxron dayandırılır");
+      dismissGlobalLoadingUi();
+      alert("Giriş tamamlanmadı (Firebase sessiya yoxdur). Səhifəni yeniləyib yenidən daxil olun.");
+      return;
+    }
     dismissGlobalLoadingUi();
     db = data;
     unsubscribeRealtime();
@@ -3298,6 +3359,7 @@ function doLoginWithCompany(companyId) {
 async function login(e) {
   e.preventDefault();
   try {
+  console.log("[erp-auth] login: start", { useFirestore: useFirestore() });
   const username = val("loginUser").trim();
   const pass = val("loginPass");
   if (!username || !pass) return alert("İstifadəçi adı və şifrə daxil edin.");
@@ -3314,10 +3376,22 @@ async function login(e) {
       const companyForToken = (fromUserFmt || companyHint || "").trim();
       await acquireCustomToken(username, pass, { companyId: companyForToken || null });
     } catch (err) {
+      console.error("[erp-auth] login: issueAuthToken / acquireCustomToken uğursuz", err?.code, err?.message, err);
       return alert(formatCallableError(err));
     }
+    const _loginCu = erpFirebaseCurrentUser();
+    console.log("[erp-auth] login: acquireCustomToken bitdi", _loginCu ? { uid: _loginCu.uid } : { currentUser: null });
+    if (!_loginCu) {
+      console.error("[erp-auth] login: Firebase currentUser yoxdur — axın dayandırılır");
+      return alert("Giriş tamamlanmadı (Firebase sessiya yaranmadı). Səhifəni yeniləyin.");
+    }
     // Custom token alındıqdan sonra meta-nı yenidən yüklə (indi erp_session ilə oxuya bilər)
-    try { meta = await loadMetaAsync(); ensureMetaDefaults(); } catch (_) {}
+    try {
+      meta = await loadMetaAsync();
+      ensureMetaDefaults();
+    } catch (me) {
+      console.error("[erp-auth] login: loadMetaAsync / ensureMetaDefaults", me);
+    }
   }
 
   // İstifadəçini meta-dan tap
@@ -14821,7 +14895,7 @@ async function init() {
     _pl.step("meta");
     meta = await loadMetaAsync();
     ensureMetaDefaults();
-    if (useFirestore() && meta.session && !(firebase.auth && firebase.auth().currentUser)) {
+    if (useFirestore() && meta.session && !erpFirebaseCurrentUser()) {
       console.warn("[erp-auth] init: lokal sessiya sıfırlanır (Firebase custom auth yoxdur)");
       meta.session = null;
       try {
@@ -14876,6 +14950,10 @@ function startRealtimeAutoRefresh() {
   if (realtimeAutoRefreshTimer) clearInterval(realtimeAutoRefreshTimer);
   realtimeAutoRefreshTimer = null;
   if (!useFirestore() || !meta?.session?.companyId) return;
+  if (!erpFirebaseCurrentUser()) {
+    console.debug("[erp-auth] startRealtimeAutoRefresh: atlandı (Firebase user yoxdur)");
+    return;
+  }
   realtimeAutoRefreshTimer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
     refreshFromCloud(true);
