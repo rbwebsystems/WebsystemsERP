@@ -14,9 +14,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: tam izolasiya — yalnız erp_session tokeni olan istifadəçilər
+    // ŞİRKƏT DATA: oxuma açıqdır, yazma erp_session tələb edir
     match /companies/{companyId} {
-      allow read, write: if request.auth != null
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
         && request.auth.token.erp_session == true;
     }
 

@@ -203,7 +203,7 @@ async function acquireCustomToken(username, password) {
   console.log("[ERP Auth] başladı, firebase.functions:", typeof firebase.functions);
   try {
     if (!firebase.functions) { console.warn("[ERP Auth] functions SDK yoxdur"); return false; }
-    const fn = firebase.functions("europe-west1").httpsCallable("issueAuthToken");
+    const fn = firebase.app().functions("europe-west1").httpsCallable("issueAuthToken");
     console.log("[ERP Auth] Cloud Function çağırılır...");
     const result = await fn({ username, password });
     const { token, companyId: retCid } = result.data;
