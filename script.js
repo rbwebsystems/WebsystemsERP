@@ -197,7 +197,7 @@ function ensureFirestoreAuth() {
 async function acquireCustomToken(username, password) {
   if (!useFirestore() || !firestoreInitialized) return true;
   try {
-    const fn = firebase.functions().httpsCallable("issueAuthToken");
+    const fn = firebase.functions("europe-west1").httpsCallable("issueAuthToken");
     const result = await fn({ username, password });
     const { token } = result.data;
     await firebase.auth().signInWithCustomToken(token);
