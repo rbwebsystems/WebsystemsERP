@@ -200,7 +200,9 @@ async function acquireCustomToken(username, password) {
     const fn = firebase.functions("europe-west1").httpsCallable("issueAuthToken");
     const result = await fn({ username, password });
     const { token } = result.data;
-    await firebase.auth().signInWithCustomToken(token);
+    const cred = await firebase.auth().signInWithCustomToken(token);
+    const idTok = await cred.user.getIdTokenResult();
+    console.log("[ERP Auth] Token claims:", JSON.stringify(idTok.claims));
     firestoreAuthReady = true;
     firestoreAuthPromise = null;
     return true;
