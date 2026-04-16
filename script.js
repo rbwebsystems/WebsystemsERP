@@ -7172,11 +7172,11 @@ function openStaff(idx = null) {
         <div class="form-card">
           <div class="form-card-title">Şəxsi məlumat</div>
           <div class="grid-2">
-            <div class="f-group"><label>Ad Soyad <span class="req">*</span></label><input id="f_st_name" value="${escapeAttr(s.fullName || s.name || "")}" placeholder="Ad Soyad" required></div>
+            <div class="f-group"><label>Ad Soyad <span class="req">*</span></label><input id="f_st_name" value="${escapeAttr(s.fullName || s.name || "")}" placeholder="Ad Soyad"></div>
             <div class="f-group"><label>Ata adı</label><input id="f_st_fatherName" value="${escapeAttr(s.fatherName || "")}" placeholder="Ata adı"></div>
             <div class="f-group"><label>Telefon</label><input id="f_st_phone" value="${escapeAttr(s.phone || "")}" placeholder="+994 xx xxx xx xx"></div>
             <div class="f-group"><label>Əlavə telefon</label><input id="f_st_phoneAlt" value="${escapeAttr(s.phoneAlt || "")}" placeholder="+994 xx xxx xx xx"></div>
-            <div class="f-group"><label>E-poçt</label><input type="email" id="f_st_email" value="${escapeAttr(s.email || "")}" placeholder="email@example.com"></div>
+            <div class="f-group"><label>E-poçt</label><input type="text" id="f_st_email" value="${escapeAttr(s.email || "")}" placeholder="email@example.com"></div>
             <div class="f-group"><label>Şəxsiyyət vəsiqəsi №</label><input id="f_st_idCardNo" value="${escapeAttr(s.idCardNo || "")}" placeholder="AA1234567"></div>
             <div class="f-group"><label>FİN kod</label><input id="f_st_finCode" value="${escapeAttr(s.finCode || "")}" placeholder="1234567"></div>
             <div class="f-group"><label>Doğum tarixi</label><input type="date" id="f_st_birthDate" value="${escapeAttr(s.birthDate || "")}"></div>
@@ -7260,7 +7260,7 @@ function openStaff(idx = null) {
 
         <div class="form-card">
           <div class="form-card-title">Profil</div>
-          <div class="f-group"><label>Profil şəkli (URL)</label><input type="url" id="f_st_avatarUrl" value="${escapeAttr(s.avatarUrl || "")}" placeholder="https://..."></div>
+          <div class="f-group"><label>Profil şəkli (URL)</label><input type="text" id="f_st_avatarUrl" value="${escapeAttr(s.avatarUrl || "")}" placeholder="https://..."></div>
           ${s.avatarUrl ? `<div style="margin-top:8px;"><img src="${escapeAttr(s.avatarUrl)}" alt="Profil" style="width:72px;height:72px;object-fit:cover;border-radius:50%;border:2px solid var(--border-color);"></div>` : ""}
         </div>
 
