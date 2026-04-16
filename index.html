@@ -680,6 +680,11 @@
       <div class="content-header">
         <h1 data-i18n="nav_companies">Şirkətlər</h1>
         <div class="header-actions">
+          <select id="coFilterStatus" onchange="renderAll()" title="Status filtri">
+            <option value="all">Hamısı</option>
+            <option value="active">Aktiv</option>
+            <option value="disabled">Deaktiv</option>
+          </select>
           <button class="btn-main" type="button" onclick="openCompany()"><i class="fas fa-plus"></i><span data-i18n="btn_new_company"> Yeni şirkət</span></button>
           <button class="btn-cancel" type="button" onclick="resetCompanyData()"><i class="fas fa-rotate"></i><span data-i18n="btn_reset_company"> Şirkəti sıfırla</span></button>
         </div>

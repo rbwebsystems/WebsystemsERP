@@ -14415,7 +14415,9 @@ function renderAll() {
       compBody.innerHTML = "";
     } else {
       const curCid = meta?.session?.companyId;
+      const coFilter = (byId("coFilterStatus")?.value) || "all";
       compBody.innerHTML = meta.companies
+        .filter(c => coFilter === "all" || (coFilter === "disabled" ? c.disabled : !c.disabled))
         .map((c, i) => {
           const active = c.id === curCid;
           const sub = c.subscription || {};
@@ -14436,7 +14438,9 @@ function renderAll() {
           const disabledStyle = c.disabled ? 'opacity:.55' : '';
           const activeBadge = c.disabled
             ? '<span class="pill overdue">DEAKTİV</span>'
-            : active ? '<span class="pill paid">AKTİV</span>' : "—";
+            : active
+              ? '<span class="pill paid">● AKTİV</span>'
+              : '<span class="pill" style="background:#e2f0e8;color:#16a34a">Aktiv</span>';
           const restoreBtn = (c.disabled && isDeveloper())
             ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et (aktiv et)" style="color:#16a34a"><i class="fas fa-circle-check"></i></button>`
             : `<span class="icon-btn-placeholder"></span>`;
