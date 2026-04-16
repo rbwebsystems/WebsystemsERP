@@ -7446,6 +7446,32 @@ async function saveStaff(e, idx) {
   }
 }
 
+function toggleStaffActive(idx) {
+  const s = db.staff[idx];
+  if (!s) return;
+  const isActive = (s.employeeStatus || "active") !== "terminated";
+  const newStatus = isActive ? "terminated" : "active";
+  const label = isActive ? "deaktiv" : "aktiv";
+  if (!confirm(`Bu əməkdaşı ${label} etmək istəyirsiniz?`)) return;
+
+  s.employeeStatus = newStatus;
+  s.updatedAt = nowISODateTimeLocal();
+
+  // Sync linked user active flag
+  const linked = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
+  if (linked) {
+    linked.active = !isActive;
+    if (meta._allUsers) {
+      const full = meta._allUsers.find(u => String(u.uid) === String(linked.uid));
+      if (full) full.active = !isActive;
+    }
+    saveMeta();
+  }
+
+  logEvent(isActive ? "deactivate" : "activate", "staff", { uid: s.uid, name: s.fullName || s.name });
+  saveDB();
+}
+
 function openStaffInfo(idx) {
   const s = db.staff[idx];
   if (!s) return;
@@ -14698,7 +14724,7 @@ function renderAll() {
       <td class="tbl-actions">
         <button class="icon-btn info" onclick="openStaffInfo(${idx})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>` : ""}
-        ${userCanDelete("staff") ? `<button class="icon-btn delete" onclick="delItem('staff', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+        ${userCanEdit() ? `<button class="icon-btn ${(s.employeeStatus || "active") === "terminated" ? "restore" : "delete"}" onclick="toggleStaffActive(${idx})" title="${(s.employeeStatus || "active") === "terminated" ? "Aktivləşdir" : "Deaktiv et"}"><i class="fas fa-${(s.employeeStatus || "active") === "terminated" ? "user-check" : "user-slash"}"></i></button>` : ""}
       </td>
     </tr>`;
       }
@@ -15911,12 +15937,8 @@ async function delItem(type, i) {
     return;
   }
   if (type === "staff") {
-    const s = db.staff[i];
-    if (!s) return;
-    db.trash.push({ uid: genId(db.trash, 1), type: "staff", item: s, deletedAt, deletedBy, deleteReason });
-    logEvent("delete", "staff", { uid: s.uid, name: s.fullName || s.name, deleteReason });
-    db.staff.splice(i, 1);
-    saveDB();
+    // Staff deletion is disabled — use toggleStaffActive() to deactivate instead
+    toast("Əməkdaş silinmir. Deaktiv etmək üçün 'Deaktiv et' düyməsini istifadə edin.", "info");
     return;
   }
 }
@@ -15982,6 +16004,7 @@ Object.assign(window, {
   openStaff,
   saveStaff,
   openStaffInfo,
+  toggleStaffActive,
   staffSalaryTypeChange,
   staffSysToggle,
   openCashOp,
