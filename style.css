@@ -5153,7 +5153,8 @@ body.theme-dark .pill.nagd{
 #companiesTable col.co-col-id     {width:150px;}
 #companiesTable col.co-col-active {width:80px;}
 #companiesTable col.co-col-sub    {width:150px;}
-#companiesTable col.co-col-actions{width:190px;}
+#companiesTable col.co-col-actions{width:300px;}
+/* all cells: baseline alignment, clip text overflow */
 #companiesTable th,
 #companiesTable td{
   vertical-align:middle;
@@ -5162,26 +5163,26 @@ body.theme-dark .pill.nagd{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+/* action cell: flex, no clipping, right-aligned */
+#companiesTable td:nth-child(6),
+#companiesTable td:nth-child(6).tbl-actions{
+  overflow:visible;
+  white-space:normal;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:nowrap;
+  padding:6px 12px 6px 8px;
+  width:auto !important;
+  text-align:right !important;
+}
 #companiesTable .co-th-num,
 #companiesTable td:nth-child(1){text-align:center;padding-left:8px;padding-right:8px;}
 #companiesTable .co-th-center,
 #companiesTable td:nth-child(4),
 #companiesTable td:nth-child(5){text-align:center;}
 #companiesTable .co-th-right{text-align:right;padding-right:16px;}
-#companiesTable td:nth-child(6){
-  /* override global td:last-child width/text-align */
-  width:auto !important;
-  text-align:right !important;
-  padding-right:12px;
-}
-#companiesTable td:nth-child(6).tbl-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:6px;
-  flex-wrap:nowrap;
-  padding-right:12px;
-}
 #companiesTable td.tbl-actions .icon-btn,
 #companiesTable td.tbl-actions .btn-mini-pay{flex-shrink:0;}
 #companiesTable td:nth-child(3) code{
