@@ -7166,7 +7166,7 @@ function openStaff(idx = null) {
   const hasSys = s.hasSystemAccess || false;
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
-    <form onsubmit="saveStaff(event, ${idx})" id="staffForm">
+    <form onsubmit="saveStaff(event, ${idx})" id="staffForm" novalidate>
       <div class="form-stack">
 
         <div class="form-card">
@@ -7233,10 +7233,10 @@ function openStaff(idx = null) {
                 <option value="mixed" ${s.salaryType === "mixed" ? "selected" : ""}>Sabit + faiz</option>
               </select>
             </div>
-            <div class="f-group" id="st_salary_row"><label>Standart maaş (AZN)</label><input type="number" step="0.01" min="0" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? s.salary ?? "0"))}" placeholder="0.00"></div>
-            <div class="f-group" id="st_pct_row"><label>Satışdan faiz (%)</label><input type="number" step="0.01" min="0" max="100" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? s.salesPercent ?? "0"))}" placeholder="0"></div>
-            <div class="f-group"><label>Bonus (AZN)</label><input type="number" step="0.01" min="0" id="f_st_bonus" value="${escapeAttr(String(s.bonus ?? "0"))}" placeholder="0.00"></div>
-            <div class="f-group"><label>Cərimə limiti (AZN)</label><input type="number" step="0.01" min="0" id="f_st_fineLimit" value="${escapeAttr(String(s.fineLimit ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group" id="st_salary_row"><label>Standart maaş (AZN)</label><input type="number" inputmode="decimal" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? s.salary ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group" id="st_pct_row"><label>Satışdan faiz (%)</label><input type="number" inputmode="decimal" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? s.salesPercent ?? "0"))}" placeholder="0"></div>
+            <div class="f-group"><label>Bonus (AZN)</label><input type="number" inputmode="decimal" id="f_st_bonus" value="${escapeAttr(String(s.bonus ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Cərimə limiti (AZN)</label><input type="number" inputmode="decimal" id="f_st_fineLimit" value="${escapeAttr(String(s.fineLimit ?? "0"))}" placeholder="0.00"></div>
           </div>
         </div>
 
@@ -7253,8 +7253,8 @@ function openStaff(idx = null) {
             <div class="f-group"><label>Bank adı</label><input id="f_st_bankName" value="${escapeAttr(s.bankName || "")}" placeholder="Bank adı"></div>
             <div class="f-group"><label>Kart / Hesab №</label><input id="f_st_accountNo" value="${escapeAttr(s.accountNo || "")}" placeholder="XXXX XXXX XXXX XXXX"></div>
             <div class="f-group"><label>VÖEN</label><input id="f_st_voen" value="${escapeAttr(s.voen || "")}" placeholder="VÖEN"></div>
-            <div class="f-group"><label>Borc / Avans limiti (AZN)</label><input type="number" step="0.01" min="0" id="f_st_advLimit" value="${escapeAttr(String(s.advanceLimit ?? "0"))}" placeholder="0.00"></div>
-            <div class="f-group"><label>Aylıq avans icazəsi (AZN)</label><input type="number" step="0.01" min="0" id="f_st_monthlyAdv" value="${escapeAttr(String(s.monthlyAdvanceAllowed ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Borc / Avans limiti (AZN)</label><input type="number" inputmode="decimal" id="f_st_advLimit" value="${escapeAttr(String(s.advanceLimit ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Aylıq avans icazəsi (AZN)</label><input type="number" inputmode="decimal" id="f_st_monthlyAdv" value="${escapeAttr(String(s.monthlyAdvanceAllowed ?? "0"))}" placeholder="0.00"></div>
           </div>
         </div>
 
