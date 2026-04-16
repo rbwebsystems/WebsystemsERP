@@ -56,11 +56,11 @@ service cloud.firestore {
     }
 
     // ─── ŞİRKƏT DATA (/companies/{companyId}/...): tenant isolation ────────────
-    // Yalnız token-dakı companyId ilə uyğun olan şirkətin datasına giriş.
-    // Developer token bu yola daxil ola bilməz (role == 'tenant' şərti).
+    // Oxumaq/Yazmaq: həmin şirkətin tenant tokeni VƏ YA developer (support / reset üçün).
+    // Developer token companyId == '__developer__' daşıyır amma bütün şirkət yollarına girə bilər.
     match /companies/{companyId}/{document=**} {
       allow read, write: if isErpSession()
-        && isTenantForCompany(companyId);
+        && (isTenantForCompany(companyId) || isDev());
     }
 
     // ─── DİGƏR: tam bağlı ─────────────────────────────────────────────────────
