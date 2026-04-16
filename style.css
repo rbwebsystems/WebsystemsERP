@@ -4738,6 +4738,17 @@ body.theme-dark .f-static{
   font-size:.72rem;font-weight:700;color:var(--text-muted);
   text-transform:uppercase;letter-spacing:.04em;
 }
+/* Input with inline prefix badge (e.g. "devtest_" before username) */
+.input-with-addon{display:flex;align-items:stretch;}
+.input-with-addon .input-addon{
+  display:flex;align-items:center;padding:0 10px;
+  background:var(--bg-card,#f1f5f9);border:1px solid #dbe3ea;
+  border-right:none;border-radius:6px 0 0 6px;
+  font-size:.875rem;font-weight:700;color:var(--accent);
+  white-space:nowrap;user-select:none;
+}
+body.theme-dark .input-with-addon .input-addon{background:#1e2d3d;border-color:#3d5268;color:var(--accent);}
+.input-with-addon input{border-radius:0 6px 6px 0 !important;flex:1;min-width:0;}
 /* Form bölmə başlığı */
 .f-section{
   grid-column:span 3;

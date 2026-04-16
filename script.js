@@ -3159,6 +3159,16 @@ function ensureMetaDefaults() {
       }
     }
   });
+  // Migrate: ensure non-developer usernames start with their companyId prefix
+  meta.users.forEach((u) => {
+    if (u.role === "developer" || !u.username || !u.companyId) return;
+    const cidNorm = String(u.companyId).trim().toLowerCase();
+    const uname = String(u.username).trim();
+    if (!uname.toLowerCase().startsWith(cidNorm + "_")) {
+      u.username = `${cidNorm}_${normalizeUsernamePart(uname)}`;
+      dirty = true;
+    }
+  });
   if (!meta.session || !meta.session.companyId) {
     if (meta.session != null) dirty = true;
     meta.session = null;
@@ -11212,15 +11222,19 @@ function syncAutoUserIdentity() {
   const isNew = !uidVal;
   const manual = !!byId("u_manual_mode")?.checked;
   const fullEl = byId("u_full");
-  const userEl = byId("u_name");
+  const suffixEl = byId("u_name_suffix");
   const staffWrap = byId("u_staff_wrap");
-  if (!fullEl || !userEl) return;
+  if (!fullEl || !suffixEl) return;
   if (staffWrap) staffWrap.style.display = manual ? "none" : "";
   const fullName = getAutoUserFullName();
   if (isNew && !manual) fullEl.value = fullName;
   // Yalnız istifadəçi adı boşdursa avtomatik doldur (əl ilə yazılıbsa toxunma)
-  if (isNew && !userEl.value.trim()) {
-    userEl.value = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+  if (isNew && !suffixEl.value.trim()) {
+    const fullAuto = fullName ? buildAutoUsernameForUser(fullName, 0) : "";
+    const cidNorm = String(meta?.session?.companyId || "").trim().toLowerCase();
+    suffixEl.value = cidNorm && fullAuto.toLowerCase().startsWith(cidNorm + "_")
+      ? fullAuto.slice(cidNorm.length + 1)
+      : fullAuto;
   }
 }
 
@@ -11357,7 +11371,7 @@ function openUser(uidOrNull = null) {
           ${staffOptions}
         </select></div>
             <div class="f-group"><label>Ad Soyad *</label><input id="u_full" placeholder="Ad Soyad" value="${escapeHtml(editingUser.fullName || "")}" ${isNew ? 'oninput="syncAutoUserIdentity()"' : ""} required></div>
-            <div class="f-group"><label>İstifadəçi adı *</label><input id="u_name" placeholder="${escapeAttr((cid || "sirket") + "_rustamb")}" value="${escapeHtml(editingUser.username || "")}" required></div>
+            <div class="f-group"><label>İstifadəçi adı *</label>${(()=>{const bCid=String(isNew?(cid||""):(editingUser.companyId||cid||"")).trim().toLowerCase();const rawUser=String(editingUser.username||"").trim();const sfx=bCid&&rawUser.toLowerCase().startsWith(bCid+"_")?rawUser.slice(bCid.length+1):rawUser;return bCid?`<div class="input-with-addon"><span class="input-addon">${escapeHtml(bCid)}_</span><input id="u_name_suffix" placeholder="rustamb" value="${escapeHtml(sfx)}" required autocomplete="off"></div>`:`<input id="u_name_suffix" placeholder="istifadəçi adı" value="${escapeHtml(sfx)}" required autocomplete="off">`;})()}</div>
             <div class="f-group"><label>Rol</label><select id="u_role">
           <option value="user" ${editingUser.role === "user" ? "selected" : ""}>İstifadəçi (user)</option>
           <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>Admin</option>
@@ -11547,7 +11561,15 @@ async function saveUser(e) {
       staffUid = "";
     }
   }
-  const usernameFromForm = val("u_name").trim();
+  const rawSuffix = (val("u_name_suffix") || "").trim();
+  // Strip accidentally typed prefix (e.g. user typed "devtest_rustamb" into suffix field)
+  const cidForStrip = cid || "";
+  const cleanSuffix = cidForStrip && rawSuffix.toLowerCase().startsWith(cidForStrip + "_")
+    ? rawSuffix.slice(cidForStrip.length + 1)
+    : rawSuffix;
+  const usernameFromForm = cleanSuffix
+    ? (cidForStrip ? `${cidForStrip}_${cleanSuffix}` : cleanSuffix)
+    : "";
   const username =
     usernameFromForm ||
     buildAutoUsernameForUser(fullName, uidVal || 0);
