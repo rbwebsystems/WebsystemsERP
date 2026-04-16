@@ -11171,16 +11171,19 @@ function delCompany(idx) {
   return;
 }
 
-function resetCompanyData() {
-  if (!userCanReset()) return alert("Reset icazəsi yoxdur.");
-  const cid = meta?.session?.companyId;
+function resetCompanyData(targetCid) {
+  if (!isDeveloper() && !userCanReset()) return alert("Reset icazəsi yoxdur.");
+  const cid = targetCid || meta?.session?.companyId;
   if (!cid) return;
   if (normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
     return alert("İdarəetmə paneli üçün şirkət datası sıfırlanmır.");
   }
-  appConfirm("Bu şirkətin bütün datası sıfırlansın?").then((ok) => {
+  const comp = (meta.companies || []).find((c) => c.id === cid);
+  const label = comp ? `"${comp.name}" (${cid})` : cid;
+  appConfirm(`${label} şirkətinin bütün datası sıfırlansın?\nBu əməliyyatı geri qaytarmaq olmaz!`).then((ok) => {
     if (!ok) return;
     const empty = defaultDB();
+    const isActiveCompany = cid === meta?.session?.companyId;
     if (useFirestore()) {
       const ref = getCompanyRef(cid);
       if (ref) {
@@ -11188,21 +11191,22 @@ function resetCompanyData() {
         ref
           .set(empty)
           .then(() => {
-            db = empty;
+            if (isActiveCompany) db = empty;
             logEvent("reset", "company", { companyId: cid });
             renderAll();
+            toast(`${label} sıfırlandı`, "warn", 4000);
           })
           .catch((e) => console.warn("Firestore reset xətası:", e))
           .finally(() => softLoadingEnd());
       }
     } else {
       localStorage.setItem(companyDBKey(cid), JSON.stringify(empty));
-      db = loadCompanyDB();
+      if (isActiveCompany) db = loadCompanyDB();
       logEvent("reset", "company", { companyId: cid });
       renderAll();
+      toast(`${label} sıfırlandı`, "warn", 4000);
     }
   });
-  return;
 }
 
 function getCompanyIdFromUsername(username) {
@@ -14450,6 +14454,7 @@ function renderAll() {
               ${selectCell}
               <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
               ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="${c.disabled ? 'Tam sil' : 'Deaktiv et'}"><i class="fas fa-${c.disabled ? 'trash' : 'ban'}"></i></button>` : ""}
+              ${isDeveloper() ? `<button class="icon-btn" type="button" onclick="resetCompanyData('${escapeAttr(c.id)}')" title="Şirkət datasını sıfırla" style="color:#dc2626"><i class="fas fa-rotate-right"></i></button>` : ""}
               ${restoreBtn}
               ${paidBtn}
             </td>
