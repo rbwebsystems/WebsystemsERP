@@ -14438,7 +14438,7 @@ function renderAll() {
             ? '<span class="pill overdue">DEAKTİV</span>'
             : active ? '<span class="pill paid">AKTİV</span>' : "—";
           const restoreBtn = (c.disabled && isDeveloper())
-            ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et" style="color:#16a34a"><i class="fas fa-rotate-left"></i></button>`
+            ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et (aktiv et)" style="color:#16a34a"><i class="fas fa-circle-check"></i></button>`
             : `<span class="icon-btn-placeholder"></span>`;
           const devFsNoTenantSwitch = isDeveloper() && useFirestore();
           const selectCell = devFsNoTenantSwitch
@@ -14454,7 +14454,7 @@ function renderAll() {
               ${selectCell}
               <button class="icon-btn" type="button" onclick="openCompanyInfo(${i})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
               ${isDeveloper() ? `<a class="icon-btn edit" href="${erpOpHref("companies","companyEdit",i)}" onclick="openCompany(${i});return false;" title="Redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delCompany(${i})" title="${c.disabled ? 'Tam sil' : 'Deaktiv et'}"><i class="fas fa-${c.disabled ? 'trash' : 'ban'}"></i></button>` : ""}
-              ${isDeveloper() ? `<button class="icon-btn" type="button" onclick="resetCompanyData('${escapeAttr(c.id)}')" title="Şirkət datasını sıfırla" style="color:#dc2626"><i class="fas fa-rotate-right"></i></button>` : ""}
+              ${isDeveloper() ? `<button class="icon-btn" type="button" onclick="resetCompanyData('${escapeAttr(c.id)}')" title="Şirkət datasını sıfırla" style="color:#dc2626"><i class="fas fa-eraser"></i></button>` : ""}
               ${restoreBtn}
               ${paidBtn}
             </td>
