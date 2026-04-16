@@ -5145,50 +5145,44 @@ body.theme-dark .pill.nagd{
 }
 .btn-mini-pay:hover{background:#f3f4f6;}
 
-/* ── Companies table column sizing ──────────────────────────── */
 /* ── Companies table ─────────────────────────────────────── */
-#companiesTable{table-layout:fixed;width:100%;border-collapse:collapse;}
-#companiesTable col.co-col-num    {width:44px;}
-#companiesTable col.co-col-name   {width:auto;}
-#companiesTable col.co-col-id     {width:150px;}
+#companiesTable{table-layout:auto;width:100%;border-collapse:collapse;}
+#companiesTable col.co-col-num    {width:40px;}
+#companiesTable col.co-col-name   {min-width:160px;}
+#companiesTable col.co-col-id     {min-width:110px;}
 #companiesTable col.co-col-active {width:80px;}
-#companiesTable col.co-col-sub    {width:150px;}
-#companiesTable col.co-col-actions{width:300px;}
-/* all cells: baseline alignment, clip text overflow, no vertical separators */
+#companiesTable col.co-col-sub    {min-width:120px;}
+#companiesTable col.co-col-actions{min-width:220px;}
+/* all cells */
 #companiesTable th,
 #companiesTable td{
   vertical-align:middle;
   padding:10px 14px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
   border-right:none;
 }
-/* action cell: flex, no clipping, right-aligned */
+/* action cell: flex row, no clip */
 #companiesTable td:nth-child(6),
 #companiesTable td:nth-child(6).tbl-actions{
-  overflow:visible;
-  white-space:normal;
+  white-space:nowrap;
   display:flex;
   align-items:center;
   justify-content:flex-start;
   gap:6px;
   flex-wrap:nowrap;
   padding:6px 12px 6px 14px;
-  width:auto !important;
-  text-align:left !important;
 }
 #companiesTable .co-th-num,
 #companiesTable td:nth-child(1){text-align:center;padding-left:8px;padding-right:8px;}
 #companiesTable .co-th-center,
 #companiesTable td:nth-child(4),
 #companiesTable td:nth-child(5){text-align:center;}
-#companiesTable .co-th-right{text-align:left;padding-right:16px;}
+#companiesTable .co-th-right{text-align:left;}
 #companiesTable td.tbl-actions .icon-btn,
 #companiesTable td.tbl-actions .btn-mini-pay{flex-shrink:0;}
 #companiesTable td:nth-child(3) code{
   overflow:hidden;text-overflow:ellipsis;
   display:block;max-width:100%;
+  white-space:nowrap;
 }
 
 /* ══════════════════════════════════════════════════════════════
