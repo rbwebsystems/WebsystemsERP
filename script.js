@@ -65,6 +65,27 @@ let erpAcquireCustomTokenDepth = 0;
 // ── Premium Preloader ──────────────────────────────
 const _pl = {
   _done: false,
+  _startMs: Date.now(),
+  _MIN_MS: 600,
+  _rotMsgs: [
+    "Sistem hazırlanır…",
+    "Məlumatlar yoxlanılır…",
+    "İş mühiti qurulur…",
+    "Konfiqurasiya tətbiq olunur…",
+    "Təhlükəsizlik yoxlanılır…",
+  ],
+  _rotTimer: null,
+  _startRotation() {
+    let i = 0;
+    this._text(this._rotMsgs[0]);
+    this._rotTimer = setInterval(() => {
+      i = (i + 1) % this._rotMsgs.length;
+      this._text(this._rotMsgs[i]);
+    }, 1400);
+  },
+  _stopRotation() {
+    if (this._rotTimer) { clearInterval(this._rotTimer); this._rotTimer = null; }
+  },
   _bar(pct) {
     const b = byId("preloaderBar");
     if (b) b.style.width = pct + "%";
@@ -74,18 +95,27 @@ const _pl = {
     if (el) el.textContent = t;
   },
   step(name) {
-    const map = { auth: [25,"Autentifikasiya"], meta: [55,"Konfiqurasiya"], data: [80,"Məlumatlar"], ready: [100,"Hazır"] };
+    const map = { auth: [30,"Autentifikasiya yoxlanılır…"], meta: [58,"Konfiqurasiya yüklənir…"], data: [82,"Məlumatlar hazırlanır…"], ready: [100,"Hazır"] };
     const [pct, label] = map[name] || [0,""];
     this._bar(pct);
-    this._text(label);
+    if (label) { this._stopRotation(); this._text(label); }
   },
   hide() {
     if (this._done) return;
     this._done = true;
+    this._stopRotation();
     this._bar(100);
+    this._text("Hazır");
     const el = byId("appPreloader");
     if (!el) return;
-    setTimeout(() => el.classList.add("app-preloader--out"), 250);
+    const elapsed = Date.now() - this._startMs;
+    const wait = Math.max(0, this._MIN_MS - elapsed);
+    setTimeout(() => el.classList.add("app-preloader--out"), wait + 120);
+  },
+  init() {
+    this._startMs = Date.now();
+    this._done = false;
+    this._startRotation();
   },
 };
 
@@ -15617,6 +15647,7 @@ function getLoginCompanyFromUrl() {
 }
 
 async function init() {
+  _pl.init();
   applyTheme();
   if (!isOnline()) {
     _pl.hide();
