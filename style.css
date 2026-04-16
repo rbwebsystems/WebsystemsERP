@@ -137,6 +137,34 @@ body.theme-dark .perm-matrix td{
   border-bottom:1px solid rgba(255,255,255,.10);
 }
 
+/* New permission table */
+.perm-new-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+}
+.perm-new-table th,
+.perm-new-table td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--border-color);
+  vertical-align:middle;
+  font-size:.875rem;
+}
+.perm-new-table th{
+  background:var(--sidebar-bg,#f8f9fb);
+  font-weight:600;
+  font-size:.78rem;
+  color:var(--text-muted);
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.perm-new-table tbody tr:hover{background:var(--hover-bg,rgba(0,0,0,.03));}
+.perm-new-table td:first-child{font-weight:500;}
+.perm-new-table input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary,#2563eb);}
+body.theme-dark .perm-new-table th{background:rgba(255,255,255,.05);}
+body.theme-dark .perm-new-table th,
+body.theme-dark .perm-new-table td{border-bottom:1px solid rgba(255,255,255,.08);}
+
 .notif-badge{
   position:absolute;
   top:6px;

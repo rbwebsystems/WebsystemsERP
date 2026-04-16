@@ -11894,6 +11894,123 @@ function toggleUserManualMode() {
   syncAutoUserIdentity();
 }
 
+// ===== İstifadəçi icazə modalı =====
+const PERM_SECTIONS = [
+  { id: "dash",    label: "İdarə paneli",  viewOnly: true },
+  { id: "sales",   label: "Satış" },
+  { id: "purch",   label: "Alış" },
+  { id: "cust",    label: "Müştərilər" },
+  { id: "prod",    label: "Məhsullar" },
+  { id: "stock",   label: "Anbar" },
+  { id: "cash",    label: "Kassa" },
+  { id: "staff",   label: "Əməkdaşlar" },
+  { id: "reports", label: "Hesabatlar",   viewOnly: true },
+  { id: "settings",label: "Ayarlar",      viewOnly: true },
+];
+
+function openPermModal(staffIdx) {
+  const s = db.staff[staffIdx];
+  if (!s) return;
+  const linkedUser = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
+  if (!linkedUser) {
+    toast("Bu əməkdaşın sistem hesabı yoxdur. Əməkdaş redaktəsindən sistem girişini aktivləşdirin.", "error");
+    return;
+  }
+  const p = linkedUser.perms || {};
+  const secs = Array.isArray(p.sections) ? p.sections : [];
+  const acts = p.actions || {};
+  const hasSec  = (id) => secs.includes("*") || secs.includes(id);
+  const hasAct  = (id, act) => {
+    const key = `${id}.${act}`;
+    return Object.prototype.hasOwnProperty.call(acts, key) ? !!acts[key] : false;
+  };
+
+  const rows = PERM_SECTIONS.map(sec => {
+    const chk = (act, checked) =>
+      `<td style="text-align:center;"><input type="checkbox" class="perm-new-chk" data-sec="${sec.id}" data-act="${act}" ${checked ? "checked" : ""}></td>`;
+    const dash = `<td style="text-align:center;color:var(--text-muted);">—</td>`;
+    return `<tr>
+      <td>${escapeHtml(sec.label)}</td>
+      ${chk("baxmaq", hasSec(sec.id))}
+      ${sec.viewOnly ? dash + dash + dash : chk("elave", hasAct(sec.id, "create")) + chk("redakte", hasAct(sec.id, "edit")) + chk("sil", hasAct(sec.id, "delete"))}
+    </tr>`;
+  }).join("");
+
+  const isActive = linkedUser.active || linkedUser.isActive;
+  openModal(`
+    <h2><i class="fas fa-shield-halved" style="margin-right:6px;"></i>${escapeHtml(s.fullName || s.name)} — İcazələr</h2>
+    <p class="muted" style="margin:0 0 12px;font-size:.85rem;">Status: <span class="${isActive ? "pill paid" : "pill unpaid"}" style="vertical-align:middle;">${isActive ? "Aktiv" : "Deaktiv"}</span> &nbsp; Login: <strong>${escapeHtml(linkedUser.username || "—")}</strong></p>
+    <form onsubmit="savePermModal(event,'${escapeAttr(String(linkedUser.uid))}')">
+      <div class="table-wrap" style="margin-bottom:16px;">
+        <table class="perm-new-table">
+          <thead>
+            <tr>
+              <th style="min-width:130px;">Bölmə</th>
+              <th style="text-align:center;width:72px;">Baxmaq</th>
+              <th style="text-align:center;width:72px;">Əlavə</th>
+              <th style="text-align:center;width:72px;">Redaktə</th>
+              <th style="text-align:center;width:72px;">Sil</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="perm_active_toggle" ${isActive ? "checked" : ""}>
+          <span>Aktiv giriş icazəsi</span>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit" id="permSaveBtn">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+      </div>
+    </form>
+  `);
+}
+
+async function savePermModal(e, userId) {
+  e.preventDefault();
+  const btn = byId("permSaveBtn");
+  erpSetButtonBusy(btn, true, "Saxlanılır…");
+  try {
+    const idx = (meta.users || []).findIndex(u => String(u.uid) === String(userId));
+    if (idx === -1) { toast("İstifadəçi tapılmadı", "error"); return; }
+    const u = meta.users[idx];
+    if (!u.perms) u.perms = { sections: [], actions: {}, canEdit: false, canDelete: false };
+    if (!u.perms.actions) u.perms.actions = {};
+
+    const newSections = [];
+    const newActions = {};
+    document.querySelectorAll(".perm-new-chk").forEach(cb => {
+      const sec = cb.getAttribute("data-sec");
+      const act = cb.getAttribute("data-act");
+      if (act === "baxmaq") {
+        if (cb.checked) newSections.push(sec);
+      } else {
+        const actionKey = act === "elave" ? "create" : act === "redakte" ? "edit" : "delete";
+        newActions[`${sec}.${actionKey}`] = cb.checked;
+      }
+    });
+
+    u.perms.sections = newSections;
+    u.perms.actions  = newActions;
+    u.perms.canEdit  = Object.entries(newActions).some(([k, v]) => k.endsWith(".edit")   && v);
+    u.perms.canDelete= Object.entries(newActions).some(([k, v]) => k.endsWith(".delete") && v);
+    u.perms.canPay   = u.perms.canPay ?? false;
+    u.active = !!(byId("perm_active_toggle")?.checked);
+    meta.users[idx] = u;
+    await saveMeta();
+    toast("İcazələr yadda saxlandı", "success");
+    closeMdl();
+    renderAll();
+  } catch (err) {
+    toast("Xəta: " + (err?.message || err), "error");
+  } finally {
+    erpSetButtonBusy(btn, false);
+  }
+}
+
 function openUser(uidOrNull = null) {
   if (!isDeveloper() && !isAdmin()) return alert("İcazə yoxdur.");
   const cid = meta?.session?.companyId;
@@ -15079,32 +15196,37 @@ function renderAll() {
     }
   }
 
-  // users (cari şirkətin istifadəçiləri)
+  // users — staff with hasSystemAccess
   const userBody = byId("tblUsers");
   if (userBody) {
-    const companyUsers = usersForCurrentCompany()
-      .slice()
-      .sort((a, b) => String(a.username).localeCompare(String(b.username)));
-    userBody.innerHTML = companyUsers
-      .map((u, i) => {
-        const me = Number(u.uid) === Number(meta?.session?.userUid);
-        const staffUid = u.staffUid != null && u.staffUid !== "" ? String(u.staffUid) : null;
-        const staffName = staffUid && db.staff ? (db.staff.find((s) => String(s.uid) === staffUid)?.name || "-") : "-";
-        const uidAttr = escapeAttr(String(u.uid));
+    const staffWithAccess = (db.staff || [])
+      .map((s, staffIdx) => ({ s, staffIdx }))
+      .filter(({ s }) => s.hasSystemAccess);
+    if (!staffWithAccess.length) {
+      userBody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="muted">Sistem istifadəçisi olan əməkdaş yoxdur. Əməkdaş yaradarkən "Sistem istifadəçisi olsun" seçin.</td></tr>`;
+    } else {
+      userBody.innerHTML = staffWithAccess.map(({ s, staffIdx }, i) => {
+        const linkedUser = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
+        const isActive = linkedUser ? !!(linkedUser.active || linkedUser.isActive) : false;
+        const statusBadge = isActive
+          ? `<span class="pill paid">Aktiv</span>`
+          : `<span class="pill unpaid">Deaktiv</span>`;
+        const me = linkedUser && Number(linkedUser.uid) === Number(meta?.session?.userUid);
+        const uidAttr = linkedUser ? escapeAttr(String(linkedUser.uid)) : "";
         return `
         <tr>
           <td>${i + 1}</td>
-          <td>${escapeHtml(u.fullName || "-")}</td>
-          <td>${escapeHtml(u.username)}${me ? " (siz)" : ""}</td>
-          <td>${escapeHtml(staffName)}</td>
-          <td>${escapeHtml(u.role || "user")}</td>
-          <td>${u.active ? "Aktiv" : "Deaktiv"}</td>
+          <td>${escapeHtml(s.fullName || s.name || "-")}${me ? " <span class='muted' style='font-size:.75rem;'>(siz)</span>" : ""}</td>
+          <td>${escapeHtml(s.phone || "-")}</td>
+          <td>${escapeHtml(s.vezifeAdi || s.role || "-")}</td>
+          <td>${statusBadge}</td>
           <td class="tbl-actions">
-            ${(isDeveloper() || isAdmin()) ? `<a class="icon-btn edit" href="${erpOpHref("users", "userEdit", u.uid)}" onclick="openUser('${uidAttr}');return false;" title="Edit"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            ${(isDeveloper() || isAdmin()) ? `<button class="btn-mini" type="button" onclick="openPermModal(${staffIdx})"><i class="fas fa-shield-halved"></i> İcazələri tənzimlə</button>` : ""}
+            ${isDeveloper() && uidAttr ? `<a class="icon-btn edit" onclick="openUser('${uidAttr}');return false;" title="Tam redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
-      })
-      .join("");
+      }).join("");
+    }
   }
 
   // audit
@@ -15920,6 +16042,8 @@ Object.assign(window, {
   delCompany,
   useCompany,
   resetCompanyData,
+  openPermModal,
+  savePermModal,
   openUser,
   saveUser,
   delUser,
