@@ -7251,7 +7251,14 @@ function openStaff(idx = null) {
             <div class="f-group"><label>Kart / Hesab №</label><input id="f_st_accountNo" value="${escapeAttr(s.accountNo || "")}" placeholder="XXXX XXXX XXXX XXXX"></div>
             <div class="f-group"><label>VÖEN</label><input id="f_st_voen" value="${escapeAttr(s.voen || "")}" placeholder="VÖEN"></div>
             <div class="f-group"><label>Borc / Avans limiti (AZN)</label><input type="number" step="0.01" min="0" id="f_st_advLimit" value="${escapeAttr(String(s.advanceLimit ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Aylıq avans icazəsi (AZN)</label><input type="number" step="0.01" min="0" id="f_st_monthlyAdv" value="${escapeAttr(String(s.monthlyAdvanceAllowed ?? "0"))}" placeholder="0.00"></div>
           </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Profil</div>
+          <div class="f-group"><label>Profil şəkli (URL)</label><input type="url" id="f_st_avatarUrl" value="${escapeAttr(s.avatarUrl || "")}" placeholder="https://..."></div>
+          ${s.avatarUrl ? `<div style="margin-top:8px;"><img src="${escapeAttr(s.avatarUrl)}" alt="Profil" style="width:72px;height:72px;object-fit:cover;border-radius:50%;border:2px solid var(--border-color);"></div>` : ""}
         </div>
 
         <div class="form-card">
@@ -7391,6 +7398,8 @@ async function saveStaff(e, idx) {
     accountNo: (val("f_st_accountNo") || "").trim(),
     voen: (val("f_st_voen") || "").trim(),
     advanceLimit: String(Math.max(0, n(val("f_st_advLimit")))),
+    monthlyAdvanceAllowed: String(Math.max(0, n(val("f_st_monthlyAdv")))),
+    avatarUrl: (val("f_st_avatarUrl") || "").trim(),
     hasSystemAccess: hasSys,
     sysLogin: newSysUser?.sysLogin || (existingLinkedUser?.username) || "",
     notes: (val("f_st_notes") || "").trim(),
@@ -7422,6 +7431,116 @@ async function saveStaff(e, idx) {
   logEvent(isNew ? "create" : "update", "staff", { uid: data.uid });
   saveDB();
   closeMdl();
+}
+
+function openStaffInfo(idx) {
+  const s = db.staff[idx];
+  if (!s) return;
+  const linkedUser = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
+  const empStatusMap = {
+    active: ["pill paid", "Aktiv"],
+    vacation: ["pill warn", "Məzuniyyətdə"],
+    suspended: ["pill partial", "Dayandırılıb"],
+    terminated: ["pill unpaid", "İşdən çıxıb"],
+  };
+  const [statusCls, statusTxt] = empStatusMap[s.employeeStatus || "active"] || ["pill paid", "Aktiv"];
+  const salaryTypeLabel = { fixed: "Sabit maaş", percent: "Faizlə", mixed: "Sabit + faiz" }[s.salaryType || "fixed"] || "Sabit maaş";
+  const payMethodLabel = { cash: "Nəğd", card: "Kart", transfer: "Bank köçürməsi" }[s.paymentMethod || "cash"] || "Nəğd";
+  const genderLabel = { male: "Kişi", female: "Qadın" }[s.gender || ""] || "-";
+  const maritalLabel = { single: "Subay", married: "Evli", divorced: "Boşanmış", widowed: "Dul" }[s.maritalStatus || ""] || "-";
+  const avatar = s.avatarUrl
+    ? `<img src="${escapeAttr(s.avatarUrl)}" alt="Profil" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:2px solid var(--border-color);margin-bottom:8px;">`
+    : `<div style="width:80px;height:80px;border-radius:50%;background:var(--sidebar-bg,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--text-muted);border:2px solid var(--border-color);margin-bottom:8px;"><i class="fas fa-user"></i></div>`;
+  const row = (label, value) => value && value !== "-"
+    ? `<div class="info-row"><div class="info-label">${label}</div><div class="info-value">${value}</div></div>`
+    : "";
+  openModal(`
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <div style="flex-shrink:0;">${avatar}</div>
+      <div>
+        <h2 style="margin:0 0 4px;">${escapeHtml(s.fullName || s.name)}</h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span class="muted" style="font-size:.85rem;">${escapeHtml(s.vezifeAdi || s.role || "")}</span>
+          ${s.department ? `<span class="muted" style="font-size:.85rem;">· ${escapeHtml(s.department)}</span>` : ""}
+          <span class="${statusCls}">${statusTxt}</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-stack">
+
+      <div class="form-card">
+        <div class="form-card-title">Şəxsi məlumat</div>
+        <div class="info-block">
+          ${row("Ata adı", escapeHtml(s.fatherName || ""))}
+          ${row("Telefon", escapeHtml(s.phone || ""))}
+          ${row("Əlavə telefon", escapeHtml(s.phoneAlt || ""))}
+          ${row("E-poçt", escapeHtml(s.email || ""))}
+          ${row("Şəxsiyyət vəsiqəsi №", escapeHtml(s.idCardNo || ""))}
+          ${row("FİN kod", escapeHtml(s.finCode || ""))}
+          ${row("Doğum tarixi", s.birthDate ? fmtDT(s.birthDate) : "")}
+          ${row("Cins", genderLabel)}
+          ${row("Ailə vəziyyəti", maritalLabel)}
+          ${row("Ünvan", escapeHtml(s.address || ""))}
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">İş məlumatları</div>
+        <div class="info-block">
+          ${row("Vəzifə", escapeHtml(s.vezifeAdi || s.role || ""))}
+          ${row("Şöbə", escapeHtml(s.department || ""))}
+          ${row("İşə qəbul tarixi", s.hireDate ? fmtDT(s.hireDate) : "")}
+          ${row("Müqavilə nömrəsi", escapeHtml(s.contractNo || ""))}
+          ${row("İş statusu", statusTxt)}
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">Əmək haqqı</div>
+        <div class="info-block">
+          ${row("Maaş tipi", salaryTypeLabel)}
+          ${s.salaryType !== "percent" ? row("Standart maaş", `${money(s.baseSalary || 0)} AZN`) : ""}
+          ${s.salaryType !== "fixed" ? row("Satışdan faiz", `${money(s.commPct || 0)}%`) : ""}
+          ${n(s.bonus) > 0 ? row("Bonus", `${money(s.bonus)} AZN`) : ""}
+          ${n(s.fineLimit) > 0 ? row("Cərimə limiti", `${money(s.fineLimit)} AZN`) : ""}
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">Maliyyə / Ödəniş</div>
+        <div class="info-block">
+          ${row("Ödəniş forması", payMethodLabel)}
+          ${row("Bank adı", escapeHtml(s.bankName || ""))}
+          ${row("Kart / Hesab №", escapeHtml(s.accountNo || ""))}
+          ${row("VÖEN", escapeHtml(s.voen || ""))}
+          ${n(s.advanceLimit) > 0 ? row("Borc/Avans limiti", `${money(s.advanceLimit)} AZN`) : ""}
+          ${n(s.monthlyAdvanceAllowed) > 0 ? row("Aylıq avans icazəsi", `${money(s.monthlyAdvanceAllowed)} AZN`) : ""}
+        </div>
+      </div>
+
+      ${linkedUser ? `
+      <div class="form-card">
+        <div class="form-card-title">Sistem girişi</div>
+        <div class="info-block">
+          ${row("Login", escapeHtml(linkedUser.username || ""))}
+          ${row("Sistem rolu", escapeHtml(linkedUser.role || ""))}
+          ${row("Aktiv", linkedUser.active || linkedUser.isActive ? "Bəli" : "Xeyr")}
+          ${linkedUser.lastLogin ? row("Son giriş", fmtDT(linkedUser.lastLogin)) : ""}
+        </div>
+      </div>` : ""}
+
+      ${s.notes ? `
+      <div class="form-card">
+        <div class="form-card-title">Qeyd</div>
+        <div class="muted" style="font-size:.9rem;white-space:pre-wrap;">${escapeHtml(s.notes)}</div>
+      </div>` : ""}
+
+    </div>
+    <div class="modal-footer">
+      ${userCanEdit() ? `<button class="btn-main" type="button" onclick="closeMdl(); openStaff(${idx})"><i class="fas fa-pen"></i> Redaktə</button>` : ""}
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
 }
 
 function staffSalaryTypeChange() {
@@ -7492,7 +7611,7 @@ function updateStaffPayrollTable() {
     if (!empId) continue;
     byEmp.set(empId, (byEmp.get(empId) || 0) + n(s.amount));
   }
-  const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.fullName || a.name || "").localeCompare(String(b.fullName || b.name || "")));
   let grandTotal = 0;
   const rows = staffSorted
     .map((st, i) => {
@@ -7505,7 +7624,7 @@ function updateStaffPayrollTable() {
       return `
       <tr>
         <td>${i + 1}</td>
-        <td>${escapeHtml(st.name)}</td>
+        <td>${escapeHtml(st.fullName || st.name)}</td>
         <td>${money(base)} AZN</td>
         <td>${money(salesSum)} AZN</td>
         <td>${money(pct)}%</td>
@@ -7567,7 +7686,7 @@ function renderStaffPayList() {
     if (!empId) continue;
     byEmp.set(empId, (byEmp.get(empId) || 0) + n(s.amount));
   }
-  const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  const staffSorted = (db.staff || []).slice().sort((a, b) => String(a.fullName || a.name || "").localeCompare(String(b.fullName || b.name || "")));
   const rows = staffSorted
     .map((st, i) => {
       const salesSum = byEmp.get(String(st.uid)) || 0;
@@ -7577,14 +7696,15 @@ function renderStaffPayList() {
       const total = base + comm;
       const paid = staffSalaryPaidForMonth(st.uid, monthKey);
       const paidLabel = paid > 0.000001 ? `${money(paid)} AZN ödənilib` : "—";
-      const staffNameJson = JSON.stringify(st.name || "");
+      const stName = st.fullName || st.name || "";
+      const staffNameJson = JSON.stringify(stName);
       const monthKeyJson = JSON.stringify(monthKey);
       const onclickResmi = `closeMdl(); openStaffPayConfirm(${st.uid}, ${staffNameJson}, ${total}, ${monthKeyJson}, 'resmi')`;
       const onclickNagd = `closeMdl(); openStaffPayConfirm(${st.uid}, ${staffNameJson}, ${total}, ${monthKeyJson}, 'nagd')`;
       return `
       <tr>
         <td>${i + 1}</td>
-        <td>${escapeHtml(st.name)}</td>
+        <td>${escapeHtml(stName)}</td>
         <td>${money(total)} AZN</td>
         <td>${paidLabel}</td>
         <td class="tbl-actions">
@@ -12649,7 +12769,7 @@ function saleTypeLabel(t) {
 function getStaffName(uid) {
   if (!uid) return "-";
   const s = (db.staff || []).find((x) => String(x.uid) === String(uid));
-  return s ? (s.name || "-") : "-";
+  return s ? (s.fullName || s.name || "-") : "-";
 }
 
 function buildMelumatHtml(q) {
@@ -14446,6 +14566,7 @@ function renderAll() {
       <td><span class="${statusCls}">${statusTxt}</span></td>
       <td><span class="muted" style="font-size:.75rem;">${salTypeLbl}</span><br>${salaryDisplay}</td>
       <td class="tbl-actions">
+        <button class="icon-btn info" onclick="openStaffInfo(${idx})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("staff") ? `<button class="icon-btn delete" onclick="delItem('staff', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
