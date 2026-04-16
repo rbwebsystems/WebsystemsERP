@@ -10641,7 +10641,7 @@ function openCompany(idx = null) {
           <div class="form-card-title">Şirkət</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
-            <div class="f-group"><label>ID *</label><input id="co_id" placeholder="məs: bakfon" value="${escapeHtml(c.id || "")}" ${idx !== null ? 'disabled style="opacity:.6;font-family:monospace"' : 'required style="font-family:monospace"'}></div>
+            <div class="f-group"><label>ID *</label><input id="co_id" placeholder="məs: bakfon" value="${escapeHtml(c.id || "")}" ${idx !== null ? 'disabled style="opacity:.6;font-family:monospace"' : 'required style="font-family:monospace" oninput="syncCoAdminPrefix()"'}></div>
             <div class="f-group"><label>Direktor</label><input id="co_director" placeholder="Ad Soyad" value="${escapeHtml(c.director || "")}"></div>
             <div class="f-group"><label>VÖEN</label><input id="co_voen" placeholder="0000000000" value="${escapeHtml(c.voen || "")}"></div>
             <div class="f-group grid-span-2"><label>Ünvan</label><input id="co_address" placeholder="Şəhər, küçə, bina" value="${escapeHtml(c.address || "")}"></div>
@@ -10669,6 +10669,16 @@ function openCompany(idx = null) {
           </div>
         </div>
       </div>
+      ${idx === null ? `
+      <div class="form-card" id="co_admin_card">
+        <div class="form-card-title">👤 İlk Admin İstifadəçi</div>
+        <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 10px">Şirkətə daxil olmaq üçün admin hesabı yaradılır. İlk girişdə şifrə dəyişdirilməli olacaq.</p>
+        <div class="grid-2">
+          <div class="f-group grid-span-2"><label>Admin adı (Ad Soyad) *</label><input id="co_admin_name" placeholder="məs: Rüstəm Bayramov" required autocomplete="off"></div>
+          <div class="f-group"><label>Login (istifadəçi adı) *</label><div class="input-with-addon"><span class="input-addon" id="co_admin_prefix">?_</span><input id="co_admin_suffix" placeholder="rustamb" required autocomplete="off"></div></div>
+          <div class="f-group"><label>Müvəqqəti şifrə *</label><input type="password" id="co_admin_pass" placeholder="Min. 4 simvol" minlength="4" required autocomplete="new-password"></div>
+        </div>
+      </div>` : ""}
       <div class="perm-group">
         <div class="perm-group-title">Modullar</div>
         <div class="perm-list">
@@ -10681,6 +10691,12 @@ function openCompany(idx = null) {
       </div>
     </form>
   `);
+}
+
+function syncCoAdminPrefix() {
+  const id = String(val("co_id") || "").trim().toLowerCase().replace(/\s+/g, "_");
+  const badge = byId("co_admin_prefix");
+  if (badge) badge.textContent = (id || "?") + "_";
 }
 
 function genCompanyUUID() {
@@ -10696,7 +10712,7 @@ function toggleSubFields(on) {
   if (el) el.style.display = on ? "" : "none";
 }
 
-function saveCompany(e, idx) {
+async function saveCompany(e, idx) {
   e.preventDefault();
   if (!isDeveloper()) return;
   const form = e.target;
@@ -10726,13 +10742,53 @@ function saveCompany(e, idx) {
       const id = val("co_id").trim().toLowerCase().replace(/\s+/g, "_");
       if (!id) return alert("Şirkət ID-sini daxil edin.");
       if (meta.companies.some((c) => c.id === id)) return alert("Bu ID artıq mövcuddur. Başqa ID seçin.");
+
+      // --- Admin user validation ---
+      const adminName   = (val("co_admin_name") || "").trim();
+      const adminSuffix = (val("co_admin_suffix") || "").trim();
+      const adminPass   = val("co_admin_pass") || "";
+      if (!adminName)   return alert("Admin adını daxil edin.");
+      if (!adminSuffix) return alert("Admin login (istifadəçi adı) daxil edin.");
+      if (adminPass.length < 4) return alert("Müvəqqəti şifrə ən azı 4 simvol olmalıdır.");
+      const adminUsername = `${id}_${adminSuffix}`;
+      if (meta.users.some((u) => String(u.username || "").toLowerCase() === adminUsername.toLowerCase())) {
+        return alert(`"${adminUsername}" istifadəçi adı artıq mövcuddur. Başqa login seçin.`);
+      }
+
+      // --- Hash password ---
+      const adminPassHash = await erpHashPasswordPlain(adminPass);
+      const allSectionPerms = ["dash","sales","purch","stock","cust","supp","prod","staff","debts","overdue","creditor","cash","accounts","reports","users","audit","trash","tools"];
+      const adminUser = {
+        uid: genId(meta.users, 1),
+        fullName: adminName,
+        username: adminUsername,
+        pass: adminPassHash,
+        role: "admin",
+        active: true,
+        mustChangePassword: true,
+        companyId: id,
+        createdAt: nowISODateTimeLocal(),
+        perms: {
+          sections: allSectionPerms,
+          canEdit: true, canDelete: true, canPay: true,
+          canRefund: true, canExport: true, canImport: true, canReset: true,
+          actions: {},
+        },
+      };
+
+      // --- Atomic: add company + user together ---
       meta.companies.push({ id, name, director, voen, address, requisites, sections, subscription });
+      meta.users.push(adminUser);
+      saveMeta();
+      closeMdl();
+      renderAll();
+      toast(`Şirkət və admin istifadəçi uğurla yaradıldı — login: ${adminUsername}`, "ok", 6000);
     } else {
       meta.companies[idx] = { ...meta.companies[idx], name, director, voen, address, requisites, sections, subscription };
+      saveMeta();
+      closeMdl();
+      renderAll();
     }
-    saveMeta();
-    closeMdl();
-    renderAll();
   } finally {
     erpSetButtonBusy(submitBtn, false);
   }
@@ -15229,6 +15285,7 @@ Object.assign(window, {
   delAccount,
   openCompany,
   saveCompany,
+  syncCoAdminPrefix,
   delCompany,
   useCompany,
   resetCompanyData,
