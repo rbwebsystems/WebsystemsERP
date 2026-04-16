@@ -986,7 +986,7 @@ function delAccount(idx) {
     if (!deleteReason) return;
     ensureAuditTrash();
     const u = currentUser();
-    db.trash.push({ uid: genId(db.trash, 1), type: "accounts", item: db.accounts[idx], deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+    db.trash.push({ uid: genId(db.trash, 1), type: "accounts", item: db.accounts[idx], deletedAt: nowISODateTimeLocal(), deletedBy: (u?.fullName || "").trim() || u?.username || "-", deleteReason });
     logEvent("delete", "accounts", { uid: db.accounts[idx]?.uid, name: db.accounts[idx]?.name, deleteReason });
     db.accounts.splice(idx, 1);
     saveDB();
@@ -1148,7 +1148,7 @@ function logEvent(action, target, details = {}) {
   db.audit.push({
     uid: genId(db.audit, 1),
     ts: nowISODateTimeLocal(),
-    user: userDisplay(u),
+    user: (u?.fullName || "").trim() || userDisplay(u),
     action,
     target,
     details,
@@ -2450,7 +2450,7 @@ async function deleteFounder(idx) {
   if (!deleteReason) return;
   ensureAuditTrash();
   const u = currentUser();
-  db.trash.push({ uid: genId(db.trash, 1), type: "founders", item: f, deletedAt: nowISODateTimeLocal(), deletedBy: u?.username || "-", deleteReason });
+  db.trash.push({ uid: genId(db.trash, 1), type: "founders", item: f, deletedAt: nowISODateTimeLocal(), deletedBy: (u?.fullName || "").trim() || u?.username || "-", deleteReason });
   logEvent("delete", "founders", { uid: f?.uid, name: f?.name, deleteReason });
   db.founders.splice(idx, 1);
   saveDB();
@@ -3190,7 +3190,8 @@ function userDisplay(u) {
 }
 
 function currentActorName() {
-  return userDisplay(currentUser()) || "-";
+  const u = currentUser();
+  return (u?.fullName || "").trim() || userDisplay(u) || "-";
 }
 
 function currentUserStaffId() {
@@ -5957,7 +5958,7 @@ async function delPurchInvoiceRow(idx, invNoRaw) {
 
   ensureAuditTrash();
   const u = currentUser();
-  const deletedBy = u ? u.username : "-";
+  const deletedBy = u ? (u.fullName || "").trim() || u.username : "-";
   const deletedAt = nowISODateTimeLocal();
   db.trash.push({ uid: genId(db.trash, 1), type: "purch", item: p, deletedAt, deletedBy, deleteReason });
   logEvent("delete", "purch", { uid: p.uid, invNo, deleteReason });
@@ -5984,7 +5985,7 @@ function delPurchInvoice(invNoRaw) {
     if (!deleteReason) return;
     ensureAuditTrash();
     const u = currentUser();
-    const deletedBy = u ? u.username : "-";
+    const deletedBy = u ? (u.fullName || "").trim() || u.username : "-";
     const deletedAt = nowISODateTimeLocal();
     rows
       .slice()
@@ -8360,7 +8361,7 @@ async function removeSaleItemFromInvoice(saleUid) {
   ensureAuditTrash();
   const u = currentUser();
   const deletedAt = nowISODateTimeLocal();
-  const deletedBy = u?.username || "-";
+  const deletedBy = (u?.fullName || "").trim() || u?.username || "-";
 
   if (isLastItem) {
     // Delete the entire invoice (single-item)
@@ -8871,7 +8872,8 @@ function saveDebtorPayment(e, customerId, saleTypeFilter) {
 
 // ========= Cash =========
 function addCashOp(op, opts = {}) {
-  const actor = userDisplay(currentUser()) || op.actor || "-";
+  const _cu = currentUser();
+  const actor = (_cu?.fullName || "").trim() || userDisplay(_cu) || op.actor || "-";
   const data = {
     uid: genId(db.cash, 1),
     type: op.type, // in | out
@@ -9561,7 +9563,7 @@ async function delCashOp(uid) {
   if (!deleteReason) return;
   ensureAuditTrash();
   const u = currentUser();
-  db.trash.push({ uid: genId(db.trash, 1), type: "cash", item: c, deletedAt: nowISODateTimeLocal(), deletedBy: u ? u.username : "-", deleteReason });
+    db.trash.push({ uid: genId(db.trash, 1), type: "cash", item: c, deletedAt: nowISODateTimeLocal(), deletedBy: u ? (u.fullName || "").trim() || u.username : "-", deleteReason });
   logEvent("delete", "cash", { uid: c.uid, kind: c.link?.kind || "", deleteReason });
 
   // Rollback linked effects
@@ -15064,7 +15066,7 @@ async function delItem(type, i) {
 
   ensureAuditTrash();
   const u = currentUser();
-  const deletedBy = u ? u.username : "-";
+  const deletedBy = u ? (u.fullName || "").trim() || u.username : "-";
   const deletedAt = nowISODateTimeLocal();
 
   if (type === "purch") {
