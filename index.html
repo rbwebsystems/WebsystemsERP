@@ -685,8 +685,25 @@
         </div>
       </div>
       <div class="card">
-        <table>
-          <thead><tr><th>#</th><th>Ad</th><th>ID</th><th>Aktiv</th><th>Abunəlik</th><th>Əməliyyat</th></tr></thead>
+        <table id="companiesTable">
+          <colgroup>
+            <col class="co-col-num">
+            <col class="co-col-name">
+            <col class="co-col-id">
+            <col class="co-col-active">
+            <col class="co-col-sub">
+            <col class="co-col-actions">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="co-th-num">#</th>
+              <th>Ad</th>
+              <th>ID</th>
+              <th class="co-th-center">Aktiv</th>
+              <th class="co-th-center">Abunəlik</th>
+              <th class="co-th-right">Əməliyyat</th>
+            </tr>
+          </thead>
           <tbody id="tblCompanies"></tbody>
         </table>
       </div>
