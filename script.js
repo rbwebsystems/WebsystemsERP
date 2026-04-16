@@ -14449,7 +14449,7 @@ function renderAll() {
             : `<span class="icon-btn-placeholder"></span>`;
           const devFsNoTenantSwitch = isDeveloper() && useFirestore();
           const selectCell = devFsNoTenantSwitch
-            ? `<span class="text-muted" style="font-size:.75rem" title="Tenant datasına yalnız support (impersonation) rejimində keçilir">—</span>`
+            ? ``
             : `<button class="btn-mini-pay" type="button" onclick="useCompany('${escapeAttr(c.id)}')" ${(active || c.disabled) ? "disabled" : ""}>Seç</button>`;
           return `<tr style="${disabledStyle}">
             <td>${i + 1}</td>

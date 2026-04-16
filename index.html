@@ -680,15 +680,15 @@
       <div class="content-header">
         <h1 data-i18n="nav_companies">Şirkətlər</h1>
         <div class="header-actions">
-          <div class="search-container" style="flex:0 0 200px;min-width:150px;">
-            <input type="text" id="coSearch" placeholder="Şirkət axtar…" oninput="renderAll()" autocomplete="off">
-            <i class="fas fa-search search-icon"></i>
-          </div>
-          <select id="coFilterStatus" onchange="renderAll()" title="Status filtri">
+          <select id="coFilterStatus" onchange="renderAll()" title="Status filtri" style="max-width:110px;">
             <option value="all">Hamısı</option>
             <option value="active">Aktiv</option>
             <option value="disabled">Deaktiv</option>
           </select>
+          <div class="search-container" style="flex:0 0 200px;min-width:150px;">
+            <input type="text" id="coSearch" placeholder="Şirkət axtar…" oninput="renderAll()" autocomplete="off">
+            <i class="fas fa-search search-icon"></i>
+          </div>
           <button class="btn-main" type="button" onclick="openCompany()"><i class="fas fa-plus"></i><span data-i18n="btn_new_company"> Yeni şirkət</span></button>
           <button class="btn-cancel" type="button" onclick="resetCompanyData()"><i class="fas fa-rotate"></i><span data-i18n="btn_reset_company"> Şirkəti sıfırla</span></button>
         </div>
