@@ -3,6 +3,18 @@ document.title = "RBSoft ERP";
 
 const BASE_STORAGE_KEY = "bakfon_erp_v1";
 const META_KEY = "bakfon_erp_meta_v1";
+// ── Rejim qeydi ──────────────────────────────────────────────────────────────
+// Production rejimi: useFirestore() === true olduqda aktiv olur.
+//   - companyId Firebase Auth custom token claim-dən gəlir (server-tərəfdən imzalanmış).
+//   - meta.session yalnız lokal keş kimi istifadə olunur; əsas mənbə JWT token claim-dir.
+//   - erpNormalizeSessionForFirebaseClaims() hər sessiyada token ilə sinxronizasiya edir.
+//   - Per-company user izolyasiyası: /erp_users/{companyId} (Firestore rules ilə qorunur).
+//
+// Dev/Demo rejimi: useFirestore() === false (FIREBASE_CONFIG yoxdur və ya Firebase SDK yüklənməyib).
+//   ⚠ Bu rejimdə bütün məlumat localStorage-dadır. companyId localStorage-dan götürülür.
+//   ⚠ Production üçün uyğun deyil: tenant ayrımı, data izolyasiyası, şifrə qorunması yoxdur.
+//   ⚠ Yalnız local development / demo məqsədləri üçün istifadə edin.
+// ─────────────────────────────────────────────────────────────────────────────
 
 const defaultDB = () => ({
   cust: [],
@@ -626,6 +638,18 @@ function getCompanyRef(companyId) {
   return firebase.firestore().collection("companies").doc(cid);
 }
 
+/**
+ * Per-company user storage (/erp_users/{companyId}).
+ * Firestore rules: tenant yalnız öz şirkətinin sənədini oxuya bilər; developer hamısını.
+ * loadMetaAsync() bu referansdan istifadə edərək cross-company user exposure-u aradan qaldırır.
+ */
+function getUsersRef(companyId) {
+  if (!firestoreInitialized) return null;
+  const cid = String(companyId || "").trim();
+  if (!cid || cid === ERP_DEV_SESSION_CID) return null;
+  return firebase.firestore().collection("erp_users").doc(cid);
+}
+
 function loadMetaSync() {
   try {
     const raw = localStorage.getItem(META_KEY);
@@ -650,7 +674,37 @@ async function loadMetaAsync() {
     if (snap.exists) {
       const remote = { ...defaultMeta(), ...snap.data() };
       // session (login) heç vaxt buluddan götürülmür; hər cihaz öz sessiyasını lokal saxlayır
-      return { ...remote, session: loadMetaSync().session || null };
+      const result = { ...remote, session: loadMetaSync().session || null };
+
+      // ── Per-company user izolyasiyası ──────────────────────────────────────
+      // Tenant sessiyası varsa: /erp_users/{companyId} yolundan yalnız öz şirkətinin
+      // user siyahısını yüklə. Bu, config/meta.users-da olan digər şirkətlərin
+      // məlumatlarının (şifrə hash daxil) client-ə çatmasının qarşısını alır.
+      // Firestore rules /erp_users/{companyId} üçün tam tenant izolyasiyası tətbiq edir.
+      const sessionCid = result.session?.companyId;
+      if (sessionCid && sessionCid !== ERP_DEV_SESSION_CID) {
+        try {
+          const usersRef = getUsersRef(sessionCid);
+          if (usersRef) {
+            const usersSnap = await usersRef.get();
+            if (usersSnap.exists) {
+              const isolated = usersSnap.data()?.users || [];
+              if (isolated.length > 0) {
+                // Developer users are global; keep them from full meta for backward compat.
+                const devUsers = (result.users || []).filter(x => x.role === "developer");
+                result.users = [...devUsers, ...isolated];
+                console.debug("[erp-auth] loadMetaAsync: per-company user siyahısı yükləndi", {
+                  companyId: sessionCid, count: isolated.length,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // Permission denied (not yet synced) or network error → fall back to meta.users silently.
+          console.debug("[erp-auth] loadMetaAsync: /erp_users yüklənmədi, meta.users fallback", e?.code || e?.message);
+        }
+      }
+      return result;
     }
     const local = loadMetaSync();
     if (local && (local.companies?.length || local.users?.length)) {
@@ -2963,6 +3017,24 @@ function saveMeta(loadingMessage) {
     const { session, ...rest } = meta || {};
     const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
     _scopeMetaUsersForSession(); // Re-scope in-memory view after capturing full data for write
+
+    // ── Per-company user izolyasiya shadow write ───────────────────────────────
+    // Tenant admin data yazan zaman öz şirkətinin user siyahısını /erp_users/{companyId} altına
+    // sinxron şəkildə kopyalayır. Firestore rules bu yolu yalnız həmin şirkətin tenant-ına açır.
+    const _saveCid = meta?.session?.companyId;
+    if (_saveCid && _saveCid !== ERP_DEV_SESSION_CID) {
+      const _usersRef = getUsersRef(_saveCid);
+      if (_usersRef) {
+        const _fullUsers = data.users || [];
+        const _companyUsers = _fullUsers.filter(
+          u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
+        );
+        _usersRef
+          .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
+          .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
+      }
+    }
+
     softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
     softBegan = true;
     ref

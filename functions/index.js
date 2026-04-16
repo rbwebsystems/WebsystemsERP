@@ -405,6 +405,31 @@ async function mintFirebaseCustomToken(firebaseUid, claims) {
   }
 }
 
+/**
+ * Per-company user izolyasiyası: tenant login sonrası həmin şirkətin user siyahısını
+ * /erp_users/{companyId} altına yazır. Admin SDK ilə — Firestore rules-i keçir.
+ * Fire-and-forget: tokenin qaytarılmasını gecikdirmir.
+ * Məqsəd: client /erp_users/{companyId}-dan YALNIZ öz şirkətinin userlarını oxusun;
+ *         config/meta.users-a ehtiyac qalmasın (digər şirkətlərin hash-ləri görünməsin).
+ */
+async function syncCompanyUsersToIsolatedPath(companyId, allUsers) {
+  const cid = String(companyId || "").trim();
+  if (!cid) return;
+  try {
+    const companyUsers = (allUsers || []).filter(
+      (u) => u && u.role !== "developer" &&
+        (!u.companyId || normAuth(u.companyId) === normAuth(cid))
+    );
+    await db.collection("erp_users").doc(cid).set({
+      users: companyUsers,
+      updatedAt: new Date().toISOString(),
+    });
+    console.log(`[syncCompanyUsersToIsolatedPath] ${cid}: ${companyUsers.length} user sinxronlaşdı.`);
+  } catch (e) {
+    console.warn(`[syncCompanyUsersToIsolatedPath] ${cid} xətası:`, e?.code || e?.message);
+  }
+}
+
 /** ERP giriş: developer və tenant ayrı axınlar; developer tenant token yalnız allowImpersonation ilə. */
 export const issueAuthToken = onCall(
   { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
@@ -420,7 +445,7 @@ export const issueAuthToken = onCall(
       allowImpersonation: allowImp,
     });
 
-    const { user, companies } = await verifyErpPassword(username, password);
+    const { user, metaData, companies } = await verifyErpPassword(username, password);
     const erpRoleNorm = normAuth(user.role || "");
     /** Meta-da rol səhv yazılsa belə, "developer" istifadəçi adı tenant token ala bilməz. */
     const isDeveloperErpUser = erpRoleNorm === "developer" || usernameNorm === "developer";
@@ -497,7 +522,9 @@ export const issueAuthToken = onCall(
           throw new HttpsError("failed-precondition", "companyId tapılmadı");
         }
         console.log("[issueAuthToken] developer impersonation → tenant token", { exactCompanyId });
-        return await mintTenantToken(exactCompanyId, "admin", { supportImpersonation: true });
+        const impResult = await mintTenantToken(exactCompanyId, "admin", { supportImpersonation: true });
+        syncCompanyUsersToIsolatedPath(exactCompanyId, metaData.users || []).catch(() => {});
+        return impResult;
       }
       console.log("[issueAuthToken] developer token (companyId göndərilməyib)");
       return await mintDeveloperToken();
@@ -555,7 +582,13 @@ export const issueAuthToken = onCall(
     }
 
     const erpRoleClaim = user.role === "admin" ? "admin" : "user";
-    return await mintTenantToken(exactCompanyId, erpRoleClaim);
+    const result = await mintTenantToken(exactCompanyId, erpRoleClaim);
+
+    // Background: sync this company's users to /erp_users/{companyId} for client-side isolation.
+    // Non-blocking — token is already returned; sync failure does not affect login.
+    syncCompanyUsersToIsolatedPath(exactCompanyId, metaData.users || []).catch(() => {});
+
+    return result;
   }
 );
 

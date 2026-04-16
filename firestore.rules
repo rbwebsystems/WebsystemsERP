@@ -2,37 +2,68 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // META (config/meta): şirkətlər, istifadəçilər, abunəlik — idarəetmə (session clientdə qalır).
-    // Oxumaq: tenant + developer (erp_session).
-    // Yazmaq: developer JWT və ya tenant tokenında erpRole admin (şirkət admini).
-    match /config/meta {
-      allow read:  if request.auth != null
-        && request.auth.token.erp_session == true;
-      allow write: if request.auth != null
-        && request.auth.token.erp_session == true
-        && (
-          request.auth.token.role == 'developer'
-          || request.auth.token.erpRole == 'developer'
-          || request.auth.token.erpRole == 'admin'
-        );
+    // ─── Köməkçi funksiyalar ───────────────────────────────────────────────────
+    function isErpSession() {
+      return request.auth != null && request.auth.token.erp_session == true;
+    }
+    function isDev() {
+      return request.auth.token.role == 'developer'
+          || request.auth.token.erpRole == 'developer';
+    }
+    function isTenantForCompany(cid) {
+      return request.auth.token.role == 'tenant'
+          && request.auth.token.companyId is string
+          && request.auth.token.companyId != ''
+          && request.auth.token.companyId == cid;
+    }
+    function isAdminOrDev() {
+      return isDev() || request.auth.token.erpRole == 'admin';
     }
 
-    // CONFIG altındakı digər sənədlər — bağlı
+    // ─── META (config/meta): şirkətlər, abunəlik, qlobal ayarlar ──────────────
+    // Oxumaq: bütün erp_session istifadəçiləri (şirkət seçim pəncərəsi + admin panel üçün lazım).
+    //
+    // ⚠ Təhlükəsizlik qeydi: Bu sənəd bütün şirkətlərin users siyahısını ehtiva edir.
+    //   Field-level izolyasiya Firestore Security Rules-da mümkün deyil.
+    //   Həqiqi per-company user izolyasiyası üçün /erp_users/{companyId} yolundan istifadə edin
+    //   (aşağıda). loadMetaAsync() həmin yolu prioritet olaraq yükləyir; meta yalnız fallback-dır.
+    //
+    // Yazmaq: developer və ya admin tenant (öz şirkəti üçün).
+    match /config/meta {
+      allow read:  if isErpSession();
+      allow write: if isErpSession() && isAdminOrDev();
+    }
+
+    // ─── CONFIG altındakı digər sənədlər — bağlı ──────────────────────────────
     match /config/{document=**} {
       allow read, write: if false;
     }
 
-    // ŞİRKƏT DATA: yalnız tenant + token-dakı companyId ilə uyğun path (developer token buraya girmir)
-    match /companies/{companyId}/{document=**} {
-      allow read, write: if request.auth != null
-        && request.auth.token.erp_session == true
-        && request.auth.token.role == 'tenant'
-        && request.auth.token.companyId is string
-        && request.auth.token.companyId != ""
-        && request.auth.token.companyId == companyId;
+    // ─── PER-COMPANY İSTİFADƏÇİLƏR (/erp_users/{companyId}) ──────────────────
+    // Bu yol config/meta.users-dan ayrılmış, şirkət üzrə izolyasiya edilmiş user storage-dır.
+    //
+    // Məqsəd: Normal tenant istifadəçi YALNIZ öz şirkətinin user siyahısını oxuya bilsin;
+    //         başqa şirkətin user datasına (şifrə hash daxil) heç bir oxuma icazəsi yoxdur.
+    //
+    // Oxumaq: həmin şirkətin tenant tokeni VƏ YA developer.
+    // Yazmaq: həmin şirkətin admin token VƏ YA developer.
+    //         (Cloud Function Admin SDK bu qaydaları keçir — server-side yazma üçün normal)
+    match /erp_users/{companyId} {
+      allow read:  if isErpSession()
+        && (isDev() || isTenantForCompany(companyId));
+      allow write: if isErpSession()
+        && (isDev() || (isTenantForCompany(companyId) && request.auth.token.erpRole == 'admin'));
     }
 
-    // DİGƏR: tam bağlı
+    // ─── ŞİRKƏT DATA (/companies/{companyId}/...): tenant isolation ────────────
+    // Yalnız token-dakı companyId ilə uyğun olan şirkətin datasına giriş.
+    // Developer token bu yola daxil ola bilməz (role == 'tenant' şərti).
+    match /companies/{companyId}/{document=**} {
+      allow read, write: if isErpSession()
+        && isTenantForCompany(companyId);
+    }
+
+    // ─── DİGƏR: tam bağlı ─────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
