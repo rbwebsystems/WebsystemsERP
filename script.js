@@ -7416,8 +7416,10 @@ async function saveStaff(e, idx) {
   if (newSysUser) {
     const cid = meta?.session?.companyId || "";
     if (!Array.isArray(meta.users)) meta.users = [];
-    meta.users.push({
-      uid: genId(meta.users, 1),
+    // genId must use the full list (meta._allUsers) so ID doesn't conflict
+    const fullList = meta._allUsers || meta.users;
+    const newUserEntry = {
+      uid: genId(fullList, 1),
       fullName: nameVal,
       username: newSysUser.sysLogin,
       pass: newSysUser.pass,
@@ -7428,7 +7430,10 @@ async function saveStaff(e, idx) {
       staffUid: String(staffUid),
       perms: { sections: ["*"], canEdit: false, canDelete: false, canPay: false, canRefund: false, canExport: false, canImport: false, canReset: false, actions: {} },
       createdAt: nowISODateTimeLocal(),
-    });
+    };
+    meta.users.push(newUserEntry);
+    // Also push to the full (unscoped) list so saveMeta() doesn't lose it
+    if (meta._allUsers && meta._allUsers !== meta.users) meta._allUsers.push(newUserEntry);
     saveMeta();
   }
 
@@ -15233,7 +15238,7 @@ function renderAll() {
           <td>${vezife}</td>
           <td>${statusBadge}</td>
           <td class="tbl-actions">
-            ${(isDeveloper() || isAdmin()) ? `<button class="btn-mini" type="button" onclick="openPermModal('${uidAttr}')"><i class="fas fa-shield-halved"></i> İcazələri tənzimlə</button>` : ""}
+            ${(isDeveloper() || isAdmin()) ? `<button class="icon-btn" type="button" onclick="openPermModal('${uidAttr}')" title="İcazələri tənzimlə"><i class="fas fa-shield-halved"></i></button>` : ""}
             ${isDeveloper() ? `<a class="icon-btn edit" onclick="openUser('${uidAttr}');return false;" title="Tam redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
