@@ -25,7 +25,7 @@ const defaultDB = () => ({
   audit: [],
   trash: [],
   founders: [],
-  settings: { companyName: "Bakfon", companyAddress: "", companyPhone: "", currency: "AZN", currencySymbol: "₼" },
+  settings: { companyName: "", companyAddress: "", companyPhone: "", currency: "AZN", currencySymbol: "₼" },
 });
 
 const defaultMeta = () => ({ companies: [], users: [], session: null });
@@ -10641,7 +10641,7 @@ function openCompany(idx = null) {
           <div class="form-card-title">Şirkət</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="co_name" placeholder="Şirkət adı" value="${escapeHtml(c.name || "")}" required></div>
-            <div class="f-group"><label>ID *</label><input id="co_id" placeholder="məs: bakfon" value="${escapeHtml(c.id || "")}" ${idx !== null ? 'disabled style="opacity:.6;font-family:monospace"' : 'required style="font-family:monospace" oninput="syncCoAdminPrefix()"'}></div>
+            <div class="f-group"><label>ID *</label><input id="co_id" placeholder="məs: rbsoft" value="${escapeHtml(c.id || "")}" ${idx !== null ? 'disabled style="opacity:.6;font-family:monospace"' : 'required style="font-family:monospace" oninput="syncCoAdminPrefix()"'}></div>
             <div class="f-group"><label>Direktor</label><input id="co_director" placeholder="Ad Soyad" value="${escapeHtml(c.director || "")}"></div>
             <div class="f-group"><label>VÖEN</label><input id="co_voen" placeholder="0000000000" value="${escapeHtml(c.voen || "")}"></div>
             <div class="f-group grid-span-2"><label>Ünvan</label><input id="co_address" placeholder="Şəhər, küçə, bina" value="${escapeHtml(c.address || "")}"></div>
@@ -12648,7 +12648,7 @@ function openSettings() {
           <div class="form-card-title">Şirkət məlumatları</div>
           <div class="grid-2">
             <div class="f-group"><label>Şirkət adı *</label><input id="set_name" placeholder="Şirkət adı" value="${escapeHtml(s.companyName || "")}" required></div>
-            <div class="f-group"><label>Hüquqi ad (tam)</label><input id="set_legal_name" placeholder="məs: Bakfon MMC" value="${escapeHtml(s.companyLegalName || "")}"></div>
+            <div class="f-group"><label>Hüquqi ad (tam)</label><input id="set_legal_name" placeholder="məs: Şirkət MMC" value="${escapeHtml(s.companyLegalName || "")}"></div>
             <div class="f-group"><label>Ünvan</label><input id="set_addr" placeholder="Ünvan" value="${escapeHtml(s.companyAddress || "")}"></div>
             <div class="f-group"><label>Telefon</label><input id="set_phone" placeholder="Telefon" value="${escapeHtml(s.companyPhone || "")}"></div>
             <div class="f-group"><label>Valyuta</label><input id="set_curr" placeholder="AZN" value="${escapeHtml(s.currency || "AZN")}"></div>
