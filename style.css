@@ -5154,7 +5154,7 @@ body.theme-dark .pill.nagd{
 #companiesTable col.co-col-active {width:80px;}
 #companiesTable col.co-col-sub    {width:150px;}
 #companiesTable col.co-col-actions{width:300px;}
-/* all cells: baseline alignment, clip text overflow */
+/* all cells: baseline alignment, clip text overflow, no vertical separators */
 #companiesTable th,
 #companiesTable td{
   vertical-align:middle;
@@ -5162,6 +5162,7 @@ body.theme-dark .pill.nagd{
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  border-right:none;
 }
 /* action cell: flex, no clipping, right-aligned */
 #companiesTable td:nth-child(6),

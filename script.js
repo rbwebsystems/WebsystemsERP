@@ -14416,8 +14416,13 @@ function renderAll() {
     } else {
       const curCid = meta?.session?.companyId;
       const coFilter = (byId("coFilterStatus")?.value) || "all";
+      const coSearch = (byId("coSearch")?.value || "").trim().toLowerCase();
       compBody.innerHTML = meta.companies
-        .filter(c => coFilter === "all" || (coFilter === "disabled" ? c.disabled : !c.disabled))
+        .filter(c => {
+          if (coFilter !== "all" && (coFilter === "disabled" ? !c.disabled : c.disabled)) return false;
+          if (coSearch && !String(c.name || "").toLowerCase().includes(coSearch) && !String(c.id || "").toLowerCase().includes(coSearch)) return false;
+          return true;
+        })
         .map((c, i) => {
           const active = c.id === curCid;
           const sub = c.subscription || {};
