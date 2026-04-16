@@ -5183,7 +5183,7 @@ body.theme-dark .pill.nagd{
 #companiesTable .co-th-center,
 #companiesTable td:nth-child(4),
 #companiesTable td:nth-child(5){text-align:center;}
-#companiesTable .co-th-right{text-align:right;padding-right:16px;}
+#companiesTable .co-th-right{text-align:left;padding-right:16px;}
 #companiesTable td.tbl-actions .icon-btn,
 #companiesTable td.tbl-actions .btn-mini-pay{flex-shrink:0;}
 #companiesTable td:nth-child(3) code{
