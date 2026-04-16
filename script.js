@@ -7317,6 +7317,7 @@ function openStaff(idx = null) {
 
 async function saveStaff(e, idx) {
   e.preventDefault();
+  try {
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
 
   const nameVal = (val("f_st_name") || "").trim();
@@ -7434,6 +7435,10 @@ async function saveStaff(e, idx) {
   logEvent(isNew ? "create" : "update", "staff", { uid: data.uid });
   saveDB();
   closeMdl();
+  } catch (err) {
+    console.error("saveStaff xətası:", err);
+    toast("Xəta baş verdi: " + (err?.message || String(err)), "error");
+  }
 }
 
 function openStaffInfo(idx) {
@@ -11908,14 +11913,13 @@ const PERM_SECTIONS = [
   { id: "settings",label: "Ayarlar",      viewOnly: true },
 ];
 
-function openPermModal(staffIdx) {
-  const s = db.staff[staffIdx];
-  if (!s) return;
-  const linkedUser = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
+function openPermModal(userId) {
+  const linkedUser = (meta.users || []).find(u => String(u.uid) === String(userId));
   if (!linkedUser) {
-    toast("Bu əməkdaşın sistem hesabı yoxdur. Əməkdaş redaktəsindən sistem girişini aktivləşdirin.", "error");
+    toast("İstifadəçi tapılmadı", "error");
     return;
   }
+  const s = (db.staff || []).find(st => String(st.uid) === String(linkedUser.staffUid || ""));
   const p = linkedUser.perms || {};
   const secs = Array.isArray(p.sections) ? p.sections : [];
   const acts = p.actions || {};
@@ -11937,8 +11941,9 @@ function openPermModal(staffIdx) {
   }).join("");
 
   const isActive = linkedUser.active || linkedUser.isActive;
+  const displayName = s ? (s.fullName || s.name) : (linkedUser.fullName || linkedUser.username || "İstifadəçi");
   openModal(`
-    <h2><i class="fas fa-shield-halved" style="margin-right:6px;"></i>${escapeHtml(s.fullName || s.name)} — İcazələr</h2>
+    <h2><i class="fas fa-shield-halved" style="margin-right:6px;"></i>${escapeHtml(displayName)} — İcazələr</h2>
     <p class="muted" style="margin:0 0 12px;font-size:.85rem;">Status: <span class="${isActive ? "pill paid" : "pill unpaid"}" style="vertical-align:middle;">${isActive ? "Aktiv" : "Deaktiv"}</span> &nbsp; Login: <strong>${escapeHtml(linkedUser.username || "—")}</strong></p>
     <form onsubmit="savePermModal(event,'${escapeAttr(String(linkedUser.uid))}')">
       <div class="table-wrap" style="margin-bottom:16px;">
@@ -15196,33 +15201,40 @@ function renderAll() {
     }
   }
 
-  // users — staff with hasSystemAccess
+  // users — all company users (incl. auto-created admin)
   const userBody = byId("tblUsers");
   if (userBody) {
-    const staffWithAccess = (db.staff || [])
-      .map((s, staffIdx) => ({ s, staffIdx }))
-      .filter(({ s }) => s.hasSystemAccess);
-    if (!staffWithAccess.length) {
-      userBody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="muted">Sistem istifadəçisi olan əməkdaş yoxdur. Əməkdaş yaradarkən "Sistem istifadəçisi olsun" seçin.</td></tr>`;
+    const compUsers = usersForCurrentCompany()
+      .slice()
+      .sort((a, b) => String(a.fullName || a.username || "").localeCompare(String(b.fullName || b.username || "")));
+    if (!compUsers.length) {
+      userBody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="muted">İstifadəçi yoxdur.</td></tr>`;
     } else {
-      userBody.innerHTML = staffWithAccess.map(({ s, staffIdx }, i) => {
-        const linkedUser = (meta.users || []).find(u => String(u.staffUid) === String(s.uid));
-        const isActive = linkedUser ? !!(linkedUser.active || linkedUser.isActive) : false;
+      userBody.innerHTML = compUsers.map((u, i) => {
+        const linkedStaff = (db.staff || []).find(s => String(s.uid) === String(u.staffUid || ""));
+        const isActive = !!(u.active || u.isActive);
         const statusBadge = isActive
           ? `<span class="pill paid">Aktiv</span>`
           : `<span class="pill unpaid">Deaktiv</span>`;
-        const me = linkedUser && Number(linkedUser.uid) === Number(meta?.session?.userUid);
-        const uidAttr = linkedUser ? escapeAttr(String(linkedUser.uid)) : "";
+        const me = Number(u.uid) === Number(meta?.session?.userUid);
+        const uidAttr = escapeAttr(String(u.uid));
+        const displayName = escapeHtml(linkedStaff
+          ? (linkedStaff.fullName || linkedStaff.name || u.fullName || "-")
+          : (u.fullName || "-"));
+        const phone = linkedStaff ? escapeHtml(linkedStaff.phone || "-") : "-";
+        const vezife = linkedStaff
+          ? escapeHtml(linkedStaff.vezifeAdi || linkedStaff.role || "-")
+          : escapeHtml(u.role === "admin" ? "Admin" : u.role === "developer" ? "Developer" : "-");
         return `
         <tr>
           <td>${i + 1}</td>
-          <td>${escapeHtml(s.fullName || s.name || "-")}${me ? " <span class='muted' style='font-size:.75rem;'>(siz)</span>" : ""}</td>
-          <td>${escapeHtml(s.phone || "-")}</td>
-          <td>${escapeHtml(s.vezifeAdi || s.role || "-")}</td>
+          <td>${displayName}${me ? " <span class='muted' style='font-size:.75rem;'>(siz)</span>" : ""}</td>
+          <td>${phone}</td>
+          <td>${vezife}</td>
           <td>${statusBadge}</td>
           <td class="tbl-actions">
-            ${(isDeveloper() || isAdmin()) ? `<button class="btn-mini" type="button" onclick="openPermModal(${staffIdx})"><i class="fas fa-shield-halved"></i> İcazələri tənzimlə</button>` : ""}
-            ${isDeveloper() && uidAttr ? `<a class="icon-btn edit" onclick="openUser('${uidAttr}');return false;" title="Tam redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
+            ${(isDeveloper() || isAdmin()) ? `<button class="btn-mini" type="button" onclick="openPermModal('${uidAttr}')"><i class="fas fa-shield-halved"></i> İcazələri tənzimlə</button>` : ""}
+            ${isDeveloper() ? `<a class="icon-btn edit" onclick="openUser('${uidAttr}');return false;" title="Tam redaktə"><i class="fas fa-pen"></i></a><button class="icon-btn delete" onclick="delUser('${uidAttr}')" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
           </td>
         </tr>`;
       }).join("");
