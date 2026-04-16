@@ -11656,7 +11656,7 @@ function openUser(uidOrNull = null) {
             <div class="f-group"><label>Rol</label><select id="u_role">
           <option value="user" ${editingUser.role === "user" ? "selected" : ""}>İstifadəçi (user)</option>
           <option value="admin" ${editingUser.role === "admin" ? "selected" : ""}>Admin</option>
-          <option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>Developer</option>
+          ${isDeveloper() ? `<option value="developer" ${editingUser.role === "developer" ? "selected" : ""}>Developer</option>` : ""}
         </select></div>
             <div class="f-group"><label>Vəzifə şablonu</label><select id="u_job_preset" onchange="applyJobPreset()">
           <option value="">— Şablon seç (icazələri tez doldurmaq üçün) —</option>
