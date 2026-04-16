@@ -5171,12 +5171,12 @@ body.theme-dark .pill.nagd{
   white-space:normal;
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:flex-start;
   gap:6px;
   flex-wrap:nowrap;
-  padding:6px 12px 6px 8px;
+  padding:6px 12px 6px 14px;
   width:auto !important;
-  text-align:right !important;
+  text-align:left !important;
 }
 #companiesTable .co-th-num,
 #companiesTable td:nth-child(1){text-align:center;padding-left:8px;padding-right:8px;}
