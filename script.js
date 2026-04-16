@@ -14442,10 +14442,8 @@ function renderAll() {
             : `<span class="icon-btn-placeholder"></span>`;
           const disabledStyle = c.disabled ? 'opacity:.55' : '';
           const activeBadge = c.disabled
-            ? '<span class="pill overdue">DEAKTİV</span>'
-            : active
-              ? '<span class="pill paid">● AKTİV</span>'
-              : '<span class="pill" style="background:#e2f0e8;color:#16a34a">Aktiv</span>';
+            ? '<span class="pill overdue">Deaktiv</span>'
+            : '<span class="pill paid">Aktiv</span>';
           const restoreBtn = (c.disabled && isDeveloper())
             ? `<button class="icon-btn" type="button" onclick="restoreCompany(${i})" title="Bərpa et (aktiv et)" style="color:#16a34a"><i class="fas fa-circle-check"></i></button>`
             : `<span class="icon-btn-placeholder"></span>`;
