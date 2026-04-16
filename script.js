@@ -11069,6 +11069,31 @@ async function resetCompanyUserPassword(btn, companyIdx, userUid) {
   }
 }
 
+async function deleteCompanyUser(btn, companyIdx) {
+  if (!isDeveloper()) return;
+  const uidStr = String(btn?.getAttribute("data-user-uid") || "");
+  if (!uidStr) return;
+  const c = meta.companies[companyIdx];
+  if (!c) return;
+  const uIdx = meta.users.findIndex((x) => String(x.uid) === uidStr);
+  if (uIdx < 0) return alert("İstifadəçi tapılmadı.");
+  const u = meta.users[uIdx];
+  if (normAuthKey(u.companyId) !== normAuthKey(c.id)) return alert("Bu istifadəçi seçilmiş şirkətə aid deyil.");
+  const ok = await appConfirm(
+    `"${escapeHtml(u.username)}" (${escapeHtml(u.role || "user")}) silinsin?\n\nBu əməliyyat geri alına bilməz.`
+  );
+  if (!ok) return;
+  erpSetButtonBusy(btn, true, ERP_BUSY_AZ.delete || "Silinir…");
+  try {
+    meta.users.splice(uIdx, 1);
+    saveMeta(ERP_BUSY_AZ.save);
+    toast(`"${escapeHtml(u.username)}" silindi`, "ok", 3000);
+    openCompanyInfo(companyIdx);
+  } finally {
+    erpSetButtonBusy(btn, false);
+  }
+}
+
 function openCompanyInfo(idx) {
   const c = meta.companies[idx];
   if (!c) return;
@@ -11127,7 +11152,10 @@ function openCompanyInfo(idx) {
             <td>${un}</td>
             <td>${role}</td>
             <td>${st}</td>
-            <td class="tbl-actions"><button type="button" class="btn-mini-pay company-info-reset-pw" data-user-uid="${uidAttr}" onclick="resetCompanyUserPassword(this,${idx})">Reset Password</button></td>
+            <td class="tbl-actions">
+              <button type="button" class="btn-mini-pay company-info-reset-pw" data-user-uid="${uidAttr}" onclick="resetCompanyUserPassword(this,${idx})">Reset Password</button>
+              <button type="button" class="icon-btn delete" data-user-uid="${uidAttr}" onclick="deleteCompanyUser(this,${idx})" title="İstifadəçini sil"><i class="fas fa-trash"></i></button>
+            </td>
           </tr>`;
           })
           .join("")
