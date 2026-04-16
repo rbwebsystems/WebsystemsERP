@@ -11797,6 +11797,25 @@ function delCompany(idx) {
   return;
 }
 
+function _purgeStaffUsersForCompany(cid) {
+  // Remove users linked to staff records for this company.
+  // Keeps admin/owner accounts (no staffUid) so login remains intact.
+  const before = (meta._allUsers || meta.users || []).length;
+  const keep = (u) => {
+    if (!String(u.companyId || "").trim() || u.companyId !== cid) return true; // different company → keep
+    return !(u.staffUid);                                                        // no staffUid → keep (admin)
+  };
+  if (meta._allUsers) {
+    meta._allUsers = meta._allUsers.filter(keep);
+    meta.users = meta._allUsers.filter(u => !u.companyId || u.companyId === cid
+      ? keep(u) : true);
+  } else {
+    meta.users = (meta.users || []).filter(keep);
+  }
+  const removed = before - (meta._allUsers || meta.users).length;
+  return removed;
+}
+
 function resetCompanyData(targetCid) {
   if (!isDeveloper() && !userCanReset()) return alert("Reset icazəsi yoxdur.");
   const cid = targetCid || meta?.session?.companyId;
@@ -11806,31 +11825,33 @@ function resetCompanyData(targetCid) {
   }
   const comp = (meta.companies || []).find((c) => c.id === cid);
   const label = comp ? `"${comp.name}" (${cid})` : cid;
-  appConfirm(`${label} şirkətinin bütün datası sıfırlansın?\nBu əməliyyatı geri qaytarmaq olmaz!`).then((ok) => {
+  appConfirm(`${label} şirkətinin bütün datası sıfırlansın?\nAdmin istifadəçisi qalacaq, qalan hər şey silinəcək.\nBu əməliyyatı geri qaytarmaq olmaz!`).then((ok) => {
     if (!ok) return;
     const empty = defaultDB();
     const isActiveCompany = cid === meta?.session?.companyId;
+
+    const finishReset = () => {
+      if (isActiveCompany) db = empty;
+      _purgeStaffUsersForCompany(cid);
+      saveMeta();
+      logEvent("reset", "company", { companyId: cid });
+      renderAll();
+      toast(`${label} sıfırlandı. Admin istifadəçisi qorundu.`, "warn", 4000);
+    };
+
     if (useFirestore()) {
       const ref = getCompanyRef(cid);
       if (ref) {
         softLoadingBegin(false, ERP_BUSY_AZ.save);
         ref
           .set(empty)
-          .then(() => {
-            if (isActiveCompany) db = empty;
-            logEvent("reset", "company", { companyId: cid });
-            renderAll();
-            toast(`${label} sıfırlandı`, "warn", 4000);
-          })
+          .then(finishReset)
           .catch((e) => console.warn("Firestore reset xətası:", e))
           .finally(() => softLoadingEnd());
       }
     } else {
       localStorage.setItem(companyDBKey(cid), JSON.stringify(empty));
-      if (isActiveCompany) db = loadCompanyDB();
-      logEvent("reset", "company", { companyId: cid });
-      renderAll();
-      toast(`${label} sıfırlandı`, "warn", 4000);
+      finishReset();
     }
   });
 }
