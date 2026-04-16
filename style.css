@@ -5152,7 +5152,7 @@ body.theme-dark .pill.nagd{
 #companies .card table thead th:nth-child(3){width:140px;}
 #companies .card table thead th:nth-child(4){width:70px;text-align:center;}
 #companies .card table thead th:nth-child(5){width:130px;}
-#companies .card table thead th:nth-child(6){width:200px;text-align:right;}
+#companies .card table thead th:nth-child(6){width:180px;text-align:right;}
 #companies .card table td:nth-child(1){text-align:center;}
 #companies .card table td:nth-child(4){text-align:center;}
 #companies .card table td:nth-child(6).tbl-actions{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;justify-content:flex-end;}
