@@ -113,6 +113,7 @@ const _pl = {
     setTimeout(() => el.classList.add("app-preloader--out"), wait + 120);
   },
   init() {
+    this._stopRotation(); // Guard against multiple init() calls leaking timers
     this._startMs = Date.now();
     this._done = false;
     this._startRotation();
@@ -181,6 +182,7 @@ function erpSetButtonBusy(btn, busy, textBusy, textIdleHtml) {
 }
 
 const setButtonBusy = erpSetButtonBusy;
+const _erpFormLocks = new WeakSet();
 function showBusyOverlay(immediate, message) {
   softLoadingBegin(immediate !== false, message);
 }
@@ -230,19 +232,26 @@ function softLoadingEnd() {
 /** Bölmə keçidi + renderAll: zolaq dərhal görünsün; çox sürətli işlərdə ən azı ~minMs görünür. */
 const SECTION_LOAD_MIN_MS = 300;
 const MODAL_SLIDEOVER_LOAD_MIN_MS = 240;
+let _sectionLoadSeq = 0;
 function withSectionLoading(runSync) {
   if (!meta?.session) {
     runSync();
     return;
   }
   const t0 = Date.now();
+  const mySeq = ++_sectionLoadSeq;
   softLoadingBegin(true);
   try {
     runSync();
   } finally {
     const finish = () => {
-      const wait = Math.max(0, SECTION_LOAD_MIN_MS - (Date.now() - t0));
-      setTimeout(() => softLoadingEnd(), wait);
+      // Only end loading if no newer section load has started in the meantime
+      if (mySeq === _sectionLoadSeq) {
+        const wait = Math.max(0, SECTION_LOAD_MIN_MS - (Date.now() - t0));
+        setTimeout(() => softLoadingEnd(), wait);
+      } else {
+        softLoadingEnd(); // Release depth counter even if superseded
+      }
     };
     requestAnimationFrame(() => requestAnimationFrame(finish));
   }
@@ -2921,11 +2930,14 @@ function loadMeta() {
  * Tenant company DB-dən ayrıdır; developer və meta-ya yazma icazəsi olan tenant admin eyni sənədi istifadə edir.
  */
 function saveMeta(loadingMessage) {
+  // Ensure full users list is written, not the scoped (filtered) view
+  if (meta._allUsers) meta.users = meta._allUsers;
   if (!useFirestore()) {
     try {
       localStorage.setItem(META_KEY, JSON.stringify(meta));
     } catch (_) {}
     updateLastSavedEl();
+    _scopeMetaUsersForSession();
     return;
   }
   const ref = getMetaRef();
@@ -2934,6 +2946,7 @@ function saveMeta(loadingMessage) {
       localStorage.setItem(META_KEY, JSON.stringify(meta));
     } catch (_) {}
     updateLastSavedEl();
+    _scopeMetaUsersForSession();
     return;
   }
   const authUser = erpFirebaseCurrentUser();
@@ -2942,12 +2955,14 @@ function saveMeta(loadingMessage) {
       localStorage.setItem(META_KEY, JSON.stringify(meta));
     } catch (_) {}
     updateLastSavedEl();
+    _scopeMetaUsersForSession();
     return;
   }
   let softBegan = false;
   try {
     const { session, ...rest } = meta || {};
     const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
+    _scopeMetaUsersForSession(); // Re-scope in-memory view after capturing full data for write
     softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
     softBegan = true;
     ref
@@ -3206,6 +3221,52 @@ function ensureMetaDefaults() {
   return dirty;
 }
 
+/**
+ * Returns users scoped to the current session's company.
+ * Developers see all users. Non-developers only see their own company's users.
+ * Use this for all UI rendering. meta.users (full list) is used only for writes/saveMeta.
+ */
+function companyUsers() {
+  const cid = meta?.session?.companyId;
+  if (!cid) return meta.users || [];
+  const u = currentUser();
+  if (u?.role === "developer") return meta.users || [];
+  return (meta.users || []).filter(x => !x.companyId || x.companyId === cid);
+}
+
+/**
+ * After a non-developer login, strips other companies' users from meta.users in memory.
+ * The full list is preserved in meta._allUsers so saveMeta() can write it back to Firestore intact.
+ * Developer and logout paths restore the full list.
+ */
+function _scopeMetaUsersForSession() {
+  const cid = meta?.session?.companyId;
+  const role = (meta.users || []).find(u => Number(u.uid) === Number(meta?.session?.userUid))?.role;
+  if (!cid || role === "developer") {
+    // Restore full list if it was scoped before
+    if (meta._allUsers) { meta.users = meta._allUsers; delete meta._allUsers; }
+    return;
+  }
+  // Keep a backup of the full list (non-enumerable so JSON.stringify skips it)
+  if (!meta._allUsers) {
+    Object.defineProperty(meta, "_allUsers", { value: meta.users, writable: true, enumerable: false, configurable: true });
+  } else {
+    meta._allUsers = meta.users.length > 0 && meta.users.some(u => u.companyId !== cid) ? meta.users : meta._allUsers;
+  }
+  meta.users = (meta._allUsers || []).filter(u => !u.companyId || u.companyId === cid);
+}
+
+/**
+ * Restores the full users list in meta before a write, then re-scopes after.
+ * Called internally by saveMeta to avoid losing cross-company users.
+ */
+function _withFullUsersForSave(fn) {
+  const scoped = meta._allUsers ? meta.users : null;
+  if (meta._allUsers) meta.users = meta._allUsers;
+  try { return fn(); }
+  finally { if (scoped !== null) meta.users = scoped; }
+}
+
 function currentUser() {
   const uid = meta?.session?.userUid;
   return meta.users.find((u) => Number(u.uid) === Number(uid)) || null;
@@ -3407,8 +3468,14 @@ function userCanReset() {
 }
 
 function toast(msg, kind = "ok", ms = 2600) {
-  const wrap = byId("toastWrap");
-  if (!wrap) return;
+  let wrap = byId("toastWrap");
+  if (!wrap) {
+    // Fallback: create a toast container if the HTML element is missing
+    wrap = document.createElement("div");
+    wrap.id = "toastWrap";
+    wrap.style.cssText = "position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;";
+    document.body.appendChild(wrap);
+  }
   const el = document.createElement("div");
   el.className = `toast ${kind} small`;
   el.textContent = msg;
@@ -3910,6 +3977,7 @@ function doLoginWithCompany(companyId) {
   const c = meta.companies.find((x) => x.id === companyId);
   if (!c) return alert("Şirkət tapılmadı.");
   meta.session = { companyId: c.id, userUid: u.uid };
+  _scopeMetaUsersForSession();
   saveMeta();
   if (useFirestore()) {
     loadCompanyDBAsync({ soft: true, softMessage: ERP_BUSY_AZ.switchCompany })
@@ -4041,6 +4109,7 @@ async function logout() {
       firestoreAuthPromise = null;
     }
     meta.session = null;
+    _scopeMetaUsersForSession(); // Restore full users on logout
     saveMeta();
     closeMdl();
     try {
@@ -6327,6 +6396,10 @@ function removePurchDraftItem(i) {
 async function savePurch(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  const _sf = e.target, _sfBtn = _sf?.querySelector('button[type="submit"]');
+  if (_erpFormLocks.has(_sf)) return;
+  _erpFormLocks.add(_sf);
+  erpSetButtonBusy(_sfBtn, true, ERP_BUSY_AZ.save);
   const isNew = idx === null;
   const prevPaid = idx !== null ? n(db.purch[idx]?.paidTotal) : 0;
   if (isNew) {
@@ -6419,7 +6492,7 @@ async function savePurch(e, idx) {
       const msg =
         `Diqqət: IMEI 1 artıq sistemdə olub.\nIMEI 1: ${imei1}\nStatus: ${st}\nAlış: ${inv} • ${m1.supp || "-"} • ${String(m1.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
       const ok = await appConfirm(msg);
-      if (!ok) return;
+      if (!ok) { _erpFormLocks.delete(_sf); erpSetButtonBusy(_sfBtn, false); return; }
     }
     const m2 = !m1 && imei2 ? findMatch((p) => String(p.imei2 || "").trim() === imei2) : null;
     if (m2) {
@@ -6428,7 +6501,7 @@ async function savePurch(e, idx) {
       const msg =
         `Diqqət: IMEI 2 artıq sistemdə olub.\nIMEI 2: ${imei2}\nStatus: ${st}\nAlış: ${inv} • ${m2.supp || "-"} • ${String(m2.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
       const ok = await appConfirm(msg);
-      if (!ok) return;
+      if (!ok) { _erpFormLocks.delete(_sf); erpSetButtonBusy(_sfBtn, false); return; }
     }
     const m3 = !m1 && !m2 && seria ? findMatch((p) => String(p.seria || "").trim() === seria) : null;
     if (m3) {
@@ -6437,7 +6510,7 @@ async function savePurch(e, idx) {
       const msg =
         `Diqqət: Seriya artıq sistemdə olub.\nSeriya: ${seria}\nStatus: ${st}\nAlış: ${inv} • ${m3.supp || "-"} • ${String(m3.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
       const ok = await appConfirm(msg);
-      if (!ok) return;
+      if (!ok) { _erpFormLocks.delete(_sf); erpSetButtonBusy(_sfBtn, false); return; }
     }
   } else {
     const codeNorm = String(code || "").trim();
@@ -6449,7 +6522,7 @@ async function savePurch(e, idx) {
         const msg =
           `Diqqət: Kod artıq sistemdə olub.\nKod: ${codeNorm}\nStatus: ${st}\nAlış: ${inv} • ${m.supp || "-"} • ${String(m.date || "").slice(0, 16)}\n\nYenə də bu alışı əlavə edək?`;
         const ok = await appConfirm(msg);
-        if (!ok) return;
+        if (!ok) { _erpFormLocks.delete(_sf); erpSetButtonBusy(_sfBtn, false); return; }
       }
     }
   }
@@ -6530,6 +6603,8 @@ async function savePurch(e, idx) {
     }
   }
 
+  _erpFormLocks.delete(_sf);
+  erpSetButtonBusy(_sfBtn, false);
   saveDB();
   closeMdl();
 }
@@ -7723,6 +7798,10 @@ function recalcCredit() {
 async function saveSale(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+  const _sf = e.target, _sfBtn = _sf?.querySelector('button[type="submit"]');
+  if (_erpFormLocks.has(_sf)) return;
+  _erpFormLocks.add(_sf);
+  erpSetButtonBusy(_sfBtn, true, ERP_BUSY_AZ.save);
   const isEdit = idx !== null;
   const isNew = !isEdit;
   const actorName = currentActorName();
@@ -7948,7 +8027,7 @@ async function saveSale(e, idx) {
       `Köhnə satışlarda redaktə etdikdə ödəniş/borc balanslarına təsir ola bilər.\n` +
       `Dəyişiklikləri yadda saxlamaq istədiyinizə əminsiniz?`;
     const ok = await appConfirm(warnMsg);
-    if (!ok) return;
+    if (!ok) { _erpFormLocks.delete(_sf); erpSetButtonBusy(_sfBtn, false); return; }
   }
 
   const customerId = val("f_s_customer");
@@ -8230,6 +8309,8 @@ async function saveSale(e, idx) {
     }
   }
 
+  _erpFormLocks.delete(_sf);
+  erpSetButtonBusy(_sfBtn, false);
   saveDB();
   closeMdl();
 }
@@ -9654,10 +9735,11 @@ async function delCashOp(uid) {
       // so we match by date only (not amount).
       const sibs = db.sales.filter(x => x.invNo === invNo);
       for (const s of sibs) {
-        if (!s.payments) continue;
+        if (!Array.isArray(s.payments)) s.payments = [];
         // Remove the first payment on this date that was recorded as part of this cash op.
         const pi = s.payments.findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
         if (pi >= 0) s.payments.splice(pi, 1);
+        // Always reconcile paidTotal from actual payments array
         s.paidTotal = String(sumPayments(s.payments));
       }
       // Also handle the specific saleUid record if it somehow wasn't caught above
@@ -9673,16 +9755,23 @@ async function delCashOp(uid) {
       // Single-product cash op: match by date + amount
       const s = db.sales.find((x) => Number(x.uid) === Number(saleUid));
       if (s) {
-        const pi = (s.payments || []).findIndex(
+        if (!Array.isArray(s.payments)) s.payments = [];
+        const pi = s.payments.findIndex(
           (p) => String(p.date).slice(0, 16) === String(c.date).slice(0, 16) && Math.abs(n(p.amount) - n(c.amount)) < 0.01
         );
         if (pi >= 0) s.payments.splice(pi, 1);
         else {
           // Fallback: remove first payment matching date only
-          const pi2 = (s.payments || []).findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
+          const pi2 = s.payments.findIndex(p => String(p.date).slice(0, 16) === String(c.date).slice(0, 16));
           if (pi2 >= 0) s.payments.splice(pi2, 1);
+          else {
+            // No matching payment entry — paidTotal may be stale; reconcile from payments array
+            // If payments array is empty but paidTotal > 0, it's inconsistent — zero it out
+            const recalc = sumPayments(s.payments);
+            if (recalc <= 0.000001) s.paidTotal = "0";
+          }
         }
-        s.paidTotal = String(sumPayments(s.payments || []));
+        s.paidTotal = String(sumPayments(s.payments));
       }
     }
   } else if (kind === "purch_payment" || kind === "purch_payment_adj") {
@@ -15176,11 +15265,17 @@ async function delItem(type, i) {
     const p = db.prod[i];
     if (!p) return;
     const nm = String(p.name || "").trim();
-    if (nm) {
-      const usedInPurch = (db.purch || []).some((x) => String(x.name || "").trim() === nm);
-      const usedInSales = (db.sales || []).some((x) => String(x.productName || "").trim() === nm);
-      if (usedInPurch || usedInSales) return alert("Bu məhsul adı alış/satışda istifadə olunub. Silmək olmaz.");
-    }
+    const prodUidStr = String(p.uid);
+    // Block if product is referenced by name OR by prodUid in purch/sales records
+    const usedInPurch = (db.purch || []).some((x) =>
+      (nm && String(x.name || "").trim() === nm) ||
+      (x.prodUid != null && String(x.prodUid) === prodUidStr)
+    );
+    const usedInSales = (db.sales || []).some((x) =>
+      (nm && String(x.productName || "").trim() === nm) ||
+      (x.prodUid != null && String(x.prodUid) === prodUidStr)
+    );
+    if (usedInPurch || usedInSales) return alert("Bu məhsul alış/satışda istifadə olunub. Silmək olmaz.");
     db.trash.push({ uid: genId(db.trash, 1), type: "prod", item: p, deletedAt, deletedBy, deleteReason });
     logEvent("delete", "prod", { uid: p.uid, name: p.name, deleteReason });
     db.prod.splice(i, 1);
