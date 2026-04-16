@@ -7157,9 +7157,12 @@ function openStaff(idx = null) {
     "Satış mütəxəssisi", "Mühasib", "Anbar əməkdaşı", "Menecer",
   ];
   const curVezife = s.vezifeAdi || s.role || "";
+  const extraOptions = curVezife && !POSITIONS.includes(curVezife)
+    ? [`<option value="${escapeAttr(curVezife)}" selected>${escapeHtml(curVezife)}</option>`]
+    : [];
   const posOptions = POSITIONS.map(p =>
     `<option value="${escapeAttr(p)}" ${curVezife === p ? "selected" : ""}>${escapeHtml(p)}</option>`
-  ).join("");
+  ).join("") + extraOptions.join("");
   const hasSys = s.hasSystemAccess || false;
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
@@ -7201,13 +7204,13 @@ function openStaff(idx = null) {
           <div class="form-card-title">İş məlumatları</div>
           <div class="grid-2">
             <div class="f-group"><label>Vəzifə <span class="req">*</span></label>
-              <select id="f_st_vezife" required>
+              <select id="f_st_vezife">
                 <option value="">Vəzifə seçin</option>
                 ${posOptions}
               </select>
             </div>
             <div class="f-group"><label>Şöbə</label><input id="f_st_department" value="${escapeAttr(s.department || "")}" placeholder="Şöbə adı"></div>
-            <div class="f-group"><label>İşə qəbul tarixi <span class="req">*</span></label><input type="date" id="f_st_hireDate" value="${escapeAttr(s.hireDate || "")}" required></div>
+            <div class="f-group"><label>İşə qəbul tarixi <span class="req">*</span></label><input type="date" id="f_st_hireDate" value="${escapeAttr(s.hireDate || nowISODate())}"></div>
             <div class="f-group"><label>Müqavilə nömrəsi</label><input id="f_st_contractNo" value="${escapeAttr(s.contractNo || "")}" placeholder="№ ..."></div>
             <div class="f-group"><label>İş statusu</label>
               <select id="f_st_empStatus">
@@ -15839,6 +15842,9 @@ Object.assign(window, {
   openPaymentHistory,
   openStaff,
   saveStaff,
+  openStaffInfo,
+  staffSalaryTypeChange,
+  staffSysToggle,
   openCashOp,
   openCashInfo,
   saveCashOp,
