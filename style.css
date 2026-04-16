@@ -3908,6 +3908,17 @@ button.erp-btn-busy,
 body.theme-dark .btn-cancel{background:#374151;color:#e5e7eb;border-color:#4b5563;}
 body.theme-dark .btn-cancel:hover{background:#4b5563;}
 
+.btn-neutral{
+  background:#f8f9fb;color:#6b7280;border:1px solid var(--border-color);height:38px;padding:0 16px;border-radius:var(--btn-radius);
+  font-weight:600;cursor:pointer;display:inline-flex;align-items:center;
+  transition:background .15s ease;font-size:.875rem;
+}
+.btn-neutral:hover{background:#e9ecef;}
+body.theme-dark .btn-neutral{background:#1f2937;color:#9ca3af;border-color:#4b5563;}
+body.theme-dark .btn-neutral:hover{background:#374151;}
+
+span.req{color:#ef4444;margin-left:2px;font-weight:700;}
+
 /* ===== Geri (back) button — distinctive teal outline ===== */
 /* ── Back button — circular arrow (like sidebar-collapse-btn) ── */
 .btn-back {

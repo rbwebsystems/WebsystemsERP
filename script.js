@@ -7148,55 +7148,303 @@ function openSupplierPaymentHistory(idx) {
 // ========= Staff =========
 function openStaff(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
-  const s = idx !== null ? db.staff[idx] : { name: "", role: "", phone: "", baseSalary: "0", commPct: "0" };
+  const s = idx !== null ? db.staff[idx] : {};
+  const linkedUser = idx !== null
+    ? (meta.users || []).find(u => String(u.staffUid) === String(db.staff[idx].uid))
+    : null;
+  const POSITIONS = [
+    "Direktor", "Admin", "Kredit mütəxəssisi", "Kassir",
+    "Satış mütəxəssisi", "Mühasib", "Anbar əməkdaşı", "Menecer",
+  ];
+  const curVezife = s.vezifeAdi || s.role || "";
+  const posOptions = POSITIONS.map(p =>
+    `<option value="${escapeAttr(p)}" ${curVezife === p ? "selected" : ""}>${escapeHtml(p)}</option>`
+  ).join("");
+  const hasSys = s.hasSystemAccess || false;
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
-    <form onsubmit="saveStaff(event, ${idx})">
+    <form onsubmit="saveStaff(event, ${idx})" id="staffForm">
       <div class="form-stack">
+
         <div class="form-card">
           <div class="form-card-title">Şəxsi məlumat</div>
           <div class="grid-2">
-            <div class="f-group"><label>Ad Soyad *</label><input id="f_st_name" value="${escapeHtml(s.name)}" placeholder="Ad Soyad" required></div>
-            <div class="f-group"><label>Telefon</label><input id="f_st_phone" value="${escapeHtml(s.phone || "")}" placeholder="+994 xx xxx xx xx"></div>
-            <div class="f-group"><label>Vəzifə</label><input id="f_st_role" value="${escapeHtml(s.role || "")}" placeholder="Satıcı / Mühasib…"></div>
+            <div class="f-group"><label>Ad Soyad <span class="req">*</span></label><input id="f_st_name" value="${escapeAttr(s.fullName || s.name || "")}" placeholder="Ad Soyad" required></div>
+            <div class="f-group"><label>Ata adı</label><input id="f_st_fatherName" value="${escapeAttr(s.fatherName || "")}" placeholder="Ata adı"></div>
+            <div class="f-group"><label>Telefon</label><input id="f_st_phone" value="${escapeAttr(s.phone || "")}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group"><label>Əlavə telefon</label><input id="f_st_phoneAlt" value="${escapeAttr(s.phoneAlt || "")}" placeholder="+994 xx xxx xx xx"></div>
+            <div class="f-group"><label>E-poçt</label><input type="email" id="f_st_email" value="${escapeAttr(s.email || "")}" placeholder="email@example.com"></div>
+            <div class="f-group"><label>Şəxsiyyət vəsiqəsi №</label><input id="f_st_idCardNo" value="${escapeAttr(s.idCardNo || "")}" placeholder="AA1234567"></div>
+            <div class="f-group"><label>FİN kod</label><input id="f_st_finCode" value="${escapeAttr(s.finCode || "")}" placeholder="1234567"></div>
+            <div class="f-group"><label>Doğum tarixi</label><input type="date" id="f_st_birthDate" value="${escapeAttr(s.birthDate || "")}"></div>
+            <div class="f-group"><label>Cins</label>
+              <select id="f_st_gender">
+                <option value="">Seçin</option>
+                <option value="male" ${s.gender === "male" ? "selected" : ""}>Kişi</option>
+                <option value="female" ${s.gender === "female" ? "selected" : ""}>Qadın</option>
+              </select>
+            </div>
+            <div class="f-group"><label>Ailə vəziyyəti</label>
+              <select id="f_st_maritalStatus">
+                <option value="">Seçin</option>
+                <option value="single" ${s.maritalStatus === "single" ? "selected" : ""}>Subay</option>
+                <option value="married" ${s.maritalStatus === "married" ? "selected" : ""}>Evli</option>
+                <option value="divorced" ${s.maritalStatus === "divorced" ? "selected" : ""}>Boşanmış</option>
+                <option value="widowed" ${s.maritalStatus === "widowed" ? "selected" : ""}>Dul</option>
+              </select>
+            </div>
           </div>
+          <div class="f-group"><label>Ünvan</label><input id="f_st_address" value="${escapeAttr(s.address || "")}" placeholder="Ünvan"></div>
         </div>
+
         <div class="form-card">
-          <div class="form-card-title">Maaş</div>
+          <div class="form-card-title">İş məlumatları</div>
           <div class="grid-2">
-            <div class="f-group"><label>Standart maaş (AZN)</label><input type="number" step="0.01" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? "0"))}" placeholder="0.00"></div>
-            <div class="f-group"><label>Satışdan faiz (%)</label><input type="number" step="0.01" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? "0"))}" placeholder="0"></div>
+            <div class="f-group"><label>Vəzifə <span class="req">*</span></label>
+              <select id="f_st_vezife" required>
+                <option value="">Vəzifə seçin</option>
+                ${posOptions}
+              </select>
+            </div>
+            <div class="f-group"><label>Şöbə</label><input id="f_st_department" value="${escapeAttr(s.department || "")}" placeholder="Şöbə adı"></div>
+            <div class="f-group"><label>İşə qəbul tarixi <span class="req">*</span></label><input type="date" id="f_st_hireDate" value="${escapeAttr(s.hireDate || "")}" required></div>
+            <div class="f-group"><label>Müqavilə nömrəsi</label><input id="f_st_contractNo" value="${escapeAttr(s.contractNo || "")}" placeholder="№ ..."></div>
+            <div class="f-group"><label>İş statusu</label>
+              <select id="f_st_empStatus">
+                <option value="active" ${(s.employeeStatus || "active") === "active" ? "selected" : ""}>Aktiv</option>
+                <option value="vacation" ${s.employeeStatus === "vacation" ? "selected" : ""}>Məzuniyyətdə</option>
+                <option value="suspended" ${s.employeeStatus === "suspended" ? "selected" : ""}>Dayandırılıb</option>
+                <option value="terminated" ${s.employeeStatus === "terminated" ? "selected" : ""}>İşdən çıxıb</option>
+              </select>
+            </div>
           </div>
         </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Əmək haqqı</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Maaş tipi</label>
+              <select id="f_st_salaryType" onchange="staffSalaryTypeChange()">
+                <option value="fixed" ${(s.salaryType || "fixed") === "fixed" ? "selected" : ""}>Sabit maaş</option>
+                <option value="percent" ${s.salaryType === "percent" ? "selected" : ""}>Faizlə</option>
+                <option value="mixed" ${s.salaryType === "mixed" ? "selected" : ""}>Sabit + faiz</option>
+              </select>
+            </div>
+            <div class="f-group" id="st_salary_row"><label>Standart maaş (AZN)</label><input type="number" step="0.01" min="0" id="f_st_salary" value="${escapeAttr(String(s.baseSalary ?? s.salary ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group" id="st_pct_row"><label>Satışdan faiz (%)</label><input type="number" step="0.01" min="0" max="100" id="f_st_comm" value="${escapeAttr(String(s.commPct ?? s.salesPercent ?? "0"))}" placeholder="0"></div>
+            <div class="f-group"><label>Bonus (AZN)</label><input type="number" step="0.01" min="0" id="f_st_bonus" value="${escapeAttr(String(s.bonus ?? "0"))}" placeholder="0.00"></div>
+            <div class="f-group"><label>Cərimə limiti (AZN)</label><input type="number" step="0.01" min="0" id="f_st_fineLimit" value="${escapeAttr(String(s.fineLimit ?? "0"))}" placeholder="0.00"></div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Maliyyə / Ödəniş</div>
+          <div class="grid-2">
+            <div class="f-group"><label>Ödəniş forması</label>
+              <select id="f_st_payMethod">
+                <option value="cash" ${(s.paymentMethod || "cash") === "cash" ? "selected" : ""}>Nəğd</option>
+                <option value="card" ${s.paymentMethod === "card" ? "selected" : ""}>Kart</option>
+                <option value="transfer" ${s.paymentMethod === "transfer" ? "selected" : ""}>Bank köçürməsi</option>
+              </select>
+            </div>
+            <div class="f-group"><label>Bank adı</label><input id="f_st_bankName" value="${escapeAttr(s.bankName || "")}" placeholder="Bank adı"></div>
+            <div class="f-group"><label>Kart / Hesab №</label><input id="f_st_accountNo" value="${escapeAttr(s.accountNo || "")}" placeholder="XXXX XXXX XXXX XXXX"></div>
+            <div class="f-group"><label>VÖEN</label><input id="f_st_voen" value="${escapeAttr(s.voen || "")}" placeholder="VÖEN"></div>
+            <div class="f-group"><label>Borc / Avans limiti (AZN)</label><input type="number" step="0.01" min="0" id="f_st_advLimit" value="${escapeAttr(String(s.advanceLimit ?? "0"))}" placeholder="0.00"></div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Sistem girişi</div>
+          <div class="f-group" style="margin-bottom:8px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f_st_hasSys" onchange="staffSysToggle()" ${hasSys ? "checked" : ""}>
+              <span>Sistem istifadəçisi olsun</span>
+            </label>
+          </div>
+          <div id="st_sys_fields" style="display:${hasSys ? "block" : "none"}">
+            ${linkedUser ? `
+            <div class="info-block">
+              <div class="info-row"><div class="info-label">Login</div><div class="info-value">${escapeHtml(linkedUser.username || "")}</div></div>
+              <div class="info-row"><div class="info-label">Rol</div><div class="info-value">${escapeHtml(linkedUser.role || "")}</div></div>
+              <div class="info-row"><div class="info-label">Aktiv</div><div class="info-value">${linkedUser.active || linkedUser.isActive ? "Bəli" : "Xeyr"}</div></div>
+              ${linkedUser.lastLogin ? `<div class="info-row"><div class="info-label">Son giriş</div><div class="info-value">${fmtDT(linkedUser.lastLogin)}</div></div>` : ""}
+            </div>` : `
+            <div class="grid-2">
+              <div class="f-group"><label>Login <span class="req">*</span></label><input id="f_st_sysLogin" value="${escapeAttr(s.sysLogin || "")}" placeholder="${escapeAttr((meta?.session?.companyId || "sirket") + "_login")}"></div>
+              <div class="f-group"><label>Müvəqqəti şifrə <span class="req">*</span></label><input type="password" id="f_st_sysPwd" placeholder="min 4 simvol" autocomplete="new-password"></div>
+              <div class="f-group"><label>Sistem rolu</label>
+                <select id="f_st_sysRole">
+                  <option value="user">İstifadəçi</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="f-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:24px;">
+                  <input type="checkbox" id="f_st_sysActive" checked>
+                  <span>Aktiv giriş icazəsi</span>
+                </label>
+              </div>
+            </div>`}
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Qeyd</div>
+          <div class="f-group"><textarea id="f_st_notes" rows="3" placeholder="Əlavə qeyd...">${escapeHtml(s.notes || "")}</textarea></div>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yadda saxla"}</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+        <button class="btn-neutral" type="button" onclick="openStaff(${idx})">Təmizlə</button>
       </div>
     </form>
   `);
+  staffSalaryTypeChange();
 }
 
-function saveStaff(e, idx) {
+async function saveStaff(e, idx) {
   e.preventDefault();
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+
+  const nameVal = (val("f_st_name") || "").trim();
+  if (!nameVal) return toast("Ad Soyad boş ola bilməz", "error");
+
+  const phone = (val("f_st_phone") || "").trim();
+  if (phone && !/^[+\d\s\-()\u00D7]{7,20}$/.test(phone))
+    return toast("Telefon formatı düzgün deyil", "error");
+
+  const vezifeAdi = val("f_st_vezife") || "";
+  if (!vezifeAdi) return toast("Vəzifə seçilməlidir", "error");
+
+  const hireDate = val("f_st_hireDate") || "";
+  if (!hireDate) return toast("İşə qəbul tarixi boş ola bilməz", "error");
+
+  const salary = n(val("f_st_salary"));
+  if (salary < 0) return toast("Əmək haqqı mənfi ola bilməz", "error");
+
+  const commPct = n(val("f_st_comm"));
+  if (commPct < 0 || commPct > 100) return toast("Faiz 0–100 aralığında olmalıdır", "error");
+
+  const hasSys = !!(byId("f_st_hasSys")?.checked);
+  const existingLinkedUser = idx !== null
+    ? (meta.users || []).find(u => String(u.staffUid) === String(db.staff[idx]?.uid))
+    : null;
+
+  let newSysUser = null;
+  if (hasSys && !existingLinkedUser) {
+    const sysLogin = (val("f_st_sysLogin") || "").trim();
+    const sysPwd = (val("f_st_sysPwd") || "").trim();
+    if (!sysLogin) return toast("Login boş ola bilməz", "error");
+    if (sysPwd.length < 4) return toast("Şifrə minimum 4 simvol olmalıdır", "error");
+    if ((meta.users || []).some(u => u.username === sysLogin))
+      return toast("Bu login artıq mövcuddur", "error");
+    const hashedPass = await erpHashPasswordPlain(sysPwd);
+    newSysUser = {
+      sysLogin,
+      pass: hashedPass,
+      sysRole: val("f_st_sysRole") || "user",
+      sysActive: !!(byId("f_st_sysActive")?.checked),
+    };
+  }
+
   const isNew = idx === null;
   const actorName = currentActorName();
+  const staffUid = idx !== null ? db.staff[idx].uid : genId(db.staff, 1);
+
   const data = {
-    uid: idx !== null ? db.staff[idx].uid : genId(db.staff, 1),
-    createdAt: idx !== null ? (db.staff[idx].createdAt || db.staff[idx].date || nowISODateTimeLocal()) : nowISODateTimeLocal(),
-    name: val("f_st_name"),
-    role: val("f_st_role"),
-    phone: val("f_st_phone"),
-    baseSalary: String(Math.max(0, n(val("f_st_salary")))),
-    commPct: String(Math.max(0, n(val("f_st_comm")))),
+    uid: staffUid,
+    createdAt: idx !== null
+      ? (db.staff[idx].createdAt || db.staff[idx].date || nowISODateTimeLocal())
+      : nowISODateTimeLocal(),
+    updatedAt: nowISODateTimeLocal(),
+    fullName: nameVal,
+    name: nameVal,
+    fatherName: (val("f_st_fatherName") || "").trim(),
+    phone,
+    phoneAlt: (val("f_st_phoneAlt") || "").trim(),
+    email: (val("f_st_email") || "").trim(),
+    idCardNo: (val("f_st_idCardNo") || "").trim(),
+    finCode: (val("f_st_finCode") || "").trim(),
+    birthDate: val("f_st_birthDate") || "",
+    gender: val("f_st_gender") || "",
+    maritalStatus: val("f_st_maritalStatus") || "",
+    address: (val("f_st_address") || "").trim(),
+    vezifeAdi,
+    vezifeId: vezifeAdi.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
+    role: vezifeAdi,
+    department: (val("f_st_department") || "").trim(),
+    hireDate,
+    contractNo: (val("f_st_contractNo") || "").trim(),
+    employeeStatus: val("f_st_empStatus") || "active",
+    salaryType: val("f_st_salaryType") || "fixed",
+    baseSalary: String(Math.max(0, salary)),
+    salary: String(Math.max(0, salary)),
+    commPct: String(Math.max(0, commPct)),
+    salesPercent: String(Math.max(0, commPct)),
+    bonus: String(Math.max(0, n(val("f_st_bonus")))),
+    fineLimit: String(Math.max(0, n(val("f_st_fineLimit")))),
+    paymentMethod: val("f_st_payMethod") || "cash",
+    bankName: (val("f_st_bankName") || "").trim(),
+    accountNo: (val("f_st_accountNo") || "").trim(),
+    voen: (val("f_st_voen") || "").trim(),
+    advanceLimit: String(Math.max(0, n(val("f_st_advLimit")))),
+    hasSystemAccess: hasSys,
+    sysLogin: newSysUser?.sysLogin || (existingLinkedUser?.username) || "",
+    notes: (val("f_st_notes") || "").trim(),
     actorName,
   };
+
   if (idx !== null) db.staff[idx] = data;
   else db.staff.push(data);
+
+  if (newSysUser) {
+    const cid = meta?.session?.companyId || "";
+    if (!Array.isArray(meta.users)) meta.users = [];
+    meta.users.push({
+      uid: genId(meta.users, 1),
+      fullName: nameVal,
+      username: newSysUser.sysLogin,
+      pass: newSysUser.pass,
+      role: newSysUser.sysRole,
+      active: newSysUser.sysActive,
+      mustChangePassword: true,
+      companyId: cid || null,
+      staffUid: String(staffUid),
+      perms: { sections: ["*"], canEdit: false, canDelete: false, canPay: false, canRefund: false, canExport: false, canImport: false, canReset: false, actions: {} },
+      createdAt: nowISODateTimeLocal(),
+    });
+    saveMeta();
+  }
+
   logEvent(isNew ? "create" : "update", "staff", { uid: data.uid });
   saveDB();
   closeMdl();
+}
+
+function staffSalaryTypeChange() {
+  const type = val("f_st_salaryType") || "fixed";
+  const salRow = byId("st_salary_row");
+  const pctRow = byId("st_pct_row");
+  if (!salRow || !pctRow) return;
+  if (type === "fixed") {
+    salRow.style.display = "";
+    pctRow.style.display = "none";
+  } else if (type === "percent") {
+    salRow.style.display = "none";
+    pctRow.style.display = "";
+  } else {
+    salRow.style.display = "";
+    pctRow.style.display = "";
+  }
+}
+
+function staffSysToggle() {
+  const checked = !!(byId("f_st_hasSys")?.checked);
+  const fields = byId("st_sys_fields");
+  if (fields) fields.style.display = checked ? "block" : "none";
 }
 
 // ========= Əməkhaqqı hesabla (əməkdaşlar bölməsindən) =========
@@ -14172,20 +14420,37 @@ function renderAll() {
     .sort((a, b) => String(a.s.createdAt || a.s.date || "").localeCompare(String(b.s.createdAt || b.s.date || "")) * -1);
   byId("tblStaff").innerHTML = staffList
     .map(
-      ({ s, idx }, i) => `
+      ({ s, idx }, i) => {
+        const empStatusMap = {
+          active: ["pill paid", "Aktiv"],
+          vacation: ["pill warn", "Məzuniyyətdə"],
+          suspended: ["pill partial", "Dayandırılıb"],
+          terminated: ["pill unpaid", "İşdən çıxıb"],
+        };
+        const [statusCls, statusTxt] = empStatusMap[s.employeeStatus || "active"] || ["pill paid", "Aktiv"];
+        const salaryTypeMap = { fixed: "Sabit", percent: "Faizlə", mixed: "Sabit+Faiz" };
+        const salTypeLbl = salaryTypeMap[s.salaryType || "fixed"] || "Sabit";
+        const salaryDisplay = s.salaryType === "percent"
+          ? `${money(s.commPct || 0)}%`
+          : s.salaryType === "mixed"
+            ? `${money(s.baseSalary || 0)} AZN + ${money(s.commPct || 0)}%`
+            : `${money(s.baseSalary || 0)} AZN`;
+        return `
     <tr>
       <td>${i + 1}</td>
-      <td>${s.uid}</td>
-      <td>${escapeHtml(s.name)}</td>
-      <td>${escapeHtml(s.role || "-")}</td>
+      <td>${escapeHtml(s.fullName || s.name || "-")}</td>
+      <td>${escapeHtml(s.vezifeAdi || s.role || "-")}</td>
+      <td>${escapeHtml(s.department || "-")}</td>
       <td>${escapeHtml(s.phone || "-")}</td>
-      <td>${money(s.baseSalary || 0)} AZN</td>
-      <td>${money(s.commPct || 0)}%</td>
+      <td>${s.hireDate ? fmtDT(s.hireDate) : "-"}</td>
+      <td><span class="${statusCls}">${statusTxt}</span></td>
+      <td><span class="muted" style="font-size:.75rem;">${salTypeLbl}</span><br>${salaryDisplay}</td>
       <td class="tbl-actions">
-        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
+        ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>` : ""}
         ${userCanDelete("staff") ? `<button class="icon-btn delete" onclick="delItem('staff', ${idx})" title="Sil"><i class="fas fa-trash"></i></button>` : ""}
       </td>
-    </tr>`
+    </tr>`;
+      }
     )
     .join("");
 
