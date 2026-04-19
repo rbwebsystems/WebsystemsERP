@@ -64,7 +64,7 @@
       <button type="button" class="nav-link admin-only" data-sec="users" data-tip="İstifadəçi icazələri"><i class="fas fa-user-shield"></i><span class="nav-text">İcazələr</span></button>
       <button type="button" class="nav-link admin-only" data-sec="audit" data-tip="Audit"><i class="fas fa-shield-halved"></i><span class="nav-text">Audit</span></button>
       <button type="button" class="nav-link admin-only" data-sec="trash" data-tip="Səbət"><i class="fas fa-trash-can"></i><span class="nav-text">Səbət</span></button>
-      <button type="button" class="nav-link admin-not-dev" data-sec="settings" data-tip="Ayarlar" onclick="showSec('settings')"><i class="fas fa-gear"></i><span class="nav-text">Ayarlar</span></button>
+      <button type="button" class="nav-link admin-not-dev" data-sec="settings" data-tip="Ayarlar"><i class="fas fa-gear"></i><span class="nav-text">Ayarlar</span></button>
       <div class="nav-link dev-only dev-toggle" onclick="toggleDevMenu()" data-tip="Developer"><i class="fas fa-user-gear"></i><span class="nav-text">Dev</span></div>
       <div id="devMenu" class="dev-only dev-menu" style="display:none;">
         <button type="button" class="nav-link dev-sub" data-sec="companies"><i class="fas fa-city"></i><span class="nav-text">Şirkətlər</span></button>
@@ -751,7 +751,7 @@
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Əməliyyat</th><th>Hədəf</th><th>Ətraflı</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Tarix</th><th>İstifadəçi</th><th>Əməliyyat</th><th>Hədəf</th><th>Ətraflı</th><th>Baxış</th></tr></thead>
           <tbody id="tblAudit"></tbody>
         </table>
       </div>
@@ -875,9 +875,14 @@
       <span id="repPayroll" style="display:none"></span>
       <span id="repPL" style="display:none"></span>
       <span id="repPLCash" style="display:none"></span>
-      <thead id="repListHead" style="display:none"></thead>
-      <tbody id="tblRepList" style="display:none"></tbody>
-      <tbody id="tblPayroll" style="display:none"></tbody>
+      <!-- Hidden tables kept for JS compat (CSV export + report rendering) -->
+      <table style="display:none" aria-hidden="true">
+        <thead id="repListHead"></thead>
+        <tbody id="tblRepList"></tbody>
+      </table>
+      <table style="display:none" aria-hidden="true">
+        <tbody id="tblPayroll"></tbody>
+      </table>
 
       <!-- Report menu (shown when no sub-view active) -->
       <div id="repMenu">

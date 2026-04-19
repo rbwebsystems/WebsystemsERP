@@ -7339,7 +7339,7 @@ function openStaff(idx = null) {
       <div class="modal-footer">
         <button class="btn-main" type="submit">${idx !== null ? "Yenilə" : "Yadda saxla"}</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
-        <button class="btn-neutral" type="button" onclick="openStaff(${idx})">Təmizlə</button>
+        <button class="btn-neutral" type="button" onclick="openStaff(${idx})" title="${idx !== null ? 'Yadda saxlanmış məlumatlara qayıt' : 'Formanı sıfırla'}">${idx !== null ? "Sıfırla" : "Təmizlə"}</button>
       </div>
     </form>
   `);
@@ -14423,14 +14423,24 @@ function changePassword(e) {
 
 // ========= Render =========
 let _renderAllPending = false;
+let _renderAllQueued  = false;   // ensure state changes during the 50ms window are not lost
 function renderAll() {
-  // Guard: collapse rapid successive calls into a single execution.
-  // Multiple onSnapshot / timer / save triggers within the same JS turn
-  // collapse to one actual DOM update — prevents main-thread jank on
-  // slower hardware (e.g. Chrome on older Intel Mac).
-  if (_renderAllPending) return;
+  // Debounce: collapse rapid successive calls into a single execution.
+  // If a second call arrives while the guard is active, we mark it as
+  // queued so the timeout fires one more render after the window closes.
+  // This prevents both main-thread jank AND missed state updates.
+  if (_renderAllPending) {
+    _renderAllQueued = true;
+    return;
+  }
   _renderAllPending = true;
-  setTimeout(() => { _renderAllPending = false; }, 50);
+  setTimeout(() => {
+    _renderAllPending = false;
+    if (_renderAllQueued) {
+      _renderAllQueued = false;
+      renderAll();
+    }
+  }, 50);
 
   if (!meta.session) {
     showLoginOverlay(true);
