@@ -7405,21 +7405,32 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
 }
 /* Preloader logo ring */
 .app-preloader__logo-ring {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px 32px;
+  gap: 10px;
 }
-.app-preloader__orbit-svg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 290px;
-  height: 118px;
-  transform: translate(-50%, -50%);
-  overflow: visible;
-  pointer-events: none;
+.app-preloader__orbit-svg { display: none; }
+/* Chevrons right of logo */
+.app-preloader__chevrons {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+}
+.app-preloader__chevrons i {
+  display: block;
+  color: #00C2FF;
+  font-size: .78rem;
+  opacity: .12;
+  animation: chev-wave 1.6s ease-in-out infinite;
+}
+.app-preloader__chevrons i:nth-child(1) { animation-delay: 0s; }
+.app-preloader__chevrons i:nth-child(2) { animation-delay: .22s; }
+.app-preloader__chevrons i:nth-child(3) { animation-delay: .44s; }
+.app-preloader__chevrons i:nth-child(4) { animation-delay: .66s; }
+@keyframes chev-wave {
+  0%, 100% { opacity: .12; transform: translateX(0); }
+  50%       { opacity: 1;   transform: translateX(4px); }
 }
 
 /* Developer: şirkət Info modalı — meta istifadəçi cədvəli */
