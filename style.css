@@ -2050,20 +2050,19 @@ body.landing-login-open .lp-aurora{
   display:flex;
   min-height:clamp(280px, 36vw, 400px);
   width:100%;
-  background:rgba(241,245,249,.95);
+  background:#F2F2F7;
   position:relative;
   overflow:hidden;
 }
 .lp-dash-sidebar{
   --sb-pd:clamp(.85rem, 1.6vw, 1.35rem);
-  width:clamp(11rem, 22vw, 15.5rem);
+  width:clamp(10rem, 21vw, 14.5rem);
   flex-shrink:0;
-  background:#1a4754;
-  color:#fff;
-  padding:var(--sb-pd);
+  background:#fff;
+  color:#1c1c1e;
   display:flex;
   flex-direction:column;
-  border-right:1px solid rgba(255,255,255,.08);
+  border-right:1px solid rgba(0,0,0,.1);
   z-index:2;
   overflow:hidden;
   position:relative;
@@ -2071,80 +2070,81 @@ body.landing-login-open .lp-aurora{
 .lp-dash-logo{
   display:flex;
   align-items:center;
-  gap:.5rem;
-  margin-bottom:clamp(.85rem, 2vw, 1.5rem);
-  padding-bottom:clamp(.55rem, 1.2vw, .9rem);
-  border-bottom:1px solid rgba(255,255,255,.1);
+  gap:.55rem;
+  padding:10px 14px;
+  border-top:1px solid rgba(0,0,0,.08);
+  margin-top:auto;
+  flex-shrink:0;
 }
 .lp-dash-logo-text{
-  font-size:clamp(.85rem, 1.8vw, 1.05rem);
-  font-weight:800;
-  color:#fff;
-  letter-spacing:-.02em;
+  font-size:.82rem;
+  font-weight:700;
+  color:#0B132B;
+  letter-spacing:-.01em;
   line-height:1;
 }
 .lp-dash-logo-sub{
-  font-size:.6rem;
-  font-weight:600;
-  color:rgba(255,255,255,.45);
+  font-size:.58rem;
+  font-weight:500;
+  color:#8E8E93;
   margin-top:2px;
-  letter-spacing:.04em;
-  text-transform:uppercase;
+  letter-spacing:.02em;
 }
 .lp-dash-nav{
   display:flex;
   flex-direction:column;
-  gap:.4rem;
+  gap:2px;
   flex:1;
-  font-size:.78rem;
-}
-@media (min-width: 768px){
-  .lp-dash-nav{ font-size:.82rem; gap:.48rem; }
+  overflow:hidden;
+  padding:4px 0;
 }
 .lp-dash-nav-item{
   display:flex;
   align-items:center;
-  gap:.55rem;
-  padding:.45rem .7rem;
-  border-radius:.75rem;
-  color:rgba(255,255,255,.62);
-  font-weight:500;
+  gap:10px;
+  padding:6px 10px;
+  border-radius:8px;
+  margin:0 8px;
+  width:calc(100% - 16px);
+  color:#1c1c1e;
+  font-size:clamp(.72rem, 1.4vw, .875rem);
+  font-weight:400;
   cursor:default;
-  transition:background .15s,color .15s;
+  box-sizing:border-box;
 }
-@media (min-width: 768px){
-  .lp-dash-nav-item{ padding:.5rem .85rem; gap:.6rem; }
-}
-.lp-dash-nav-item i{
-  width:1.15rem;
-  text-align:center;
-  opacity:.85;
-  font-size:1em;
+.lp-dash-nav-ico{
+  width:28px;height:28px;
+  min-width:28px;
+  border-radius:7px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.78rem;
+  color:#fff;
+  flex-shrink:0;
 }
 .lp-dash-nav-item--active{
-  background:#f1f5f9;
-  color:#1a4754;
-  font-weight:700;
-  border-radius:.65rem 0 0 .65rem;
-  margin-right:calc(-1 * var(--sb-pd));
-  padding-right:calc(.7rem + var(--sb-pd));
+  background:#007AFF;
+  color:#fff;
+  font-weight:500;
+  border-radius:8px;
   box-shadow:none;
 }
-.lp-dash-nav-item--active i{color:#1a4754;opacity:1;}
+.lp-dash-nav-item--active .lp-dash-nav-ico{
+  background:rgba(255,255,255,.25) !important;
+}
 .lp-dash-user{
-  margin-top:auto;
-  padding:.6rem .75rem;
-  background:rgba(0,0,0,.18);
-  border-radius:.75rem;
-  border:1px solid rgba(255,255,255,.12);
+  padding:10px 14px;
+  border-bottom:1px solid rgba(0,0,0,.08);
   display:flex;
   align-items:center;
-  gap:.65rem;
+  gap:10px;
+  flex-shrink:0;
 }
 .lp-dash-user-avatar{
-  width:2.1rem;height:2.1rem;
+  width:34px;height:34px;
   border-radius:50%;
-  background:linear-gradient(135deg, #14F05A, #1a9e6b);
+  background:#007AFF;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2155,13 +2155,12 @@ body.landing-login-open .lp-aurora{
   align-items:center;
   justify-content:center;
   width:100%;height:100%;
-  border-radius:50%;
-  font-size:.68rem;
-  font-weight:800;
+  font-size:.72rem;
+  font-weight:700;
   color:#fff;
 }
-.lp-dash-user-name{font-size:.75rem;font-weight:700;margin:0;color:#fff;}
-.lp-dash-user-role{font-size:.6rem;color:rgba(255,255,255,.5);margin:.15rem 0 0;}
+.lp-dash-user-name{font-size:.82rem;font-weight:600;margin:0;color:#1c1c1e;}
+.lp-dash-user-role{font-size:.68rem;color:#8E8E93;margin:.1rem 0 0;}
 .lp-dash-main{
   flex:1;
   min-width:0;
@@ -2171,7 +2170,7 @@ body.landing-login-open .lp-aurora{
   gap:0;
   overflow:hidden;
   z-index:1;
-  background:#f1f5f9;
+  background:#F2F2F7;
 }
 .lp-dash-content{
   flex:1;
@@ -2180,7 +2179,7 @@ body.landing-login-open .lp-aurora{
   padding:clamp(.55rem, 1.2vw, .95rem);
   display:flex;
   flex-direction:column;
-  gap:clamp(.45rem, 1vw, .8rem);
+  gap:clamp(.45rem, 1vw, .75rem);
   overflow:hidden;
 }
 .lp-dash-header{
@@ -2189,16 +2188,15 @@ body.landing-login-open .lp-aurora{
   justify-content:space-between;
   gap:.65rem;
   background:#fff;
-  padding:.55rem .85rem;
-  border-radius:0;
-  border-bottom:1px solid #e8ecf0;
-  box-shadow:0 1px 4px rgba(15,23,42,.04);
+  padding:0 16px;
+  height:52px;
+  border-bottom:1px solid rgba(0,0,0,.08);
   flex-shrink:0;
 }
 .lp-dash-page-title{
-  font-size:.88rem;
-  font-weight:700;
-  color:#0f172a;
+  font-size:.875rem;
+  font-weight:600;
+  color:#1c1c1e;
   white-space:nowrap;
 }
 .lp-dash-header-right{
@@ -2258,13 +2256,13 @@ body.landing-login-open .lp-aurora{
 }
 .lp-dash-stat{
   background:#fff;
-  padding:clamp(.55rem, 1.2vw, .9rem);
-  border-radius:.85rem;
-  border:1px solid #e8ecf0;
-  box-shadow:0 1px 3px rgba(15,23,42,.04);
+  padding:clamp(.5rem, 1.1vw, .8rem);
+  border-radius:12px;
+  border:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
   display:flex;
   align-items:center;
-  gap:.75rem;
+  gap:.7rem;
 }
 .lp-dash-stat-body{
   display:flex;
@@ -2326,8 +2324,9 @@ body.landing-login-open .lp-aurora{
   flex:2;
   background:#fff;
   padding:clamp(.55rem, 1.2vw, 1rem);
-  border-radius:.9rem;
-  border:1px solid #e8ecf0;
+  border-radius:12px;
+  border:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
   display:flex;
   flex-direction:column;
   min-width:0;
@@ -2375,11 +2374,12 @@ body.landing-login-open .lp-aurora{
   flex:1;
   background:#fff;
   padding:clamp(.55rem, 1.2vw, 1rem);
-  border-radius:.9rem;
-  border:1px solid #e8ecf0;
+  border-radius:12px;
+  border:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
   min-width:0;
   max-width:100%;
-  overflow:visible;
+  overflow:hidden;
 }
 .lp-dash-feed-title{
   margin:0 0 .55rem;
