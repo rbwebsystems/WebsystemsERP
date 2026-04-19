@@ -4881,6 +4881,9 @@ function setCashDateToToday() {
 function showDashboardAfterLogin() {
   if (!meta?.session) return;
   bindSidebarNavClicks();
+  // Backfill permissions for users created before the full permissions
+  // system was in place (runs silently in the background).
+  migrateUserPerms();
   const fromHash = parseAppSectionFromHash();
   if (fromHash && isValidAppSection(fromHash) && userCanSection(fromHash)) {
     const nav = findNavLinkForSection(fromHash);
@@ -12178,6 +12181,59 @@ async function savePermModal(e, userId) {
     toast("Xəta: " + (err?.message || err), "error");
   } finally {
     erpSetButtonBusy(btn, false);
+  }
+}
+
+// ===== Permissions back-fill migration =====
+// Runs after login. Ensures existing users (created before the full
+// permissions system was built) can access all sections they should
+// have been able to access before.
+//
+// Logic:
+//  • admin / developer users already have full access (no perms check) — skip
+//  • user has NO perms configured (old account, before permission modal existed)
+//    → grant all sections (same as unrestricted access they had before)
+//  • user HAS perms with some sections already set
+//    → only add sections that were newly introduced (debts, supp) so the
+//       admin's intentional restricted configuration is not overridden
+async function migrateUserPerms() {
+  const cid = meta?.session?.companyId;
+  if (!cid) return;
+
+  const ALL_IDS      = PERM_SECTIONS.map(s => s.id);
+  const NEW_SECTIONS = ["debts", "supp"]; // added in latest update — backfill for existing users
+  let changed = false;
+
+  (meta.users || []).forEach(u => {
+    if (!u) return;
+    if (!userBelongsToCompany(u, cid)) return;   // only current company
+    if (u.role === "admin" || u.role === "developer") return; // full access already
+
+    if (!u.perms) u.perms = {};
+
+    if (!Array.isArray(u.perms.sections) || u.perms.sections.length === 0) {
+      // No permissions ever configured → restore full access (backward compat)
+      u.perms.sections = [...ALL_IDS];
+      if (!u.perms.actions) u.perms.actions = {};
+      changed = true;
+    } else {
+      // Permissions were configured — add only the newly introduced sections
+      NEW_SECTIONS.forEach(sec => {
+        if (!u.perms.sections.includes(sec) && !u.perms.sections.includes("*")) {
+          u.perms.sections.push(sec);
+          changed = true;
+        }
+      });
+    }
+  });
+
+  if (changed) {
+    try {
+      await saveMeta();
+      console.log("[perms-migration] user permissions backfilled");
+    } catch (e) {
+      console.warn("[perms-migration] saveMeta failed:", e);
+    }
   }
 }
 
