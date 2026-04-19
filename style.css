@@ -2050,8 +2050,9 @@ body.landing-login-open .lp-aurora{
   display:flex;
   min-height:clamp(280px, 36vw, 400px);
   width:100%;
-  background:rgba(248,250,252,.85);
+  background:rgba(241,245,249,.95);
   position:relative;
+  overflow:hidden;
 }
 .lp-dash-sidebar{
   --sb-pd:clamp(.85rem, 1.6vw, 1.35rem);
@@ -2064,6 +2065,8 @@ body.landing-login-open .lp-aurora{
   flex-direction:column;
   border-right:1px solid rgba(255,255,255,.08);
   z-index:2;
+  overflow:hidden;
+  position:relative;
 }
 .lp-dash-logo{
   display:flex;
@@ -2173,11 +2176,12 @@ body.landing-login-open .lp-aurora{
 .lp-dash-content{
   flex:1;
   min-width:0;
-  padding:clamp(.65rem, 1.4vw, 1.1rem);
+  min-height:0;
+  padding:clamp(.55rem, 1.2vw, .95rem);
   display:flex;
   flex-direction:column;
-  gap:clamp(.55rem, 1.2vw, .9rem);
-  overflow:visible;
+  gap:clamp(.45rem, 1vw, .8rem);
+  overflow:hidden;
 }
 .lp-dash-header{
   display:flex;
