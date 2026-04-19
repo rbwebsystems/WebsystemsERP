@@ -6075,9 +6075,9 @@ body.sidebar-collapsed .sidebar-brand-name,
 body.sidebar-collapsed .sidebar-brand-logo {
   display: none !important;
 }
-.sidebar-brand-name { color: #8E8E93 !important; }
+.sidebar-brand-name { color: #0B132B !important; }
 body.theme-dark .sidebar-brand { border-top-color: rgba(255,255,255,.08) !important; }
-body.theme-dark .sidebar-brand-name { color: rgba(255,255,255,.3) !important; }
+body.theme-dark .sidebar-brand-name { color: #ffffff !important; }
 
 /* Collapsed */
 body.sidebar-collapsed .nav-link { justify-content: center !important; padding: 10px 0 !important; gap: 0 !important; width: 100% !important; margin-left: 0 !important; border-radius: 0 !important; }
@@ -7398,6 +7398,36 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   text-transform: uppercase;
   color: #94a3b8;
   margin: 0;
+}
+/* Preloader logo ring spinner */
+.app-preloader__logo-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 32px;
+}
+.app-preloader__logo-ring::before,
+.app-preloader__logo-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+.app-preloader__logo-ring::before {
+  border: 3px dashed rgba(11,19,43,.22);
+  animation: preloader-ring-spin 2.8s linear infinite;
+}
+.app-preloader__logo-ring::after {
+  border: 3px dashed rgba(11,19,43,.7);
+  border-radius: 20px;
+  animation: preloader-ring-spin 2.8s linear infinite;
+  animation-delay: -1.4s;
+}
+@keyframes preloader-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* Developer: şirkət Info modalı — meta istifadəçi cədvəli */
