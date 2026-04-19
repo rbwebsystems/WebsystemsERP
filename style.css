@@ -7466,6 +7466,31 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   width: auto;
   display: block;
 }
+.app-preloader__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+.app-preloader__dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #14C757;
+  display: block;
+  opacity: 0.2;
+  animation: preloader-dot-wave 1.4s ease-in-out infinite;
+}
+.app-preloader__dots span:nth-child(1) { animation-delay: 0s; }
+.app-preloader__dots span:nth-child(2) { animation-delay: 0.18s; }
+.app-preloader__dots span:nth-child(3) { animation-delay: 0.36s; }
+.app-preloader__dots span:nth-child(4) { animation-delay: 0.54s; }
+.app-preloader__dots span:nth-child(5) { animation-delay: 0.72s; }
+@keyframes preloader-dot-wave {
+  0%, 100% { opacity: 0.2; transform: scale(0.85); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
 /* mock dashboard logo */
 .rbsoft-new-logo--dash { height: 16px; width: auto; }
 .rbsoft-new-logo--dash-brand { height: 20px; width: auto; }
