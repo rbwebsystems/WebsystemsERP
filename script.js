@@ -5626,8 +5626,27 @@ function openCust(idx = null) {
         <div class="form-card">
           <div class="form-card-title">Digər</div>
           <div class="grid-2">
-            <div class="f-group"><label>Zamin</label><select id="f_zam">${guarantorOptions}</select></div>
+            <div class="f-group">
+              <label>Zamin</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <select id="f_zam" style="flex:1;">${guarantorOptions}</select>
+                <button type="button" class="icon-btn" onclick="openZamQuick()" title="Tez yeni zamin yarat" style="flex-shrink:0;"><i class="fas fa-plus"></i></button>
+              </div>
+            </div>
             <div class="f-group"><label>Kredit limit (AZN)</label><input type="number" step="0.01" id="f_climit" value="${escapeAttr(String(c.creditLimit ?? "0"))}" placeholder="0 = limitsiz"></div>
+            <div id="zamQuickPanel" style="display:none;grid-column:1/-1;background:var(--bg,#f8fafc);border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-top:4px;">
+              <div style="font-size:.8rem;font-weight:600;color:var(--text-muted,#64748b);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">Tez Zamin Yarat</div>
+              <div class="grid-2" style="margin-bottom:10px;">
+                <div class="f-group"><label>Soyad <span class="req">*</span></label><input id="zamQ_sur" placeholder="Soyad"></div>
+                <div class="f-group"><label>Ad <span class="req">*</span></label><input id="zamQ_name" placeholder="Ad"></div>
+                <div class="f-group"><label>Mobil <span class="req">*</span></label><input id="zamQ_ph1" placeholder="+994 xx xxx xx xx"></div>
+                <div class="f-group"><label>FİN</label><input id="zamQ_fin" placeholder="FİN (istəyə bağlı)" maxlength="7"></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button type="button" class="btn-main" style="padding:6px 16px;font-size:.85rem;" onclick="saveQuickGuarantor()"><i class="fas fa-check"></i> Əlavə et</button>
+                <button type="button" class="btn-cancel" style="padding:6px 14px;font-size:.85rem;" onclick="closeZamQuick()">Ləğv et</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -5637,6 +5656,62 @@ function openCust(idx = null) {
       </div>
     </form>
   `);
+}
+
+function openZamQuick() {
+  const panel = byId("zamQuickPanel");
+  if (!panel) return;
+  panel.style.display = "block";
+  const surInput = byId("zamQ_sur");
+  if (surInput) surInput.focus();
+}
+
+function closeZamQuick() {
+  const panel = byId("zamQuickPanel");
+  if (panel) panel.style.display = "none";
+  ["zamQ_sur","zamQ_name","zamQ_ph1","zamQ_fin"].forEach(id => {
+    const el = byId(id);
+    if (el) el.value = "";
+  });
+}
+
+async function saveQuickGuarantor() {
+  const sur  = (byId("zamQ_sur")?.value  || "").trim();
+  const name = (byId("zamQ_name")?.value || "").trim();
+  const ph1  = (byId("zamQ_ph1")?.value  || "").trim();
+  const fin  = (byId("zamQ_fin")?.value  || "").trim();
+
+  if (!sur)  { toast("Soyad daxil edin", "err"); byId("zamQ_sur")?.focus();  return; }
+  if (!name) { toast("Ad daxil edin",    "err"); byId("zamQ_name")?.focus(); return; }
+  if (!ph1)  { toast("Mobil daxil edin", "err"); byId("zamQ_ph1")?.focus();  return; }
+
+  const newCust = {
+    uid: genId(db.cust, 1),
+    sur, name,
+    father: "", fin, seriaNum: "",
+    ph1, ph2: "", ph3: "",
+    work: "", addr: "",
+    zam: "",
+    creditLimit: "0",
+    createdAt: nowISODate(),
+    createdBy: currentActorName(),
+  };
+  db.cust.push(newCust);
+  logEvent("create", "cust", { uid: newCust.uid, fullName: `${sur} ${name}` });
+  saveDB();
+
+  // Update the guarantor dropdown and select the new entry
+  const sel = byId("f_zam");
+  if (sel) {
+    const opt = document.createElement("option");
+    opt.value  = String(newCust.uid);
+    opt.text   = `${sur} ${name} (${newCust.uid})`;
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  closeZamQuick();
+  toast(`${sur} ${name} zamin olaraq əlavə edildi`, "ok");
 }
 
 function saveCust(e, idx) {
@@ -16096,6 +16171,9 @@ Object.assign(window, {
   logout,
   openCust,
   saveCust,
+  openZamQuick,
+  closeZamQuick,
+  saveQuickGuarantor,
   openCustInfo,
   openSupp,
   saveSupp,
