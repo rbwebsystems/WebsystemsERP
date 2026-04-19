@@ -1372,10 +1372,7 @@ body.theme-dark .soft-loading-center__card{
   box-shadow:0 24px 64px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.04) inset;
 }
 .soft-loading-center__card .loading-spinner{
-  width:24px;
-  height:24px;
-  border-width:2.5px;
-  margin-bottom:4px;
+  display:none;
 }
 .soft-loading-center__text{
   margin:0;
@@ -1626,13 +1623,7 @@ body.theme-dark .soft-loading-center__text{color:#94a3b8;}
   max-width:min(90%,14rem);
 }
 .login-auth-busy__txt{margin:0;font-size:.85rem;font-weight:800;color:#0f172a;text-align:center;}
-.login-auth-busy__spinner{
-  width:36px;height:36px;
-  border:3px solid #e2e8f0;
-  border-top-color:var(--brand-green,#1a4754);
-  border-radius:50%;
-  animation:loginAuthSpin .7s linear infinite;
-}
+.login-auth-busy__spinner{ display:none; }
 @keyframes loginAuthSpin{to{transform:rotate(360deg);}}
 .login-auth-busy-inline{
   display:inline-block;
@@ -7473,7 +7464,14 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   gap: 8px;
   margin-top: 18px;
 }
-.app-preloader__dots span {
+.rbs-dots-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.app-preloader__dots span,
+.rbs-dots-loader span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -7481,15 +7479,24 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   opacity: 0.25;
   animation: preloader-dot-wave 1.4s ease-in-out infinite;
 }
-.app-preloader__dots span:nth-child(1) { background:#14C757; animation-delay:0s; }
-.app-preloader__dots span:nth-child(2) { background:#0B132B; animation-delay:0.18s; }
-.app-preloader__dots span:nth-child(3) { background:#1a7065; animation-delay:0.36s; }
-.app-preloader__dots span:nth-child(4) { background:#14C757; animation-delay:0.54s; }
-.app-preloader__dots span:nth-child(5) { background:#0B132B; animation-delay:0.72s; }
+.app-preloader__dots span:nth-child(1),
+.rbs-dots-loader span:nth-child(1) { background:#14C757; animation-delay:0s; }
+.app-preloader__dots span:nth-child(2),
+.rbs-dots-loader span:nth-child(2) { background:#0B132B; animation-delay:0.18s; }
+.app-preloader__dots span:nth-child(3),
+.rbs-dots-loader span:nth-child(3) { background:#1a7065; animation-delay:0.36s; }
+.app-preloader__dots span:nth-child(4),
+.rbs-dots-loader span:nth-child(4) { background:#14C757; animation-delay:0.54s; }
+.app-preloader__dots span:nth-child(5),
+.rbs-dots-loader span:nth-child(5) { background:#0B132B; animation-delay:0.72s; }
 @keyframes preloader-dot-wave {
-  0%, 100% { opacity: 0.2; transform: scale(0.85); }
-  50%       { opacity: 1;   transform: scale(1.2); }
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%       { opacity: 1;    transform: scale(1.2); }
 }
+/* Login busy box — dots yerləşdirməsi üçün */
+.login-auth-busy__box .rbs-dots-loader { margin-bottom: 2px; }
+/* Soft loading card — spinner-in öz stili silinmir, yalnız boşluq */
+.soft-loading-center__card .rbs-dots-loader { margin-bottom: 2px; }
 /* mock dashboard logo */
 .rbsoft-new-logo--dash { height: 16px; width: auto; }
 .rbsoft-new-logo--dash-brand { height: 20px; width: auto; }
