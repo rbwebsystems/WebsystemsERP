@@ -16055,6 +16055,13 @@ function renderAll() {
   updateDebtSectionVisibility();
   } // end dash
 
+  // Debt content visibility must also be refreshed when on any debts sub-section
+  // (was previously inside the dash block only — caused overdueContent to stay
+  // hidden after the user picked a sub-filter while on overdue/creditor/debts).
+  if (_secId === 'debts' || _secId === 'overdue' || _secId === 'creditor') {
+    updateDebtSectionVisibility();
+  }
+
   // Always run after any DOM update — maintains text search state
   reapplyActiveSearchFilters();
 
