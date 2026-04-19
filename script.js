@@ -780,8 +780,24 @@ function subscribeRealtime() {
       (snap) => {
         if (snap.exists) {
           const next = snap.data() || {};
+
+          // Stale-snapshot guard: if incoming data is OLDER than our last local
+          // save (by timestamp), ignore it — prevents Firestore from reverting
+          // unsaved-or-just-saved local changes back to a previous server state.
+          const incomingTs = next._metaSavedAt || 0;
+          const localTs    = meta._metaSavedAt  || 0;
+          if (incomingTs > 0 && incomingTs < localTs) {
+            console.debug("[erp-meta] onSnapshot: köhnə snapshot nəzərə alınmır", { incomingTs, localTs });
+            return;
+          }
+
           if (Array.isArray(next.companies)) meta.companies = next.companies;
-          if (Array.isArray(next.users)) meta.users = next.users;
+          if (Array.isArray(next.users))     meta.users     = next.users;
+          if (incomingTs > 0)                meta._metaSavedAt = incomingTs;
+
+          // Re-scope user list for non-developer sessions after overwrite
+          _scopeMetaUsersForSession();
+
           try {
             localStorage.setItem(META_KEY, JSON.stringify(meta));
           } catch (_) {}
@@ -2986,6 +3002,11 @@ function loadMeta() {
 function saveMeta(loadingMessage) {
   // Ensure full users list is written, not the scoped (filtered) view
   if (meta._allUsers) meta.users = meta._allUsers;
+
+  // Stamp a save-timestamp so the onSnapshot guard can detect stale reverts
+  const saveTs = Date.now();
+  meta._metaSavedAt = saveTs;
+
   if (!useFirestore()) {
     try {
       localStorage.setItem(META_KEY, JSON.stringify(meta));
@@ -3015,7 +3036,7 @@ function saveMeta(loadingMessage) {
   let softBegan = false;
   try {
     const { session, ...rest } = meta || {};
-    const data = JSON.parse(JSON.stringify({ ...rest, session: null }));
+    const data = JSON.parse(JSON.stringify({ ...rest, session: null, _metaSavedAt: saveTs }));
     _scopeMetaUsersForSession(); // Re-scope in-memory view after capturing full data for write
 
     // ── Per-company user izolyasiya shadow write ───────────────────────────────
@@ -3047,6 +3068,10 @@ function saveMeta(loadingMessage) {
       })
       .catch((e) => {
         console.warn("Firestore meta yazma xətası:", e);
+        toast(
+          "Məlumat buludda saxlanmadı! İnternet bağlantısını yoxlayın və ya yenidən cəhd edin.",
+          "error", 7000
+        );
         try {
           localStorage.setItem(META_KEY, JSON.stringify(meta));
         } catch (_) {}
