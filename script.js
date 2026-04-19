@@ -3481,8 +3481,10 @@ function userCanSection(sectionId) {
   if (sectionId === "settings") return isAdmin() || isDeveloper();
   if (!companyAllowsSection(sectionId) && !isDeveloper()) return false;
   if (u.role === "developer" || u.role === "admin") return true;
+  // overdue and creditor are sub-sections of debts — delegate to debts permission
+  const effectiveId = (sectionId === "overdue" || sectionId === "creditor") ? "debts" : sectionId;
   const secs = u.perms?.sections || [];
-  return secs.includes("*") || secs.includes(sectionId);
+  return secs.includes("*") || secs.includes(effectiveId);
 }
 
 function companyAllowsSection(sectionId) {
@@ -12059,16 +12061,18 @@ function toggleUserManualMode() {
 
 // ===== İstifadəçi icazə modalı =====
 const PERM_SECTIONS = [
-  { id: "dash",    label: "İdarə paneli",  viewOnly: true },
-  { id: "sales",   label: "Satış" },
-  { id: "purch",   label: "Alış" },
-  { id: "cust",    label: "Müştərilər" },
-  { id: "prod",    label: "Məhsullar" },
-  { id: "stock",   label: "Anbar" },
-  { id: "cash",    label: "Kassa" },
-  { id: "staff",   label: "Əməkdaşlar" },
-  { id: "reports", label: "Hesabatlar",   viewOnly: true },
-  { id: "settings",label: "Ayarlar",      viewOnly: true },
+  { id: "dash",     label: "İdarə paneli",    viewOnly: true },
+  { id: "sales",    label: "Satış" },
+  { id: "purch",    label: "Alış" },
+  { id: "stock",    label: "Anbar" },
+  { id: "cash",     label: "Kassa" },
+  { id: "debts",    label: "Borclar",         note: "Debitor · Kreditlər · Kreditor daxildir" },
+  { id: "cust",     label: "Müştərilər" },
+  { id: "supp",     label: "Təchizatçılar" },
+  { id: "prod",     label: "Məhsullar" },
+  { id: "staff",    label: "Əməkdaşlar" },
+  { id: "reports",  label: "Hesabatlar",      viewOnly: true },
+  { id: "settings", label: "Ayarlar",         viewOnly: true },
 ];
 
 function openPermModal(userId) {
@@ -12091,8 +12095,11 @@ function openPermModal(userId) {
     const chk = (act, checked) =>
       `<td style="text-align:center;"><input type="checkbox" class="perm-new-chk" data-sec="${sec.id}" data-act="${act}" ${checked ? "checked" : ""}></td>`;
     const dash = `<td style="text-align:center;color:var(--text-muted);">—</td>`;
+    const labelCell = sec.note
+      ? `${escapeHtml(sec.label)}<br><span style="font-size:.72rem;color:var(--text-muted);font-weight:400;">${escapeHtml(sec.note)}</span>`
+      : escapeHtml(sec.label);
     return `<tr>
-      <td>${escapeHtml(sec.label)}</td>
+      <td>${labelCell}</td>
       ${chk("baxmaq", hasSec(sec.id))}
       ${sec.viewOnly ? dash + dash + dash : chk("elave", hasAct(sec.id, "create")) + chk("redakte", hasAct(sec.id, "edit")) + chk("sil", hasAct(sec.id, "delete"))}
     </tr>`;
