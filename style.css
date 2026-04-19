@@ -7392,9 +7392,9 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background: rgba(255,255,255,.96);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7407,6 +7407,9 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   visibility: hidden;
   pointer-events: none;
 }
+body.theme-dark .app-preloader {
+  background: rgba(15,23,42,.55);
+}
 /* top progress bar */
 .app-preloader__bar-wrap {
   position: absolute;
@@ -7417,7 +7420,7 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
 .app-preloader__bar {
   height: 2px;
   width: 0%;
-  background: var(--brand-green, #1a4754);
+  background: #14C757;
   border-radius: 0 2px 2px 0;
   transition: width .4s cubic-bezier(.4,0,.2,1);
 }
