@@ -16518,7 +16518,7 @@ function renderSidebarBrand() {
   const compId = meta?.session?.companyId || "";
   const comp = meta?.companies?.find((c) => c.id === compId);
   const compName = comp?.name || comp?.id || "";
-  nameEl.textContent = "rbsoft.az";
+  nameEl.innerHTML = `<svg class="rbsoft-new-logo rbsoft-new-logo--sidebar" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg" style="font-family:'Poppins',sans-serif;font-weight:700;letter-spacing:-0.02em;" aria-label="RBSoft" role="img"><g font-size="85" fill="#ffffff"><text x="15" y="95">rb</text><polygon points="120,40 145,67.5 120,95 135,95 160,67.5 135,40" fill="#00C2FF"/><text x="175" y="95">soft</text></g></svg>`;
   if (logoEl) {
     const logo = comp?.logo || "";
     if (logo) {

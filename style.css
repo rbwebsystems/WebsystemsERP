@@ -2673,6 +2673,7 @@ body.landing-login-open .lp-aurora{
 .rbsoft-new-logo--login{height:46px;}
 .rbsoft-new-logo--preloader{height:60px;}
 .rbsoft-new-logo--dash{height:16px;}
+.rbsoft-new-logo--sidebar{height:22px;}
 .lp-footer-social{display:flex;gap:.65rem;margin-top:1.25rem;justify-content:center;}
 @media (min-width:768px){.lp-footer-social{justify-content:flex-start;}}
 .lp-footer-soc-btn{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.75rem;background:#f1f5f9;color:#475569;font-size:.95rem;text-decoration:none;transition:background .2s,color .2s,transform .15s;}
