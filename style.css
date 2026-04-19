@@ -7403,35 +7403,23 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   color: #94a3b8;
   margin: 0;
 }
-/* Preloader logo ring */
-.app-preloader__logo-ring {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+/* Preloader spin icon */
+.app-preloader__spin-icon {
+  width: 90px;
+  height: 90px;
+  animation: preloader-icon-spin 2.2s linear infinite;
 }
-.app-preloader__orbit-svg { display: none; }
-/* Chevrons right of logo */
-.app-preloader__chevrons {
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-  align-items: center;
-}
-.app-preloader__chevrons i {
+.app-preloader__spin-icon svg {
+  width: 100%;
+  height: 100%;
   display: block;
-  color: #00C2FF;
-  font-size: .78rem;
-  opacity: .12;
-  animation: chev-wave 1.6s ease-in-out infinite;
 }
-.app-preloader__chevrons i:nth-child(1) { animation-delay: 0s; }
-.app-preloader__chevrons i:nth-child(2) { animation-delay: .22s; }
-.app-preloader__chevrons i:nth-child(3) { animation-delay: .44s; }
-.app-preloader__chevrons i:nth-child(4) { animation-delay: .66s; }
-@keyframes chev-wave {
-  0%, 100% { opacity: .12; transform: translateX(0); }
-  50%       { opacity: 1;   transform: translateX(4px); }
+@keyframes preloader-icon-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
+/* mock dashboard logo square */
+.rbsoft-new-logo--dash { height: 20px; width: 20px; }
 
 /* Developer: şirkət Info modalı — meta istifadəçi cədvəli */
 .company-info-users-table {

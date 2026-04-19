@@ -16518,7 +16518,7 @@ function renderSidebarBrand() {
   const compId = meta?.session?.companyId || "";
   const comp = meta?.companies?.find((c) => c.id === compId);
   const compName = comp?.name || comp?.id || "";
-  nameEl.innerHTML = `<svg class="rbsoft-new-logo rbsoft-new-logo--sidebar" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg" style="font-family:'Poppins',sans-serif;font-weight:700;letter-spacing:-0.02em;" aria-label="RBSoft" role="img"><g font-size="85" fill="currentColor"><text x="15" y="95">rb</text><polygon points="120,40 145,67.5 120,95 135,95 160,67.5 135,40" fill="#00C2FF"/><text x="175" y="95">soft</text></g></svg>`;
+  nameEl.innerHTML = `<svg class="rbsoft-new-logo rbsoft-new-logo--sidebar" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" aria-label="RBSoft" role="img"><g transform="translate(5,10)"><path d="M 6,50 A 44,44 0 0 1 94,50 L 84,50 A 34,34 0 0 0 16,50 Z" fill="#0d5228"/><path d="M 18,50 A 32,32 0 0 1 82,50 L 72,50 A 22,22 0 0 0 28,50 Z" fill="#18a045"/><path d="M 67.3,65 A 20,20 0 1 0 67.3,45 L 60.4,49 A 12,12 0 1 1 60.4,61 Z" fill="#00e676"/></g><text x="120" y="92" font-size="76" font-weight="700" fill="currentColor" letter-spacing="-1.5" font-family="'Poppins',sans-serif">rbsoft</text></svg>`;
   if (logoEl) {
     const logo = comp?.logo || "";
     if (logo) {
