@@ -837,8 +837,14 @@ function subscribeRealtime() {
             (snap) => {
               if (snap.exists) {
                 db = { ...defaultDB(), ...snap.data() };
-                renderAll();
-                if (Date.now() - lastFirestoreWriteAt > 2000) toast("Məlumat yeniləndi", "ok", 1500);
+                // Skip redundant re-render if WE just wrote this data —
+                // saveDB() already called renderAll(); the snapshot bouncing
+                // back from Firestore within 2s is our own write, not a
+                // remote change from another user/tab.
+                if (Date.now() - lastFirestoreWriteAt > 2000) {
+                  renderAll();
+                  toast("Məlumat yeniləndi", "ok", 1500);
+                }
               }
             },
             (err) => console.warn("Firestore company listener:", err)
@@ -14416,7 +14422,16 @@ function changePassword(e) {
 }
 
 // ========= Render =========
+let _renderAllPending = false;
 function renderAll() {
+  // Guard: collapse rapid successive calls into a single execution.
+  // Multiple onSnapshot / timer / save triggers within the same JS turn
+  // collapse to one actual DOM update — prevents main-thread jank on
+  // slower hardware (e.g. Chrome on older Intel Mac).
+  if (_renderAllPending) return;
+  _renderAllPending = true;
+  setTimeout(() => { _renderAllPending = false; }, 50);
+
   if (!meta.session) {
     showLoginOverlay(true);
     applyAccessUI();
@@ -16546,14 +16561,12 @@ function startRealtimeAutoRefresh() {
   realtimeAutoRefreshTimer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
     refreshFromCloud(true);
-  }, 10000);
+  }, 60000); // 60s — onSnapshot artıq real-time sinxronlaşır; bu yalnız fallback
 }
 
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible") return;
-  if (!useFirestore() || !meta?.session?.companyId) return;
-  setTimeout(() => refreshFromCloud(true), 300);
-});
+// visibilitychange → refreshFromCloud removed: onSnapshot reconnects automatically
+// when the tab becomes visible; the extra refreshFromCloud was triggering a full
+// renderAll() on every tab switch, causing unnecessary jank on slower hardware.
 
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
