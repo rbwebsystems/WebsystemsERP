@@ -14454,8 +14454,13 @@ function renderAll() {
   renderSidebarUser();
   startHeaderClock();
   const sold = soldKeySet();
+  // Render only the currently visible section — avoids rebuilding ~15 tables
+  // on every onSnapshot/save event. Each section is re-rendered when the user
+  // navigates to it (goSecWithLoad → renderAll) so data is always fresh.
+  const _secId = activeSectionId();
 
   // customers
+  if (_secId === 'cust') {
   const custList = db.cust
     .map((c, idx) => ({ c, idx }))
     .filter(({ c }) => inDateRange(c.createdAt || c.date, "custFrom", "custTo"))
@@ -14483,8 +14488,10 @@ function renderAll() {
       </tr>`;
     })
     .join("");
+  } // end cust
 
   // suppliers
+  if (_secId === 'supp') {
   const suppList = db.supp
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => inDateRange(s.createdAt || s.date, "suppFrom", "suppTo"))
@@ -14508,8 +14515,10 @@ function renderAll() {
     </tr>`
     )
     .join("");
+  } // end supp
 
   // products
+  if (_secId === 'prod') {
   const prodList = db.prod
     .map((p, idx) => ({ p, idx }))
     .filter(({ p }) => inDateRange(p.createdAt || p.date, "prodFrom", "prodTo"))
@@ -14530,8 +14539,10 @@ function renderAll() {
     </tr>`
     )
     .join("");
+  } // end prod
 
   // purchases (latest first) + date filter + pagination
+  if (_secId === 'purch') {
   const purchStatus = byId("purchStatus")?.value || "active";
   const purchGroupsMap = new Map();
   (db.purch || [])
@@ -14603,8 +14614,10 @@ function renderAll() {
       </tr>`;
     })
     .join("");
+  } // end purch
 
   // stock (do NOT depend on purch date/status filters; show all inventory)
+  if (_secId === 'stock') {
   stockFillCatOptions();
   const stockListAll = (db.purch || [])
     .slice(0, 5000) /* safety */
@@ -14685,8 +14698,10 @@ function renderAll() {
       </tr>`;
     })
     .join("");
+  } // end stock
 
   // sales + date filter + pagination
+  if (_secId === 'sales') {
   const salesStatus = byId("salesStatus")?.value || "active";
   const salesListAll = db.sales
     .map((s, idx) => ({ s, idx }))
@@ -14758,8 +14773,10 @@ function renderAll() {
       </tr>`;
     })
     .join("");
+  } // end sales
 
   // staff
+  if (_secId === 'staff') {
   const staffList = db.staff
     .map((s, idx) => ({ s, idx }))
     .filter(({ s }) => inDateRange(s.createdAt || s.date, "staffFrom", "staffTo"))
@@ -14801,8 +14818,10 @@ function renderAll() {
       }
     )
     .join("");
+  } // end staff
 
   // debts (debitor) grouped by customer + date filter + sale type filter + pagination
+  if (_secId === 'debts') {
   const debtsStatus = byId("debtsStatus")?.value || "";
   const debtsSaleTypeFilter = window.__debtsSaleType || "";
   const debtsAllRaw = db.sales
@@ -14881,8 +14900,10 @@ function renderAll() {
         </tr>`
       : "");
   filterDebts();
+  } // end debts
 
   // overdue credits (monthly installments)
+  if (_secId === 'overdue') {
   const overdueBody = byId("tblOverdue");
   if (overdueBody) {
     const view = byId("overdueView")?.value || "";
@@ -15023,8 +15044,10 @@ function renderAll() {
       `;
     }
   }
+  } // end overdue
 
   // creditor (suppliers) + date filter + pagination
+  if (_secId === 'creditor') {
   const credStatus = byId("credStatus")?.value || "";
   const groupsMap = new Map();
   for (const p of db.purch.filter((p) => !p.returnedAt).filter((p) => inDateRange(p.date, "credFrom", "credTo"))) {
@@ -15088,8 +15111,10 @@ function renderAll() {
         </tr>`
       : "");
   filterCreditor();
+  } // end creditor
 
   // cash list + filters + pagination
+  if (_secId === 'cash') {
   // Tarix filteri boşdursa bu günün tarixini avtomatik qur
   setCashDateToToday();
   fillCashAccountSelect();
@@ -15239,8 +15264,10 @@ function renderAll() {
       </tr>`;
     })
     .join("");
+  } // end cash
 
   // companies (developer only)
+  if (_secId === 'companies') {
   const compBody = byId("tblCompanies");
   if (compBody) {
     if (!isDeveloper()) {
@@ -15302,8 +15329,10 @@ function renderAll() {
         .join("");
     }
   }
+  } // end companies
 
   // users — all company users (incl. auto-created admin)
+  if (_secId === 'users') {
   const userBody = byId("tblUsers");
   if (userBody) {
     const compUsers = usersForCurrentCompany()
@@ -15342,8 +15371,10 @@ function renderAll() {
       }).join("");
     }
   }
+  } // end users
 
   // audit
+  if (_secId === 'audit') {
   ensureAuditTrash();
   const auditBody = byId("tblAudit");
   if (auditBody) {
@@ -15380,8 +15411,10 @@ function renderAll() {
       })
       .join("");
   }
+  } // end audit
 
   // trash
+  if (_secId === 'trash') {
   const trashBody = byId("tblTrash");
   if (trashBody) {
     const trashTypeLabelMap = { cust: "Müştəri", supp: "Təchizatçı", prod: "Məhsul", purch: "Alış", sales: "Satış", cash: "Kassa", staff: "Əməkdaş" };
@@ -15415,11 +15448,13 @@ function renderAll() {
       })
       .join("");
   }
+  } // end trash
 
-  // profile
+  // profile (always — lightweight, shown in header dropdown)
   renderProfile();
 
   // reports (P&L)
+  if (_secId === 'reports') {
   renderReports();
 
   const repSalesEl = byId("repSales");
@@ -15722,9 +15757,11 @@ function renderAll() {
       payBody.innerHTML = rows || emptyRow(9);
     }
   }
+  } // end reports
 
+  // dashboard stats — only render when on the dashboard
+  if (_secId === 'dash') {
   const totalsAll = cashTotals();
-  // dashboard stats
   const stockCount = db.purch.reduce((a, p) => a + purchRemainingQty(p), 0);
   const debtorSum = db.sales.reduce((a, s) => a + saleRemaining(s), 0);
   const creditorSum = db.purch.reduce((a, p) => a + purchRemaining(p), 0);
@@ -15878,8 +15915,9 @@ function renderAll() {
   const stockCountEl = byId("dashStatStockCount");
   if (stockCountEl) stockCountEl.textContent = String(stockCount);
   updateDebtSectionVisibility();
+  } // end dash
 
-  // Re-apply active text searches so results do not reset after auto refresh/render.
+  // Always run after any DOM update — maintains text search state
   reapplyActiveSearchFilters();
 
   // Mobil üçün cədvəlləri scroll wrapper-a al
