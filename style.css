@@ -7403,7 +7403,7 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   color: #94a3b8;
   margin: 0;
 }
-/* Preloader logo ring spinner */
+/* Preloader logo ring — no spinner */
 .app-preloader__logo-ring {
   position: relative;
   display: inline-flex;
@@ -7411,41 +7411,27 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
   justify-content: center;
   padding: 20px 32px;
 }
-.app-preloader__logo-ring::before,
-.app-preloader__logo-ring::after {
-  content: '';
-  position: absolute;
-  border-radius: 22px;
-  pointer-events: none;
+/* Preloader chevron arrows */
+.app-preloader__chevrons {
+  display: flex;
+  gap: 5px;
+  margin-top: 22px;
+  align-items: center;
 }
-.app-preloader__logo-ring::before {
-  inset: -8px;
-  border: 3px solid transparent;
-  border-top-color: #00C2FF;
-  border-right-color: rgba(0,194,255,.3);
-  animation: preloader-ring-spin 1.6s linear infinite;
+.app-preloader__chevrons i {
+  font-size: .95rem;
+  color: #00C2FF;
+  opacity: .15;
+  animation: chev-wave 1.4s ease-in-out infinite;
 }
-.app-preloader__logo-ring::after {
-  inset: -8px;
-  border: 3px solid transparent;
-  border-bottom-color: #00C2FF;
-  border-left-color: rgba(0,194,255,.3);
-  animation: preloader-ring-spin 1.6s linear infinite;
-  animation-delay: -0.8s;
-}
-.app-preloader__orbit-outer {
-  position: absolute;
-  inset: -20px;
-  border-radius: 30px;
-  border: 2px solid transparent;
-  border-top-color: rgba(0,194,255,.45);
-  border-left-color: rgba(0,194,255,.15);
-  animation: preloader-ring-spin 2.8s linear infinite reverse;
-  pointer-events: none;
-}
-@keyframes preloader-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.app-preloader__chevrons i:nth-child(1) { animation-delay: 0s; }
+.app-preloader__chevrons i:nth-child(2) { animation-delay: .18s; }
+.app-preloader__chevrons i:nth-child(3) { animation-delay: .36s; }
+.app-preloader__chevrons i:nth-child(4) { animation-delay: .54s; }
+.app-preloader__chevrons i:nth-child(5) { animation-delay: .72s; }
+@keyframes chev-wave {
+  0%, 100% { opacity: .12; transform: translateX(0); }
+  50%       { opacity: 1;   transform: translateX(3px); }
 }
 
 /* Developer: şirkət Info modalı — meta istifadəçi cədvəli */
