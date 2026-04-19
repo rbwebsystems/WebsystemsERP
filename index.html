@@ -1422,62 +1422,73 @@
                       <aside class="lp-dash-sidebar">
                         <div class="lp-dash-logo">
                           <svg class="rbsoft-new-logo rbsoft-new-logo--dash" viewBox="0 0 440 440" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M 20 220 A 200 200 0 0 1 420 220 L 340 220 A 120 120 0 0 0 100 220 Z" fill="rgba(255,255,255,0.4)"/>
-                            <path d="M 100 220 A 120 120 0 0 1 340 220 L 260 220 A 40 40 0 0 0 180 220 Z" fill="rgba(255,255,255,0.65)"/>
-                            <path d="M 100 220 A 120 120 0 0 0 304.85 304.85 L 248.28 248.28 A 40 40 0 0 1 180 220 Z" fill="#14F05A"/>
+                            <g>
+                              <animateTransform attributeName="transform" type="rotate" from="0 220 220" to="360 220 220" dur="2.5s" repeatCount="indefinite"/>
+                              <path d="M 20 220 A 200 200 0 0 1 420 220 L 340 220 A 120 120 0 0 0 100 220 Z" fill="rgba(255,255,255,0.35)"/>
+                              <path d="M 100 220 A 120 120 0 0 1 340 220 L 260 220 A 40 40 0 0 0 180 220 Z" fill="rgba(255,255,255,0.6)"/>
+                              <path d="M 100 220 A 120 120 0 0 0 304.85 304.85 L 248.28 248.28 A 40 40 0 0 1 180 220 Z" fill="#14F05A"/>
+                            </g>
                           </svg>
+                          <div>
+                            <div class="lp-dash-logo-text">rbsoft.az</div>
+                            <div class="lp-dash-logo-sub">Biznes İdarəetmə</div>
+                          </div>
                         </div>
                         <nav class="lp-dash-nav">
-                          <div class="lp-dash-nav-item lp-dash-nav-item--active"><i class="fas fa-th-large"></i><span>Əsas Panel</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-dollar-sign"></i><span>Maliyyə</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-cart-shopping"></i><span>Satışlar</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-box"></i><span>Anbar</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-users"></i><span>İşçilər</span></div>
-                          <div class="lp-dash-nav-item"><i class="fas fa-chart-column"></i><span>Hesabatlar</span></div>
+                          <div class="lp-dash-nav-item lp-dash-nav-item--active"><i class="fas fa-gauge-high"></i><span>Nəzarət Paneli</span></div>
+                          <div class="lp-dash-nav-item"><i class="fas fa-users"></i><span>Müştərilər</span></div>
+                          <div class="lp-dash-nav-item"><i class="fas fa-receipt"></i><span>Satışlar</span></div>
+                          <div class="lp-dash-nav-item"><i class="fas fa-boxes-stacked"></i><span>Anbar</span></div>
+                          <div class="lp-dash-nav-item"><i class="fas fa-coins"></i><span>Kassa</span></div>
+                          <div class="lp-dash-nav-item"><i class="fas fa-chart-bar"></i><span>Hesabatlar</span></div>
                         </nav>
                         <div class="lp-dash-user">
-                          <div class="lp-dash-user-avatar"><span>AD</span></div>
+                          <div class="lp-dash-user-avatar"><span>RB</span></div>
                           <div class="lp-dash-user-meta">
-                            <p class="lp-dash-user-name">Admin User</p>
+                            <p class="lp-dash-user-name">Rəşad Bayramlı</p>
                             <p class="lp-dash-user-role">İdarəedici</p>
                           </div>
                         </div>
                       </aside>
                       <div class="lp-dash-main">
                         <div class="lp-dash-header">
-                          <div class="lp-dash-search">
-                            <i class="fas fa-magnifying-glass"></i>
-                            <input type="text" placeholder="Sistemdə axtar..." disabled tabindex="-1" />
-                          </div>
-                          <div class="lp-dash-bell">
-                            <i class="fas fa-bell"></i>
-                            <span class="lp-dash-bell-dot"></span>
+                          <div class="lp-dash-page-title">Nəzarət Paneli</div>
+                          <div class="lp-dash-header-right">
+                            <div class="lp-dash-search">
+                              <i class="fas fa-magnifying-glass"></i>
+                              <input type="text" placeholder="Axtar..." disabled tabindex="-1" />
+                            </div>
+                            <div class="lp-dash-bell">
+                              <i class="fas fa-bell"></i>
+                              <span class="lp-dash-bell-dot"></span>
+                            </div>
                           </div>
                         </div>
+                        <div class="lp-dash-content">
                         <div class="lp-dash-stats">
                           <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--em"><i class="fas fa-dollar-sign"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up-right"></i> +14.5%</span>
+                            <div class="lp-dash-stat-ico lp-dash-stat-ico--em"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="lp-dash-stat-body">
+                              <p class="lp-dash-stat-lbl">Ümumi Gəlir</p>
+                              <h3 class="lp-dash-stat-val">124,500 ₼</h3>
+                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up"></i> +14.5%</span>
                             </div>
-                            <p class="lp-dash-stat-lbl">Ümumi Gəlir</p>
-                            <h3 class="lp-dash-stat-val">124,500 ₼</h3>
                           </div>
                           <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--bl"><i class="fas fa-cart-shopping"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up-right"></i> +5.2%</span>
+                            <div class="lp-dash-stat-ico lp-dash-stat-ico--bl"><i class="fas fa-receipt"></i></div>
+                            <div class="lp-dash-stat-body">
+                              <p class="lp-dash-stat-lbl">Satışlar</p>
+                              <h3 class="lp-dash-stat-val">842</h3>
+                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up"></i> +5.2%</span>
                             </div>
-                            <p class="lp-dash-stat-lbl">Aktiv Sifarişlər</p>
-                            <h3 class="lp-dash-stat-val">842</h3>
                           </div>
                           <div class="lp-dash-stat">
-                            <div class="lp-dash-stat-top">
-                              <div class="lp-dash-stat-ico lp-dash-stat-ico--rs"><i class="fas fa-chart-line"></i></div>
-                              <span class="lp-dash-stat-trend lp-dash-stat-trend--dn"><i class="fas fa-arrow-down-right"></i> -2.4%</span>
+                            <div class="lp-dash-stat-ico lp-dash-stat-ico--gr"><i class="fas fa-boxes-stacked"></i></div>
+                            <div class="lp-dash-stat-body">
+                              <p class="lp-dash-stat-lbl">Anbar</p>
+                              <h3 class="lp-dash-stat-val">1,240</h3>
+                              <span class="lp-dash-stat-trend lp-dash-stat-trend--up"><i class="fas fa-arrow-up"></i> +3.8%</span>
                             </div>
-                            <p class="lp-dash-stat-lbl">Xərclər</p>
-                            <h3 class="lp-dash-stat-val">32,400 ₼</h3>
                           </div>
                         </div>
                         <div class="lp-dash-bottom">
@@ -1499,6 +1510,7 @@
                               <li><i class="fas fa-circle-check lp-dash-ic--info"></i><div><p class="lp-dash-feed-t">Yeni istifadəçi əlavə edildi</p><p class="lp-dash-feed-time">5 saat əvvəl</p></div></li>
                             </ul>
                           </div>
+                        </div>
                         </div>
                       </div>
                       <div class="lp-dash-glass"></div>
