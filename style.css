@@ -2668,12 +2668,12 @@ body.landing-login-open .lp-aurora{
 .lp-footer-bottom span{font-size:.65rem;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.4em;}
 /* New RBSoft SVG logo sizes */
 .rbsoft-new-logo{display:block;height:30px;width:auto;}
-.rbsoft-new-logo--nav{height:28px;}
+.rbsoft-new-logo--nav{height:36px;}
 .rbsoft-new-logo--footer{height:38px;}
 .rbsoft-new-logo--login{height:46px;}
 .rbsoft-new-logo--preloader{height:60px;}
 .rbsoft-new-logo--dash{height:16px;}
-.rbsoft-new-logo--sidebar{height:22px;}
+.rbsoft-new-logo--sidebar{height:28px;}
 .lp-footer-social{display:flex;gap:.65rem;margin-top:1.25rem;justify-content:center;}
 @media (min-width:768px){.lp-footer-social{justify-content:flex-start;}}
 .lp-footer-soc-btn{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.75rem;background:#f1f5f9;color:#475569;font-size:.95rem;text-decoration:none;transition:background .2s,color .2s,transform .15s;}
@@ -6506,6 +6506,10 @@ body.sidebar-collapsed .nav-link:hover::before{
 }
 .sidebar-brand-logo{display:none;text-align:center;}
 .sidebar-brand-name{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-size:.8rem;font-weight:800;
   color:rgba(255,255,255,.45);
   letter-spacing:.06em;
@@ -7411,19 +7415,33 @@ body.theme-dark .mob-tab.active { color: #007AFF; }
 .app-preloader__logo-ring::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: 20px;
+  border-radius: 22px;
   pointer-events: none;
 }
 .app-preloader__logo-ring::before {
-  border: 3px dashed rgba(11,19,43,.22);
-  animation: preloader-ring-spin 2.8s linear infinite;
+  inset: -8px;
+  border: 3px solid transparent;
+  border-top-color: #00C2FF;
+  border-right-color: rgba(0,194,255,.3);
+  animation: preloader-ring-spin 1.6s linear infinite;
 }
 .app-preloader__logo-ring::after {
-  border: 3px dashed rgba(11,19,43,.7);
-  border-radius: 20px;
-  animation: preloader-ring-spin 2.8s linear infinite;
-  animation-delay: -1.4s;
+  inset: -8px;
+  border: 3px solid transparent;
+  border-bottom-color: #00C2FF;
+  border-left-color: rgba(0,194,255,.3);
+  animation: preloader-ring-spin 1.6s linear infinite;
+  animation-delay: -0.8s;
+}
+.app-preloader__orbit-outer {
+  position: absolute;
+  inset: -20px;
+  border-radius: 30px;
+  border: 2px solid transparent;
+  border-top-color: rgba(0,194,255,.45);
+  border-left-color: rgba(0,194,255,.15);
+  animation: preloader-ring-spin 2.8s linear infinite reverse;
+  pointer-events: none;
 }
 @keyframes preloader-ring-spin {
   from { transform: rotate(0deg); }
