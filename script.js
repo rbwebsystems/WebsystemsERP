@@ -3046,29 +3046,54 @@ function saveMeta(loadingMessage) {
     _scopeMetaUsersForSession();
     return;
   }
+
+  const { session, ...rest } = meta || {};
+  const data = JSON.parse(JSON.stringify({ ...rest, session: null, _metaSavedAt: saveTs }));
+  _scopeMetaUsersForSession();
+
+  // ── Per-company user izolyasiya shadow write ───────────────────────────────
+  // Tenant sessiyasında /erp_users/{companyId} yolu yazılır (Firestore rules icazə verir).
+  // config/meta-ya tenant token ilə yazmaq rules tərəfindən rədd edilir —
+  // aşağıdakı isTenant yoxlaması həmin cəhdi tamamilə atlayır.
+  const _saveCid = meta?.session?.companyId;
+  const isTenant = !!(_saveCid && _saveCid !== ERP_DEV_SESSION_CID);
+  if (isTenant) {
+    const _usersRef = getUsersRef(_saveCid);
+    if (_usersRef) {
+      const _companyUsers = (data.users || []).filter(
+        u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
+      );
+      _usersRef
+        .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
+        .then(() => {
+          try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+          console.log("[erp-auth] saveMeta: /erp_users shadow write OK", { cid: _saveCid });
+        })
+        .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
+    } else {
+      try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+    }
+    updateLastSavedEl();
+    return;
+  }
+
+  // Developer / qlobal sesssiya: config/meta-ya yaz
+  if (_saveCid && _saveCid !== ERP_DEV_SESSION_CID) {
+    // Reachable only if above isTenant block was somehow skipped — safety guard
+    const _usersRef = getUsersRef(_saveCid);
+    if (_usersRef) {
+      const _fullUsers = data.users || [];
+      const _companyUsers = _fullUsers.filter(
+        u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
+      );
+      _usersRef
+        .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
+        .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
+    }
+  }
+
   let softBegan = false;
   try {
-    const { session, ...rest } = meta || {};
-    const data = JSON.parse(JSON.stringify({ ...rest, session: null, _metaSavedAt: saveTs }));
-    _scopeMetaUsersForSession(); // Re-scope in-memory view after capturing full data for write
-
-    // ── Per-company user izolyasiya shadow write ───────────────────────────────
-    // Tenant admin data yazan zaman öz şirkətinin user siyahısını /erp_users/{companyId} altına
-    // sinxron şəkildə kopyalayır. Firestore rules bu yolu yalnız həmin şirkətin tenant-ına açır.
-    const _saveCid = meta?.session?.companyId;
-    if (_saveCid && _saveCid !== ERP_DEV_SESSION_CID) {
-      const _usersRef = getUsersRef(_saveCid);
-      if (_usersRef) {
-        const _fullUsers = data.users || [];
-        const _companyUsers = _fullUsers.filter(
-          u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
-        );
-        _usersRef
-          .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
-          .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
-      }
-    }
-
     softLoadingBegin(true, loadingMessage || ERP_BUSY_AZ.save);
     softBegan = true;
     ref
