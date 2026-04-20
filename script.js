@@ -688,7 +688,16 @@ async function loadMetaAsync() {
       // user siyahısını yüklə. Bu, config/meta.users-da olan digər şirkətlərin
       // məlumatlarının (şifrə hash daxil) client-ə çatmasının qarşısını alır.
       // Firestore rules /erp_users/{companyId} üçün tam tenant izolyasiyası tətbiq edir.
-      const sessionCid = result.session?.companyId;
+      let sessionCid = result.session?.companyId;
+      // Login zamanı session hələ null ola bilər; Firebase token claim-dən cid al
+      if (!sessionCid || sessionCid === ERP_DEV_SESSION_CID) {
+        try {
+          const tr = await u.getIdTokenResult(false);
+          const claimRole = String(tr.claims?.role || "");
+          const claimCid = String(tr.claims?.companyId || "").trim();
+          if (claimRole === "tenant" && claimCid) sessionCid = claimCid;
+        } catch (_) {}
+      }
       if (sessionCid && sessionCid !== ERP_DEV_SESSION_CID) {
         try {
           const usersRef = getUsersRef(sessionCid);
