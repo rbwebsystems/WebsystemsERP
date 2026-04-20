@@ -122,7 +122,14 @@ const _pl = {
     if (!el) return;
     const elapsed = Date.now() - this._startMs;
     const wait = Math.max(0, this._MIN_MS - elapsed);
-    setTimeout(() => el.classList.add("app-preloader--out"), wait + 120);
+    setTimeout(() => {
+      el.classList.add("app-preloader--out");
+      // backdrop-filter elementi render tree-də saxlayır; display:none ilə tam silirik
+      el.addEventListener("transitionend", () => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, { once: true });
+      setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+    }, wait + 120);
   },
   init() {
     this._stopRotation(); // Guard against multiple init() calls leaking timers
@@ -16636,10 +16643,9 @@ function hideLoading() {
 /** Giriş/çıxışdan sonra yumşaq yükləmə və overlay ilişməsinin qarşısını alır. */
 function dismissGlobalLoadingUi() {
   hideLoading();
-  try {
-    const pre = byId("appPreloader");
-    if (pre) pre.classList.add("app-preloader--out");
-  } catch (_) {}
+  try { _pl.hide(); } catch (_) {
+    try { const pre = byId("appPreloader"); if (pre?.parentNode) pre.parentNode.removeChild(pre); } catch (_2) {}
+  }
 }
 
 function getLoginCompanyFromUrl() {
