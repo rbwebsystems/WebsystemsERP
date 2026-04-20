@@ -451,6 +451,75 @@ async function syncCompanyUsersToIsolatedPath(companyId, allUsers) {
   }
 }
 
+/**
+ * Tenant istifadəçinin şifrəsini dəyişir.
+ * Admin SDK ilə /erp_users/{companyId}-i yeniləyir — Firestore rules-ı keçir.
+ * Cari şifrə serverda yoxlanılır; uğurlu olduqda hash yazılır.
+ */
+export const changeUserPassword = onCall(
+  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
+  async (request) => {
+    const { uid, companyId, currentPassword, newPassword } = request.data || {};
+    if (!uid || !companyId || !currentPassword || !newPassword) {
+      throw new HttpsError("invalid-argument", "uid, companyId, currentPassword və newPassword tələb olunur.");
+    }
+    if (String(newPassword).length < 4) {
+      throw new HttpsError("invalid-argument", "Yeni şifrə ən azı 4 simvol olmalıdır.");
+    }
+    const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
+
+    // İstifadəçini /erp_users/{cid}-dən, yoxsa config/meta-dan tap
+    let storedUser = null;
+    const cid = String(companyId).trim();
+    try {
+      const isolatedSnap = await db.collection("erp_users").doc(cid).get();
+      if (isolatedSnap.exists) {
+        const isoUsers = isolatedSnap.data()?.users || [];
+        storedUser = isoUsers.find((u) => String(u.uid) === String(uid)) || null;
+      }
+    } catch (_) {}
+
+    if (!storedUser) {
+      const metaSnap = await db.collection("config").doc("meta").get();
+      if (!metaSnap.exists) throw new HttpsError("failed-precondition", "Meta tapılmadı.");
+      const metaUsers = metaSnap.data()?.users || [];
+      storedUser = metaUsers.find((u) => String(u.uid) === String(uid)) || null;
+    }
+    if (!storedUser || !storedUser.active) {
+      throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı.");
+    }
+
+    // Cari şifrəni yoxla
+    const curHash = hashPass(currentPassword);
+    const stored = String(storedUser.pass || "");
+    if (stored !== curHash && stored !== currentPassword) {
+      throw new HttpsError("unauthenticated", "Hazırkı şifrə yanlışdır.");
+    }
+
+    const newHash = hashPass(newPassword);
+
+    // /erp_users/{cid} – Admin SDK ilə yenilə (rules-ı keçir)
+    try {
+      const isolatedSnap = await db.collection("erp_users").doc(cid).get();
+      let users = [];
+      if (isolatedSnap.exists) users = isolatedSnap.data()?.users || [];
+      const idx = users.findIndex((u) => String(u.uid) === String(uid));
+      if (idx !== -1) {
+        users[idx] = { ...users[idx], pass: newHash, mustChangePassword: false };
+      } else {
+        users.push({ ...storedUser, pass: newHash, mustChangePassword: false });
+      }
+      await db.collection("erp_users").doc(cid).set({ users, updatedAt: new Date().toISOString() });
+      console.log("[changeUserPassword] /erp_users yeniləndi", { uid, cid });
+    } catch (e) {
+      console.error("[changeUserPassword] /erp_users yazma xətası", e?.code, e?.message);
+      throw new HttpsError("internal", "Şifrə yenilənərkən xəta baş verdi.");
+    }
+
+    return { ok: true };
+  }
+);
+
 /** ERP giriş: developer və tenant ayrı axınlar; developer tenant token yalnız allowImpersonation ilə. */
 export const issueAuthToken = onCall(
   { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },

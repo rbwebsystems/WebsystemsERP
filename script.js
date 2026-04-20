@@ -4098,22 +4098,27 @@ async function submitForcedPasswordChange(ev) {
   const submitBtn = form.querySelector('button[type="submit"]');
   erpSetButtonBusy(submitBtn, true, ERP_BUSY_AZ.passwordChange);
   try {
-    u.pass = await erpHashPasswordPlain(n1);
-    u.mustChangePassword = false;
-
-    // meta._allUsers-da da sinxronlaşdır (session qurulduqda bu massivdən istifadə olunur)
-    if (meta._allUsers) {
-      const idx = meta._allUsers.findIndex(x => String(x.uid) === String(u.uid));
-      if (idx !== -1) {
-        meta._allUsers[idx].pass = u.pass;
-        meta._allUsers[idx].mustChangePassword = false;
+    // Şifrəni Cloud Function vasitəsilə dəyiş (Admin SDK /erp_users/{cid}-i yeniləyir,
+    // Firestore rules-ı keçir — adi tenant token write icazəsinə sahib deyil)
+    if (useFirestore()) {
+      const cid = String(u.companyId || "").trim();
+      if (!cid) throw new Error("Şirkət ID tapılmadı.");
+      try {
+        const fn = firebase.app().functions("europe-west1").httpsCallable("changeUserPassword");
+        await fn({ uid: String(u.uid), companyId: cid, currentPassword: cur, newPassword: n1 });
+      } catch (fnErr) {
+        throw new Error(fnErr?.message || "Şifrə dəyişdirilərkən server xətası baş verdi.");
       }
     }
 
-    // saveMeta() burada çağrılmır: meta.session hələ null-dur, buna görə
-    // Firestore-a yazmaq alınmır və "buludda saxlanmadı" xətası çıxır.
-    // completeLoginAfterPasswordOk → doLoginWithCompany meta.session-u set
-    // edib saveMeta()-nı özü doğru kontekstdə çağıracaq.
+    // Yaddaşdakı istifadəçi obyektini də yenilə (cari sessiya üçün)
+    const newHash = await erpHashPasswordPlain(n1);
+    u.pass = newHash;
+    u.mustChangePassword = false;
+    if (meta._allUsers) {
+      const idx = meta._allUsers.findIndex(x => String(x.uid) === String(u.uid));
+      if (idx !== -1) { meta._allUsers[idx].pass = newHash; meta._allUsers[idx].mustChangePassword = false; }
+    }
     try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
 
     window.__forcedPwUserUid = null;
