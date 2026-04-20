@@ -4066,7 +4066,22 @@ async function submitForcedPasswordChange(ev) {
   try {
     u.pass = await erpHashPasswordPlain(n1);
     u.mustChangePassword = false;
-    saveMeta(ERP_BUSY_AZ.passwordChange);
+
+    // meta._allUsers-da da sinxronlaşdır (session qurulduqda bu massivdən istifadə olunur)
+    if (meta._allUsers) {
+      const idx = meta._allUsers.findIndex(x => String(x.uid) === String(u.uid));
+      if (idx !== -1) {
+        meta._allUsers[idx].pass = u.pass;
+        meta._allUsers[idx].mustChangePassword = false;
+      }
+    }
+
+    // saveMeta() burada çağrılmır: meta.session hələ null-dur, buna görə
+    // Firestore-a yazmaq alınmır və "buludda saxlanmadı" xətası çıxır.
+    // completeLoginAfterPasswordOk → doLoginWithCompany meta.session-u set
+    // edib saveMeta()-nı özü doğru kontekstdə çağıracaq.
+    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+
     window.__forcedPwUserUid = null;
     window.__forcedPwLoginUsername = null;
     closeMdl();
