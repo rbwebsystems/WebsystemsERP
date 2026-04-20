@@ -299,6 +299,27 @@ async function verifyErpPassword(username, password) {
     throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
   }
 
+  // Tenant istifadəçilər şifrəni /erp_users/{companyId}-ə yazır (config/meta-ya icazəsi yoxdur).
+  // Admin SDK hər iki yola çıxış edir — daha yeni şifrəni oradan oxu.
+  const cid = String(user.companyId || "").trim();
+  if (cid) {
+    try {
+      const isolatedSnap = await db.collection("erp_users").doc(cid).get();
+      if (isolatedSnap.exists) {
+        const isolatedUsers = isolatedSnap.data()?.users || [];
+        const fresh = isolatedUsers.find((u) => String(u.uid) === String(user.uid));
+        if (fresh && fresh.pass) {
+          // /erp_users-dəki giriş daha yenidir — şifrəni oradan götür
+          user = { ...user, ...fresh };
+          console.log("[verifyErpPassword] /erp_users şifrəsi istifadə edildi", { uid: user.uid, cid });
+        }
+      }
+    } catch (e) {
+      // Oxuma uğursuz olarsa config/meta şifrəsi ilə davam et
+      console.warn("[verifyErpPassword] /erp_users oxuma uğursuz, fallback config/meta", e?.code);
+    }
+  }
+
   const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
   const inputHash = hashPass(password);
   const stored = String(user.pass || "");
