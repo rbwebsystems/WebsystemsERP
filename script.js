@@ -787,10 +787,97 @@ async function loadCompanyDBAsync(opts) {
   }
 }
 
+/**
+ * Cari Firebase token-inin custom claim-lərini yoxla.
+ * Listener qurmazdan əvvəl çağırılır; boş/köhnə claim-lərlə listener-lər
+ * mütləq permission-denied ilə partlayacaq, ona görə tez problem bildiririk.
+ * @returns {Promise<{ok:boolean, reason?:string, claims?:any}>}
+ */
+async function erpInspectCurrentClaims() {
+  const u = erpFirebaseCurrentUser();
+  if (!u) return { ok: false, reason: "no-user" };
+  try {
+    const tr = await u.getIdTokenResult(false);
+    const c = tr?.claims || {};
+    const erpSess = c.erp_session === true;
+    const role = String(c.role || "");
+    const cid = String(c.companyId || "").trim();
+    if (!erpSess) return { ok: false, reason: "missing-erp_session", claims: c };
+    if (role !== "developer" && role !== "tenant") return { ok: false, reason: "bad-role", claims: c };
+    if (role === "tenant" && !cid) return { ok: false, reason: "tenant-no-companyId", claims: c };
+    return { ok: true, claims: c };
+  } catch (e) {
+    return { ok: false, reason: "token-error", error: e?.code || e?.message };
+  }
+}
+
+/**
+ * Listener-də permission-denied olanda bir dəfə token-i məcburi refresh et və
+ * yenidən subscribe-a cəhd et. Təkrar uğursuz olarsa, lokal sessiya
+ * etibarsızdır — istifadəçini aydın şəkildə yenidən giriş etməyə yönəlt.
+ */
+let __erpPermRetryDepth = 0;
+async function handleListenerPermDenied(source) {
+  if (__erpPermRetryDepth > 0) {
+    console.warn(`[erp-auth] ${source}: permission-denied təkrar – sessiya təmizlənir`);
+    try { unsubscribeRealtime(); } catch (_) {}
+    try { await firebase.auth().signOut(); } catch (_) {}
+    meta.session = null;
+    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+    toast("Sessiya etibarsız oldu. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
+    try { location.reload(); } catch (_) {}
+    return;
+  }
+  __erpPermRetryDepth++;
+  try {
+    const u = erpFirebaseCurrentUser();
+    if (!u) return;
+    console.warn(`[erp-auth] ${source}: permission-denied — token refresh + re-subscribe`);
+    try { await u.getIdToken(true); } catch (_) {}
+    const info = await erpInspectCurrentClaims();
+    console.warn(`[erp-auth] ${source}: yenilənmiş claim-lər`, info);
+    if (!info.ok) {
+      try { unsubscribeRealtime(); } catch (_) {}
+      try { await firebase.auth().signOut(); } catch (_) {}
+      meta.session = null;
+      try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+      toast("Sessiya yeniləndi. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
+      try { location.reload(); } catch (_) {}
+      return;
+    }
+    unsubscribeRealtime();
+    subscribeRealtime();
+  } finally {
+    setTimeout(() => { __erpPermRetryDepth = 0; }, 5000);
+  }
+}
+
 function subscribeRealtime() {
   if (!useFirestore()) return;
   unsubscribeRealtime();
   const authUser = erpFirebaseCurrentUser();
+  if (authUser) {
+    void (async () => {
+      const info = await erpInspectCurrentClaims();
+      if (!info.ok) {
+        console.warn("[erp-auth] subscribeRealtime: claim-lər natamam — token refresh", info);
+        try { await authUser.getIdToken(true); } catch (_) {}
+        const info2 = await erpInspectCurrentClaims();
+        if (!info2.ok) {
+          console.error("[erp-auth] subscribeRealtime: refresh sonrası da claim-lər boşdur — sessiya təmizlənir", info2);
+          try { unsubscribeRealtime(); } catch (_) {}
+          try { await firebase.auth().signOut(); } catch (_) {}
+          meta.session = null;
+          try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+          toast("Sessiya etibarsız oldu. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
+          try { location.reload(); } catch (_) {}
+          return;
+        }
+        unsubscribeRealtime();
+        subscribeRealtime();
+      }
+    })();
+  }
   const metaRef = getMetaRef();
   if (metaRef && authUser) {
     firestoreUnsubMeta = metaRef.onSnapshot(
@@ -827,7 +914,10 @@ function subscribeRealtime() {
           checkSubscriptionStatus();
         }
       },
-      (err) => console.warn("Firestore meta listener:", err)
+      (err) => {
+        console.warn("Firestore meta listener:", err);
+        if (err?.code === "permission-denied") handleListenerPermDenied("meta-listener");
+      }
     );
   } else if (metaRef && !authUser) {
     console.debug("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
@@ -868,7 +958,10 @@ function subscribeRealtime() {
                 }
               }
             },
-            (err) => console.warn("Firestore company listener:", err)
+            (err) => {
+              console.warn("Firestore company listener:", err);
+              if (err?.code === "permission-denied") handleListenerPermDenied("company-listener");
+            }
           );
         }
       })();
@@ -944,7 +1037,10 @@ function subscribeUserActiveWatcher() {
         showDeactivatedModal();
       }
     },
-    (err) => console.warn("[active-watch] listener xətası:", err?.code || err?.message)
+    (err) => {
+      console.warn("[active-watch] listener xətası:", err?.code || err?.message);
+      if (err?.code === "permission-denied") handleListenerPermDenied("active-watch");
+    }
   );
 
   // Ehtiyat polling: hər 15 saniyədə /erp_users-ə müraciət et
