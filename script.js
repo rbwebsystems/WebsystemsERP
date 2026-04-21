@@ -37,6 +37,10 @@ const defaultDB = () => ({
   audit: [],
   trash: [],
   founders: [],
+  /** Per-company departmentlər, vəzifələr, rollar */
+  departments: [],
+  positions:   [],
+  roles:       [],
   settings: { companyName: "", companyAddress: "", companyPhone: "", currency: "AZN", currencySymbol: "₼" },
 });
 
@@ -3956,6 +3960,126 @@ function userCanReset() {
   return !!u.perms?.canReset;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GRANULAR PERMISSION HELPERS  —  can() / canAny() / canAll()
+//
+// Prioritet sırası:
+//   1. developer / admin  → həmişə true
+//   2. perms.blocked[key] → false
+//   3. perms.keys[key]    → explicit override
+//   4. roleId → db.roles-da default
+//   5. köhnə format fallback (backward compat)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Module→section map: yeni icazə anahtarını köhnə sections formatına çevirir */
+const _ERP_MOD_TO_SEC = {
+  dashboard: "dash",
+  sales:     "sales",
+  purchase:  "purch",
+  inventory: "stock",
+  products:  "prod",
+  customers: "cust",
+  credit:    "debts",
+  cash:      "cash",
+  expense:   "cash",
+  reports:   "reports",
+  documents: "reports",
+  service:   "sales",
+  employees: "staff",
+  users:     "users",
+  settings:  "settings",
+};
+
+function _canFallback(u, key) {
+  const parts  = String(key || "").split(".");
+  const module = parts[0] || "";
+  const op     = parts[1] || "";
+  const secId  = _ERP_MOD_TO_SEC[module] || module;
+  const secs   = u.perms?.sections || [];
+  const hasSec = secs.includes("*") || secs.includes(secId);
+
+  if (op === "view") return hasSec;
+
+  // actions map içindəki eyni key-i yoxla
+  const acts = u.perms?.actions || {};
+  if (Object.prototype.hasOwnProperty.call(acts, key)) return !!acts[key];
+
+  // legacy flat flags
+  if (op === "edit" || op === "create" || op === "adjust" || op === "transfer" || op === "count")
+    return hasSec && !!u.perms?.canEdit;
+  if (op === "delete") return hasSec && !!u.perms?.canDelete;
+  if (op === "approve" || op === "pay") return hasSec && !!u.perms?.canPay;
+  if (op === "refund") return hasSec && !!u.perms?.canRefund;
+  if (op === "export") return hasSec && !!u.perms?.canExport;
+  if (op === "import") return hasSec && !!u.perms?.canImport;
+  if (op === "reset_password") return hasSec && !!u.perms?.canReset;
+  if (op === "print" || op === "close") return hasSec;
+  if (op === "discount" || op === "change_status") return hasSec && !!u.perms?.canEdit;
+  if (op === "deactivate") return hasSec && !!u.perms?.canDelete;
+  if (op === "reject" || op === "view_risk" || op === "view_salary" || op === "permissions_edit")
+    return isDeveloper() || isAdmin();
+  return false;
+}
+
+/**
+ * Cari istifadəçinin verilmiş icazəyə sahib olub-olmadığını yoxla.
+ * @param {string} key  – məs. "sales.create", "credit.approve"
+ */
+function can(key) {
+  const u = currentUser();
+  if (!u || !u.active) return false;
+  if (u.role === "developer" || u.role === "admin") return true;
+
+  // Explicit block
+  if (u.perms?.blocked?.[key] === true) return false;
+
+  // Explicit user-level override (keys object)
+  const keysObj = u.perms?.keys;
+  if (keysObj && Object.prototype.hasOwnProperty.call(keysObj, key)) return !!keysObj[key];
+
+  // Role default permissions
+  const roleId = u.perms?.roleId;
+  if (roleId) {
+    const role = (db.roles || []).find(r => r.id === roleId);
+    if (role?.permissions) {
+      if (role.permissions["*"] === true) return true;
+      if (Object.prototype.hasOwnProperty.call(role.permissions, key)) return !!role.permissions[key];
+    }
+  }
+
+  // Backward compat: köhnə sections/actions/canXxx formatı
+  return _canFallback(u, key);
+}
+
+/** Siyahıdakı icazələrdən ən azı BİRİ varsa true. */
+function canAny(...keys) {
+  return keys.flat().some(k => can(k));
+}
+
+/** Siyahıdakı icazələrin HAMISI varsa true. */
+function canAll(...keys) {
+  return keys.flat().every(k => can(k));
+}
+
+/**
+ * db.roles boşdursa DEFAULT_ROLES seed-ini əlavə edir.
+ * finishPostAuthSession() çağırır; yalnız admin/developer üçün işləyir.
+ */
+async function seedDefaultRolesIfEmpty() {
+  if (!isAdmin() && !isDeveloper()) return;
+  if (!db.roles) db.roles = [];
+  if (db.roles.length > 0) return; // artıq mövcuddur
+  db.roles = DEFAULT_ROLES.map(r => ({ ...r }));
+  if (!db.departments) db.departments = [];
+  if (!db.positions)   db.positions   = [];
+  try {
+    saveCompanyDB();
+    console.log("[erp-rbac] default rollar seed edildi:", db.roles.length);
+  } catch (e) {
+    console.warn("[erp-rbac] seedDefaultRoles saveDB xətası:", e?.message);
+  }
+}
+
 function toast(msg, kind = "ok", ms = 2600) {
   let wrap = byId("toastWrap");
   if (!wrap) {
@@ -4337,6 +4461,12 @@ function finishPostAuthSession(data, opts) {
   }
   dismissGlobalLoadingUi();
   db = data;
+  // Ensure array fields from defaultDB exist (migration for old records)
+  if (!Array.isArray(db.departments)) db.departments = [];
+  if (!Array.isArray(db.positions))   db.positions   = [];
+  if (!Array.isArray(db.roles))       db.roles       = [];
+  // Seed default roles & permissions if first time
+  seedDefaultRolesIfEmpty().catch(() => {});
   unsubscribeRealtime();
   subscribeRealtime();
   startRealtimeAutoRefresh();
@@ -7666,23 +7796,71 @@ function openSupplierPaymentHistory(idx) {
 }
 
 // ========= Staff =========
+
+/** Əməkdaş formasında şöbə seçilən kimi vəzifələri filtrləyir */
+function staffDeptChanged() {
+  const deptId = val("f_st_deptId") || "";
+  const posSelect = byId("f_st_posId");
+  if (!posSelect) return;
+  const positions = (db.positions || []).filter(p => !deptId || p.departmentId === deptId);
+  posSelect.innerHTML = '<option value="">— Vəzifə seçin —</option>' +
+    positions.map(p => `<option value="${escapeAttr(p.id)}" ${p.id === val("f_st_posId") ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("") +
+    `<option value="__custom__">+ Xüsusi vəzifə daxil et</option>`;
+  staffPosChanged();
+}
+
+/** Vəzifə seçildiyi zaman xüsusi giriş sahəsini göstər/gizlət */
+function staffPosChanged() {
+  const v = val("f_st_posId") || "";
+  const customRow = byId("f_st_pos_custom_row");
+  if (customRow) customRow.style.display = v === "__custom__" ? "block" : "none";
+}
+
+/** Sistem giriş rolunu seçəndə "default icazə etiketini" göstər */
+function staffSysRoleChanged() {
+  const roleId = val("f_st_sysRoleId") || "";
+  const preview = byId("f_st_rolePreview");
+  if (!preview) return;
+  if (!roleId) { preview.style.display = "none"; return; }
+  const role = (db.roles || []).find(r => r.id === roleId);
+  if (!role) { preview.style.display = "none"; return; }
+  const cnt = Object.values(role.permissions || {}).filter(Boolean).length;
+  preview.style.display = "block";
+  preview.textContent = `"${role.name}" rolu seçildi — ${cnt} icazə avtomatik tətbiq olunacaq.`;
+}
+
 function openStaff(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const s = idx !== null ? db.staff[idx] : {};
   const linkedUser = idx !== null
     ? (meta.users || []).find(u => String(u.staffUid) === String(db.staff[idx].uid))
     : null;
-  const POSITIONS = [
-    "Direktor", "Admin", "Kredit mütəxəssisi", "Kassir",
-    "Satış mütəxəssisi", "Mühasib", "Anbar əməkdaşı", "Menecer",
-  ];
-  const curVezife = s.vezifeAdi || s.role || "";
-  const extraOptions = curVezife && !POSITIONS.includes(curVezife)
-    ? [`<option value="${escapeAttr(curVezife)}" selected>${escapeHtml(curVezife)}</option>`]
-    : [];
-  const posOptions = POSITIONS.map(p =>
-    `<option value="${escapeAttr(p)}" ${curVezife === p ? "selected" : ""}>${escapeHtml(p)}</option>`
-  ).join("") + extraOptions.join("");
+
+  // ── Şöbə seçenekləri ──
+  const departments = db.departments || [];
+  const deptOptions = departments.map(d =>
+    `<option value="${escapeAttr(d.id)}" ${d.id === s.departmentId ? "selected" : ""}>${escapeHtml(d.name)}</option>`
+  ).join("");
+
+  // ── Vəzifə seçenekləri (əvvəlcə hamısı, JS sonra filtrləyir) ──
+  const positions = db.positions || [];
+  const curPosId = s.positionId || "";
+  const posOptions = positions.map(p =>
+    `<option value="${escapeAttr(p.id)}" ${p.id === curPosId ? "selected" : ""}>${escapeHtml(p.name)}</option>`
+  ).join("");
+
+  // Köhnə formatdan gəlmiş vəzifə adını xüsusi seçenek kimi saxla
+  const curVezifeName = s.vezifeAdi || s.role || "";
+  const hasMatchingPos = positions.some(p => p.id === curPosId);
+  const customPosDefault = (curPosId === "__custom__" || (!hasMatchingPos && curVezifeName)) ? curVezifeName : "";
+
+  // ── Sistem rolu seçenekləri ──
+  const roles = db.roles || [];
+  const linkedUserRoleId = linkedUser?.perms?.roleId || "";
+  const roleOptions = roles.map(r =>
+    `<option value="${escapeAttr(r.id)}" ${r.id === linkedUserRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`
+  ).join("");
+
   const hasSys = s.hasSystemAccess || false;
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
@@ -7723,13 +7901,26 @@ function openStaff(idx = null) {
         <div class="form-card">
           <div class="form-card-title">İş məlumatları</div>
           <div class="grid-2">
-            <div class="f-group"><label>Vəzifə <span class="req">*</span></label>
-              <select id="f_st_vezife">
-                <option value="">Vəzifə seçin</option>
-                ${posOptions}
+            <div class="f-group">
+              <label>Şöbə</label>
+              <select id="f_st_deptId" onchange="staffDeptChanged()">
+                <option value="">— Şöbə seçin —</option>
+                ${deptOptions}
+                <option value="__new__">+ Yeni şöbə yarat</option>
               </select>
             </div>
-            <div class="f-group"><label>Şöbə</label><input id="f_st_department" value="${escapeAttr(s.department || "")}" placeholder="Şöbə adı"></div>
+            <div class="f-group">
+              <label>Vəzifə <span class="req">*</span></label>
+              <select id="f_st_posId" onchange="staffPosChanged()">
+                <option value="">— Vəzifə seçin —</option>
+                ${posOptions}
+                <option value="__custom__">+ Xüsusi vəzifə daxil et</option>
+              </select>
+            </div>
+            <div class="f-group grid-span-2" id="f_st_pos_custom_row" style="display:${customPosDefault || curPosId === '__custom__' ? 'block' : 'none'}">
+              <label>Xüsusi vəzifə adı</label>
+              <input id="f_st_vezife_custom" value="${escapeAttr(customPosDefault)}" placeholder="Vəzifə adı daxil edin">
+            </div>
             <div class="f-group"><label>İşə qəbul tarixi <span class="req">*</span></label><input type="date" id="f_st_hireDate" value="${escapeAttr(s.hireDate || nowISODate())}"></div>
             <div class="f-group"><label>Müqavilə nömrəsi</label><input id="f_st_contractNo" value="${escapeAttr(s.contractNo || "")}" placeholder="№ ..."></div>
             <div class="f-group"><label>İş statusu</label>
@@ -7789,30 +7980,49 @@ function openStaff(idx = null) {
           <div class="f-group" style="margin-bottom:8px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
               <input type="checkbox" id="f_st_hasSys" onchange="staffSysToggle()" ${hasSys ? "checked" : ""}>
-              <span>Sistem istifadəçisi olsun</span>
+              <span>Sistemə giriş verilsin</span>
             </label>
           </div>
           <div id="st_sys_fields" style="display:${hasSys ? "block" : "none"}">
             ${linkedUser ? `
             <div class="info-block">
               <div class="info-row"><div class="info-label">Login</div><div class="info-value">${escapeHtml(linkedUser.username || "")}</div></div>
-              <div class="info-row"><div class="info-label">Rol</div><div class="info-value">${escapeHtml(linkedUser.role || "")}</div></div>
+              <div class="info-row"><div class="info-label">Sistem rolu</div><div class="info-value">${escapeHtml(linkedUser.role || "")}</div></div>
+              <div class="info-row"><div class="info-label">İcazə rolu</div><div class="info-value">${escapeHtml((db.roles||[]).find(r=>r.id===linkedUser.perms?.roleId)?.name || linkedUser.perms?.roleId || "—")}</div></div>
               <div class="info-row"><div class="info-label">Aktiv</div><div class="info-value">${linkedUser.active || linkedUser.isActive ? "Bəli" : "Xeyr"}</div></div>
               ${linkedUser.lastLogin ? `<div class="info-row"><div class="info-label">Son giriş</div><div class="info-value">${fmtDT(linkedUser.lastLogin)}</div></div>` : ""}
+            </div>
+            <div style="margin-top:8px;">
+              <button type="button" class="btn-neutral btn-sm" onclick="openPermModal('${linkedUser.uid}')"><i class="fas fa-shield-halved"></i> İcazələri tənzimlə</button>
             </div>` : `
             <div class="grid-2">
               <div class="f-group"><label>Login <span class="req">*</span></label><input id="f_st_sysLogin" value="${escapeAttr(s.sysLogin || "")}" placeholder="${escapeAttr((meta?.session?.companyId || "sirket") + "_login")}"></div>
               <div class="f-group"><label>Müvəqqəti şifrə <span class="req">*</span></label><input type="password" id="f_st_sysPwd" placeholder="min 4 simvol" autocomplete="new-password"></div>
-              <div class="f-group"><label>Sistem rolu</label>
+              <div class="f-group">
+                <label>Sistem rolu</label>
                 <select id="f_st_sysRole">
-                  <option value="user">İstifadəçi</option>
+                  <option value="user">İstifadəçi (user)</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               <div class="f-group">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:24px;">
+                <label>İcazə rolu</label>
+                <select id="f_st_sysRoleId" onchange="staffSysRoleChanged()">
+                  <option value="">— Rol seçin —</option>
+                  ${roleOptions}
+                </select>
+              </div>
+              <div class="f-group grid-span-2" id="f_st_rolePreview" style="display:none;padding:8px 12px;background:var(--bg-muted,#f4f6f8);border-radius:8px;font-size:.82rem;color:var(--accent,#3b82f6);"></div>
+              <div class="f-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:6px;">
                   <input type="checkbox" id="f_st_sysActive" checked>
                   <span>Aktiv giriş icazəsi</span>
+                </label>
+              </div>
+              <div class="f-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:6px;">
+                  <input type="checkbox" id="f_st_mustChangePwd" checked>
+                  <span>İlk girişdə şifrəni dəyişsin</span>
                 </label>
               </div>
             </div>`}
@@ -7847,7 +8057,25 @@ async function saveStaff(e, idx) {
   if (phone && !/^[+\d\s\-()\u00D7]{7,20}$/.test(phone))
     return toast("Telefon formatı düzgün deyil", "error");
 
-  const vezifeAdi = val("f_st_vezife") || "";
+  // Vəzifə: ya dropdown-dan, ya xüsusi sahədən
+  const posId = val("f_st_posId") || "";
+  let vezifeAdi = "";
+  let departmentId = val("f_st_deptId") || "";
+  let positionId   = posId;
+  if (posId === "__custom__") {
+    vezifeAdi   = (val("f_st_vezife_custom") || "").trim();
+    positionId  = "";
+  } else if (posId) {
+    const posObj = (db.positions || []).find(p => p.id === posId);
+    vezifeAdi    = posObj ? posObj.name : posId;
+  } else {
+    // Köhnə format fallback
+    vezifeAdi = "";
+  }
+  // Əgər şöbə "__new__" seçilibsə, inputdan al (bu UI-da yoxdur, skip)
+  if (departmentId === "__new__") departmentId = "";
+  const deptObj = (db.departments || []).find(d => d.id === departmentId);
+  const departmentName = deptObj ? deptObj.name : (val("f_st_department") || "").trim();
   if (!vezifeAdi) return toast("Vəzifə seçilməlidir", "error");
 
   const hireDate = val("f_st_hireDate") || "";
@@ -7873,11 +8101,14 @@ async function saveStaff(e, idx) {
     if ((meta.users || []).some(u => u.username === sysLogin))
       return toast("Bu login artıq mövcuddur", "error");
     const hashedPass = await erpHashPasswordPlain(sysPwd);
+    const sysRoleId = val("f_st_sysRoleId") || "";
     newSysUser = {
       sysLogin,
       pass: hashedPass,
       sysRole: val("f_st_sysRole") || "user",
       sysActive: !!(byId("f_st_sysActive")?.checked),
+      mustChangePwd: !!(byId("f_st_mustChangePwd")?.checked ?? true),
+      roleId: sysRoleId,
     };
   }
 
@@ -7906,7 +8137,9 @@ async function saveStaff(e, idx) {
     vezifeAdi,
     vezifeId: vezifeAdi.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
     role: vezifeAdi,
-    department: (val("f_st_department") || "").trim(),
+    departmentId,
+    positionId,
+    department: departmentName,
     hireDate,
     contractNo: (val("f_st_contractNo") || "").trim(),
     employeeStatus: val("f_st_empStatus") || "active",
@@ -7938,6 +8171,21 @@ async function saveStaff(e, idx) {
     if (!Array.isArray(meta.users)) meta.users = [];
     // genId must use the full list (meta._allUsers) so ID doesn't conflict
     const fullList = meta._allUsers || meta.users;
+    // Rol-dan icazə key-lərini hesabla
+    const selectedRole = newSysUser.roleId
+      ? (db.roles || []).find(r => r.id === newSysUser.roleId)
+      : null;
+    const rolePerms = selectedRole?.permissions || {};
+    // Backward compat: sections və legacy flags-ı roldan hesabla
+    const roleGrantedKeys = Object.keys(rolePerms).filter(k => rolePerms[k] === true);
+    const derivedSections = [...new Set(
+      roleGrantedKeys.map(k => _ERP_MOD_TO_SEC[k.split(".")[0]] || k.split(".")[0])
+    )].filter(Boolean);
+    const derivedCanEdit   = roleGrantedKeys.some(k => k.endsWith(".edit") || k.endsWith(".create"));
+    const derivedCanDelete = roleGrantedKeys.some(k => k.endsWith(".delete"));
+    const derivedCanPay    = roleGrantedKeys.some(k => k.endsWith(".approve") || k.endsWith(".pay"));
+    const derivedCanRefund = roleGrantedKeys.some(k => k.endsWith(".refund"));
+    const derivedCanExport = roleGrantedKeys.some(k => k.endsWith(".export"));
     const newUserEntry = {
       uid: genId(fullList, 1),
       fullName: nameVal,
@@ -7945,10 +8193,23 @@ async function saveStaff(e, idx) {
       pass: newSysUser.pass,
       role: newSysUser.sysRole,
       active: newSysUser.sysActive,
-      mustChangePassword: true,
+      mustChangePassword: newSysUser.mustChangePwd !== false,
       companyId: cid || null,
       staffUid: String(staffUid),
-      perms: { sections: ["*"], canEdit: false, canDelete: false, canPay: false, canRefund: false, canExport: false, canImport: false, canReset: false, actions: {} },
+      perms: {
+        roleId: newSysUser.roleId || null,
+        keys: { ...rolePerms },
+        blocked: {},
+        sections: derivedSections.length > 0 ? derivedSections : ["*"],
+        canEdit:   derivedCanEdit,
+        canDelete: derivedCanDelete,
+        canPay:    derivedCanPay,
+        canRefund: derivedCanRefund,
+        canExport: derivedCanExport,
+        canImport: false,
+        canReset:  false,
+        actions: Object.fromEntries(roleGrantedKeys.map(k => [k, true])),
+      },
       createdAt: nowISODateTimeLocal(),
     };
     meta.users.push(newUserEntry);
@@ -12487,62 +12748,360 @@ const PERM_SECTIONS = [
   { id: "settings", label: "Ayarlar",         viewOnly: true },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GRANULAR PERMISSION KEYS
+// Format: "modul.əməliyyat"
+// can(key) bu siyahıdakı hər hansı key-i qəbul edir.
+// ─────────────────────────────────────────────────────────────────────────────
+const PERMISSION_KEYS = [
+  // ── İdarə paneli ──────────────────────────────────────────────────────────
+  { key: "dashboard.view",          label: "Baxış",         module: "dashboard",  moduleLabel: "İdarə paneli" },
+
+  // ── Satış ──────────────────────────────────────────────────────────────────
+  { key: "sales.view",              label: "Baxış",         module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.create",            label: "Yarat",         module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.edit",              label: "Redaktə",       module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.delete",            label: "Sil",           module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.print",             label: "Çap",           module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.discount",          label: "Endirim",       module: "sales",      moduleLabel: "Satış" },
+  { key: "sales.refund",            label: "Qaytarma",      module: "sales",      moduleLabel: "Satış" },
+
+  // ── Alış ──────────────────────────────────────────────────────────────────
+  { key: "purchase.view",           label: "Baxış",         module: "purchase",   moduleLabel: "Alış" },
+  { key: "purchase.create",         label: "Yarat",         module: "purchase",   moduleLabel: "Alış" },
+  { key: "purchase.edit",           label: "Redaktə",       module: "purchase",   moduleLabel: "Alış" },
+  { key: "purchase.delete",         label: "Sil",           module: "purchase",   moduleLabel: "Alış" },
+
+  // ── Anbar ─────────────────────────────────────────────────────────────────
+  { key: "inventory.view",          label: "Baxış",         module: "inventory",  moduleLabel: "Anbar" },
+  { key: "inventory.adjust",        label: "Düzəliş",       module: "inventory",  moduleLabel: "Anbar" },
+  { key: "inventory.transfer",      label: "Köçürmə",       module: "inventory",  moduleLabel: "Anbar" },
+  { key: "inventory.count",         label: "Sayım",         module: "inventory",  moduleLabel: "Anbar" },
+
+  // ── Məhsullar ────────────────────────────────────────────────────────────
+  { key: "products.view",           label: "Baxış",         module: "products",   moduleLabel: "Məhsullar" },
+  { key: "products.create",         label: "Yarat",         module: "products",   moduleLabel: "Məhsullar" },
+  { key: "products.edit",           label: "Redaktə",       module: "products",   moduleLabel: "Məhsullar" },
+  { key: "products.delete",         label: "Sil",           module: "products",   moduleLabel: "Məhsullar" },
+
+  // ── Müştərilər ───────────────────────────────────────────────────────────
+  { key: "customers.view",          label: "Baxış",         module: "customers",  moduleLabel: "Müştərilər" },
+  { key: "customers.create",        label: "Yarat",         module: "customers",  moduleLabel: "Müştərilər" },
+  { key: "customers.edit",          label: "Redaktə",       module: "customers",  moduleLabel: "Müştərilər" },
+  { key: "customers.delete",        label: "Sil",           module: "customers",  moduleLabel: "Müştərilər" },
+
+  // ── Kredit ───────────────────────────────────────────────────────────────
+  { key: "credit.view",             label: "Baxış",         module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.create",           label: "Yarat",         module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.edit",             label: "Redaktə",       module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.approve",          label: "Təsdiq",        module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.reject",           label: "Rədd",          module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.change_status",    label: "Status dəyiş",  module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.view_risk",        label: "Risk baxışı",   module: "credit",     moduleLabel: "Kredit" },
+  { key: "credit.view_salary",      label: "Maaş baxışı",   module: "credit",     moduleLabel: "Kredit" },
+
+  // ── Kassa ────────────────────────────────────────────────────────────────
+  { key: "cash.view",               label: "Baxış",         module: "cash",       moduleLabel: "Kassa" },
+  { key: "cash.create",             label: "Yarat",         module: "cash",       moduleLabel: "Kassa" },
+  { key: "cash.edit",               label: "Redaktə",       module: "cash",       moduleLabel: "Kassa" },
+  { key: "cash.delete",             label: "Sil",           module: "cash",       moduleLabel: "Kassa" },
+
+  // ── Xərclər ──────────────────────────────────────────────────────────────
+  { key: "expense.view",            label: "Baxış",         module: "expense",    moduleLabel: "Xərclər" },
+  { key: "expense.create",          label: "Yarat",         module: "expense",    moduleLabel: "Xərclər" },
+  { key: "expense.edit",            label: "Redaktə",       module: "expense",    moduleLabel: "Xərclər" },
+  { key: "expense.delete",          label: "Sil",           module: "expense",    moduleLabel: "Xərclər" },
+
+  // ── Hesabatlar ───────────────────────────────────────────────────────────
+  { key: "reports.view",            label: "Baxış",         module: "reports",    moduleLabel: "Hesabatlar" },
+  { key: "reports.export",          label: "Export",        module: "reports",    moduleLabel: "Hesabatlar" },
+
+  // ── Sənədlər ─────────────────────────────────────────────────────────────
+  { key: "documents.view",          label: "Baxış",         module: "documents",  moduleLabel: "Sənədlər" },
+  { key: "documents.create",        label: "Yarat",         module: "documents",  moduleLabel: "Sənədlər" },
+  { key: "documents.edit",          label: "Redaktə",       module: "documents",  moduleLabel: "Sənədlər" },
+  { key: "documents.delete",        label: "Sil",           module: "documents",  moduleLabel: "Sənədlər" },
+  { key: "documents.print",         label: "Çap",           module: "documents",  moduleLabel: "Sənədlər" },
+
+  // ── Servis ───────────────────────────────────────────────────────────────
+  { key: "service.view",            label: "Baxış",         module: "service",    moduleLabel: "Servis" },
+  { key: "service.create",          label: "Yarat",         module: "service",    moduleLabel: "Servis" },
+  { key: "service.edit",            label: "Redaktə",       module: "service",    moduleLabel: "Servis" },
+  { key: "service.close",           label: "Bağla",         module: "service",    moduleLabel: "Servis" },
+
+  // ── Əməkdaşlar ───────────────────────────────────────────────────────────
+  { key: "employees.view",          label: "Baxış",         module: "employees",  moduleLabel: "Əməkdaşlar" },
+  { key: "employees.create",        label: "Yarat",         module: "employees",  moduleLabel: "Əməkdaşlar" },
+  { key: "employees.edit",          label: "Redaktə",       module: "employees",  moduleLabel: "Əməkdaşlar" },
+  { key: "employees.deactivate",    label: "Deaktiv et",    module: "employees",  moduleLabel: "Əməkdaşlar" },
+
+  // ── İstifadəçilər ────────────────────────────────────────────────────────
+  { key: "users.view",              label: "Baxış",         module: "users",      moduleLabel: "İstifadəçilər" },
+  { key: "users.create",            label: "Yarat",         module: "users",      moduleLabel: "İstifadəçilər" },
+  { key: "users.edit",              label: "Redaktə",       module: "users",      moduleLabel: "İstifadəçilər" },
+  { key: "users.deactivate",        label: "Deaktiv et",    module: "users",      moduleLabel: "İstifadəçilər" },
+  { key: "users.reset_password",    label: "Şifrə sıfırla", module: "users",      moduleLabel: "İstifadəçilər" },
+  { key: "users.permissions_edit",  label: "İcazə idarə",   module: "users",      moduleLabel: "İstifadəçilər" },
+
+  // ── Ayarlar ──────────────────────────────────────────────────────────────
+  { key: "settings.view",           label: "Baxış",         module: "settings",   moduleLabel: "Ayarlar" },
+  { key: "settings.edit",           label: "Redaktə",       module: "settings",   moduleLabel: "Ayarlar" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEFAULT ROLES — şirkət yaradılarkən avtomatik əlavə edilir
+// ─────────────────────────────────────────────────────────────────────────────
+const _P_ALL  = Object.fromEntries(PERMISSION_KEYS.map(p => [p.key, true]));
+const _P_VIEW = Object.fromEntries(PERMISSION_KEYS.filter(p => p.key.endsWith(".view")).map(p => [p.key, true]));
+
+const DEFAULT_ROLES = [
+  {
+    id: "super_admin",
+    name: "Super Admin",
+    permissions: { ..._P_ALL },
+  },
+  {
+    id: "sirket_admin",
+    name: "Şirkət Admini",
+    permissions: {
+      ..._P_ALL,
+      "settings.edit": false,
+      "users.permissions_edit": false,
+    },
+  },
+  {
+    id: "rehber",
+    name: "Rəhbər",
+    permissions: {
+      ..._P_VIEW,
+      "sales.create": true, "sales.edit": true, "sales.print": true, "sales.discount": true,
+      "purchase.create": true, "purchase.edit": true,
+      "inventory.adjust": true, "inventory.transfer": true,
+      "products.create": true, "products.edit": true,
+      "customers.create": true, "customers.edit": true,
+      "credit.create": true, "credit.edit": true, "credit.approve": true, "credit.change_status": true, "credit.view_risk": true, "credit.view_salary": true,
+      "cash.create": true, "cash.edit": true,
+      "expense.create": true, "expense.edit": true,
+      "reports.export": true,
+      "employees.create": true, "employees.edit": true,
+    },
+  },
+  {
+    id: "satis_menecer",
+    name: "Satış meneceri",
+    permissions: {
+      "dashboard.view": true,
+      "sales.view": true, "sales.create": true, "sales.edit": true, "sales.print": true, "sales.discount": true,
+      "customers.view": true, "customers.create": true, "customers.edit": true,
+      "products.view": true,
+      "inventory.view": true,
+      "credit.view": true,
+      "reports.view": true,
+    },
+  },
+  {
+    id: "kredit_mutexessis",
+    name: "Kredit mütəxəssisi",
+    permissions: {
+      "dashboard.view": true,
+      "sales.view": true, "sales.create": true, "sales.edit": true, "sales.print": true,
+      "customers.view": true, "customers.create": true, "customers.edit": true,
+      "credit.view": true, "credit.create": true, "credit.edit": true, "credit.change_status": true, "credit.view_risk": true,
+      "reports.view": true, "reports.export": true,
+    },
+  },
+  {
+    id: "kredit_rehber",
+    name: "Kredit rəhbəri",
+    permissions: {
+      "dashboard.view": true,
+      "sales.view": true, "sales.create": true, "sales.edit": true, "sales.print": true, "sales.discount": true,
+      "customers.view": true, "customers.create": true, "customers.edit": true,
+      "credit.view": true, "credit.create": true, "credit.edit": true, "credit.approve": true, "credit.reject": true, "credit.change_status": true, "credit.view_risk": true, "credit.view_salary": true,
+      "reports.view": true, "reports.export": true,
+    },
+  },
+  {
+    id: "kassir",
+    name: "Kassir",
+    permissions: {
+      "dashboard.view": true,
+      "sales.view": true, "sales.print": true,
+      "cash.view": true, "cash.create": true, "cash.edit": true,
+      "customers.view": true,
+      "credit.view": true, "credit.change_status": true,
+    },
+  },
+  {
+    id: "anbar_mesulu",
+    name: "Anbar məsulu",
+    permissions: {
+      "dashboard.view": true,
+      "inventory.view": true, "inventory.adjust": true, "inventory.transfer": true, "inventory.count": true,
+      "products.view": true, "products.create": true, "products.edit": true,
+      "purchase.view": true, "purchase.create": true, "purchase.edit": true,
+      "reports.view": true,
+    },
+  },
+  {
+    id: "servis_operator",
+    name: "Servis operatoru",
+    permissions: {
+      "dashboard.view": true,
+      "service.view": true, "service.create": true, "service.edit": true, "service.close": true,
+      "customers.view": true, "customers.create": true,
+      "products.view": true,
+    },
+  },
+  {
+    id: "muhasib",
+    name: "Mühasib",
+    permissions: {
+      "dashboard.view": true,
+      "cash.view": true, "cash.create": true, "cash.edit": true,
+      "expense.view": true, "expense.create": true, "expense.edit": true,
+      "reports.view": true, "reports.export": true,
+      "employees.view": true,
+      "sales.view": true,
+      "purchase.view": true,
+    },
+  },
+  {
+    id: "yalniz_baxis",
+    name: "Yalnız baxış",
+    permissions: { ..._P_VIEW },
+  },
+];
+
+/** Rol seçildiyi zaman icazə checkboxlarını güncəllə */
+function permModalRoleChanged() {
+  const roleId = val("perm_role_select") || "";
+  const role   = (db.roles || []).find(r => r.id === roleId);
+  if (!role) return;
+  // Bütün checkbox-ları rolun default-larına görə set et
+  document.querySelectorAll(".pm-key-chk").forEach(cb => {
+    const key = cb.getAttribute("data-key");
+    if (!key) return;
+    const v = role.permissions["*"] === true || role.permissions[key] === true;
+    cb.checked = v;
+    cb.indeterminate = false;
+  });
+}
+
+/** Modulun bütün icazələrini birdən açıb/bağla */
+function permModalToggleModule(modId) {
+  const cbs = document.querySelectorAll(`.pm-key-chk[data-module="${modId}"]`);
+  const allOn = Array.from(cbs).every(c => c.checked);
+  cbs.forEach(c => { c.checked = !allOn; });
+}
+
 function openPermModal(userId) {
   const linkedUser = (meta.users || []).find(u => String(u.uid) === String(userId));
-  if (!linkedUser) {
-    toast("İstifadəçi tapılmadı", "error");
-    return;
-  }
+  if (!linkedUser) { toast("İstifadəçi tapılmadı", "error"); return; }
   const s = (db.staff || []).find(st => String(st.uid) === String(linkedUser.staffUid || ""));
   const p = linkedUser.perms || {};
-  const secs = Array.isArray(p.sections) ? p.sections : [];
-  const acts = p.actions || {};
-  const hasSec  = (id) => secs.includes("*") || secs.includes(id);
-  const hasAct  = (id, act) => {
-    const key = `${id}.${act}`;
-    return Object.prototype.hasOwnProperty.call(acts, key) ? !!acts[key] : false;
-  };
+  const isActive     = linkedUser.active || linkedUser.isActive;
+  const displayName  = s ? (s.fullName || s.name) : (linkedUser.fullName || linkedUser.username || "İstifadəçi");
+  const currentRoleId = p.roleId || "";
+  const keysObj       = p.keys || {};
+  const blockedObj    = p.blocked || {};
 
-  const rows = PERM_SECTIONS.map(sec => {
-    const chk = (act, checked) =>
-      `<td style="text-align:center;"><input type="checkbox" class="perm-new-chk" data-sec="${sec.id}" data-act="${act}" ${checked ? "checked" : ""}></td>`;
-    const dash = `<td style="text-align:center;color:var(--text-muted);">—</td>`;
-    const labelCell = sec.note
-      ? `${escapeHtml(sec.label)}<br><span style="font-size:.72rem;color:var(--text-muted);font-weight:400;">${escapeHtml(sec.note)}</span>`
-      : escapeHtml(sec.label);
-    return `<tr>
-      <td>${labelCell}</td>
-      ${chk("baxmaq", hasSec(sec.id))}
-      ${sec.viewOnly ? dash + dash + dash : chk("elave", hasAct(sec.id, "create")) + chk("redakte", hasAct(sec.id, "edit")) + chk("sil", hasAct(sec.id, "delete"))}
-    </tr>`;
+  /** Cari effektiv icazəni hesabla (role + keys - blocked) */
+  function effectiveKey(key) {
+    if (blockedObj[key] === true) return false;
+    if (Object.prototype.hasOwnProperty.call(keysObj, key)) return !!keysObj[key];
+    if (currentRoleId) {
+      const role = (db.roles || []).find(r => r.id === currentRoleId);
+      if (role?.permissions["*"] === true) return true;
+      if (role?.permissions && Object.prototype.hasOwnProperty.call(role.permissions, key)) return !!role.permissions[key];
+    }
+    // backward compat
+    return _canFallback(linkedUser, key);
+  }
+
+  // Modullar üzrə qruplaşdır
+  const modules = [...new Set(PERMISSION_KEYS.map(k => k.module))];
+  const moduleMap = {};
+  PERMISSION_KEYS.forEach(pk => {
+    if (!moduleMap[pk.module]) moduleMap[pk.module] = { label: pk.moduleLabel, keys: [] };
+    moduleMap[pk.module].keys.push(pk);
+  });
+
+  const accordionRows = modules.map(modId => {
+    const mod = moduleMap[modId];
+    const keyRows = mod.keys.map(pk => {
+      const checked = effectiveKey(pk.key);
+      return `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:.85rem;">
+        <input type="checkbox" class="pm-key-chk" data-key="${escapeAttr(pk.key)}" data-module="${escapeAttr(modId)}" ${checked ? "checked" : ""}>
+        <span>${escapeHtml(pk.label)}</span>
+      </label>`;
+    }).join("");
+    return `
+      <div class="perm-accordion-item" style="border:1px solid var(--border-color);border-radius:8px;margin-bottom:6px;overflow:hidden;">
+        <div class="perm-accordion-head" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--bg-muted,#f4f6f8);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" class="pm-mod-toggle" onclick="event.stopPropagation();permModalToggleModule('${escapeAttr(modId)}')" title="Hamısını seç/ləğv et" style="cursor:pointer;">
+            <strong style="font-size:.88rem;">${escapeHtml(mod.label)}</strong>
+          </div>
+          <i class="fas fa-chevron-down" style="font-size:.75rem;color:var(--text-muted);"></i>
+        </div>
+        <div class="perm-accordion-body" style="padding:10px 14px;display:none;">
+          <div style="display:flex;flex-wrap:wrap;gap:2px 24px;">${keyRows}</div>
+        </div>
+      </div>`;
   }).join("");
 
-  const isActive = linkedUser.active || linkedUser.isActive;
-  const displayName = s ? (s.fullName || s.name) : (linkedUser.fullName || linkedUser.username || "İstifadəçi");
+  const roleOptions = (db.roles || []).map(r =>
+    `<option value="${escapeAttr(r.id)}" ${r.id === currentRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`
+  ).join("");
+
   openModal(`
     <h2><i class="fas fa-shield-halved" style="margin-right:6px;"></i>${escapeHtml(displayName)} — İcazələr</h2>
-    <p class="muted" style="margin:0 0 12px;font-size:.85rem;">Status: <span class="${isActive ? "pill paid" : "pill unpaid"}" style="vertical-align:middle;">${isActive ? "Aktiv" : "Deaktiv"}</span> &nbsp; Login: <strong>${escapeHtml(linkedUser.username || "—")}</strong></p>
+    <p class="muted" style="margin:0 0 14px;font-size:.85rem;">
+      Status: <span class="${isActive ? "pill paid" : "pill unpaid"}" style="vertical-align:middle;">${isActive ? "Aktiv" : "Deaktiv"}</span>
+      &nbsp; Login: <strong>${escapeHtml(linkedUser.username || "—")}</strong>
+    </p>
     <form onsubmit="savePermModal(event,'${escapeAttr(String(linkedUser.uid))}')">
-      <div class="table-wrap" style="margin-bottom:16px;">
-        <table class="perm-new-table">
-          <thead>
-            <tr>
-              <th style="min-width:130px;">Bölmə</th>
-              <th style="text-align:center;width:72px;">Baxmaq</th>
-              <th style="text-align:center;width:72px;">Əlavə</th>
-              <th style="text-align:center;width:72px;">Redaktə</th>
-              <th style="text-align:center;width:72px;">Sil</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+
+      <div class="form-card" style="margin-bottom:14px;">
+        <div class="form-card-title">Rol əsaslı icazələr</div>
+        <div class="grid-2">
+          <div class="f-group">
+            <label>Rol seç (default icazələri yükləyir)</label>
+            <select id="perm_role_select" onchange="permModalRoleChanged()">
+              <option value="">— Rol seçin —</option>
+              ${roleOptions}
+            </select>
+          </div>
+          <div class="f-group" style="display:flex;align-items:flex-end;gap:8px;">
+            <button type="button" class="btn-neutral btn-sm" onclick="permModalRoleChanged()">
+              <i class="fas fa-rotate"></i> Roldan yüklə
+            </button>
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=true)">
+              <i class="fas fa-check-double"></i> Hamısı
+            </button>
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=false)">
+              <i class="fas fa-xmark"></i> Heç biri
+            </button>
+          </div>
+        </div>
       </div>
-      <div style="margin-bottom:12px;">
+
+      <div class="form-card" style="margin-bottom:14px;">
+        <div class="form-card-title">Ətraflı icazələr (modul üzrə)</div>
+        <div style="max-height:50vh;overflow-y:auto;padding-right:4px;">
+          ${accordionRows}
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom:14px;">
+        <div class="form-card-title">Hesab parametrləri</div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input type="checkbox" id="perm_active_toggle" ${isActive ? "checked" : ""}>
           <span>Aktiv giriş icazəsi</span>
         </label>
       </div>
+
       <div class="modal-footer">
         <button class="btn-main" type="submit" id="permSaveBtn">Yadda saxla</button>
         <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
@@ -12559,31 +13118,71 @@ async function savePermModal(e, userId) {
     const idx = (meta.users || []).findIndex(u => String(u.uid) === String(userId));
     if (idx === -1) { toast("İstifadəçi tapılmadı", "error"); return; }
     const u = meta.users[idx];
-    if (!u.perms) u.perms = { sections: [], actions: {}, canEdit: false, canDelete: false };
-    if (!u.perms.actions) u.perms.actions = {};
+    if (!u.perms) u.perms = {};
 
-    const newSections = [];
-    const newActions = {};
-    document.querySelectorAll(".perm-new-chk").forEach(cb => {
-      const sec = cb.getAttribute("data-sec");
-      const act = cb.getAttribute("data-act");
-      if (act === "baxmaq") {
-        if (cb.checked) newSections.push(sec);
-      } else {
-        const actionKey = act === "elave" ? "create" : act === "redakte" ? "edit" : "delete";
-        newActions[`${sec}.${actionKey}`] = cb.checked;
-      }
+    // ── Yeni granular icazə keys ──────────────────────────────────────────
+    const newKeys = {};
+    document.querySelectorAll(".pm-key-chk").forEach(cb => {
+      const key = cb.getAttribute("data-key");
+      if (key) newKeys[key] = !!cb.checked;
     });
 
-    u.perms.sections = newSections;
-    u.perms.actions  = newActions;
-    u.perms.canEdit  = Object.entries(newActions).some(([k, v]) => k.endsWith(".edit")   && v);
-    u.perms.canDelete= Object.entries(newActions).some(([k, v]) => k.endsWith(".delete") && v);
-    u.perms.canPay   = u.perms.canPay ?? false;
+    // ── Rol seçimi ────────────────────────────────────────────────────────
+    const selectedRoleId = val("perm_role_select") || "";
+    const selectedRole   = selectedRoleId ? (db.roles || []).find(r => r.id === selectedRoleId) : null;
+
+    // blocked = rol true deyir, amma UI false seçilib
+    const blocked = {};
+    if (selectedRole?.permissions) {
+      Object.entries(newKeys).forEach(([key, v]) => {
+        const roleVal = selectedRole.permissions["*"] === true ? true : (selectedRole.permissions[key] ?? false);
+        if (roleVal && !v) blocked[key] = true;
+      });
+    }
+
+    // keys = user-specific override (rol dəyərindən fərqli olanlar)
+    const keysOverride = {};
+    if (selectedRole?.permissions) {
+      Object.entries(newKeys).forEach(([key, v]) => {
+        const roleVal = selectedRole.permissions["*"] === true ? true : (selectedRole.permissions[key] ?? false);
+        if (v !== !!roleVal) keysOverride[key] = v;
+      });
+    } else {
+      Object.assign(keysOverride, newKeys);
+    }
+
+    // ── Backward compat: sections və legacy flags-ı hesabla ───────────────
+    const grantedKeys = Object.keys(newKeys).filter(k => newKeys[k]);
+    const newSections = [...new Set(
+      grantedKeys.filter(k => k.endsWith(".view")).map(k => _ERP_MOD_TO_SEC[k.split(".")[0]] || k.split(".")[0])
+    )].filter(Boolean);
+    const newActions = Object.fromEntries(Object.entries(newKeys).filter(([, v]) => v));
+
+    u.perms = {
+      ...u.perms,
+      roleId:    selectedRoleId || null,
+      keys:      newKeys,
+      override:  keysOverride,
+      blocked,
+      sections:  newSections.length > 0 ? newSections : (u.perms.sections || []),
+      actions:   newActions,
+      canEdit:   grantedKeys.some(k => k.endsWith(".edit") || k.endsWith(".create")),
+      canDelete: grantedKeys.some(k => k.endsWith(".delete")),
+      canPay:    grantedKeys.some(k => k.endsWith(".approve") || k.endsWith(".pay")),
+      canRefund: grantedKeys.some(k => k.endsWith(".refund")),
+      canExport: grantedKeys.some(k => k.endsWith(".export")),
+      canImport: u.perms.canImport || false,
+      canReset:  u.perms.canReset  || false,
+    };
     u.active = !!(byId("perm_active_toggle")?.checked);
     meta.users[idx] = u;
+    // _allUsers sync
+    if (meta._allUsers) {
+      const ai = meta._allUsers.findIndex(x => String(x.uid) === String(userId));
+      if (ai !== -1) meta._allUsers[ai] = u;
+    }
     await saveMeta();
-    toast("İcazələr yadda saxlandı", "success");
+    toast("İcazələr yadda saxlandı", "ok");
     closeMdl();
     renderAll();
   } catch (err) {
@@ -12859,6 +13458,227 @@ function openUser(uidOrNull = null) {
     byId("u_manual_mode").checked = manualChecked;
     syncAutoUserIdentity();
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ŞÖBƏ / VƏZİFƏ / ROL İDARƏETMƏSİ  (Ayarlar içindən açılır)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function openRbacManager() {
+  if (!isAdmin() && !isDeveloper()) return alert("İcazə yoxdur.");
+  const depts = db.departments || [];
+  const positions = db.positions || [];
+  const roles = db.roles || [];
+
+  const deptRows = depts.map((d, i) =>
+    `<tr>
+      <td>${escapeHtml(d.name)}</td>
+      <td class="tbl-actions">
+        <button class="icon-btn delete" onclick="deleteDept(${i})" title="Sil"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`
+  ).join("") || `<tr><td colspan="2" class="muted">Şöbə yoxdur</td></tr>`;
+
+  const posRows = positions.map((p, i) => {
+    const deptName = depts.find(d => d.id === p.departmentId)?.name || "—";
+    return `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(deptName)}</td>
+      <td class="tbl-actions">
+        <button class="icon-btn delete" onclick="deletePosition(${i})" title="Sil"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="3" class="muted">Vəzifə yoxdur</td></tr>`;
+
+  const roleRows = roles.map((r, i) => {
+    const cnt = Object.values(r.permissions || {}).filter(Boolean).length;
+    return `<tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${cnt} icazə</td>
+      <td class="tbl-actions">
+        <button class="icon-btn edit" onclick="openRoleEditor('${escapeAttr(r.id)}')" title="Redaktə"><i class="fas fa-pen"></i></button>
+        ${r.id === 'super_admin' ? '' : `<button class="icon-btn delete" onclick="deleteRole('${escapeAttr(r.id)}')" title="Sil"><i class="fas fa-trash"></i></button>`}
+      </td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="3" class="muted">Rol yoxdur</td></tr>`;
+
+  const deptSelectOpts = depts.map(d =>
+    `<option value="${escapeAttr(d.id)}">${escapeHtml(d.name)}</option>`).join("");
+
+  openModal(`
+    <h2><i class="fas fa-sitemap" style="margin-right:6px;"></i>Şöbə / Vəzifə / Rol İdarəetməsi</h2>
+    <div class="form-stack">
+
+      <div class="form-card">
+        <div class="form-card-title">Şöbələr</div>
+        <div class="grid-2" style="margin-bottom:10px;">
+          <div class="f-group"><label>Yeni şöbə adı</label><input id="rbac_dept_name" placeholder="Satış şöbəsi"></div>
+          <div class="f-group" style="display:flex;align-items:flex-end;">
+            <button type="button" class="btn-main btn-sm" onclick="addDept()"><i class="fas fa-plus"></i> Əlavə et</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Ad</th><th></th></tr></thead><tbody>${deptRows}</tbody></table></div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">Vəzifələr</div>
+        <div class="grid-2" style="margin-bottom:10px;">
+          <div class="f-group"><label>Vəzifə adı</label><input id="rbac_pos_name" placeholder="Kredit mütəxəssisi"></div>
+          <div class="f-group"><label>Şöbəsi</label>
+            <select id="rbac_pos_dept"><option value="">— Seçin —</option>${deptSelectOpts}</select>
+          </div>
+          <div class="f-group" style="display:flex;align-items:flex-end;">
+            <button type="button" class="btn-main btn-sm" onclick="addPosition()"><i class="fas fa-plus"></i> Əlavə et</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Ad</th><th>Şöbə</th><th></th></tr></thead><tbody>${posRows}</tbody></table></div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">Rollar</div>
+        <div style="margin-bottom:10px;display:flex;gap:8px;">
+          <button type="button" class="btn-main btn-sm" onclick="openRoleEditor(null)"><i class="fas fa-plus"></i> Yeni rol</button>
+          <button type="button" class="btn-neutral btn-sm" onclick="seedDefaultRolesIfEmpty().then(()=>{saveDB();closeMdl();openRbacManager();})"><i class="fas fa-seedling"></i> Default rolları yüklə</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Ad</th><th>İcazə sayı</th><th></th></tr></thead><tbody>${roleRows}</tbody></table></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function addDept() {
+  const name = (val("rbac_dept_name") || "").trim();
+  if (!name) return toast("Ad boş ola bilməz", "error");
+  if (!db.departments) db.departments = [];
+  const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40) + "_" + Date.now();
+  if (db.departments.some(d => d.name.toLowerCase() === name.toLowerCase())) return toast("Bu ad artıq mövcuddur", "error");
+  db.departments.push({ id, name });
+  saveDB();
+  openRbacManager();
+}
+
+function deleteDept(idx) {
+  if (!confirm("Silmək istəyirsiniz?")) return;
+  db.departments = (db.departments || []).filter((_, i) => i !== idx);
+  saveDB();
+  openRbacManager();
+}
+
+function addPosition() {
+  const name   = (val("rbac_pos_name")  || "").trim();
+  const deptId = (val("rbac_pos_dept")  || "").trim();
+  if (!name) return toast("Ad boş ola bilməz", "error");
+  if (!db.positions) db.positions = [];
+  const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40) + "_" + Date.now();
+  db.positions.push({ id, name, departmentId: deptId });
+  saveDB();
+  openRbacManager();
+}
+
+function deletePosition(idx) {
+  if (!confirm("Silmək istəyirsiniz?")) return;
+  db.positions = (db.positions || []).filter((_, i) => i !== idx);
+  saveDB();
+  openRbacManager();
+}
+
+function deleteRole(roleId) {
+  if (!confirm("Bu rolu silmək istəyirsiniz?")) return;
+  db.roles = (db.roles || []).filter(r => r.id !== roleId);
+  saveDB();
+  openRbacManager();
+}
+
+/** Rol redaktə modalı */
+function openRoleEditor(roleId) {
+  const existing = roleId ? (db.roles || []).find(r => r.id === roleId) : null;
+  const isNew    = !existing;
+  const roleName = existing?.name || "";
+  const rolePerms = existing?.permissions || {};
+
+  const modules = [...new Set(PERMISSION_KEYS.map(k => k.module))];
+  const moduleMap = {};
+  PERMISSION_KEYS.forEach(pk => {
+    if (!moduleMap[pk.module]) moduleMap[pk.module] = { label: pk.moduleLabel, keys: [] };
+    moduleMap[pk.module].keys.push(pk);
+  });
+
+  const accordionRows = modules.map(modId => {
+    const mod = moduleMap[modId];
+    const keyRows = mod.keys.map(pk => {
+      const checked = rolePerms["*"] === true || rolePerms[pk.key] === true;
+      return `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:.85rem;">
+        <input type="checkbox" class="re-key-chk" data-key="${escapeAttr(pk.key)}" data-module="${escapeAttr(modId)}" ${checked ? "checked" : ""}>
+        <span>${escapeHtml(pk.label)}</span>
+      </label>`;
+    }).join("");
+    return `
+      <div style="border:1px solid var(--border-color);border-radius:8px;margin-bottom:6px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;background:var(--bg-muted,#f4f6f8);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" onclick="event.stopPropagation();var cbs=document.querySelectorAll('.re-key-chk[data-module=\\'${escapeAttr(modId)}\\']');var all=Array.from(cbs).every(c=>c.checked);cbs.forEach(c=>c.checked=!all);" style="cursor:pointer;">
+            <strong style="font-size:.88rem;">${escapeHtml(mod.label)}</strong>
+          </div>
+          <i class="fas fa-chevron-down" style="font-size:.75rem;"></i>
+        </div>
+        <div style="padding:10px 14px;display:none;">
+          <div style="display:flex;flex-wrap:wrap;gap:2px 24px;">${keyRows}</div>
+        </div>
+      </div>`;
+  }).join("");
+
+  openModal(`
+    <h2>${isNew ? "Yeni Rol" : "Rol Redaktə — " + escapeHtml(roleName)}</h2>
+    <form onsubmit="saveRoleEditor(event,'${escapeAttr(roleId || '')}')">
+      <div class="form-card" style="margin-bottom:12px;">
+        <div class="f-group">
+          <label>Rol adı <span class="req">*</span></label>
+          <input id="re_role_name" value="${escapeAttr(roleName)}" placeholder="Satış meneceri" required>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.re-key-chk').forEach(c=>c.checked=true)"><i class="fas fa-check-double"></i> Hamısı</button>
+          <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.re-key-chk').forEach(c=>c.checked=false)"><i class="fas fa-xmark"></i> Heç biri</button>
+        </div>
+      </div>
+      <div class="form-card" style="margin-bottom:14px;">
+        <div class="form-card-title">İcazələr</div>
+        <div style="max-height:55vh;overflow-y:auto;padding-right:4px;">
+          ${accordionRows}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" type="submit" id="reSaveBtn">Yadda saxla</button>
+        <button class="btn-cancel" type="button" onclick="closeMdl();openRbacManager()">Geri</button>
+      </div>
+    </form>
+  `);
+}
+
+function saveRoleEditor(e, roleId) {
+  e.preventDefault();
+  const name = (val("re_role_name") || "").trim();
+  if (!name) return toast("Rol adı boş ola bilməz", "error");
+  const permissions = {};
+  document.querySelectorAll(".re-key-chk").forEach(cb => {
+    const key = cb.getAttribute("data-key");
+    if (key) permissions[key] = !!cb.checked;
+  });
+  if (!db.roles) db.roles = [];
+  if (!roleId) {
+    const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40) + "_" + Date.now();
+    db.roles.push({ id, name, permissions });
+  } else {
+    const idx = db.roles.findIndex(r => r.id === roleId);
+    if (idx !== -1) db.roles[idx] = { ...db.roles[idx], name, permissions };
+    else db.roles.push({ id: roleId, name, permissions });
+  }
+  saveDB();
+  toast("Rol yadda saxlandı", "ok");
+  openRbacManager();
 }
 
 const JOB_PRESETS = {
@@ -14022,6 +14842,15 @@ function openSettings() {
           </div>
           <button type="button" class="btn-cancel" onclick="testTelegram()" style="margin-top:8px"><i class="fas fa-paper-plane"></i> Test göndər</button>
         </div>
+      </div>
+        ${(isAdmin() || dev) ? `
+        <div class="form-card">
+          <div class="form-card-title"><i class="fas fa-sitemap" style="margin-right:5px;"></i>Şöbə / Vəzifə / Rol İdarəetməsi</div>
+          <p class="muted" style="font-size:.84rem;margin-bottom:10px;">Əməkdaş strukturunu, icazə rolllarını idarə edin.</p>
+          <button type="button" class="btn-neutral" onclick="closeMdl();openRbacManager()">
+            <i class="fas fa-sitemap"></i> Şöbə / Vəzifə / Rol idarə et
+          </button>
+        </div>` : ""}
       </div>
       <div class="modal-footer">
         <button class="btn-main" type="submit">Yadda saxla</button>
@@ -15356,9 +16185,10 @@ function renderAll() {
       <td>${s.hireDate ? fmtDT(s.hireDate) : "-"}</td>
       <td><span class="${statusCls}">${statusTxt}</span></td>
       <td><span class="muted" style="font-size:.75rem;">${salTypeLbl}</span><br>${salaryDisplay}</td>
-      <td class="tbl-actions">
+        <td class="tbl-actions">
         <button class="icon-btn info" onclick="openStaffInfo(${idx})" title="Məlumat"><i class="fas fa-circle-info"></i></button>
         ${userCanEdit() ? `<a class="icon-btn edit" href="${erpOpHref("staff", "staffEdit", idx)}" onclick="openStaff(${idx});return false;" title="Redaktə"><i class="fas fa-pen"></i></a>` : ""}
+        ${(()=>{ const lu=(meta.users||[]).find(u=>String(u.staffUid)===String(s.uid)); return lu && (isAdmin()||isDeveloper()) ? `<button class="icon-btn" onclick="openPermModal('${lu.uid}')" title="İcazələri tənzimlə" style="color:var(--accent,#3b82f6);"><i class="fas fa-shield-halved"></i></button>` : ''; })()}
         ${userCanEdit() ? `<button class="icon-btn ${(s.employeeStatus || "active") === "terminated" ? "restore" : "delete"}" onclick="toggleStaffActive(${idx})" title="${(s.employeeStatus || "active") === "terminated" ? "Aktivləşdir" : "Deaktiv et"}"><i class="fas fa-${(s.employeeStatus || "active") === "terminated" ? "user-check" : "user-slash"}"></i></button>` : ""}
       </td>
     </tr>`;
