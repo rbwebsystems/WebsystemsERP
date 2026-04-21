@@ -834,7 +834,7 @@ function subscribeRealtime() {
   }
 
   // Canlı deaktivasiya izləyicisi — admin deaktiv edəndə anında modal göstər
-  try { subscribeUserActiveWatcher(); } catch (_) {}
+  try { subscribeUserActiveWatcher(); } catch (e) { console.warn("[active-watch] start xətası:", e); }
 
   const cid = meta?.session?.companyId;
   if (cid && normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
@@ -889,33 +889,82 @@ function unsubscribeRealtime() {
     firestoreUnsubUsers();
     firestoreUnsubUsers = null;
   }
+  if (window.__activeWatchPollTimer) {
+    clearInterval(window.__activeWatchPollTimer);
+    window.__activeWatchPollTimer = null;
+  }
 }
 
 /** Cari istifadəçinin /erp_users/{cid}-dəki active statusunu canlı izləyir. */
 function subscribeUserActiveWatcher() {
-  if (!useFirestore()) return;
+  if (!useFirestore()) {
+    console.log("[active-watch] atlanır: Firestore yoxdur");
+    return;
+  }
   const authUser = erpFirebaseCurrentUser();
-  if (!authUser) return;
+  if (!authUser) {
+    console.log("[active-watch] atlanır: Firebase user yoxdur");
+    return;
+  }
   const cid = meta?.session?.companyId;
   const myUid = meta?.session?.userUid;
-  if (!cid || !myUid || cid === ERP_DEV_SESSION_CID) return;
+  if (!cid || !myUid || cid === ERP_DEV_SESSION_CID) {
+    console.log("[active-watch] atlanır: cid/uid yoxdur və ya developer", { cid, myUid });
+    return;
+  }
   const me = (meta.users || []).find((u) => String(u.uid) === String(myUid));
-  if (me && me.role === "developer") return;
+  if (me && me.role === "developer") {
+    console.log("[active-watch] atlanır: developer");
+    return;
+  }
 
   const ref = getUsersRef(cid);
-  if (!ref) return;
+  if (!ref) {
+    console.log("[active-watch] atlanır: ref yoxdur");
+    return;
+  }
+
+  console.log("[active-watch] qoşulur", { cid, myUid });
 
   firestoreUnsubUsers = ref.onSnapshot(
     (snap) => {
+      if (!snap.exists) {
+        console.log("[active-watch] snapshot: sənəd yoxdur");
+        return;
+      }
+      const list = snap.data()?.users || [];
+      const fresh = list.find((u) => String(u.uid) === String(myUid));
+      console.log("[active-watch] snapshot gəldi", {
+        usersCount: list.length,
+        meFound: !!fresh,
+        myActive: fresh ? fresh.active : "(tapılmadı)",
+      });
+      if (fresh && fresh.active === false) {
+        console.log("[active-watch] DEAKTİV aşkarlandı → modal açılır");
+        showDeactivatedModal();
+      }
+    },
+    (err) => console.warn("[active-watch] listener xətası:", err?.code || err?.message)
+  );
+
+  // Ehtiyat polling: hər 15 saniyədə /erp_users-ə müraciət et
+  // (snapshot hansısa səbəbdən çatmasa)
+  if (window.__activeWatchPollTimer) clearInterval(window.__activeWatchPollTimer);
+  window.__activeWatchPollTimer = setInterval(async () => {
+    if (window.__userDeactivatedShown) return;
+    try {
+      const snap = await ref.get();
       if (!snap.exists) return;
       const list = snap.data()?.users || [];
       const fresh = list.find((u) => String(u.uid) === String(myUid));
       if (fresh && fresh.active === false) {
+        console.log("[active-watch] poll: DEAKTİV aşkarlandı");
         showDeactivatedModal();
       }
-    },
-    (err) => console.debug("[erp-auth] users listener:", err?.code || err?.message)
-  );
+    } catch (e) {
+      console.debug("[active-watch] poll xətası:", e?.code);
+    }
+  }, 15000);
 }
 
 /** Cari istifadəçi deaktiv edilibsə, çıxış düyməsi olan modal göstər. */
