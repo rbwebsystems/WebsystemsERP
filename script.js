@@ -7798,35 +7798,131 @@ function openSupplierPaymentHistory(idx) {
 // ========= Staff =========
 
 /** Əməkdaş formasında şöbə seçilən kimi vəzifələri filtrləyir */
+/**
+ * Şöbə dropdown-u dəyişdikdə:
+ *  - "__new__" seçilibsə → mini dialog açılır, yeni şöbə yaranır
+ *  - digər halda → vəzifə siyahısını filtrləyir
+ */
 function staffDeptChanged() {
   const deptId = val("f_st_deptId") || "";
+
+  // "Yeni şöbə yarat" seçilibsə — cari seçimi sıfırla, adı soruş, yarat
+  if (deptId === "__new__") {
+    const name = (prompt("Yeni şöbənin adını daxil edin:") || "").trim();
+    const deptSel = byId("f_st_deptId");
+    if (!name) {
+      if (deptSel) deptSel.value = "";
+      return;
+    }
+    if (!db.departments) db.departments = [];
+    const existing = db.departments.find(d => d.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      toast(`"${existing.name}" şöbəsi artıq mövcuddur`, "warn", 2500);
+      if (deptSel) deptSel.value = existing.id;
+      _staffRefreshPosDropdown(existing.id);
+      return;
+    }
+    const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40) + "_" + Date.now();
+    db.departments.push({ id, name });
+    saveCompanyDB(); // Firestore-a yaz
+    // Dropdown-a yeni option əlavə et və seç
+    if (deptSel) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = name;
+      // "__new__" optiondan əvvəl yerləşdir
+      const newOpt = deptSel.querySelector('option[value="__new__"]');
+      deptSel.insertBefore(opt, newOpt || null);
+      deptSel.value = id;
+    }
+    toast(`"${name}" şöbəsi yaradıldı`, "ok", 2000);
+    _staffRefreshPosDropdown(id);
+    return;
+  }
+
+  _staffRefreshPosDropdown(deptId);
+}
+
+/** Vəzifə dropdown-unu şöbəyə görə yenilə. Əgər "__new__" seçilibsə də işləyir. */
+function _staffRefreshPosDropdown(deptId) {
   const posSelect = byId("f_st_posId");
   if (!posSelect) return;
   const positions = (db.positions || []).filter(p => !deptId || p.departmentId === deptId);
-  posSelect.innerHTML = '<option value="">— Vəzifə seçin —</option>' +
-    positions.map(p => `<option value="${escapeAttr(p.id)}" ${p.id === val("f_st_posId") ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("") +
-    `<option value="__custom__">+ Xüsusi vəzifə daxil et</option>`;
+  posSelect.innerHTML =
+    '<option value="">— Vəzifə seçin —</option>' +
+    positions.map(p =>
+      `<option value="${escapeAttr(p.id)}">${escapeHtml(p.name)}</option>`
+    ).join("") +
+    `<option value="__new_pos__">+ Bu şöbəyə yeni vəzifə yarat</option>` +
+    `<option value="__custom__">+ Xüsusi vəzifə adı daxil et</option>`;
   staffPosChanged();
 }
 
 /** Vəzifə seçildiyi zaman xüsusi giriş sahəsini göstər/gizlət */
 function staffPosChanged() {
   const v = val("f_st_posId") || "";
+
+  // "Yeni vəzifə yarat" seçilibsə
+  if (v === "__new_pos__") {
+    const deptId = val("f_st_deptId") || "";
+    const name = (prompt("Yeni vəzifənin adını daxil edin:") || "").trim();
+    const posSel = byId("f_st_posId");
+    if (!name) {
+      if (posSel) posSel.value = "";
+      return;
+    }
+    if (!db.positions) db.positions = [];
+    const existing = db.positions.find(p => p.name.toLowerCase() === name.toLowerCase() && p.departmentId === deptId);
+    if (existing) {
+      toast(`"${existing.name}" vəzifəsi artıq mövcuddur`, "warn", 2500);
+      if (posSel) posSel.value = existing.id;
+      return;
+    }
+    const id = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40) + "_" + Date.now();
+    db.positions.push({ id, name, departmentId: deptId });
+    saveCompanyDB();
+    if (posSel) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = name;
+      const anchor = posSel.querySelector('option[value="__new_pos__"]');
+      posSel.insertBefore(opt, anchor || null);
+      posSel.value = id;
+    }
+    toast(`"${name}" vəzifəsi yaradıldı`, "ok", 2000);
+    const customRow = byId("f_st_pos_custom_row");
+    if (customRow) customRow.style.display = "none";
+    return;
+  }
+
   const customRow = byId("f_st_pos_custom_row");
   if (customRow) customRow.style.display = v === "__custom__" ? "block" : "none";
 }
 
-/** Sistem giriş rolunu seçəndə "default icazə etiketini" göstər */
+/** Sistem giriş rolunu seçəndə preview göstər */
 function staffSysRoleChanged() {
-  const roleId = val("f_st_sysRoleId") || "";
+  const roleId  = val("f_st_sysRoleId") || "";
   const preview = byId("f_st_rolePreview");
   if (!preview) return;
+
+  // "Yeni rol yarat" seçilibsə RBAC manager-i aç
+  if (roleId === "__open_rbac__") {
+    const sel = byId("f_st_sysRoleId");
+    if (sel) sel.value = "";
+    preview.style.display = "none";
+    if (confirm("Rolları idarə etmək üçün Ayarlar → Şöbə/Vəzifə/Rol bölməsinə keçmək istəyirsiniz? (forma bağlanacaq)")) {
+      closeMdl();
+      openRbacManager();
+    }
+    return;
+  }
+
   if (!roleId) { preview.style.display = "none"; return; }
   const role = (db.roles || []).find(r => r.id === roleId);
   if (!role) { preview.style.display = "none"; return; }
   const cnt = Object.values(role.permissions || {}).filter(Boolean).length;
   preview.style.display = "block";
-  preview.textContent = `"${role.name}" rolu seçildi — ${cnt} icazə avtomatik tətbiq olunacaq.`;
+  preview.innerHTML = `<i class="fas fa-circle-check" style="color:var(--green,#22c55e);"></i> <strong>${escapeHtml(role.name)}</strong> — ${cnt} icazə avtomatik tətbiq olunacaq.`;
 }
 
 function openStaff(idx = null) {
@@ -7860,8 +7956,15 @@ function openStaff(idx = null) {
   const roleOptions = roles.map(r =>
     `<option value="${escapeAttr(r.id)}" ${r.id === linkedUserRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`
   ).join("");
+  const noRolesHint = roles.length === 0
+    ? `<option value="" disabled>— Hələ rol yaradılmayıb —</option>`
+    : "";
 
   const hasSys = s.hasSystemAccess || false;
+  // Əgər rol yoxdursa, forma açılarkən bir dəfə seed et (admin üçün)
+  if (roles.length === 0 && (isAdmin() || isDeveloper())) {
+    seedDefaultRolesIfEmpty().catch(() => {});
+  }
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
     <form onsubmit="saveStaff(event, ${idx})" id="staffForm" novalidate>
@@ -7914,7 +8017,8 @@ function openStaff(idx = null) {
               <select id="f_st_posId" onchange="staffPosChanged()">
                 <option value="">— Vəzifə seçin —</option>
                 ${posOptions}
-                <option value="__custom__">+ Xüsusi vəzifə daxil et</option>
+                <option value="__new_pos__">+ Bu şöbəyə yeni vəzifə yarat</option>
+                <option value="__custom__">+ Xüsusi vəzifə adı daxil et</option>
               </select>
             </div>
             <div class="f-group grid-span-2" id="f_st_pos_custom_row" style="display:${customPosDefault || curPosId === '__custom__' ? 'block' : 'none'}">
@@ -8009,8 +8113,11 @@ function openStaff(idx = null) {
                 <label>İcazə rolu</label>
                 <select id="f_st_sysRoleId" onchange="staffSysRoleChanged()">
                   <option value="">— Rol seçin —</option>
+                  ${noRolesHint}
                   ${roleOptions}
+                  <option value="__open_rbac__" style="color:var(--accent,#3b82f6);">⚙ Rolları idarə et (Ayarlar)</option>
                 </select>
+                ${roles.length === 0 ? `<p style="font-size:.78rem;color:var(--orange,#f59e0b);margin-top:4px;"><i class="fas fa-triangle-exclamation"></i> Hələ rol yoxdur. <button type="button" class="btn-link" onclick="seedDefaultRolesIfEmpty().then(()=>{saveDB();closeMdl();openStaff(${idx});})" style="color:var(--accent);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:.78rem;">Default rolları avtomatik yüklə</button></p>` : ""}
               </div>
               <div class="f-group grid-span-2" id="f_st_rolePreview" style="display:none;padding:8px 12px;background:var(--bg-muted,#f4f6f8);border-radius:8px;font-size:.82rem;color:var(--accent,#3b82f6);"></div>
               <div class="f-group">
@@ -13051,9 +13158,12 @@ function openPermModal(userId) {
       </div>`;
   }).join("");
 
-  const roleOptions = (db.roles || []).map(r =>
+  const pmRoles = db.roles || [];
+  const roleOptions = pmRoles.map(r =>
     `<option value="${escapeAttr(r.id)}" ${r.id === currentRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`
   ).join("");
+  const pmNoRolesHint = pmRoles.length === 0
+    ? `<option value="" disabled>— Hələ rol yaradılmayıb —</option>` : "";
 
   openModal(`
     <h2><i class="fas fa-shield-halved" style="margin-right:6px;"></i>${escapeHtml(displayName)} — İcazələr</h2>
@@ -13065,13 +13175,15 @@ function openPermModal(userId) {
 
       <div class="form-card" style="margin-bottom:14px;">
         <div class="form-card-title">Rol əsaslı icazələr</div>
-        <div class="grid-2">
+          <div class="grid-2">
           <div class="f-group">
             <label>Rol seç (default icazələri yükləyir)</label>
             <select id="perm_role_select" onchange="permModalRoleChanged()">
               <option value="">— Rol seçin —</option>
+              ${pmNoRolesHint}
               ${roleOptions}
             </select>
+            ${pmRoles.length === 0 ? `<p style="font-size:.78rem;color:var(--orange,#f59e0b);margin-top:4px;"><i class="fas fa-triangle-exclamation"></i> Rol yoxdur. <button type="button" class="btn-link" onclick="seedDefaultRolesIfEmpty().then(()=>{saveDB();closeMdl();openPermModal('${escapeAttr(String(linkedUser.uid))}');})" style="color:var(--accent);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:.78rem;">Default rolları yüklə</button> &nbsp; <button type="button" class="btn-link" onclick="closeMdl();openRbacManager();" style="color:var(--accent);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:.78rem;">Manuel yarat</button></p>` : ""}
           </div>
           <div class="f-group" style="display:flex;align-items:flex-end;gap:8px;">
             <button type="button" class="btn-neutral btn-sm" onclick="permModalRoleChanged()">
