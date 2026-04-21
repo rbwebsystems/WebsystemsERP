@@ -618,18 +618,29 @@ export const issueAuthToken = onCall(
 
     const mintTenantToken = async (exactCompanyId, erpRoleClaim, opts = {}) => {
       const supportImpersonation = opts.supportImpersonation === true;
-      const uidPart = sanitizeUidPart(exactCompanyId);
-      if (!uidPart) {
+      const cidPart = sanitizeUidPart(exactCompanyId);
+      if (!cidPart) {
         console.error("[issueAuthToken] UID üçün companyId sanitize boş", { exactCompanyId });
         throw new HttpsError("failed-precondition", "companyId tapılmadı");
       }
-      let firebaseUid = `tenant_${uidPart}`;
+      // KRİTİK: Hər istifadəçi ÖZ Firebase UID-ini almalıdır. Əvvəllər eyni şirkətin
+      // bütün istifadəçiləri `tenant_{cid}` UID-ini paylaşırdılar; bu halda setCustomUserClaims
+      // sonrakı girişdə əvvəlkilərin erpRole claim-ini (admin ↔ user) üstdən yazırdı və
+      // admin başqa cihazda giriş edən adi userə görə admin hüquqlarını itirirdi.
+      // İmpersonation (dev → admin) halında developer öz UID-i ilə sabit qalsın:
+      // `imp_{devUid}_{cidPart}` formatını istifadə edirik ki, ayrıca Auth user
+      // yaransın və developer öz developer session-ı ilə qarışmasın.
+      const userPart = supportImpersonation
+        ? `imp_${sanitizeUidPart(opts.devUid || "dev")}`
+        : `u${sanitizeUidPart(user.uid || "x")}`;
+      let firebaseUid = `tenant_${cidPart}_${userPart}`;
       if (firebaseUid.length > 128) firebaseUid = firebaseUid.slice(0, 128);
       const claims = {
         companyId: String(exactCompanyId),
         role: "tenant",
         erp_session: true,
         erpRole: erpRoleClaim === "admin" ? "admin" : "user",
+        erpUserUid: String(user.uid ?? ""),
         ...(supportImpersonation ? { support_impersonation: true } : {}),
       };
       console.log("[issueAuthToken] createCustomToken əvvəl (tenant)", {
@@ -664,7 +675,10 @@ export const issueAuthToken = onCall(
           throw new HttpsError("failed-precondition", "companyId tapılmadı");
         }
         console.log("[issueAuthToken] developer impersonation → tenant token", { exactCompanyId });
-        const impResult = await mintTenantToken(exactCompanyId, "admin", { supportImpersonation: true });
+        const impResult = await mintTenantToken(exactCompanyId, "admin", {
+          supportImpersonation: true,
+          devUid: user.uid || usernameNorm || "dev",
+        });
         syncCompanyUsersToIsolatedPath(exactCompanyId, metaData.users || []).catch(() => {});
         return impResult;
       }

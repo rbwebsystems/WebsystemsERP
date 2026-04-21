@@ -815,40 +815,44 @@ async function erpInspectCurrentClaims() {
  * Listener-də permission-denied olanda bir dəfə token-i məcburi refresh et və
  * yenidən subscribe-a cəhd et. Təkrar uğursuz olarsa, lokal sessiya
  * etibarsızdır — istifadəçini aydın şəkildə yenidən giriş etməyə yönəlt.
+ *
+ * Qeyd: 3 listener paralel eyni anda error verə bilər (meta/company/active).
+ * `__erpPermRetryInFlight` bayraq ilə yalnız BİR dəfə retry edirik; digərləri
+ * NO-OP kimi keçir. `__erpPermRetryAttempts` 2 dəfədən çox uğursuz retry olarsa,
+ * sessiyanı təmizləyirik.
  */
-let __erpPermRetryDepth = 0;
+let __erpPermRetryInFlight = false;
+let __erpPermRetryAttempts = 0;
 async function handleListenerPermDenied(source) {
-  if (__erpPermRetryDepth > 0) {
-    console.warn(`[erp-auth] ${source}: permission-denied təkrar – sessiya təmizlənir`);
-    try { unsubscribeRealtime(); } catch (_) {}
-    try { await firebase.auth().signOut(); } catch (_) {}
-    meta.session = null;
-    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
-    toast("Sessiya etibarsız oldu. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
-    try { location.reload(); } catch (_) {}
+  if (__erpPermRetryInFlight) {
+    console.debug(`[erp-auth] ${source}: permission-denied (retry already in flight) — atlanır`);
     return;
   }
-  __erpPermRetryDepth++;
+  __erpPermRetryInFlight = true;
   try {
     const u = erpFirebaseCurrentUser();
     if (!u) return;
-    console.warn(`[erp-auth] ${source}: permission-denied — token refresh + re-subscribe`);
+    __erpPermRetryAttempts++;
+    console.warn(`[erp-auth] ${source}: permission-denied — token refresh + re-subscribe (cəhd #${__erpPermRetryAttempts})`);
     try { await u.getIdToken(true); } catch (_) {}
     const info = await erpInspectCurrentClaims();
     console.warn(`[erp-auth] ${source}: yenilənmiş claim-lər`, info);
-    if (!info.ok) {
+    if (!info.ok || __erpPermRetryAttempts > 2) {
       try { unsubscribeRealtime(); } catch (_) {}
       try { await firebase.auth().signOut(); } catch (_) {}
       meta.session = null;
       try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
-      toast("Sessiya yeniləndi. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
+      toast("Sessiya etibarsız oldu. Zəhmət olmasa yenidən daxil olun.", "err", 5000);
       try { location.reload(); } catch (_) {}
       return;
     }
     unsubscribeRealtime();
     subscribeRealtime();
   } finally {
-    setTimeout(() => { __erpPermRetryDepth = 0; }, 5000);
+    // Digər listener-lərin paralel error-larını 3 saniyə susdur
+    setTimeout(() => { __erpPermRetryInFlight = false; }, 3000);
+    // Cəhd sayacını 30 saniyə sonra sıfırla (uğurlu retry sonrası sabit işləyirsə)
+    setTimeout(() => { __erpPermRetryAttempts = 0; }, 30000);
   }
 }
 
@@ -1032,6 +1036,41 @@ function subscribeUserActiveWatcher() {
         meFound: !!fresh,
         myActive: fresh ? fresh.active : "(tapılmadı)",
       });
+
+      // KRİTİK: /erp_users/{cid} həmin şirkət üçün həqiqət mənbəyidir
+      // (şifrə, mustChangePassword, active). meta.users-u burdan yenilə ki,
+      // növbəti saveMeta köhnə data ilə /erp_users-i üstündən yazmasın.
+      try {
+        const devUsers = (meta._allUsers || meta.users || []).filter(
+          (x) => x && x.role === "developer"
+        );
+        const otherCompanyUsers = (meta._allUsers || []).filter(
+          (x) => x && x.role !== "developer" &&
+            x.companyId && normAuthKey(x.companyId) !== normAuthKey(cid)
+        );
+        const nextAllUsers = [...devUsers, ...otherCompanyUsers, ...list];
+        if (meta._allUsers) {
+          meta._allUsers = nextAllUsers;
+        } else {
+          Object.defineProperty(meta, "_allUsers", {
+            value: nextAllUsers,
+            writable: true,
+            enumerable: false,
+            configurable: true,
+          });
+        }
+        // Cari sessiyanın scoped görünüşünü yenilə
+        meta.users = nextAllUsers.filter(
+          (u) => !u.companyId || normAuthKey(u.companyId) === normAuthKey(cid) || u.role === "developer"
+        );
+        try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+        // UI-ı yenilə (admin paneli, sidebar, header və s.)
+        try { if (typeof renderAll === "function") renderAll(); } catch (_) {}
+        try { if (typeof renderSidebarUser === "function") renderSidebarUser(); } catch (_) {}
+      } catch (e) {
+        console.debug("[active-watch] meta.users sinxron xətası:", e?.message);
+      }
+
       if (fresh && fresh.active === false) {
         console.log("[active-watch] DEAKTİV aşkarlandı → modal açılır");
         showDeactivatedModal();
@@ -3313,17 +3352,41 @@ function saveMeta(loadingMessage) {
       const _companyUsers = (data.users || []).filter(
         u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
       );
-      _usersRef
-        .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
-        .then(() => {
-          console.log("[erp-auth] saveMeta: /erp_users shadow write OK", { cid: _saveCid });
+      // KRİTİK: transaction ilə MERGE et. Başqa cihazda eyni anda yazılmış
+      // pass/mustChangePassword/active dəyişiklikləri (məs. bir user öz şifrəsini
+      // dəyişib) bizim lokal köhnə meta.users-la üstdən yazılmasın.
+      // Mövcud /erp_users-də olan hər user üçün ən yeni təhlükəsizlik sahələri
+      // (pass, mustChangePassword, active) qoruyulur.
+      firebase
+        .firestore()
+        .runTransaction(async (tx) => {
+          const snap = await tx.get(_usersRef);
+          const existing = snap.exists ? (snap.data()?.users || []) : [];
+          const existingMap = new Map(existing.map((u) => [String(u.uid), u]));
+          // Merge yalnız hər iki tərəfdə olan userlər üçün edilir. Lokal-da
+          // olmayan remote user artıq silinmiş sayılır (admin/developer silib).
+          const merged = _companyUsers.map((local) => {
+            const remote = existingMap.get(String(local.uid));
+            if (!remote) return local;
+            return {
+              ...local,
+              pass: remote.pass != null ? remote.pass : local.pass,
+              mustChangePassword: remote.mustChangePassword != null ? remote.mustChangePassword : local.mustChangePassword,
+            };
+          });
+          tx.set(_usersRef, {
+            users: JSON.parse(JSON.stringify(merged)),
+            updatedAt: new Date().toISOString(),
+          });
         })
-        .catch(e => {
-          // Adi user (erpRole=user) üçün icazə yoxdur — normaldır, səssiz keç
+        .then(() => {
+          console.log("[erp-auth] saveMeta: /erp_users transaction OK", { cid: _saveCid });
+        })
+        .catch((e) => {
           if (e?.code === "permission-denied") {
             console.debug("[erp-auth] /erp_users yazma icazəsi yoxdur (adi user) — normal");
           } else {
-            console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message);
+            console.debug("[erp-auth] /erp_users transaction failed", e?.code || e?.message);
           }
         });
     }
@@ -3331,18 +3394,53 @@ function saveMeta(loadingMessage) {
     return;
   }
 
-  // Developer / qlobal sesssiya: config/meta-ya yaz
-  if (_saveCid && _saveCid !== ERP_DEV_SESSION_CID) {
-    // Reachable only if above isTenant block was somehow skipped — safety guard
-    const _usersRef = getUsersRef(_saveCid);
-    if (_usersRef) {
-      const _fullUsers = data.users || [];
-      const _companyUsers = _fullUsers.filter(
-        u => u && u.role !== "developer" && (!u.companyId || normAuthKey(u.companyId) === normAuthKey(_saveCid))
+  // Developer / qlobal session: config/meta-ya yaz + hər şirkətin /erp_users-ını
+  // real-time saxla (deaktivasiya, şifrə dəyişikliyi və s. anında təsir edə bilsin).
+  // Yalnız developer buraya çatır — tenant yuxarıdakı `isTenant` branch-ında qaytarır.
+  if (_saveCid === ERP_DEV_SESSION_CID) {
+    try {
+      const _allUsers = data.users || [];
+      const companiesInUsers = Array.from(
+        new Set(
+          _allUsers
+            .filter((u) => u && u.role !== "developer" && u.companyId)
+            .map((u) => String(u.companyId))
+        )
       );
-      _usersRef
-        .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
-        .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
+      for (const cid of companiesInUsers) {
+        const _usersRef = getUsersRef(cid);
+        if (!_usersRef) continue;
+        const _companyUsers = _allUsers.filter(
+          (u) =>
+            u && u.role !== "developer" && u.companyId &&
+            normAuthKey(u.companyId) === normAuthKey(cid)
+        );
+        // Developer-ın /erp_users üzərində write icazəsi var (isDev() rules).
+        // Transaction ilə: lokal data + remote-un pass/mustChangePassword-unu birləşdir.
+        firebase
+          .firestore()
+          .runTransaction(async (tx) => {
+            const snap = await tx.get(_usersRef);
+            const existing = snap.exists ? (snap.data()?.users || []) : [];
+            const existingMap = new Map(existing.map((u) => [String(u.uid), u]));
+            const merged = _companyUsers.map((local) => {
+              const remote = existingMap.get(String(local.uid));
+              if (!remote) return local;
+              return {
+                ...local,
+                pass: remote.pass != null ? remote.pass : local.pass,
+                mustChangePassword: remote.mustChangePassword != null ? remote.mustChangePassword : local.mustChangePassword,
+              };
+            });
+            tx.set(_usersRef, {
+              users: JSON.parse(JSON.stringify(merged)),
+              updatedAt: new Date().toISOString(),
+            });
+          })
+          .catch((e) => console.debug("[erp-auth] developer /erp_users sync failed", cid, e?.code || e?.message));
+      }
+    } catch (e) {
+      console.debug("[erp-auth] developer /erp_users toplu sync xətası", e?.message);
     }
   }
 
@@ -4512,6 +4610,10 @@ async function logout() {
       clearInterval(headerClockInterval);
       headerClockInterval = null;
     }
+    // KRİTİK: signOut-dan ƏVVƏL listener-ləri söndür. Əks halda signOut anında
+    // listener-lər permission-denied xətası atır və gərəksiz auto-recovery
+    // (location.reload) işə düşə bilər.
+    try { unsubscribeRealtime(); } catch (_) {}
     if (useFirestore() && typeof firebase !== "undefined" && firebase.auth) {
       try {
         await firebase.auth().signOut();
