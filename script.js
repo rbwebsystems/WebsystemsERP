@@ -3871,6 +3871,14 @@ function userCanSection(sectionId) {
   if (u.role === "developer" || u.role === "admin") return true;
   // overdue and creditor are sub-sections of debts — delegate to debts permission
   const effectiveId = (sectionId === "overdue" || sectionId === "creditor") ? "debts" : sectionId;
+  // Yeni granular sistem: perms.keys varsa can("{module}.view") yoxla
+  if (u.perms?.keys && Object.keys(u.perms.keys).length > 0) {
+    // sectionId → module adı
+    const modEntry = Object.entries(_ERP_MOD_TO_SEC).find(([, sec]) => sec === effectiveId);
+    if (modEntry) return can(modEntry[0] + ".view");
+    return false;
+  }
+  // Köhnə sistem: perms.sections massivi
   const secs = u.perms?.sections || [];
   return secs.includes("*") || secs.includes(effectiveId);
 }
@@ -13084,10 +13092,86 @@ const DEFAULT_ROLES = [
 
 /** Rol seçildiyi zaman icazə checkboxlarını güncəllə */
 function updatePermCount() {
-  const all  = document.querySelectorAll(".pm-key-chk");
-  const on   = document.querySelectorAll(".pm-key-chk:checked");
-  const el   = byId("pm_perm_count");
+  const all = document.querySelectorAll(".pm-key-chk");
+  const on  = document.querySelectorAll(".pm-key-chk:checked");
+  const el  = byId("pm_perm_count");
   if (el) el.textContent = `${on.length} / ${all.length} icazə`;
+}
+
+/** Modul master-toggle dəyişdikdə sidebar görünürlüyünü idarə edir */
+function permToggleModuleVisibility(modId, isOn) {
+  // 1. Gizli .view checkbox-unu yenilə
+  const viewCb = document.querySelector(`.pm-key-chk[data-key="${modId}.view"]`);
+  if (viewCb) viewCb.checked = isOn;
+
+  // 2. Deaktiv edildikdə bütün alt-icazələri sıfırla
+  if (!isOn) {
+    document.querySelectorAll(`.pm-key-chk[data-module="${modId}"]`).forEach(cb => {
+      cb.checked = false;
+    });
+  }
+
+  // 3. Body göstər/gizlət
+  const body = byId(`pm_body_${modId}`);
+  if (body) body.style.display = isOn ? "block" : "none";
+
+  // 4. Header arxa fonu
+  const head = byId(`pm_head_${modId}`);
+  if (head) head.style.background = isOn ? "#f0fdf4" : "var(--bg-muted,#f4f6f8)";
+
+  // 5. Rəngli nöqtə
+  const dot = byId(`pm_dot_${modId}`);
+  if (dot) dot.style.background = isOn ? "#22c55e" : "#94a3b8";
+
+  // 6. Badge yazısı
+  const badge = byId(`pm_badge_${modId}`);
+  if (badge) {
+    badge.textContent = isOn ? "Sidebarda görünür" : "Gizli";
+    badge.style.background = isOn ? "#dcfce7" : "#f1f5f9";
+    badge.style.color = isOn ? "#15803d" : "#94a3b8";
+  }
+
+  // 7. Toggle track + thumb animasiya
+  const track = byId(`pm_track_${modId}`);
+  if (track) track.style.background = isOn ? "#22c55e" : "#cbd5e1";
+  const thumb = byId(`pm_thumb_${modId}`);
+  if (thumb) thumb.style.left = isOn ? "21px" : "3px";
+
+  updatePermCount();
+}
+
+/** "Hamısı / Heç biri / Roldan yüklə" sonrası bütün modul toggle-larını sinxronlaşdırır */
+function _refreshPermModuleStates() {
+  const mods = [...new Set(PERMISSION_KEYS.map(k => k.module))];
+  mods.forEach(modId => {
+    const viewCb = document.querySelector(`.pm-key-chk[data-key="${modId}.view"]`);
+    const isOn = viewCb ? viewCb.checked : false;
+
+    const master = byId(`pm_master_${modId}`);
+    if (master) master.checked = isOn;
+
+    const body = byId(`pm_body_${modId}`);
+    if (body) body.style.display = isOn ? "block" : "none";
+
+    const head = byId(`pm_head_${modId}`);
+    if (head) head.style.background = isOn ? "#f0fdf4" : "var(--bg-muted,#f4f6f8)";
+
+    const dot = byId(`pm_dot_${modId}`);
+    if (dot) dot.style.background = isOn ? "#22c55e" : "#94a3b8";
+
+    const badge = byId(`pm_badge_${modId}`);
+    if (badge) {
+      badge.textContent = isOn ? "Sidebarda görünür" : "Gizli";
+      badge.style.background = isOn ? "#dcfce7" : "#f1f5f9";
+      badge.style.color = isOn ? "#15803d" : "#94a3b8";
+    }
+
+    const track = byId(`pm_track_${modId}`);
+    if (track) track.style.background = isOn ? "#22c55e" : "#cbd5e1";
+    const thumb = byId(`pm_thumb_${modId}`);
+    if (thumb) thumb.style.left = isOn ? "21px" : "3px";
+  });
+  updatePermCount();
 }
 
 function permModalRoleChanged() {
@@ -13097,7 +13181,7 @@ function permModalRoleChanged() {
     toast("Əvvəlcə rol seçin", "error");
     return;
   }
-  // Bütün checkbox-ları rolun default-larına görə set et
+  // Bütün checkbox-ları (gizli .view daxil) rolun default-larına görə set et
   document.querySelectorAll(".pm-key-chk").forEach(cb => {
     const key = cb.getAttribute("data-key");
     if (!key) return;
@@ -13105,7 +13189,7 @@ function permModalRoleChanged() {
     cb.checked = v;
     cb.indeterminate = false;
   });
-  updatePermCount();
+  _refreshPermModuleStates();
   toast(`"${role.name}" rolu tətbiq edildi`, "ok");
 }
 
@@ -13150,24 +13234,50 @@ function openPermModal(userId) {
 
   const accordionRows = modules.map(modId => {
     const mod = moduleMap[modId];
-    const keyRows = mod.keys.map(pk => {
+    const viewKey     = modId + ".view";
+    const isModActive = effectiveKey(viewKey);
+
+    // .view key — gizli checkbox, save logic oxuyur
+    const viewCbHtml = mod.keys.some(pk => pk.key === viewKey)
+      ? `<input type="checkbox" class="pm-key-chk" data-key="${escapeAttr(viewKey)}" data-module="${escapeAttr(modId)}" ${isModActive ? "checked" : ""} style="display:none;" onchange="updatePermCount()">`
+      : "";
+
+    // Sub-icazələr (.view çıxarılıb — toggle ilə idarə olunur)
+    const subKeys  = mod.keys.filter(pk => pk.key !== viewKey);
+    const keyRows  = subKeys.map(pk => {
       const checked = effectiveKey(pk.key);
       return `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:.85rem;">
         <input type="checkbox" class="pm-key-chk" data-key="${escapeAttr(pk.key)}" data-module="${escapeAttr(modId)}" ${checked ? "checked" : ""} onchange="updatePermCount()">
         <span>${escapeHtml(pk.label)}</span>
       </label>`;
     }).join("");
+
+    const headBg    = isModActive ? "#f0fdf4" : "var(--bg-muted,#f4f6f8)";
+    const dotColor  = isModActive ? "#22c55e" : "#94a3b8";
+    const trackBg   = isModActive ? "#22c55e" : "#cbd5e1";
+    const thumbLeft = isModActive ? "21px" : "3px";
+
     return `
-      <div class="perm-accordion-item" style="border:1px solid var(--border-color);border-radius:8px;margin-bottom:6px;overflow:hidden;">
-        <div class="perm-accordion-head" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--bg-muted,#f4f6f8);" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('i').style.transform=b.style.display==='block'?'rotate(180deg)':'';">
+      <div class="perm-accordion-item" data-mod="${escapeAttr(modId)}" style="border:1px solid var(--border-color);border-radius:8px;margin-bottom:6px;overflow:hidden;">
+        ${viewCbHtml}
+        <div class="perm-accordion-head" id="pm_head_${escapeAttr(modId)}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:${headBg};transition:background .2s;" onclick="var b=byId('pm_body_${escapeAttr(modId)}');if(b)b.style.display=b.style.display==='none'?'block':'none'">
           <div style="display:flex;align-items:center;gap:8px;">
-            <input type="checkbox" class="pm-mod-toggle" onclick="event.stopPropagation();permModalToggleModule('${escapeAttr(modId)}');updatePermCount();" title="Hamısını seç/ləğv et" style="cursor:pointer;">
+            <span id="pm_dot_${escapeAttr(modId)}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${dotColor};flex-shrink:0;transition:background .2s;"></span>
             <strong style="font-size:.88rem;">${escapeHtml(mod.label)}</strong>
+            <span id="pm_badge_${escapeAttr(modId)}" style="font-size:.72rem;padding:1px 8px;border-radius:12px;font-weight:500;background:${isModActive ? "#dcfce7" : "#f1f5f9"};color:${isModActive ? "#15803d" : "#94a3b8"};">${isModActive ? "Sidebarda görünür" : "Gizli"}</span>
           </div>
-          <i class="fas fa-chevron-down" style="font-size:.75rem;color:var(--text-muted);transform:rotate(180deg);transition:transform .2s;"></i>
+          <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
+            <div style="position:relative;width:40px;height:22px;cursor:pointer;" title="${isModActive ? "Bölməni gizlət" : "Bölməni aktivləşdir"}">
+              <input type="checkbox" id="pm_master_${escapeAttr(modId)}" ${isModActive ? "checked" : ""} onchange="permToggleModuleVisibility('${escapeAttr(modId)}',this.checked)" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;">
+              <span id="pm_track_${escapeAttr(modId)}" style="position:absolute;inset:0;border-radius:11px;background:${trackBg};transition:background .2s;pointer-events:none;"></span>
+              <span id="pm_thumb_${escapeAttr(modId)}" style="position:absolute;top:3px;left:${thumbLeft};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s;pointer-events:none;"></span>
+            </div>
+          </div>
         </div>
-        <div class="perm-accordion-body" style="padding:10px 14px;display:block;">
-          <div style="display:flex;flex-wrap:wrap;gap:2px 24px;">${keyRows}</div>
+        <div class="perm-accordion-body" id="pm_body_${escapeAttr(modId)}" style="padding:10px 14px;display:${isModActive ? "block" : "none"};">
+          ${subKeys.length > 0
+            ? `<div style="display:flex;flex-wrap:wrap;gap:2px 24px;">${keyRows}</div>`
+            : `<p style="font-size:.82rem;color:var(--text-muted);margin:0;font-style:italic;">Əlavə alt-icazə yoxdur.</p>`}
         </div>
       </div>`;
   }).join("");
@@ -13206,10 +13316,10 @@ function openPermModal(userId) {
             <button type="button" class="btn-neutral btn-sm" onclick="permModalRoleChanged()">
               <i class="fas fa-rotate"></i> Roldan yüklə
             </button>
-            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=true);updatePermCount();">
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=true);_refreshPermModuleStates();">
               <i class="fas fa-check-double"></i> Hamısı
             </button>
-            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=false);updatePermCount();">
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=false);_refreshPermModuleStates();">
               <i class="fas fa-xmark"></i> Heç biri
             </button>
           </div>
