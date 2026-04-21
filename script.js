@@ -7925,8 +7925,14 @@ function staffSysRoleChanged() {
   preview.innerHTML = `<i class="fas fa-circle-check" style="color:var(--green,#22c55e);"></i> <strong>${escapeHtml(role.name)}</strong> — ${cnt} icazə avtomatik tətbiq olunacaq.`;
 }
 
-function openStaff(idx = null) {
+async function openStaff(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
+
+  // Rollar boşdursa forma açılmadan əvvəl seed et
+  if ((db.roles || []).length === 0 && (isAdmin() || isDeveloper())) {
+    await seedDefaultRolesIfEmpty().catch(() => {});
+  }
+
   const s = idx !== null ? db.staff[idx] : {};
   const linkedUser = idx !== null
     ? (meta.users || []).find(u => String(u.staffUid) === String(db.staff[idx].uid))
@@ -7961,10 +7967,6 @@ function openStaff(idx = null) {
     : "";
 
   const hasSys = s.hasSystemAccess || false;
-  // Əgər rol yoxdursa, forma açılarkən bir dəfə seed et (admin üçün)
-  if (roles.length === 0 && (isAdmin() || isDeveloper())) {
-    seedDefaultRolesIfEmpty().catch(() => {});
-  }
   openModal(`
     <h2>${idx !== null ? "Əməkdaş Redaktə" : "Yeni Əməkdaş"}</h2>
     <form onsubmit="saveStaff(event, ${idx})" id="staffForm" novalidate>
@@ -13081,10 +13083,20 @@ const DEFAULT_ROLES = [
 ];
 
 /** Rol seçildiyi zaman icazə checkboxlarını güncəllə */
+function updatePermCount() {
+  const all  = document.querySelectorAll(".pm-key-chk");
+  const on   = document.querySelectorAll(".pm-key-chk:checked");
+  const el   = byId("pm_perm_count");
+  if (el) el.textContent = `${on.length} / ${all.length} icazə`;
+}
+
 function permModalRoleChanged() {
   const roleId = val("perm_role_select") || "";
   const role   = (db.roles || []).find(r => r.id === roleId);
-  if (!role) return;
+  if (!role) {
+    toast("Əvvəlcə rol seçin", "error");
+    return;
+  }
   // Bütün checkbox-ları rolun default-larına görə set et
   document.querySelectorAll(".pm-key-chk").forEach(cb => {
     const key = cb.getAttribute("data-key");
@@ -13093,6 +13105,8 @@ function permModalRoleChanged() {
     cb.checked = v;
     cb.indeterminate = false;
   });
+  updatePermCount();
+  toast(`"${role.name}" rolu tətbiq edildi`, "ok");
 }
 
 /** Modulun bütün icazələrini birdən açıb/bağla */
@@ -13139,20 +13153,20 @@ function openPermModal(userId) {
     const keyRows = mod.keys.map(pk => {
       const checked = effectiveKey(pk.key);
       return `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:.85rem;">
-        <input type="checkbox" class="pm-key-chk" data-key="${escapeAttr(pk.key)}" data-module="${escapeAttr(modId)}" ${checked ? "checked" : ""}>
+        <input type="checkbox" class="pm-key-chk" data-key="${escapeAttr(pk.key)}" data-module="${escapeAttr(modId)}" ${checked ? "checked" : ""} onchange="updatePermCount()">
         <span>${escapeHtml(pk.label)}</span>
       </label>`;
     }).join("");
     return `
       <div class="perm-accordion-item" style="border:1px solid var(--border-color);border-radius:8px;margin-bottom:6px;overflow:hidden;">
-        <div class="perm-accordion-head" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--bg-muted,#f4f6f8);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <div class="perm-accordion-head" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--bg-muted,#f4f6f8);" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('i').style.transform=b.style.display==='block'?'rotate(180deg)':'';">
           <div style="display:flex;align-items:center;gap:8px;">
-            <input type="checkbox" class="pm-mod-toggle" onclick="event.stopPropagation();permModalToggleModule('${escapeAttr(modId)}')" title="Hamısını seç/ləğv et" style="cursor:pointer;">
+            <input type="checkbox" class="pm-mod-toggle" onclick="event.stopPropagation();permModalToggleModule('${escapeAttr(modId)}');updatePermCount();" title="Hamısını seç/ləğv et" style="cursor:pointer;">
             <strong style="font-size:.88rem;">${escapeHtml(mod.label)}</strong>
           </div>
-          <i class="fas fa-chevron-down" style="font-size:.75rem;color:var(--text-muted);"></i>
+          <i class="fas fa-chevron-down" style="font-size:.75rem;color:var(--text-muted);transform:rotate(180deg);transition:transform .2s;"></i>
         </div>
-        <div class="perm-accordion-body" style="padding:10px 14px;display:none;">
+        <div class="perm-accordion-body" style="padding:10px 14px;display:block;">
           <div style="display:flex;flex-wrap:wrap;gap:2px 24px;">${keyRows}</div>
         </div>
       </div>`;
@@ -13174,7 +13188,10 @@ function openPermModal(userId) {
     <form onsubmit="savePermModal(event,'${escapeAttr(String(linkedUser.uid))}')">
 
       <div class="form-card" style="margin-bottom:14px;">
-        <div class="form-card-title">Rol əsaslı icazələr</div>
+        <div class="form-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Rol əsaslı icazələr</span>
+          <span id="pm_perm_count" style="font-size:.78rem;font-weight:600;color:var(--accent,#3b82f6);background:var(--accent-light,#eff6ff);padding:2px 10px;border-radius:20px;"></span>
+        </div>
           <div class="grid-2">
           <div class="f-group">
             <label>Rol seç (default icazələri yükləyir)</label>
@@ -13185,14 +13202,14 @@ function openPermModal(userId) {
             </select>
             ${pmRoles.length === 0 ? `<p style="font-size:.78rem;color:var(--orange,#f59e0b);margin-top:4px;"><i class="fas fa-triangle-exclamation"></i> Rol yoxdur. <button type="button" class="btn-link" onclick="seedDefaultRolesIfEmpty().then(()=>{saveDB();closeMdl();openPermModal('${escapeAttr(String(linkedUser.uid))}');})" style="color:var(--accent);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:.78rem;">Default rolları yüklə</button> &nbsp; <button type="button" class="btn-link" onclick="closeMdl();openRbacManager();" style="color:var(--accent);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:.78rem;">Manuel yarat</button></p>` : ""}
           </div>
-          <div class="f-group" style="display:flex;align-items:flex-end;gap:8px;">
+          <div class="f-group" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
             <button type="button" class="btn-neutral btn-sm" onclick="permModalRoleChanged()">
               <i class="fas fa-rotate"></i> Roldan yüklə
             </button>
-            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=true)">
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=true);updatePermCount();">
               <i class="fas fa-check-double"></i> Hamısı
             </button>
-            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=false)">
+            <button type="button" class="btn-neutral btn-sm" onclick="document.querySelectorAll('.pm-key-chk').forEach(c=>c.checked=false);updatePermCount();">
               <i class="fas fa-xmark"></i> Heç biri
             </button>
           </div>
@@ -13220,6 +13237,8 @@ function openPermModal(userId) {
       </div>
     </form>
   `);
+  // Sayacı başlanğıcda yenilə
+  requestAnimationFrame(() => updatePermCount());
 }
 
 async function savePermModal(e, userId) {
