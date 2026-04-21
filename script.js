@@ -68,6 +68,7 @@ function erpFirebaseCurrentUser() {
 }
 let firestoreUnsubMeta = null;
 let firestoreUnsubCompany = null;
+let firestoreUnsubUsers = null;
 let firestoreInitialized = false;
 let firestoreAuthReady = false;
 let firestoreAuthPromise = null;
@@ -831,6 +832,10 @@ function subscribeRealtime() {
   } else if (metaRef && !authUser) {
     console.debug("[erp-auth] subscribeRealtime: meta listener keçirildi (Firebase user yoxdur)");
   }
+
+  // Canlı deaktivasiya izləyicisi — admin deaktiv edəndə anında modal göstər
+  try { subscribeUserActiveWatcher(); } catch (_) {}
+
   const cid = meta?.session?.companyId;
   if (cid && normAuthKey(String(cid)) === normAuthKey(ERP_DEV_SESSION_CID)) {
     console.log("[erp-auth] subscribeRealtime: developer panel — company listener qoşulmur", { path: `companies/${cid}` });
@@ -880,6 +885,92 @@ function unsubscribeRealtime() {
     firestoreUnsubCompany();
     firestoreUnsubCompany = null;
   }
+  if (firestoreUnsubUsers) {
+    firestoreUnsubUsers();
+    firestoreUnsubUsers = null;
+  }
+}
+
+/** Cari istifadəçinin /erp_users/{cid}-dəki active statusunu canlı izləyir. */
+function subscribeUserActiveWatcher() {
+  if (!useFirestore()) return;
+  const authUser = erpFirebaseCurrentUser();
+  if (!authUser) return;
+  const cid = meta?.session?.companyId;
+  const myUid = meta?.session?.userUid;
+  if (!cid || !myUid || cid === ERP_DEV_SESSION_CID) return;
+  const me = (meta.users || []).find((u) => String(u.uid) === String(myUid));
+  if (me && me.role === "developer") return;
+
+  const ref = getUsersRef(cid);
+  if (!ref) return;
+
+  firestoreUnsubUsers = ref.onSnapshot(
+    (snap) => {
+      if (!snap.exists) return;
+      const list = snap.data()?.users || [];
+      const fresh = list.find((u) => String(u.uid) === String(myUid));
+      if (fresh && fresh.active === false) {
+        showDeactivatedModal();
+      }
+    },
+    (err) => console.debug("[erp-auth] users listener:", err?.code || err?.message)
+  );
+}
+
+/** Cari istifadəçi deaktiv edilibsə, çıxış düyməsi olan modal göstər. */
+function showDeactivatedModal() {
+  if (window.__userDeactivatedShown) return;
+  window.__userDeactivatedShown = true;
+  try { unsubscribeRealtime(); } catch (_) {}
+  // Başqa bütün modalları bağla
+  try { closeMdl(); } catch (_) {}
+
+  const overlay = document.createElement("div");
+  overlay.id = "userDeactivatedOverlay";
+  overlay.style.cssText = [
+    "position:fixed","inset:0","z-index:2147483647",
+    "background:rgba(0,0,0,.55)","backdrop-filter:blur(4px)",
+    "display:flex","align-items:center","justify-content:center",
+    "padding:20px","animation:fadeIn .2s ease"
+  ].join(";");
+  overlay.innerHTML = `
+    <div style="background:var(--card-bg,#fff);color:var(--text-color,#111);
+                max-width:440px;width:100%;border-radius:16px;
+                box-shadow:0 20px 60px rgba(0,0,0,.4);
+                padding:28px;text-align:center;
+                border:1px solid var(--border-color,#e5e7eb)">
+      <div style="width:64px;height:64px;margin:0 auto 16px;
+                  border-radius:50%;background:#fef2f2;
+                  display:flex;align-items:center;justify-content:center;
+                  color:#dc2626;font-size:28px">
+        <i class="fas fa-user-slash"></i>
+      </div>
+      <h2 style="margin:0 0 8px;font-size:1.25rem">Giriş icazəniz ləğv edildi</h2>
+      <p style="margin:0 0 20px;color:var(--text-muted,#64748b);
+                font-size:.95rem;line-height:1.5">
+        Administrator hesabınızı deaktiv etdi. Sistemdən çıxmalısınız.
+        Əgər bu səhvdirsə, administratorla əlaqə saxlayın.
+      </p>
+      <button id="userDeactivatedLogoutBtn" class="btn-main"
+              style="width:100%;padding:12px 20px;background:#dc2626;
+                     color:#fff;border:none;border-radius:10px;
+                     font-size:1rem;font-weight:600;cursor:pointer">
+        <i class="fas fa-right-from-bracket"></i> Sistemdən çıx
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("userDeactivatedLogoutBtn")?.addEventListener("click", () => {
+    try { overlay.remove(); } catch (_) {}
+    try { logout(); } catch (_) {}
+  });
+
+  // İstifadəçini sistem içində qeyri-aktiv et
+  try {
+    document.querySelectorAll("button,input,textarea,select,a").forEach((el) => {
+      if (!overlay.contains(el)) el.setAttribute("disabled", "true");
+    });
+  } catch (_) {}
 }
 
 /** Buluddan (Firestore) cari şirkət məlumatını oxuyub ekranı yenilə. silent=true olanda toast göstərilmir (avtomatik yeniləmə üçün). */
@@ -4263,6 +4354,7 @@ function logoutFromDisabled() {
 
 async function logout() {
   softLoadingBegin(true, ERP_BUSY_AZ.logout);
+  window.__userDeactivatedShown = false;
   try {
     try {
       logEvent("logout", "auth", {});
