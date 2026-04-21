@@ -3067,6 +3067,11 @@ function saveMeta(loadingMessage) {
   const _saveCid = meta?.session?.companyId;
   const isTenant = !!(_saveCid && _saveCid !== ERP_DEV_SESSION_CID);
   if (isTenant) {
+    // KRİTİK: localStorage həmişə yenilənməlidir (sessiya burada saxlanılır).
+    // /erp_users yazması uğursuz olsa belə (adi user-ə icazə yoxdur), lokal
+    // sessiya itməməlidir — əks halda refresh-də istifadəçi çıxış edir.
+    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+
     const _usersRef = getUsersRef(_saveCid);
     if (_usersRef) {
       const _companyUsers = (data.users || []).filter(
@@ -3075,12 +3080,16 @@ function saveMeta(loadingMessage) {
       _usersRef
         .set({ users: JSON.parse(JSON.stringify(_companyUsers)), updatedAt: new Date().toISOString() })
         .then(() => {
-          try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
           console.log("[erp-auth] saveMeta: /erp_users shadow write OK", { cid: _saveCid });
         })
-        .catch(e => console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message));
-    } else {
-      try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+        .catch(e => {
+          // Adi user (erpRole=user) üçün icazə yoxdur — normaldır, səssiz keç
+          if (e?.code === "permission-denied") {
+            console.debug("[erp-auth] /erp_users yazma icazəsi yoxdur (adi user) — normal");
+          } else {
+            console.debug("[erp-auth] /erp_users shadow write failed", e?.code || e?.message);
+          }
+        });
     }
     updateLastSavedEl();
     return;
