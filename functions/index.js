@@ -295,12 +295,16 @@ async function verifyErpPassword(username, password) {
   let user = users.find((u) => u.username === username);
   if (!user) user = users.find((u) => String(u.username || "").trim().toLowerCase() === unameNorm);
 
-  if (!user || !user.active) {
-    throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı və ya deaktivdir.");
+  if (!user) {
+    throw new HttpsError("unauthenticated", "İstifadəçi tapılmadı.");
   }
 
-  // Tenant istifadəçilər şifrəni /erp_users/{companyId}-ə yazır (config/meta-ya icazəsi yoxdur).
-  // Admin SDK hər iki yola çıxış edir — daha yeni şifrəni oradan oxu.
+  // ⚠ active yoxlaması /erp_users merge-dən SONRA aparılır (aşağıda).
+  // config/meta.active köhnə ola bilər (tenant admin saveMeta yalnız /erp_users-a yazır)
+  // — ona görə deaktiv statusu həmişə /erp_users-dən də yoxlamaq lazımdır.
+
+  // Tenant istifadəçilər şifrəni və active flag-ini /erp_users/{companyId}-ə yazır.
+  // Admin SDK hər iki yola çıxış edir — daha yeni dəyəri oradan götür.
   const cid = String(user.companyId || "").trim();
   if (cid) {
     try {
@@ -308,16 +312,22 @@ async function verifyErpPassword(username, password) {
       if (isolatedSnap.exists) {
         const isolatedUsers = isolatedSnap.data()?.users || [];
         const fresh = isolatedUsers.find((u) => String(u.uid) === String(user.uid));
-        if (fresh && fresh.pass) {
-          // /erp_users-dəki giriş daha yenidir — şifrəni oradan götür
+        if (fresh) {
+          // /erp_users-dəki giriş üstündür: pass, active, mustChangePassword və s.
           user = { ...user, ...fresh };
-          console.log("[verifyErpPassword] /erp_users şifrəsi istifadə edildi", { uid: user.uid, cid });
+          console.log("[verifyErpPassword] /erp_users qeydi istifadə edildi", {
+            uid: user.uid, cid, active: user.active,
+          });
         }
       }
     } catch (e) {
-      // Oxuma uğursuz olarsa config/meta şifrəsi ilə davam et
       console.warn("[verifyErpPassword] /erp_users oxuma uğursuz, fallback config/meta", e?.code);
     }
+  }
+
+  // Indi final active yoxlaması (merge sonrası)
+  if (!user.active) {
+    throw new HttpsError("unauthenticated", "İstifadəçi deaktiv edilib. Administratorla əlaqə saxlayın.");
   }
 
   const hashPass = (p) => createHash("sha256").update(String(p)).digest("hex");
