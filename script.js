@@ -7933,6 +7933,9 @@ function staffSysRoleChanged() {
   preview.innerHTML = `<i class="fas fa-circle-check" style="color:var(--green,#22c55e);"></i> <strong>${escapeHtml(role.name)}</strong> — ${cnt} icazə avtomatik tətbiq olunacaq.`;
 }
 
+/** Həmişə YENİ əməkdaş forması açır (create mode) */
+function openNewStaff() { return openStaff(null); }
+
 async function openStaff(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
 
@@ -8164,6 +8167,8 @@ async function openStaff(idx = null) {
 
 async function saveStaff(e, idx) {
   e.preventDefault();
+  // null, undefined, NaN → create mode
+  if (idx !== null && (idx === undefined || (typeof idx === "number" && isNaN(idx)))) idx = null;
   try {
   if (!userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
 
@@ -17739,11 +17744,15 @@ Object.assign(window, {
   saveSalePayment,
   openPaymentHistory,
   openStaff,
+  openNewStaff,
   saveStaff,
   openStaffInfo,
   toggleStaffActive,
   staffSalaryTypeChange,
   staffSysToggle,
+  staffDeptChanged,
+  staffPosChanged,
+  staffSysRoleChanged,
   openCashOp,
   openCashInfo,
   saveCashOp,
@@ -17821,6 +17830,20 @@ Object.assign(window, {
   resetCompanyData,
   openPermModal,
   savePermModal,
+  permToggleModuleVisibility,
+  updatePermCount,
+  _refreshPermModuleStates,
+  permModalRoleChanged,
+  permModalToggleModule,
+  openRbacManager,
+  addDept,
+  deleteDept,
+  addPosition,
+  deletePosition,
+  deleteRole,
+  openRoleEditor,
+  saveRoleEditor,
+  seedDefaultRolesIfEmpty,
   openUser,
   saveUser,
   delUser,
