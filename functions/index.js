@@ -441,11 +441,33 @@ async function syncCompanyUsersToIsolatedPath(companyId, allUsers) {
       (u) => u && u.role !== "developer" &&
         (!u.companyId || normAuth(u.companyId) === normAuth(cid))
     );
+
+    // ⚠ Qoruyucu birləşdirmə: mövcud /erp_users-də user daha yeni şifrə/flag
+    // saxlaya bilər (tenant-ın config/meta-ya yazma icazəsi yoxdur).
+    // config/meta ilə overwrite etsək dəyişikliklər itəcək. Ona görə hər user üçün
+    // mövcud qeyddən pass və mustChangePassword-u üstün tuturuq.
+    let existingUsers = [];
+    try {
+      const existingSnap = await db.collection("erp_users").doc(cid).get();
+      if (existingSnap.exists) existingUsers = existingSnap.data()?.users || [];
+    } catch (_) {}
+
+    const merged = companyUsers.map((metaUser) => {
+      const fresh = existingUsers.find((e) => String(e.uid) === String(metaUser.uid));
+      if (!fresh) return metaUser;
+      return {
+        ...metaUser,
+        // /erp_users-dəki şifrə və mustChangePassword dəyərlərinə üstünlük ver
+        pass: fresh.pass != null ? fresh.pass : metaUser.pass,
+        mustChangePassword: fresh.mustChangePassword != null ? fresh.mustChangePassword : metaUser.mustChangePassword,
+      };
+    });
+
     await db.collection("erp_users").doc(cid).set({
-      users: companyUsers,
+      users: merged,
       updatedAt: new Date().toISOString(),
     });
-    console.log(`[syncCompanyUsersToIsolatedPath] ${cid}: ${companyUsers.length} user sinxronlaşdı.`);
+    console.log(`[syncCompanyUsersToIsolatedPath] ${cid}: ${merged.length} user sinxronlaşdı (merge).`);
   } catch (e) {
     console.warn(`[syncCompanyUsersToIsolatedPath] ${cid} xətası:`, e?.code || e?.message);
   }
@@ -498,7 +520,7 @@ export const changeUserPassword = onCall(
 
     const newHash = hashPass(newPassword);
 
-    // /erp_users/{cid} – Admin SDK ilə yenilə (rules-ı keçir)
+    // ─── 1) /erp_users/{cid} – Admin SDK ilə yenilə ─────────────────────────
     try {
       const isolatedSnap = await db.collection("erp_users").doc(cid).get();
       let users = [];
@@ -514,6 +536,26 @@ export const changeUserPassword = onCall(
     } catch (e) {
       console.error("[changeUserPassword] /erp_users yazma xətası", e?.code, e?.message);
       throw new HttpsError("internal", "Şifrə yenilənərkən xəta baş verdi.");
+    }
+
+    // ─── 2) config/meta.users – EYNİ ZAMANDA yenilə ─────────────────────────
+    // Növbəti issueAuthToken → syncCompanyUsersToIsolatedPath çağırışının
+    // /erp_users-i köhnə config/meta ilə üstdən yazmasının qarşısını alır.
+    try {
+      const metaSnap = await db.collection("config").doc("meta").get();
+      if (metaSnap.exists) {
+        const metaData = metaSnap.data() || {};
+        const metaUsers = Array.isArray(metaData.users) ? [...metaData.users] : [];
+        const mIdx = metaUsers.findIndex((u) => String(u.uid) === String(uid));
+        if (mIdx !== -1) {
+          metaUsers[mIdx] = { ...metaUsers[mIdx], pass: newHash, mustChangePassword: false };
+          metaData.users = metaUsers;
+          await db.collection("config").doc("meta").set(metaData);
+          console.log("[changeUserPassword] config/meta yeniləndi", { uid });
+        }
+      }
+    } catch (e) {
+      console.warn("[changeUserPassword] config/meta yazma xətası (non-fatal)", e?.code, e?.message);
     }
 
     return { ok: true };
