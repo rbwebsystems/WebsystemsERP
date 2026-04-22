@@ -6143,13 +6143,7 @@ function openCust(idx = null) {
   const c =
     idx !== null
       ? db.cust[idx]
-      : { sur: "", name: "", father: "", fin: "", seriaNum: "", ph1: "", ph2: "", ph3: "", work: "", addr: "", zam: "", creditLimit: "0" };
-
-  const guarantorOptions =
-    `<option value="">Zamin seç (istəyə bağlı)</option>` +
-    db.cust
-      .map((g) => `<option value="${g.uid}" ${String(c.zam) === String(g.uid) ? "selected" : ""}>${g.sur} ${g.name} (${g.uid})</option>`)
-      .join("");
+      : { sur: "", name: "", father: "", fin: "", seriaNum: "", ph1: "", ph2: "", ph3: "", work: "", addr: "", note: "" };
 
   openModal(`
     <h2>${idx !== null ? "Müştəri Redaktə" : "Yeni Müştəri"}</h2>
@@ -6178,26 +6172,9 @@ function openCust(idx = null) {
         <div class="form-card">
           <div class="form-card-title">Digər</div>
           <div class="grid-2">
-            <div class="f-group">
-              <label>Zamin</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <select id="f_zam" style="flex:1;">${guarantorOptions}</select>
-                <button type="button" class="icon-btn" onclick="openZamQuick()" title="Tez yeni zamin yarat" style="flex-shrink:0;"><i class="fas fa-plus"></i></button>
-              </div>
-            </div>
-            <div class="f-group"><label>Kredit limit (AZN)</label><input type="number" step="0.01" id="f_climit" value="${escapeAttr(String(c.creditLimit ?? "0"))}" placeholder="0 = limitsiz"></div>
-            <div id="zamQuickPanel" style="display:none;grid-column:1/-1;background:var(--bg,#f8fafc);border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-top:4px;">
-              <div style="font-size:.8rem;font-weight:600;color:var(--text-muted,#64748b);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">Tez Zamin Yarat</div>
-              <div class="grid-2" style="margin-bottom:10px;">
-                <div class="f-group"><label>Soyad <span class="req">*</span></label><input id="zamQ_sur" placeholder="Soyad"></div>
-                <div class="f-group"><label>Ad <span class="req">*</span></label><input id="zamQ_name" placeholder="Ad"></div>
-                <div class="f-group"><label>Mobil <span class="req">*</span></label><input id="zamQ_ph1" placeholder="+994 xx xxx xx xx"></div>
-                <div class="f-group"><label>FİN</label><input id="zamQ_fin" placeholder="FİN (istəyə bağlı)" maxlength="7"></div>
-              </div>
-              <div style="display:flex;gap:8px;">
-                <button type="button" class="btn-main" style="padding:6px 16px;font-size:.85rem;" onclick="saveQuickGuarantor()"><i class="fas fa-check"></i> Əlavə et</button>
-                <button type="button" class="btn-cancel" style="padding:6px 14px;font-size:.85rem;" onclick="closeZamQuick()">Ləğv et</button>
-              </div>
+            <div class="f-group grid-span-2">
+              <label>Qeyd</label>
+              <textarea id="f_cnote" rows="3" placeholder="Qeyd (istəyə bağlı)" style="width:100%;resize:vertical;">${escapeHtml(c.note || "")}</textarea>
             </div>
           </div>
         </div>
@@ -6208,6 +6185,55 @@ function openCust(idx = null) {
       </div>
     </form>
   `);
+}
+
+function openSaleZamQuick() {
+  const panel = byId("zamQuickPanelSale");
+  if (!panel) return;
+  panel.style.display = "block";
+  const surInput = byId("zamSQ_sur");
+  if (surInput) surInput.focus();
+}
+function closeSaleZamQuick() {
+  const panel = byId("zamQuickPanelSale");
+  if (panel) panel.style.display = "none";
+  ["zamSQ_sur","zamSQ_name","zamSQ_ph1","zamSQ_fin"].forEach(id => {
+    const el = byId(id);
+    if (el) el.value = "";
+  });
+}
+async function saveSaleZamQuick() {
+  const sur  = (byId("zamSQ_sur")?.value  || "").trim();
+  const name = (byId("zamSQ_name")?.value || "").trim();
+  const ph1  = (byId("zamSQ_ph1")?.value  || "").trim();
+  const fin  = (byId("zamSQ_fin")?.value  || "").trim();
+  if (!sur)  { toast("Soyad daxil edin", "err"); byId("zamSQ_sur")?.focus();  return; }
+  if (!name) { toast("Ad daxil edin",    "err"); byId("zamSQ_name")?.focus(); return; }
+  if (!ph1)  { toast("Mobil daxil edin", "err"); byId("zamSQ_ph1")?.focus();  return; }
+  const newCust = {
+    uid: genId(db.cust, 1),
+    sur, name,
+    father: "", fin, seriaNum: "",
+    ph1, ph2: "", ph3: "",
+    work: "", addr: "",
+    zam: "",
+    creditLimit: "0",
+    createdAt: nowISODate(),
+    createdBy: currentActorName(),
+  };
+  db.cust.push(newCust);
+  logEvent("create", "cust", { uid: newCust.uid, fullName: `${sur} ${name}` });
+  saveDB();
+  const sel = byId("f_s_guarantorId");
+  if (sel) {
+    const opt = document.createElement("option");
+    opt.value  = String(newCust.uid);
+    opt.text   = `${sur} ${name} (${newCust.uid})`;
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+  closeSaleZamQuick();
+  toast(`${sur} ${name} zamin olaraq əlavə edildi`, "ok");
 }
 
 function openZamQuick() {
@@ -6285,8 +6311,9 @@ function saveCust(e, idx) {
     ph3: val("f_ph3"),
     work: val("f_work"),
     addr: val("f_addr"),
-    zam: val("f_zam"),
-    creditLimit: String(Math.max(0, n(val("f_climit")))),
+    note: (val("f_cnote") || "").trim(),
+    zam: idx !== null ? (db.cust[idx].zam || "") : "",
+    creditLimit: idx !== null ? (db.cust[idx].creditLimit || "0") : "0",
     actorName,
   };
   if (idx !== null) db.cust[idx] = data;
@@ -7505,7 +7532,18 @@ function toggleSaleInitialPayment() {
 function openCustInfo(idx) {
   const c = db.cust[idx];
   if (!c) return;
-  const guarantor = c.zam ? db.cust.find((x) => String(x.uid) === String(c.zam)) : null;
+  // Guarantors from sales (new model) + fallback to c.zam (old model)
+  const saleGuarantorIds = [...new Set(
+    (db.sales || [])
+      .filter((s) => String(s.customerId) === String(c.uid) && s.guarantorId)
+      .map((s) => String(s.guarantorId))
+  )];
+  const legacyGid = c.zam && !saleGuarantorIds.includes(String(c.zam)) ? String(c.zam) : null;
+  const allGids = legacyGid ? [...saleGuarantorIds, legacyGid] : saleGuarantorIds;
+  const guarantors = allGids.map((gid) => db.cust.find((x) => String(x.uid) === gid)).filter(Boolean);
+  const guarantorText = guarantors.length
+    ? guarantors.map((g) => escapeHtml(`${g.sur} ${g.name} (${g.uid})`)).join(", ")
+    : "-";
   openModal(`
     <h2>Müştəri məlumatı</h2>
     <div class="info-block">
@@ -7518,7 +7556,8 @@ function openCustInfo(idx) {
       <div class="info-row"><div class="info-label">FİN</div><div class="info-value">${escapeHtml(c.fin || "-")}</div></div>
       <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(c.seriaNum || "-")}</div></div>
       <div class="info-row"><div class="info-label">Ünvan</div><div class="info-value">${escapeHtml(c.addr || "-")}</div></div>
-      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
+      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantorText}</div></div>
+      ${c.note ? `<div class="info-row"><div class="info-label">Qeyd</div><div class="info-value">${escapeHtml(c.note)}</div></div>` : ""}
     </div>
     <div class="modal-footer">
       <button class="btn-main" type="button" onclick="openCust(${idx})">Redaktə</button>
@@ -8830,6 +8869,33 @@ function openSale(idx = null) {
               <label>Taksit müddəti (ay)</label>
               <input type="number" step="1" min="1" id="f_s_taksit_term" placeholder="məs: 12">
             </div>
+            <div class="f-group">
+              <label>Zamin</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <select id="f_s_guarantorId" style="flex:1;">
+                  <option value="">Zamin seç (istəyə bağlı)</option>
+                  ${db.cust.map((c) => `<option value="${c.uid}">${escapeHtml(c.sur)} ${escapeHtml(c.name)} (${c.uid})</option>`).join("")}
+                </select>
+                <button type="button" class="icon-btn" onclick="openSaleZamQuick()" title="Tez zamin yarat" style="flex-shrink:0;"><i class="fas fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="f-group grid-span-2">
+              <label>Qeyd</label>
+              <textarea id="f_s_note" rows="2" placeholder="Qeyd (istəyə bağlı)" style="width:100%;resize:vertical;">${escapeHtml(current?.note || "")}</textarea>
+            </div>
+            <div id="zamQuickPanelSale" style="display:none;grid-column:1/-1;background:var(--bg,#f8fafc);border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-top:4px;">
+              <div style="font-size:.8rem;font-weight:600;color:var(--text-muted,#64748b);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">Tez Zamin Yarat</div>
+              <div class="grid-2" style="margin-bottom:10px;">
+                <div class="f-group"><label>Soyad <span class="req">*</span></label><input id="zamSQ_sur" placeholder="Soyad"></div>
+                <div class="f-group"><label>Ad <span class="req">*</span></label><input id="zamSQ_name" placeholder="Ad"></div>
+                <div class="f-group"><label>Mobil <span class="req">*</span></label><input id="zamSQ_ph1" placeholder="+994 xx xxx xx xx"></div>
+                <div class="f-group"><label>FİN</label><input id="zamSQ_fin" placeholder="FİN (istəyə bağlı)" maxlength="7"></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button type="button" class="btn-main" style="padding:6px 16px;font-size:.85rem;" onclick="saveSaleZamQuick()"><i class="fas fa-check"></i> Əlavə et</button>
+                <button type="button" class="btn-cancel" style="padding:6px 14px;font-size:.85rem;" onclick="closeSaleZamQuick()">Ləğv et</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="form-card">
@@ -8985,6 +9051,10 @@ function openSale(idx = null) {
       if (Math.abs(lastPaid - downPayment) < 0.01 && lastPaid > 0) {
         byId("f_pay_initial").checked = true;
       }
+    }
+    if (current?.guarantorId) {
+      const gSel = byId("f_s_guarantorId");
+      if (gSel) gSel.value = String(current.guarantorId);
     }
   } else {
     byId("f_s_type").value = "nagd";
@@ -9230,6 +9300,10 @@ async function saveSale(e, idx) {
     const taksitTerm = isTaksit ? Math.max(1, Math.floor(n(val("f_s_taksit_term") || 1))) : 0;
     const effectiveSaleType = isTaksit ? "post_taksit" : saleType;
     const invNo = nextInvNo("sales", effectiveSaleType);
+    const saleGuarantorId   = val("f_s_guarantorId") || "";
+    const saleGuarantorCust = saleGuarantorId ? db.cust.find((c) => String(c.uid) === String(saleGuarantorId)) : null;
+    const saleGuarantorName = saleGuarantorCust ? `${saleGuarantorCust.sur} ${saleGuarantorCust.name}`.trim() : "";
+    const saleNote          = (val("f_s_note") || "").trim();
     let paidLeft = paid;
     const totalDown = saleType === "kredit" ? Math.max(0, n(val("f_cr_down"))) : 0;
     const termMonths = saleType === "kredit" ? Math.max(1, Math.floor(n(val("f_cr_term") || 1))) : 0;
@@ -9321,6 +9395,9 @@ async function saveSale(e, idx) {
         credit: null,
         paymentAccountId: payAccountId,
         lastPayAmount: 0,
+        guarantorId: saleGuarantorId || undefined,
+        guarantorName: saleGuarantorName || undefined,
+        note: saleNote || undefined,
       };
 
       if (saleType === "kredit") {
@@ -9530,6 +9607,13 @@ async function saveSale(e, idx) {
     credit: null,
     paymentAccountId: payAccountId || (isEdit ? db.sales[idx].paymentAccountId : null),
     lastPayAmount: paid,
+    guarantorId: (() => { const gid = val("f_s_guarantorId") || ""; return gid || (isEdit ? (db.sales[idx].guarantorId || "") : ""); })(),
+    guarantorName: (() => {
+      const gid = val("f_s_guarantorId") || "";
+      if (gid) { const g = db.cust.find((c) => String(c.uid) === String(gid)); return g ? `${g.sur} ${g.name}`.trim() : ""; }
+      return isEdit ? (db.sales[idx].guarantorName || "") : "";
+    })(),
+    note: (val("f_s_note") || "").trim() || (isEdit ? (db.sales[idx].note || "") : ""),
   };
 
   if (saleType === "kredit") {
@@ -9880,7 +9964,8 @@ function openSaleInfo(idx) {
   const s = db.sales[idx];
   if (!s) return;
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId));
-  const guarantor = cust?.zam ? db.cust.find((c) => String(c.uid) === String(cust.zam)) : null;
+  const gid = s.guarantorId || (cust?.zam || "");
+  const guarantor = gid ? db.cust.find((c) => String(c.uid) === String(gid)) : null;
 
   // Gather all items with same invNo (multi-product invoice grouping)
   const siblings = s.invNo
@@ -9983,7 +10068,8 @@ function openSaleInfo(idx) {
           <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm} ay)` : ""}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
           <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
-          <div class="f-group grid-span-2"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
+          <div class="f-group"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
+          <div class="f-group"><label>Qeyd</label><div class="f-static">${escapeHtml(s.note || "-")}</div></div>
         </div>
       </div>
       ${productsHtml}
@@ -17729,6 +17815,9 @@ Object.assign(window, {
   openZamQuick,
   closeZamQuick,
   saveQuickGuarantor,
+  openSaleZamQuick,
+  closeSaleZamQuick,
+  saveSaleZamQuick,
   openCustInfo,
   openSupp,
   saveSupp,
