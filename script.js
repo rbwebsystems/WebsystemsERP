@@ -17742,6 +17742,18 @@ async function delItem(type, i) {
   if (type === "supp") {
     const s = db.supp[i];
     if (!s) return;
+    const suppName = String(s.co || "").trim();
+    const hasPurch = (db.purch || []).some((p) => String(p.supp || "").trim() === suppName);
+    if (hasPurch) {
+      return alert(`"${suppName}" təchizatçısının alış qeydləri var. Əvvəlcə bütün alışları silin.`);
+    }
+    const hasCashOps = (db.cash || []).some((c) =>
+      (c.link?.supp && String(c.link.supp).trim() === suppName) ||
+      String(c.suppId || "") === String(s.uid)
+    );
+    if (hasCashOps) {
+      return alert(`"${suppName}" təchizatçısının kassa əməliyyatları var. Əvvəlcə onları silin.`);
+    }
     db.trash.push({ uid: genId(db.trash, 1), type: "supp", item: s, deletedAt, deletedBy, deleteReason });
     logEvent("delete", "supp", { uid: s.uid, name: s.name, deleteReason });
     db.supp.splice(i, 1);
