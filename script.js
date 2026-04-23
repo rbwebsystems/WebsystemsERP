@@ -17725,6 +17725,14 @@ async function delItem(type, i) {
   if (type === "cust") {
     const c = db.cust[i];
     if (!c) return;
+    const hasSales = (db.sales || []).some((s) => String(s.customerId) === String(c.uid));
+    if (hasSales) {
+      return alert(`"${c.sur} ${c.name}" adlı müştərinin satışları var. Əvvəlcə bütün satışları silin və ya qaytarın.`);
+    }
+    const hasPurch = (db.purch || []).some((p) => String(p.custId || "") === String(c.uid));
+    if (hasPurch) {
+      return alert(`"${c.sur} ${c.name}" adlı müştərinin alış qeydləri var. Əvvəlcə onları silin.`);
+    }
     db.trash.push({ uid: genId(db.trash, 1), type: "cust", item: c, deletedAt, deletedBy, deleteReason });
     logEvent("delete", "cust", { uid: c.uid, name: c.name, deleteReason });
     db.cust.splice(i, 1);
