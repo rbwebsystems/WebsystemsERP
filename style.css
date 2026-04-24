@@ -8443,3 +8443,457 @@ body.theme-dark .spotlight-box { background: #1E293B !important; }
 body.theme-dark .header-datetime { background: #111827 !important; border-color: #334155 !important; }
 body.theme-dark .sidebar-brand { background: #111827 !important; }
 /* ══════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ENTERPRISE LIGHT PRO — PHASE 2: DEEP COMPONENT POLISH
+   Toolbar · Tables · KPI Cards · Buttons · Empty-state · Forms · Dark
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   A. HEADER-ACTIONS  →  premium filter toolbar card
+   ───────────────────────────────────────────────────────────────────────── */
+html .header-actions {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  padding: 10px 14px !important;
+  margin-bottom: 14px !important;
+  display: flex !important; align-items: center !important;
+  gap: 8px !important; flex-wrap: wrap !important;
+  box-shadow: var(--el-shadow-xs) !important;
+}
+html .header-actions .date-range {
+  display: flex !important; align-items: center !important; gap: 6px !important;
+}
+html .header-actions .date-range input {
+  height: 34px !important; width: 132px !important;
+  padding: 0 10px !important; font-size: .82rem !important;
+  border: 1px solid var(--el-border-2) !important;
+  border-radius: var(--el-radius-sm) !important;
+  background: var(--el-bg) !important; color: var(--el-text2) !important;
+  box-shadow: none !important;
+}
+html .header-actions .date-range span {
+  color: var(--el-muted) !important; font-weight: 600 !important; font-size: .85rem !important;
+}
+html .header-actions .search-container {
+  position: relative !important; display: flex !important; align-items: center !important;
+  flex: 1 1 200px !important; min-width: 180px !important; max-width: 320px !important;
+}
+html .header-actions .search-container input {
+  height: 34px !important; width: 100% !important;
+  padding: 0 36px 0 12px !important; font-size: .84rem !important;
+  border: 1px solid var(--el-border-2) !important;
+  border-radius: var(--el-radius-sm) !important;
+  background: var(--el-bg) !important; color: var(--el-text) !important;
+  box-shadow: none !important;
+}
+html .header-actions .search-container input:focus {
+  border-color: var(--el-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+  background: var(--el-surface) !important;
+}
+html .header-actions .search-btn {
+  position: absolute !important; right: 8px !important;
+  background: transparent !important; border: none !important;
+  color: var(--el-muted) !important; font-size: .78rem !important;
+  cursor: pointer !important; padding: 0 !important;
+  width: 20px !important; height: 20px !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  margin: 0 !important; box-shadow: none !important;
+}
+html .header-actions .search-btn:hover { color: var(--el-primary) !important; }
+
+/* Primary action — always last and pushes right */
+html .header-actions > .btn-main:last-child,
+html .header-actions > .btn-primary:last-child { margin-left: auto !important; }
+
+/* filter-field (debt/credit sections) */
+html .filter-field { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+html .filter-field label {
+  font-size: .68rem !important; font-weight: 700 !important;
+  text-transform: uppercase !important; letter-spacing: .06em !important;
+  color: var(--el-muted) !important; margin-bottom: 0 !important;
+}
+html .filter-field input,
+html .filter-field select {
+  height: 34px !important; padding: 0 10px !important; font-size: .83rem !important;
+  border: 1px solid var(--el-border-2) !important;
+  border-radius: var(--el-radius-sm) !important;
+  background: var(--el-bg) !important; color: var(--el-text2) !important;
+  min-width: 130px !important; box-shadow: none !important;
+}
+html .filter-field input:focus,
+html .filter-field select:focus {
+  border-color: var(--el-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+  outline: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   B. TABLES — card > table  (HTML has table directly inside .card)
+   ───────────────────────────────────────────────────────────────────────── */
+/* card containing only a table: no padding, clip corners */
+html .card:has(> table) {
+  padding: 0 !important; overflow: hidden !important;
+}
+html .card > table { width: 100% !important; border-collapse: collapse !important; }
+html .card > table thead th {
+  background: var(--el-surface-2) !important;
+  color: var(--el-muted) !important;
+  font-size: .69rem !important; font-weight: 700 !important;
+  text-transform: uppercase !important; letter-spacing: .08em !important;
+  padding: 11px 14px !important;
+  border-bottom: 1px solid var(--el-border) !important;
+  border-right: 1px solid var(--el-border) !important;
+  white-space: nowrap !important;
+  position: sticky !important; top: 0 !important; z-index: 2 !important;
+}
+html .card > table thead th:last-child { border-right: none !important; }
+html .card > table tbody td {
+  padding: 10px 14px !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  color: var(--el-text2) !important; font-size: .84rem !important;
+  vertical-align: middle !important;
+  background: var(--el-surface) !important;
+  transition: background .07s !important;
+}
+html .card > table tbody tr:last-child td { border-bottom: none !important; }
+html .card > table tbody tr:hover td { background: #F8FAFC !important; }
+html .card > table tbody tr.total-row td {
+  background: var(--el-primary-bg) !important;
+  color: var(--el-primary-h) !important; font-weight: 700 !important;
+  border-top: 2px solid var(--el-primary-bd) !important; border-bottom: none !important;
+}
+html .card > table tbody tr.returned-row td {
+  opacity: .55 !important; text-decoration: line-through !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   C. EMPTY STATE — premium no-data view
+   ───────────────────────────────────────────────────────────────────────── */
+html .empty-state {
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: center !important;
+  padding: 52px 24px !important; gap: 10px !important;
+}
+html .empty-state-icon {
+  width: 54px !important; height: 54px !important; border-radius: 50% !important;
+  background: var(--el-surface-2) !important; border: 1px solid var(--el-border) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  font-size: 1.25rem !important; color: var(--el-muted) !important;
+  margin-bottom: 2px !important;
+}
+html .empty-state-title {
+  font-size: .92rem !important; font-weight: 600 !important; color: var(--el-text2) !important;
+}
+html .empty-state-sub {
+  font-size: .78rem !important; color: var(--el-muted) !important; margin-top: -4px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   D. STATS GRID  &  KPI STAT CARDS
+   ───────────────────────────────────────────────────────────────────────── */
+html .stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)) !important;
+  gap: 14px !important;
+}
+html .stat-card {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  padding: 18px 20px 16px !important;
+  position: relative !important; overflow: hidden !important;
+  transition: box-shadow .15s, transform .12s !important;
+  border-left: none !important; /* inline border-top color accent is preserved */
+}
+html .stat-card:hover {
+  box-shadow: 0 4px 18px rgba(15,23,42,.1) !important;
+  transform: translateY(-2px) !important;
+}
+html .stat-card small {
+  display: block !important;
+  font-size: .67rem !important; font-weight: 700 !important;
+  text-transform: uppercase !important; letter-spacing: .08em !important;
+  color: var(--el-muted) !important; margin-bottom: 10px !important;
+  line-height: 1.4 !important;
+}
+html .stat-card h2 {
+  font-size: 1.85rem !important; font-weight: 800 !important;
+  color: var(--el-text) !important; line-height: 1 !important;
+  letter-spacing: -.04em !important; margin: 0 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   E. DASH STAT MINI  (secondary KPI row with icon)
+   ───────────────────────────────────────────────────────────────────────── */
+html .dash-stats-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+  gap: 14px !important; margin-top: 14px !important;
+}
+html .dash-stat-mini {
+  display: flex !important; align-items: center !important; gap: 14px !important;
+  padding: 16px 18px !important;
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  transition: box-shadow .12s, transform .12s !important;
+}
+html .dash-stat-mini:hover {
+  box-shadow: 0 4px 18px rgba(15,23,42,.1) !important;
+  transform: translateY(-1px) !important;
+}
+html .dash-stat-mini-icon {
+  width: 44px !important; height: 44px !important; border-radius: 10px !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  font-size: 1.05rem !important; flex-shrink: 0 !important;
+}
+html .dash-stat-mini-icon.sales { background: #EFF6FF !important; color: #2563EB !important; }
+html .dash-stat-mini-icon.purch { background: #ECFEFF !important; color: #0891B2 !important; }
+html .dash-stat-mini-icon.stock { background: #F0FDF4 !important; color: #16A34A !important; }
+html .dash-stat-mini-body {
+  display: flex !important; flex-direction: column !important; gap: 2px !important; min-width: 0 !important;
+}
+html .dash-stat-mini-label {
+  font-size: .68rem !important; font-weight: 700 !important;
+  text-transform: uppercase !important; letter-spacing: .06em !important;
+  color: var(--el-muted) !important; white-space: nowrap !important;
+}
+html .dash-stat-mini-value {
+  font-size: 1.3rem !important; font-weight: 800 !important;
+  color: var(--el-text) !important; letter-spacing: -.03em !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   F. CHART CARDS — analytics section
+   ───────────────────────────────────────────────────────────────────────── */
+html .dash-charts {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 14px !important; margin-top: 14px !important;
+}
+html .dash-chart-card { padding: 0 !important; overflow: hidden !important; }
+html .dash-chart-title {
+  padding: 14px 18px 12px !important;
+  border-bottom: 1px solid var(--el-border) !important;
+  font-size: .88rem !important; font-weight: 700 !important;
+  color: var(--el-text) !important; margin: 0 !important; letter-spacing: -.01em !important;
+}
+html .dash-bar-chart, html .dash-donut-wrap { padding: 16px 18px !important; min-height: 140px !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   G. CONTENT HEADER — section title bar
+   ───────────────────────────────────────────────────────────────────────── */
+html .content-header {
+  display: flex !important; align-items: center !important;
+  flex-wrap: wrap !important; gap: 12px !important;
+  padding: 0 0 14px !important; margin-bottom: 0 !important;
+  border-bottom: none !important; background: transparent !important;
+}
+html .content-header h1 {
+  font-size: 1.15rem !important; font-weight: 700 !important;
+  color: var(--el-text) !important; letter-spacing: -.025em !important;
+  margin: 0 !important; line-height: 1.2 !important; flex: 1 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   H. BUTTON SYSTEM — unified sizes & states
+   ───────────────────────────────────────────────────────────────────────── */
+html .btn-main, html .btn-primary {
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important; gap: 6px !important;
+  background: var(--el-primary) !important;
+  border: 1px solid var(--el-primary) !important;
+  color: #fff !important;
+  border-radius: var(--el-radius) !important;
+  font-size: .84rem !important; font-weight: 600 !important;
+  padding: 0 16px !important; height: 36px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 3px rgba(37,99,235,.2) !important;
+  transition: background .12s, box-shadow .12s, transform .08s !important;
+  cursor: pointer !important; letter-spacing: .01em !important;
+}
+html .btn-main:hover, html .btn-primary:hover {
+  background: var(--el-primary-h) !important; border-color: var(--el-primary-h) !important;
+  box-shadow: 0 3px 10px rgba(37,99,235,.3) !important; transform: translateY(-1px) !important;
+}
+html .btn-main:active, html .btn-primary:active { transform: translateY(0) !important; }
+
+html .btn-cancel, html .btn-secondary {
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important; gap: 6px !important;
+  background: var(--el-surface) !important;
+  color: var(--el-text2) !important;
+  border: 1px solid var(--el-border-2) !important;
+  border-radius: var(--el-radius) !important;
+  font-size: .84rem !important; font-weight: 500 !important;
+  padding: 0 16px !important; height: 36px !important;
+  white-space: nowrap !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  transition: background .12s, border-color .12s !important;
+  cursor: pointer !important;
+}
+html .btn-cancel:hover, html .btn-secondary:hover {
+  background: var(--el-bg) !important; border-color: #94A3B8 !important;
+}
+html .btn-danger {
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important; gap: 6px !important;
+  background: var(--el-danger) !important; border: 1px solid var(--el-danger) !important;
+  color: #fff !important; border-radius: var(--el-radius) !important;
+  font-size: .84rem !important; font-weight: 600 !important;
+  padding: 0 16px !important; height: 36px !important;
+  cursor: pointer !important; white-space: nowrap !important;
+  transition: background .12s !important;
+}
+html .btn-danger:hover { background: #B91C1C !important; border-color: #B91C1C !important; }
+html .btn-ghost {
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important; gap: 6px !important;
+  background: transparent !important; border: 1px solid transparent !important;
+  color: var(--el-muted) !important; border-radius: var(--el-radius) !important;
+  font-size: .84rem !important; font-weight: 500 !important;
+  padding: 0 12px !important; height: 36px !important;
+  cursor: pointer !important; white-space: nowrap !important;
+  transition: background .12s, color .12s !important;
+}
+html .btn-ghost:hover {
+  background: var(--el-bg) !important; color: var(--el-text) !important;
+  border-color: var(--el-border) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   I. ICON BUTTONS — uniform 30×30 system
+   ───────────────────────────────────────────────────────────────────────── */
+html .icon-btn {
+  width: 30px !important; height: 30px !important;
+  border-radius: var(--el-radius-sm) !important;
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  font-size: .78rem !important; cursor: pointer !important;
+  border: 1px solid transparent !important;
+  transition: background .1s, transform .08s, box-shadow .1s !important;
+}
+html .icon-btn:hover { transform: scale(1.1) !important; }
+html .icon-btn + .icon-btn { margin-left: 3px !important; }
+html .icon-btn.info, html .icon-btn.edit {
+  background: var(--el-primary-bg) !important; color: var(--el-primary) !important;
+  border-color: var(--el-primary-bd) !important;
+}
+html .icon-btn.info:hover, html .icon-btn.edit:hover { background: #DBEAFE !important; }
+html .icon-btn.delete {
+  background: var(--el-danger-bg) !important; color: var(--el-danger) !important;
+  border-color: var(--el-danger-bd) !important;
+}
+html .icon-btn.delete:hover { background: #FEE2E2 !important; }
+html .icon-btn.restore {
+  background: var(--el-success-bg) !important; color: var(--el-success) !important;
+  border-color: var(--el-success-bd) !important;
+}
+html .icon-btn.restore:hover { background: #DCFCE7 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   J. STATUS PILLS — all variants
+   ───────────────────────────────────────────────────────────────────────── */
+html .pill {
+  border-radius: 5px !important; font-size: .7rem !important; font-weight: 700 !important;
+  padding: 3px 9px !important; letter-spacing: .03em !important;
+  display: inline-flex !important; align-items: center !important; gap: 4px !important;
+  white-space: nowrap !important;
+}
+html .pill.paid    { background: var(--el-success-bg) !important; color: var(--el-success) !important; border: 1px solid var(--el-success-bd) !important; }
+html .pill.partial { background: var(--el-warning-bg) !important; color: var(--el-warning) !important; border: 1px solid var(--el-warning-bd) !important; }
+html .pill.unpaid  { background: var(--el-danger-bg)  !important; color: var(--el-danger)  !important; border: 1px solid var(--el-danger-bd)  !important; }
+html .pill.returned, html .pill.cancelled {
+  background: #F1F5F9 !important; color: var(--el-muted) !important;
+  border: 1px solid var(--el-border) !important;
+}
+html .pill.active  { background: var(--el-success-bg) !important; color: var(--el-success) !important; border: 1px solid var(--el-success-bd) !important; }
+html .pill.inactive{ background: var(--el-danger-bg)  !important; color: var(--el-danger)  !important; border: 1px solid var(--el-danger-bd)  !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   K. AMOUNT COLORS
+   ───────────────────────────────────────────────────────────────────────── */
+html .amt-in  { color: var(--el-success) !important; font-weight: 700 !important; }
+html .amt-out { color: var(--el-danger)  !important; font-weight: 700 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   L. FORM & MODAL POLISH
+   ───────────────────────────────────────────────────────────────────────── */
+html .modal-content { background: var(--el-bg) !important; gap: 12px !important; padding: 16px !important; }
+html .form-card { border-radius: var(--el-radius-md) !important; }
+html .form-card + .form-card { margin-top: 12px !important; }
+html .paybox {
+  background: var(--el-surface-2) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-sm) !important;
+}
+/* Grid inside form cards */
+html .form-card .grid-2 { gap: 14px !important; }
+html .form-card label {
+  font-size: .76rem !important; font-weight: 600 !important;
+  color: var(--el-text2) !important; margin-bottom: 4px !important;
+  letter-spacing: .01em !important;
+}
+html .form-card input:not([type=checkbox]):not([type=radio]),
+html .form-card select,
+html .form-card textarea {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border-2) !important;
+  border-radius: var(--el-radius) !important;
+  color: var(--el-text) !important; font-size: .86rem !important;
+  padding: 8px 12px !important;
+  transition: border-color .12s, box-shadow .12s !important;
+}
+html .form-card input:not([type=checkbox]):not([type=radio]):focus,
+html .form-card select:focus,
+html .form-card textarea:focus {
+  border-color: var(--el-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important; outline: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   M. REPORTS MENU
+   ───────────────────────────────────────────────────────────────────────── */
+html .rep-menu {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  padding: 6px !important; margin-bottom: 14px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   N. DARK MODE — Phase 2 additions
+   ───────────────────────────────────────────────────────────────────────── */
+body.theme-dark .header-actions { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .header-actions .date-range input,
+body.theme-dark .header-actions .search-container input,
+body.theme-dark .filter-field input,
+body.theme-dark .filter-field select {
+  background: #111827 !important; border-color: #334155 !important; color: #F1F5F9 !important;
+}
+body.theme-dark .stat-card, body.theme-dark .dash-stat-mini {
+  background: #1E293B !important; border-color: #334155 !important;
+}
+body.theme-dark .dash-stat-mini-icon.sales { background: rgba(37,99,235,.2) !important; }
+body.theme-dark .dash-stat-mini-icon.purch { background: rgba(8,145,178,.2) !important; }
+body.theme-dark .dash-stat-mini-icon.stock { background: rgba(22,163,74,.2) !important; }
+body.theme-dark .empty-state-icon { background: #111827 !important; border-color: #334155 !important; }
+body.theme-dark .card > table thead th { background: #111827 !important; border-bottom-color: #334155 !important; border-right-color: #334155 !important; }
+body.theme-dark .card > table tbody td { background: #1E293B !important; border-bottom-color: #334155 !important; }
+body.theme-dark .card > table tbody tr:hover td { background: #334155 !important; }
+body.theme-dark .card > table tbody tr.total-row td { background: rgba(37,99,235,.15) !important; }
+body.theme-dark .paybox { background: #111827 !important; border-color: #334155 !important; }
+body.theme-dark .rep-menu { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .form-card input:not([type=checkbox]):not([type=radio]),
+body.theme-dark .form-card select,
+body.theme-dark .form-card textarea {
+  background: #111827 !important; border-color: #334155 !important; color: #F1F5F9 !important;
+}
+body.theme-dark .pill.returned, body.theme-dark .pill.cancelled {
+  background: #1E293B !important; color: #64748B !important; border-color: #334155 !important;
+}
+/* ══════════════════════════════════════════════════════════════════════════ */
