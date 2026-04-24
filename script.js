@@ -4938,7 +4938,6 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "sugarcrm", name: "Corporate Teal (SugarCRM)", accent: "#1b7467", accentHover: "#145a50", accentLight: "#e4f2ef", sidebarLight: "#1b7467", sidebarDark: "#0d3d36" },
   { id: "teal", name: "Navy Teal (sistem)", accent: "#1a4754", accentHover: "#16404f", accentLight: "#e8f4f8", sidebarLight: "#1a4754", sidebarDark: "#0a1929" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
@@ -4948,9 +4947,9 @@ const SKINS = [
 
 function getSkinId() {
   try {
-    return String(localStorage.getItem(SKIN_KEY) || "sugarcrm").trim() || "sugarcrm";
+    return String(localStorage.getItem(SKIN_KEY) || "teal").trim() || "teal";
   } catch {
-    return "sugarcrm";
+    return "teal";
   }
 }
 
@@ -4963,14 +4962,10 @@ function applySkin() {
   root.style.setProperty("--accent-hover", skin.accentHover);
   root.style.setProperty("--accent-light", skin.accentLight);
   root.style.setProperty("--sidebar-solid", isDark ? skin.sidebarDark : skin.sidebarLight);
-  // Apply / remove layout-specific skin classes
-  const allSkinIds = SKINS.map((s) => `skin-${s.id}`);
-  document.body.classList.remove(...allSkinIds);
-  document.body.classList.add(`skin-${id}`);
 }
 
 function setSkin(id) {
-  const sid = SKINS.some((s) => s.id === id) ? id : "sugarcrm";
+  const sid = SKINS.some((s) => s.id === id) ? id : "teal";
   try {
     localStorage.setItem(SKIN_KEY, sid);
   } catch {}
@@ -5006,8 +5001,6 @@ function applySidebarState() {
 }
 
 function toggleSidebar() {
-  // In top-nav skin mode the sidebar is a horizontal bar — no collapsing
-  if (document.body.classList.contains("skin-sugarcrm")) return;
   const next = !document.body.classList.contains("sidebar-collapsed");
   document.body.classList.toggle("sidebar-collapsed", next);
   try {
@@ -18151,14 +18144,9 @@ function renderSidebarBrand() {
   nameEl.innerHTML = `<svg class="rbsoft-new-logo rbsoft-new-logo--sidebar" viewBox="0 0 415 100" xmlns="http://www.w3.org/2000/svg" overflow="visible" aria-label="rbsoft" role="img"><text x="4" y="80" font-family="'Poppins',sans-serif" font-weight="800" font-size="85" letter-spacing="-1.5"><tspan fill="#14C757">&lt;</tspan><tspan fill="currentColor">rb</tspan><tspan fill="#1a7065" font-weight="700">soft</tspan><tspan fill="#14C757">/&gt;</tspan></text></svg>`;
   if (logoEl) {
     const logo = comp?.logo || "";
-    const isSugarCrm = document.body.classList.contains("skin-sugarcrm");
     if (logo) {
       logoEl.innerHTML = `<img src="${escapeAttr(logo)}" alt="${escapeAttr(compName)}" style="max-height:32px;max-width:100%;object-fit:contain;">`;
       logoEl.style.display = "";
-      if (isSugarCrm) {
-        const nameEl2 = byId("sidebarBrandName");
-        if (nameEl2) nameEl2.style.display = "none";
-      }
     } else {
       logoEl.innerHTML = "";
       logoEl.style.display = "none";
