@@ -17581,7 +17581,7 @@ function renderAll() {
 
   // Alış vs Satış (bu ay)
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const purchThisMonth = (db.purch || []).filter((p) => inMonth(p.date, currentMonthKey)).reduce((a, p) => a + n(p.amount), 0);
+  const purchThisMonth = (db.purch || []).filter((p) => !p.returnedAt && inMonth(p.date, currentMonthKey)).reduce((a, p) => a + n(p.amount), 0);
   const salesThisMonth = (db.sales || []).filter((s) => !s.returnedAt && inMonth(s.date, currentMonthKey)).reduce((a, s) => a + n(s.amount), 0);
   const maxPVS = Math.max(1, purchThisMonth, salesThisMonth);
   const pvsEl = byId("dashChartPurchVsSales");
@@ -17593,7 +17593,7 @@ function renderAll() {
   }
 
   // Son 6 ay alış (AZN)
-  const purchByMonth = last6.map(({ key }) => (db.purch || []).filter((p) => inMonth(p.date, key)).reduce((a, p) => a + n(p.amount), 0));
+  const purchByMonth = last6.map(({ key }) => (db.purch || []).filter((p) => !p.returnedAt && inMonth(p.date, key)).reduce((a, p) => a + n(p.amount), 0));
   const purchChartEl = byId("dashChartPurch");
   if (purchChartEl) {
     const shortLabels2 = last6.map(({ key }) => {
@@ -17616,7 +17616,7 @@ function renderAll() {
   // Aşağı statistik sətiri: bu il cəmi, anbar sayı
   const yearStart = `${now.getFullYear()}-01-01`;
   const salesYear = (db.sales || []).filter((s) => !s.returnedAt && String((s.date || "").slice(0, 10)) >= yearStart).reduce((a, s) => a + n(s.amount), 0);
-  const purchYear = (db.purch || []).filter((p) => String((p.date || "").slice(0, 10)) >= yearStart).reduce((a, p) => a + n(p.amount), 0);
+  const purchYear = (db.purch || []).filter((p) => !p.returnedAt && String((p.date || "").slice(0, 10)) >= yearStart).reduce((a, p) => a + n(p.amount), 0);
   const salesYearEl = byId("dashStatSalesYear");
   if (salesYearEl) salesYearEl.textContent = money(salesYear);
   const purchYearEl = byId("dashStatPurchYear");
