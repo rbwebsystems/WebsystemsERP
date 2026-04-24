@@ -5524,6 +5524,8 @@ body.theme-dark .main-area, body.theme-dark main { background: #1C1C1E !importan
   flex-wrap: wrap !important;
   justify-content: flex-end !important;
 }
+  color: #000 !important;
+}
 body.theme-dark .content-header { background: #1C1C1E !important; border-bottom-color: rgba(255,255,255,.1) !important; }
 body.theme-dark .content-header h1 { color: #fff !important; }
 
@@ -7624,83 +7626,3 @@ select:focus, textarea:focus {
 .pill {
   transition: background .15s ease, color .15s ease;
 }
-
-/* ══════════════════════════════════════════════════════════════════════════
-   FORM CONTROLS STANDARDIZATION — uniform input/select/button sizing
-   Only touches form controls. No layout, section, sidebar, or table changes.
-   ══════════════════════════════════════════════════════════════════════════ */
-html input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),
-html select,
-html .date-range input,
-html .search-container input {
-  height: 38px !important;
-  border-radius: 10px !important;
-  padding: 0 12px !important;
-  font-size: 13px !important;
-  border: 1px solid #E5EAF0 !important;
-  box-sizing: border-box !important;
-  line-height: 38px !important;
-}
-html textarea {
-  min-height: 80px !important;
-  border-radius: 10px !important;
-  padding: 10px 12px !important;
-  font-size: 13px !important;
-  border: 1px solid #E5EAF0 !important;
-  box-sizing: border-box !important;
-  line-height: 1.5 !important;
-}
-html input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):focus,
-html select:focus,
-html textarea:focus {
-  border-color: #2563EB !important;
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, .12) !important;
-}
-html button,
-html .btn-main,
-html .btn-primary,
-html .btn-cancel,
-html .btn-secondary,
-html .btn-danger,
-html .btn-pager {
-  height: 38px !important;
-  border-radius: 10px !important;
-  padding: 0 14px !important;
-  font-size: 13px !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  line-height: 1 !important;
-}
-/* Keep icon-only buttons square, don't stretch them */
-html .icon-btn,
-html .header-btn.header-btn-icon,
-html .sidebar-collapse-btn,
-html .nav-link,
-html .mobile-menu-btn,
-html .dev-toggle,
-html .close-btn,
-html .modal-close,
-html .search-btn {
-  height: auto !important;
-  border-radius: unset !important;
-  padding: unset !important;
-  font-size: unset !important;
-  line-height: unset !important;
-}
-/* Override back to their native styling for these exceptions — preserve original */
-html .icon-btn { height: 32px !important; width: 32px !important; border-radius: 8px !important; padding: 0 !important; }
-html .search-btn { height: 32px !important; width: 32px !important; padding: 0 !important; }
-/* Small pager selects — keep uniform too */
-html .select-small,
-html .select-tiny {
-  height: 38px !important;
-  border-radius: 10px !important;
-  padding: 0 12px !important;
-  font-size: 13px !important;
-  border: 1px solid #E5EAF0 !important;
-  box-sizing: border-box !important;
-}
-/* ══════════════════════════════════════════════════════════════════════════ */
