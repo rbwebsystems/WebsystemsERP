@@ -2234,7 +2234,7 @@ function renderReports() {
       } else {
         body.innerHTML = monthsList.map((mk, i) => {
           const salesM = (db.sales || []).filter((s) => !s.returnedAt && inMonth(s.date, mk));
-          const purchM = (db.purch || []).filter((p) => inMonth(p.date, mk));
+          const purchM = (db.purch || []).filter((p) => !p.returnedAt && inMonth(p.date, mk));
           const expM = (db.cash || []).filter((c) => c.type === "out" && c.link?.kind === "expense" && inMonth(c.date, mk)).reduce((a, c) => a + n(c.amount), 0);
           const salesSum = salesM.reduce((a, s) => a + n(s.amount), 0);
           const cogsM = calcCogs(salesM);
@@ -2541,42 +2541,52 @@ function renderReports() {
     const salesAll = (db.sales || []).filter((s) => !s.returnedAt).filter((s) => !hasPeriod || inRange(s.date));
     const dayMap = new Map();
     const getDay = (d) => String(d || "").slice(0, 10);
+    // Also include all cash ops for return_refund even outside selected period (to properly show refunds on refund date)
+    const allCashForRefunds = (db.cash || []);
     for (const s of salesAll) {
       const d = getDay(s.date); if (!d) continue;
-      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0 });
+      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0, cashRefund: 0 });
       const day = dayMap.get(d);
       day.invSeen.add(invoiceKeyForSale(s));
       day.salesAmt += n(s.amount);
     }
     for (const c of cashOps) {
       const d = getDay(c.date); if (!d) continue;
-      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0 });
+      if (!dayMap.has(d)) dayMap.set(d, { invSeen: new Set(), salesAmt: 0, cashIn: 0, cashExp: 0, cashRefund: 0 });
       if (c.type === "in") dayMap.get(d).cashIn += n(c.amount);
       if (c.type === "out" && c.link?.kind === "expense") dayMap.get(d).cashExp += n(c.amount);
+      if (c.type === "out" && c.link?.kind === "return_refund") {
+        // Show refund on the day it was paid, even if original sale was on different day
+        dayMap.get(d).cashRefund += n(c.amount);
+      }
     }
     const rows = Array.from(dayMap.entries()).sort((a, b) => (a[0] > b[0] ? -1 : 1));
-    const totSalesAmt = rows.reduce((a,[,r])=>a+r.salesAmt,0);
-    const totCashIn = rows.reduce((a,[,r])=>a+r.cashIn,0);
-    const totExp = rows.reduce((a,[,r])=>a+r.cashExp,0);
-    setText("rv-dailySales", money(totSalesAmt) + " AZN");
-    setText("rv-dailyIn", money(totCashIn) + " AZN");
-    setText("rv-dailyExp", money(totExp) + " AZN");
-    setText("rv-dailyDays", String(rows.length));
+    const totSalesAmt  = rows.reduce((a,[,r])=>a+r.salesAmt,0);
+    const totCashIn    = rows.reduce((a,[,r])=>a+r.cashIn,0);
+    const totExp       = rows.reduce((a,[,r])=>a+r.cashExp,0);
+    const totRefund    = rows.reduce((a,[,r])=>a+r.cashRefund,0);
+    setText("rv-dailySales",  money(totSalesAmt) + " AZN");
+    setText("rv-dailyIn",     money(totCashIn)   + " AZN");
+    setText("rv-dailyExp",    money(totExp)       + " AZN");
+    setText("rv-dailyRefund", money(totRefund)    + " AZN");
+    setText("rv-dailyDays",   String(rows.length));
     const body = byId("tblRepDaily");
     if (body) {
       body.innerHTML = rows.map(([d, r], i) => {
-        const net = r.cashIn - r.cashExp;
+        const net = r.cashIn - r.cashExp - r.cashRefund;
         const qCount = r.invSeen ? r.invSeen.size : 0;
         return `<tr><td>${i+1}</td><td>${fmtDT(d)}</td><td>${qCount}</td>
           <td>${money(r.salesAmt)} AZN</td><td>${money(r.cashIn)} AZN</td>
           <td>${money(r.cashExp)} AZN</td>
+          <td class="amt-out">${r.cashRefund > 0.001 ? "-"+money(r.cashRefund) : "—"} AZN</td>
           <td class="${net>=0?"amt-in":"amt-out"}">${money(net)} AZN</td></tr>`;
       }).join("") + (rows.length ? `<tr class="total-row"><td colspan="2"><strong>Cəmi (${rows.length} gün)</strong></td>
         <td><strong>${rows.reduce((a,[,r])=>a+(r.invSeen?r.invSeen.size:0),0)}</strong></td>
         <td><strong>${money(totSalesAmt)} AZN</strong></td>
         <td><strong>${money(totCashIn)} AZN</strong></td>
         <td><strong>${money(totExp)} AZN</strong></td>
-        <td><strong class="${(totCashIn-totExp)>=0?"amt-in":"amt-out"}">${money(totCashIn-totExp)} AZN</strong></td></tr>` : emptyRow(7));
+        <td><strong class="amt-out">${totRefund > 0.001 ? "-"+money(totRefund) : "—"} AZN</strong></td>
+        <td><strong class="${(totCashIn-totExp-totRefund)>=0?"amt-in":"amt-out"}">${money(totCashIn-totExp-totRefund)} AZN</strong></td></tr>` : emptyRow(8));
     }
 
   } else if (view === "returns") {
