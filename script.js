@@ -18283,6 +18283,13 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   _pl.init();
+  // Force enterprise light as default — clear any legacy skin from localStorage
+  try {
+    const saved = localStorage.getItem(SKIN_KEY);
+    if (!saved || !SKINS.some(s => s.id === saved)) {
+      localStorage.setItem(SKIN_KEY, "erp-light");
+    }
+  } catch {}
   applyTheme();
   if (!isOnline()) {
     _pl.hide();

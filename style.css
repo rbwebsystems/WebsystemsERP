@@ -7634,7 +7634,7 @@ select:focus, textarea:focus {
 /* ─────────────────────────────────────────────────────────────────────────
    1. DESIGN TOKENS & BASE
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light {
+html {
   /* Surface */
   --el-bg:           #F6F8FB;
   --el-surface:      #FFFFFF;
@@ -7712,7 +7712,7 @@ body.skin-erp-light {
 /* ─────────────────────────────────────────────────────────────────────────
    2. SIDEBAR
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light aside {
+html aside {
   position: fixed !important;
   top: 0 !important; left: 0 !important; bottom: 0 !important;
   width: var(--el-sb-w) !important;
@@ -7729,7 +7729,7 @@ body.skin-erp-light aside {
 }
 
 /* Brand */
-body.skin-erp-light .sidebar-brand {
+html .sidebar-brand {
   order: -1 !important;
   position: static !important;
   width: 100% !important;
@@ -7745,22 +7745,22 @@ body.skin-erp-light .sidebar-brand {
   gap: 9px !important;
   flex-shrink: 0 !important;
 }
-body.skin-erp-light .sidebar-brand-logo {
+html .sidebar-brand-logo {
   width: 28px !important; height: 28px !important;
   flex-shrink: 0 !important;
   display: flex !important; align-items: center !important;
 }
-body.skin-erp-light .sidebar-brand-logo img {
+html .sidebar-brand-logo img {
   max-height: 28px !important; max-width: 28px !important;
   border-radius: 6px !important; object-fit: contain !important;
 }
-body.skin-erp-light .sidebar-brand-name {
+html .sidebar-brand-name {
   flex: 1 !important; display: flex !important; align-items: center !important; min-width: 0 !important;
 }
-body.skin-erp-light .rbsoft-new-logo--sidebar {
+html .rbsoft-new-logo--sidebar {
   height: 20px !important; width: auto !important; color: var(--el-text) !important;
 }
-body.skin-erp-light .sidebar-collapse-btn {
+html .sidebar-collapse-btn {
   width: 24px !important; height: 24px !important;
   border-radius: var(--el-radius-sm) !important;
   background: var(--el-bg) !important;
@@ -7771,13 +7771,13 @@ body.skin-erp-light .sidebar-collapse-btn {
   display: flex !important; align-items: center !important; justify-content: center !important;
   transition: background .15s, color .15s !important;
 }
-body.skin-erp-light .sidebar-collapse-btn:hover {
+html .sidebar-collapse-btn:hover {
   background: var(--el-border) !important; color: var(--el-text2) !important;
 }
-body.skin-erp-light.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg) !important; }
+body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg) !important; }
 
 /* Nav */
-body.skin-erp-light aside nav {
+html aside nav {
   order: 0 !important;
   flex: 1 !important;
   overflow-y: auto !important; overflow-x: hidden !important;
@@ -7785,12 +7785,12 @@ body.skin-erp-light aside nav {
   scrollbar-width: thin !important;
   scrollbar-color: var(--el-border) transparent !important;
 }
-body.skin-erp-light aside nav::-webkit-scrollbar { width: 3px !important; }
-body.skin-erp-light aside nav::-webkit-scrollbar-thumb { background: var(--el-border-2) !important; border-radius: 4px !important; }
+html aside nav::-webkit-scrollbar { width: 3px !important; }
+html aside nav::-webkit-scrollbar-thumb { background: var(--el-border-2) !important; border-radius: 4px !important; }
 
 /* Group labels */
-body.skin-erp-light .nav-group-label,
-body.skin-erp-light .nav-sep.nav-group-label {
+html .nav-group-label,
+html .nav-sep.nav-group-label {
   display: block !important;
   font-size: .65rem !important;
   font-weight: 600 !important;
@@ -7804,16 +7804,16 @@ body.skin-erp-light .nav-sep.nav-group-label {
   background: transparent !important;
   user-select: none !important;
 }
-body.skin-erp-light .nav-sep:not(.nav-group-label) {
+html .nav-sep:not(.nav-group-label) {
   height: 1px !important;
   background: var(--el-border) !important;
   margin: 4px 12px !important;
 }
 
 /* Nav link */
-body.skin-erp-light .nav-link,
-body.skin-erp-light button.nav-link,
-body.skin-erp-light a.nav-link {
+html .nav-link,
+html button.nav-link,
+html a.nav-link {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -7832,7 +7832,7 @@ body.skin-erp-light a.nav-link {
   white-space: nowrap !important;
   transition: background .12s, color .12s !important;
 }
-body.skin-erp-light .nav-link i {
+html .nav-link i {
   font-size: .84rem !important;
   width: 16px !important; min-width: 16px !important;
   text-align: center !important;
@@ -7840,17 +7840,17 @@ body.skin-erp-light .nav-link i {
   background: none !important; border-radius: 0 !important;
   line-height: 1 !important; transition: color .12s !important;
 }
-body.skin-erp-light .nav-link .nav-text {
+html .nav-link .nav-text {
   font-size: .84rem !important; font-weight: 500 !important; flex: 1 !important;
 }
-body.skin-erp-light .nav-link:hover {
+html .nav-link:hover {
   background: var(--el-sb-hover) !important; color: var(--el-text) !important;
 }
-body.skin-erp-light .nav-link:hover i { color: var(--el-muted) !important; }
+html .nav-link:hover i { color: var(--el-muted) !important; }
 
 /* Active */
-body.skin-erp-light .nav-link.active,
-body.skin-erp-light button.nav-link.active {
+html .nav-link.active,
+html button.nav-link.active {
   background: var(--el-sb-active-bg) !important;
   color: var(--el-sb-active-tx) !important;
   font-weight: 600 !important;
@@ -7858,18 +7858,18 @@ body.skin-erp-light button.nav-link.active {
   padding-left: 12px !important;
   box-shadow: none !important;
 }
-body.skin-erp-light .nav-link.active i { color: var(--el-primary) !important; }
-body.skin-erp-light .nav-link.active .nav-text { color: var(--el-sb-active-tx) !important; }
-body.skin-erp-light .nav-link.active::before,
-body.skin-erp-light .nav-link.active::after { display: none !important; content: none !important; }
-body.skin-erp-light .nav-link.active:hover { background: #DBEAFE !important; }
+html .nav-link.active i { color: var(--el-primary) !important; }
+html .nav-link.active .nav-text { color: var(--el-sb-active-tx) !important; }
+html .nav-link.active::before,
+html .nav-link.active::after { display: none !important; content: none !important; }
+html .nav-link.active:hover { background: #DBEAFE !important; }
 
 /* Dev sub */
-body.skin-erp-light .nav-link.dev-sub { font-size: .8rem !important; height: 34px !important; opacity: .9 !important; }
-body.skin-erp-light #devMenu { background: transparent !important; }
+html .nav-link.dev-sub { font-size: .8rem !important; height: 34px !important; opacity: .9 !important; }
+html #devMenu { background: transparent !important; }
 
 /* User info */
-body.skin-erp-light .sidebar-user-info {
+html .sidebar-user-info {
   order: 10 !important;
   border-top: 1px solid var(--el-border) !important;
   border-bottom: none !important;
@@ -7878,35 +7878,35 @@ body.skin-erp-light .sidebar-user-info {
   flex-direction: row !important; align-items: center !important; gap: 10px !important;
   cursor: pointer !important; transition: background .12s !important;
 }
-body.skin-erp-light .sidebar-user-info:hover { background: var(--el-bg) !important; }
-body.skin-erp-light .sidebar-user-avatar {
+html .sidebar-user-info:hover { background: var(--el-bg) !important; }
+html .sidebar-user-avatar {
   width: 32px !important; height: 32px !important; border-radius: var(--el-radius-sm) !important;
   background: var(--el-primary) !important; color: #fff !important;
   font-size: .78rem !important; font-weight: 700 !important; border: none !important; flex-shrink: 0 !important;
 }
-body.skin-erp-light .sidebar-user-name { color: var(--el-text) !important; font-size: .82rem !important; font-weight: 600 !important; }
-body.skin-erp-light .sidebar-user-role { color: var(--el-muted) !important; font-size: .72rem !important; }
+html .sidebar-user-name { color: var(--el-text) !important; font-size: .82rem !important; font-weight: 600 !important; }
+html .sidebar-user-role { color: var(--el-muted) !important; font-size: .72rem !important; }
 
 /* Collapsed */
-body.skin-erp-light.sidebar-collapsed aside { width: 52px !important; }
-body.skin-erp-light.sidebar-collapsed .nav-link { justify-content: center !important; padding: 0 !important; width: calc(100% - 8px) !important; border-left: 2px solid transparent !important; }
-body.skin-erp-light.sidebar-collapsed .nav-link.active { border-left-color: var(--el-primary) !important; }
-body.skin-erp-light.sidebar-collapsed .nav-link .nav-text { display: none !important; }
-body.skin-erp-light.sidebar-collapsed .nav-link i { width: 18px !important; }
-body.skin-erp-light.sidebar-collapsed .sidebar-brand-name,
-body.skin-erp-light.sidebar-collapsed .sidebar-collapse-btn { display: none !important; }
-body.skin-erp-light.sidebar-collapsed .sidebar-brand { justify-content: center !important; padding: 0 !important; }
-body.skin-erp-light.sidebar-collapsed .nav-group-label,
-body.skin-erp-light.sidebar-collapsed .nav-sep.nav-group-label { display: none !important; }
-body.skin-erp-light.sidebar-collapsed .nav-sep:not(.nav-group-label) { margin: 4px 6px !important; }
-body.skin-erp-light.sidebar-collapsed .sidebar-user-info { justify-content: center !important; padding: 10px !important; }
-body.skin-erp-light.sidebar-collapsed .sidebar-user-name,
-body.skin-erp-light.sidebar-collapsed .sidebar-user-role { display: none !important; }
+body.sidebar-collapsed aside { width: 52px !important; }
+body.sidebar-collapsed .nav-link { justify-content: center !important; padding: 0 !important; width: calc(100% - 8px) !important; border-left: 2px solid transparent !important; }
+body.sidebar-collapsed .nav-link.active { border-left-color: var(--el-primary) !important; }
+body.sidebar-collapsed .nav-link .nav-text { display: none !important; }
+body.sidebar-collapsed .nav-link i { width: 18px !important; }
+body.sidebar-collapsed .sidebar-brand-name,
+body.sidebar-collapsed .sidebar-collapse-btn { display: none !important; }
+body.sidebar-collapsed .sidebar-brand { justify-content: center !important; padding: 0 !important; }
+body.sidebar-collapsed .nav-group-label,
+body.sidebar-collapsed .nav-sep.nav-group-label { display: none !important; }
+body.sidebar-collapsed .nav-sep:not(.nav-group-label) { margin: 4px 6px !important; }
+body.sidebar-collapsed .sidebar-user-info { justify-content: center !important; padding: 10px !important; }
+body.sidebar-collapsed .sidebar-user-name,
+body.sidebar-collapsed .sidebar-user-role { display: none !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    3. MAIN AREA LAYOUT
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .main-area {
+html .main-area {
   margin-left: var(--el-sb-w) !important;
   padding-top: var(--el-hdr-h) !important;
   padding-right: 0 !important; padding-bottom: 0 !important;
@@ -7914,12 +7914,12 @@ body.skin-erp-light .main-area {
   overflow: hidden !important;
   transition: margin-left .22s cubic-bezier(.4,0,.2,1) !important;
 }
-body.skin-erp-light.sidebar-collapsed .main-area { margin-left: 52px !important; }
+body.sidebar-collapsed .main-area { margin-left: 52px !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    4. TOPBAR / APP HEADER
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .app-header {
+html .app-header {
   position: fixed !important;
   top: 0 !important; left: var(--el-sb-w) !important; right: 0 !important;
   height: var(--el-hdr-h) !important;
@@ -7930,20 +7930,20 @@ body.skin-erp-light .app-header {
   z-index: 150 !important;
   transition: left .22s cubic-bezier(.4,0,.2,1) !important;
 }
-body.skin-erp-light.sidebar-collapsed .app-header { left: 52px !important; }
-body.skin-erp-light .header-rest {
+body.sidebar-collapsed .app-header { left: 52px !important; }
+html .header-rest {
   background: transparent !important; border-radius: 0 !important;
   height: var(--el-hdr-h) !important; padding: 0 20px !important;
 }
-body.skin-erp-light .app-header-title {
+html .app-header-title {
   font-size: 1rem !important; font-weight: 600 !important;
   color: var(--el-text) !important; letter-spacing: -.015em !important;
 }
-body.skin-erp-light .app-header-left { gap: 14px !important; }
-body.skin-erp-light .app-header-right { gap: 6px !important; }
+html .app-header-left { gap: 14px !important; }
+html .app-header-right { gap: 6px !important; }
 
 /* Search button */
-body.skin-erp-light .header-search-icon-btn {
+html .header-search-icon-btn {
   background: var(--el-bg) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius) !important;
@@ -7954,23 +7954,23 @@ body.skin-erp-light .header-search-icon-btn {
   gap: 6px !important;
   transition: border-color .12s, background .12s !important;
 }
-body.skin-erp-light .header-search-icon-btn:hover {
+html .header-search-icon-btn:hover {
   border-color: var(--el-border-2) !important; background: var(--el-surface) !important;
 }
 
 /* Header action buttons */
-body.skin-erp-light .header-btn.header-btn-icon {
+html .header-btn.header-btn-icon {
   background: transparent !important; color: var(--el-muted) !important;
   border-radius: var(--el-radius-sm) !important;
   width: 34px !important; height: 34px !important; font-size: .9rem !important;
   border: 1px solid transparent !important;
   transition: background .12s, color .12s, border-color .12s !important;
 }
-body.skin-erp-light .header-btn.header-btn-icon:hover {
+html .header-btn.header-btn-icon:hover {
   background: var(--el-bg) !important; color: var(--el-text) !important;
   border-color: var(--el-border) !important;
 }
-body.skin-erp-light .header-datetime {
+html .header-datetime {
   font-size: .76rem !important; color: var(--el-muted) !important;
   font-variant-numeric: tabular-nums !important;
   background: var(--el-bg) !important;
@@ -7978,22 +7978,22 @@ body.skin-erp-light .header-datetime {
   border-radius: var(--el-radius-sm) !important;
   padding: 3px 8px !important;
 }
-body.skin-erp-light .last-saved {
+html .last-saved {
   font-size: .73rem !important; color: var(--el-muted) !important;
 }
-body.skin-erp-light .realtime-indicator {
+html .realtime-indicator {
   border-radius: 50% !important; width: 8px !important; height: 8px !important;
 }
-body.skin-erp-light .lang-select {
+html .lang-select {
   font-size: .78rem !important; border-radius: var(--el-radius-sm) !important;
   border: 1px solid var(--el-border) !important; background: var(--el-bg) !important;
   padding: 3px 6px !important; color: var(--el-text2) !important; height: 28px !important;
 }
-body.skin-erp-light .mobile-menu-btn {
+html .mobile-menu-btn {
   background: transparent !important; color: var(--el-text) !important;
   border-radius: var(--el-radius-sm) !important;
 }
-body.skin-erp-light .notif-badge {
+html .notif-badge {
   background: var(--el-danger) !important;
   font-size: .6rem !important; border-radius: 10px !important;
 }
@@ -8001,14 +8001,14 @@ body.skin-erp-light .notif-badge {
 /* ─────────────────────────────────────────────────────────────────────────
    5. MAIN CONTENT
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light main {
+html main {
   flex: 1 !important; overflow-y: auto !important; overflow-x: hidden !important;
   padding: 22px 24px !important;
   background: var(--el-bg) !important;
 }
 
 /* Section / content header */
-body.skin-erp-light .content-header {
+html .content-header {
   background: transparent !important;
   border-bottom: none !important;
   padding: 0 0 18px 0 !important;
@@ -8016,24 +8016,24 @@ body.skin-erp-light .content-header {
   display: flex !important; align-items: center !important;
   flex-wrap: wrap !important; gap: 10px !important;
 }
-body.skin-erp-light .content-header h1 {
+html .content-header h1 {
   font-size: 1.2rem !important; font-weight: 700 !important;
   color: var(--el-text) !important; letter-spacing: -.025em !important;
   border: none !important; margin: 0 !important; line-height: 1.3 !important;
 }
-body.skin-erp-light .content-header-actions { gap: 8px !important; }
+html .content-header-actions { gap: 8px !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    6. CARDS & SURFACES
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .card,
-body.skin-erp-light .form-card {
+html .card,
+html .form-card {
   background: var(--el-surface) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-md) !important;
   box-shadow: var(--el-shadow-xs) !important;
 }
-body.skin-erp-light .form-card-title {
+html .form-card-title {
   background: var(--el-surface-2) !important;
   color: var(--el-muted) !important;
   border-bottom: 1px solid var(--el-border) !important;
@@ -8046,7 +8046,7 @@ body.skin-erp-light .form-card-title {
 /* ─────────────────────────────────────────────────────────────────────────
    7. DASHBOARD KPI CARDS
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .stat-card {
+html .stat-card {
   background: var(--el-surface) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-md) !important;
@@ -8056,13 +8056,13 @@ body.skin-erp-light .stat-card {
   position: relative !important;
   transition: box-shadow .15s !important;
 }
-body.skin-erp-light .stat-card:hover { box-shadow: var(--el-shadow-md) !important; }
-body.skin-erp-light .stat-card small {
+html .stat-card:hover { box-shadow: var(--el-shadow-md) !important; }
+html .stat-card small {
   font-size: .7rem !important; font-weight: 600 !important;
   letter-spacing: .05em !important; text-transform: uppercase !important;
   color: var(--el-muted) !important; display: block !important; margin-bottom: 6px !important;
 }
-body.skin-erp-light .stat-card h2 {
+html .stat-card h2 {
   font-size: 1.65rem !important; font-weight: 700 !important;
   letter-spacing: -.03em !important; color: var(--el-text) !important;
   line-height: 1.1 !important; margin: 0 !important;
@@ -8071,13 +8071,13 @@ body.skin-erp-light .stat-card h2 {
 /* ─────────────────────────────────────────────────────────────────────────
    8. CHART / ANALYTICS CARDS
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .dash-chart-card {
+html .dash-chart-card {
   background: var(--el-surface) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-md) !important;
   box-shadow: var(--el-shadow-xs) !important;
 }
-body.skin-erp-light .dash-chart-title {
+html .dash-chart-title {
   font-size: .88rem !important; font-weight: 600 !important;
   color: var(--el-text) !important; margin: 0 !important; padding: 16px 20px 12px !important;
   border-bottom: 1px solid var(--el-border) !important;
@@ -8086,9 +8086,9 @@ body.skin-erp-light .dash-chart-title {
 /* ─────────────────────────────────────────────────────────────────────────
    9. FILTER TOOLBAR
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .filter-bar,
-body.skin-erp-light .table-controls,
-body.skin-erp-light .section-toolbar {
+html .filter-bar,
+html .table-controls,
+html .section-toolbar {
   background: var(--el-surface) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-md) !important;
@@ -8101,14 +8101,14 @@ body.skin-erp-light .section-toolbar {
 /* ─────────────────────────────────────────────────────────────────────────
    10. TABLES
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .table-wrap {
+html .table-wrap {
   background: var(--el-surface) !important;
   border: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-md) !important;
   box-shadow: var(--el-shadow-xs) !important;
   overflow: hidden !important;
 }
-body.skin-erp-light .table-wrap th {
+html .table-wrap th {
   background: var(--el-surface-2) !important;
   color: var(--el-muted) !important;
   font-size: .7rem !important; font-weight: 700 !important;
@@ -8119,8 +8119,8 @@ body.skin-erp-light .table-wrap th {
   white-space: nowrap !important;
   position: sticky !important; top: 0 !important; z-index: 2 !important;
 }
-body.skin-erp-light .table-wrap th:last-child { border-right: none !important; }
-body.skin-erp-light .table-wrap td {
+html .table-wrap th:last-child { border-right: none !important; }
+html .table-wrap td {
   border-bottom: 1px solid #F1F5F9 !important;
   border-right: none !important;
   color: var(--el-text2) !important;
@@ -8130,11 +8130,11 @@ body.skin-erp-light .table-wrap td {
   background: var(--el-surface) !important;
   transition: background .08s !important;
 }
-body.skin-erp-light .table-wrap tr:last-child td { border-bottom: none !important; }
-body.skin-erp-light .table-wrap tr:hover td {
+html .table-wrap tr:last-child td { border-bottom: none !important; }
+html .table-wrap tr:hover td {
   background: var(--el-surface-2) !important;
 }
-body.skin-erp-light .table-wrap tr.total-row td {
+html .table-wrap tr.total-row td {
   background: var(--el-primary-bg) !important;
   color: var(--el-primary-h) !important;
   font-weight: 700 !important;
@@ -8145,8 +8145,8 @@ body.skin-erp-light .table-wrap tr.total-row td {
    11. BUTTONS — complete system
    ───────────────────────────────────────────────────────────────────────── */
 /* Primary */
-body.skin-erp-light .btn-main,
-body.skin-erp-light .btn-primary {
+html .btn-main,
+html .btn-primary {
   background: var(--el-primary) !important;
   border: 1px solid var(--el-primary) !important;
   color: #fff !important;
@@ -8157,16 +8157,16 @@ body.skin-erp-light .btn-primary {
   transition: background .12s, box-shadow .12s !important;
   letter-spacing: .01em !important;
 }
-body.skin-erp-light .btn-main:hover,
-body.skin-erp-light .btn-primary:hover {
+html .btn-main:hover,
+html .btn-primary:hover {
   background: var(--el-primary-h) !important;
   border-color: var(--el-primary-h) !important;
   box-shadow: 0 3px 8px rgba(37,99,235,.35) !important;
 }
 
 /* Cancel / Secondary */
-body.skin-erp-light .btn-cancel,
-body.skin-erp-light .btn-secondary {
+html .btn-cancel,
+html .btn-secondary {
   background: var(--el-surface) !important;
   color: var(--el-text2) !important;
   border: 1px solid var(--el-border-2) !important;
@@ -8176,29 +8176,29 @@ body.skin-erp-light .btn-secondary {
   box-shadow: var(--el-shadow-xs) !important;
   transition: background .12s, border-color .12s !important;
 }
-body.skin-erp-light .btn-cancel:hover,
-body.skin-erp-light .btn-secondary:hover {
+html .btn-cancel:hover,
+html .btn-secondary:hover {
   background: var(--el-bg) !important; border-color: var(--el-border-2) !important;
 }
 
 /* Danger */
-body.skin-erp-light .btn-danger {
+html .btn-danger {
   background: var(--el-danger) !important; border: 1px solid var(--el-danger) !important;
   color: #fff !important; border-radius: var(--el-radius) !important;
   font-size: .84rem !important; font-weight: 600 !important;
   padding: 0 16px !important; height: 36px !important;
 }
-body.skin-erp-light .btn-danger:hover { background: #B91C1C !important; border-color: #B91C1C !important; }
+html .btn-danger:hover { background: #B91C1C !important; border-color: #B91C1C !important; }
 
 /* Ghost */
-body.skin-erp-light .btn-ghost {
+html .btn-ghost {
   background: transparent !important; border: 1px solid transparent !important;
   color: var(--el-muted) !important; border-radius: var(--el-radius) !important;
   font-size: .84rem !important; font-weight: 500 !important;
   padding: 0 12px !important; height: 36px !important;
   transition: background .12s, color .12s !important;
 }
-body.skin-erp-light .btn-ghost:hover {
+html .btn-ghost:hover {
   background: var(--el-bg) !important; color: var(--el-text) !important;
   border-color: var(--el-border) !important;
 }
@@ -8206,26 +8206,26 @@ body.skin-erp-light .btn-ghost:hover {
 /* ─────────────────────────────────────────────────────────────────────────
    12. ICON BUTTONS
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .icon-btn {
+html .icon-btn {
   border-radius: var(--el-radius-sm) !important;
   font-size: .8rem !important;
   transition: background .1s, color .1s !important;
 }
-body.skin-erp-light .icon-btn.info,
-body.skin-erp-light .icon-btn.edit {
+html .icon-btn.info,
+html .icon-btn.edit {
   background: var(--el-primary-bg) !important;
   color: var(--el-primary) !important;
   border: 1px solid var(--el-primary-bd) !important;
 }
-body.skin-erp-light .icon-btn.info:hover,
-body.skin-erp-light .icon-btn.edit:hover { background: #DBEAFE !important; }
-body.skin-erp-light .icon-btn.delete {
+html .icon-btn.info:hover,
+html .icon-btn.edit:hover { background: #DBEAFE !important; }
+html .icon-btn.delete {
   background: var(--el-danger-bg) !important;
   color: var(--el-danger) !important;
   border: 1px solid var(--el-danger-bd) !important;
 }
-body.skin-erp-light .icon-btn.delete:hover { background: #FEE2E2 !important; }
-body.skin-erp-light .icon-btn.restore {
+html .icon-btn.delete:hover { background: #FEE2E2 !important; }
+html .icon-btn.restore {
   background: var(--el-success-bg) !important;
   color: var(--el-success) !important;
   border: 1px solid var(--el-success-bd) !important;
@@ -8234,9 +8234,9 @@ body.skin-erp-light .icon-btn.restore {
 /* ─────────────────────────────────────────────────────────────────────────
    13. FORMS — inputs, selects, textareas
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light input:not([type=checkbox]):not([type=radio]),
-body.skin-erp-light select,
-body.skin-erp-light textarea {
+html input:not([type=checkbox]):not([type=radio]),
+html select,
+html textarea {
   border: 1px solid var(--el-border-2) !important;
   border-radius: var(--el-radius) !important;
   background: var(--el-surface) !important;
@@ -8247,22 +8247,22 @@ body.skin-erp-light textarea {
   transition: border-color .12s, box-shadow .12s !important;
   box-shadow: var(--el-shadow-xs) !important;
 }
-body.skin-erp-light input:not([type=checkbox]):not([type=radio])::placeholder,
-body.skin-erp-light textarea::placeholder { color: var(--el-placeholder) !important; }
-body.skin-erp-light input:not([type=checkbox]):not([type=radio]):hover,
-body.skin-erp-light select:hover,
-body.skin-erp-light textarea:hover { border-color: #94A3B8 !important; }
-body.skin-erp-light input:not([type=checkbox]):not([type=radio]):focus,
-body.skin-erp-light select:focus,
-body.skin-erp-light textarea:focus {
+html input:not([type=checkbox]):not([type=radio])::placeholder,
+html textarea::placeholder { color: var(--el-placeholder) !important; }
+html input:not([type=checkbox]):not([type=radio]):hover,
+html select:hover,
+html textarea:hover { border-color: #94A3B8 !important; }
+html input:not([type=checkbox]):not([type=radio]):focus,
+html select:focus,
+html textarea:focus {
   border-color: var(--el-primary) !important;
   box-shadow: 0 0 0 3px rgba(37,99,235,.12) !important;
   outline: none !important;
 }
 
 /* Form labels */
-body.skin-erp-light label,
-body.skin-erp-light .f-label {
+html label,
+html .f-label {
   font-size: .78rem !important; font-weight: 600 !important;
   color: var(--el-text2) !important; letter-spacing: .01em !important;
   margin-bottom: 4px !important; display: block !important;
@@ -8271,34 +8271,34 @@ body.skin-erp-light .f-label {
 /* ─────────────────────────────────────────────────────────────────────────
    14. MODAL / DRAWER
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .modal.modal--slideover {
+html .modal.modal--slideover {
   top: 0 !important; left: var(--el-sb-w) !important;
   right: 0 !important; bottom: 0 !important; border-radius: 0 !important;
 }
-body.skin-erp-light.sidebar-collapsed .modal.modal--slideover { left: 52px !important; }
-body.skin-erp-light .modal.modal--slideover .modal-body {
+body.sidebar-collapsed .modal.modal--slideover { left: 52px !important; }
+html .modal.modal--slideover .modal-body {
   border-radius: 0 !important; height: 100vh !important; max-height: 100vh !important;
 }
-body.skin-erp-light .modal-body {
+html .modal-body {
   background: var(--el-bg) !important;
   border-radius: var(--el-radius-lg) !important;
 }
-body.skin-erp-light .modal-footer {
+html .modal-footer {
   background: var(--el-surface) !important;
   border-top: 1px solid var(--el-border) !important;
   border-radius: 0 0 var(--el-radius-lg) var(--el-radius-lg) !important;
   padding: 14px 20px !important;
   gap: 8px !important;
 }
-body.skin-erp-light .modal-header {
+html .modal-header {
   background: var(--el-surface) !important;
   border-bottom: 1px solid var(--el-border) !important;
   border-radius: var(--el-radius-lg) var(--el-radius-lg) 0 0 !important;
   padding: 14px 20px !important;
 }
-body.skin-erp-light .modal-title,
-body.skin-erp-light .modal-header h2,
-body.skin-erp-light .modal-header h3 {
+html .modal-title,
+html .modal-header h2,
+html .modal-header h3 {
   font-size: 1rem !important; font-weight: 700 !important;
   color: var(--el-text) !important; letter-spacing: -.015em !important;
 }
@@ -8306,21 +8306,21 @@ body.skin-erp-light .modal-header h3 {
 /* ─────────────────────────────────────────────────────────────────────────
    15. STATUS PILLS & BADGES
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .pill {
+html .pill {
   border-radius: var(--el-radius-sm) !important;
   font-size: .72rem !important; font-weight: 600 !important;
   padding: 2px 8px !important; letter-spacing: .02em !important;
   display: inline-flex !important; align-items: center !important; gap: 4px !important;
 }
-body.skin-erp-light .pill.paid {
+html .pill.paid {
   background: var(--el-success-bg) !important; color: var(--el-success) !important;
   border: 1px solid var(--el-success-bd) !important;
 }
-body.skin-erp-light .pill.partial {
+html .pill.partial {
   background: var(--el-warning-bg) !important; color: var(--el-warning) !important;
   border: 1px solid var(--el-warning-bd) !important;
 }
-body.skin-erp-light .pill.unpaid {
+html .pill.unpaid {
   background: var(--el-danger-bg) !important; color: var(--el-danger) !important;
   border: 1px solid var(--el-danger-bd) !important;
 }
@@ -8328,75 +8328,75 @@ body.skin-erp-light .pill.unpaid {
 /* ─────────────────────────────────────────────────────────────────────────
    16. REPORTS SUB-NAV
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .rep-menu-item {
+html .rep-menu-item {
   border-radius: var(--el-radius-sm) !important;
   font-size: .84rem !important; color: var(--el-sb-text) !important;
   transition: background .1s !important;
 }
-body.skin-erp-light .rep-menu-item:hover { background: var(--el-bg) !important; }
-body.skin-erp-light .rep-menu-item.active {
+html .rep-menu-item:hover { background: var(--el-bg) !important; }
+html .rep-menu-item.active {
   background: var(--el-primary-bg) !important;
   color: var(--el-primary) !important; font-weight: 600 !important;
   border-left: 2px solid var(--el-primary) !important;
 }
-body.skin-erp-light .rep-menu-item.active i { color: var(--el-primary) !important; }
+html .rep-menu-item.active i { color: var(--el-primary) !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    17. SPOTLIGHT / GLOBAL SEARCH
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .spotlight-overlay { background: rgba(15,23,42,.45) !important; padding-top: 100px !important; }
-body.skin-erp-light .spotlight-box {
+html .spotlight-overlay { background: rgba(15,23,42,.45) !important; padding-top: 100px !important; }
+html .spotlight-box {
   border-radius: var(--el-radius-lg) !important;
   border: 1px solid var(--el-border) !important;
   box-shadow: var(--el-shadow-md) !important;
   background: var(--el-surface) !important;
 }
-body.skin-erp-light .spotlight-input-row input { font-size: .95rem !important; }
+html .spotlight-input-row input { font-size: .95rem !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    18. TOASTS
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .toast {
+html .toast {
   border-radius: var(--el-radius) !important;
   box-shadow: var(--el-shadow-md) !important;
   border: 1px solid var(--el-border) !important;
 }
-body.skin-erp-light .toast-container { top: 64px !important; }
+html .toast-container { top: 64px !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    19. SOFT LOADING OVERLAY
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light .soft-loading-center,
-body.skin-erp-light .loading-overlay.loading-overlay--soft {
+html .soft-loading-center,
+html .loading-overlay.loading-overlay--soft {
   left: var(--el-sb-w) !important; top: var(--el-hdr-h) !important;
 }
-body.skin-erp-light.sidebar-collapsed .soft-loading-center,
-body.skin-erp-light.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 52px !important; }
+body.sidebar-collapsed .soft-loading-center,
+body.sidebar-collapsed .loading-overlay.loading-overlay--soft { left: 52px !important; }
 
 /* ─────────────────────────────────────────────────────────────────────────
    20. MOBILE RESPONSIVE
    ───────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  body.skin-erp-light aside {
+  html aside {
     transform: translateX(-100%) !important;
     transition: transform .22s cubic-bezier(.4,0,.2,1) !important;
     z-index: 1200 !important;
   }
-  body.skin-erp-light aside.mobile-open { transform: translateX(0) !important; }
-  body.skin-erp-light .main-area { margin-left: 0 !important; }
-  body.skin-erp-light .app-header { left: 0 !important; }
-  body.skin-erp-light .modal.modal--slideover { left: 0 !important; }
-  body.skin-erp-light .mobile-menu-btn { display: flex !important; }
-  body.skin-erp-light main { padding: 14px !important; }
-  body.skin-erp-light .soft-loading-center,
-  body.skin-erp-light .loading-overlay.loading-overlay--soft { left: 0 !important; }
+  html aside.mobile-open { transform: translateX(0) !important; }
+  html .main-area { margin-left: 0 !important; }
+  html .app-header { left: 0 !important; }
+  html .modal.modal--slideover { left: 0 !important; }
+  html .mobile-menu-btn { display: flex !important; }
+  html main { padding: 14px !important; }
+  html .soft-loading-center,
+  html .loading-overlay.loading-overlay--soft { left: 0 !important; }
 }
-@media (min-width: 769px) { body.skin-erp-light .mobile-menu-btn { display: none !important; } }
+@media (min-width: 769px) { html .mobile-menu-btn { display: none !important; } }
 
 /* ─────────────────────────────────────────────────────────────────────────
    21. DARK MODE — invert gracefully (user preference)
    ───────────────────────────────────────────────────────────────────────── */
-body.skin-erp-light.theme-dark {
+body.theme-dark {
   --el-bg:       #0F172A;
   --el-surface:  #1E293B;
   --el-surface-2:#111827;
@@ -8421,25 +8421,25 @@ body.skin-erp-light.theme-dark {
   --table-head-text:  #94A3B8 !important;
   --table-head-border:#334155 !important;
 }
-body.skin-erp-light.theme-dark main { background: #0F172A !important; }
-body.skin-erp-light.theme-dark .card,
-body.skin-erp-light.theme-dark .form-card,
-body.skin-erp-light.theme-dark .stat-card,
-body.skin-erp-light.theme-dark .dash-chart-card { background: #1E293B !important; border-color: #334155 !important; }
-body.skin-erp-light.theme-dark .table-wrap { background: #1E293B !important; border-color: #334155 !important; }
-body.skin-erp-light.theme-dark .table-wrap th { background: #111827 !important; border-color: #334155 !important; }
-body.skin-erp-light.theme-dark .table-wrap td { background: #1E293B !important; border-bottom-color: #334155 !important; color: #CBD5E1 !important; }
-body.skin-erp-light.theme-dark .table-wrap tr:hover td { background: #334155 !important; }
-body.skin-erp-light.theme-dark .modal-body { background: #1E293B !important; }
-body.skin-erp-light.theme-dark .modal-footer,
-body.skin-erp-light.theme-dark .modal-header { background: #1E293B !important; border-color: #334155 !important; }
-body.skin-erp-light.theme-dark input:not([type=checkbox]):not([type=radio]),
-body.skin-erp-light.theme-dark select,
-body.skin-erp-light.theme-dark textarea { background: #111827 !important; border-color: #334155 !important; color: #F1F5F9 !important; }
-body.skin-erp-light.theme-dark .btn-cancel,
-body.skin-erp-light.theme-dark .btn-secondary { background: #1E293B !important; border-color: #475569 !important; color: #CBD5E1 !important; }
-body.skin-erp-light.theme-dark .form-card-title { background: #111827 !important; border-bottom-color: #334155 !important; }
-body.skin-erp-light.theme-dark .spotlight-box { background: #1E293B !important; }
-body.skin-erp-light.theme-dark .header-datetime { background: #111827 !important; border-color: #334155 !important; }
-body.skin-erp-light.theme-dark .sidebar-brand { background: #111827 !important; }
+body.theme-dark main { background: #0F172A !important; }
+body.theme-dark .card,
+body.theme-dark .form-card,
+body.theme-dark .stat-card,
+body.theme-dark .dash-chart-card { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .table-wrap { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .table-wrap th { background: #111827 !important; border-color: #334155 !important; }
+body.theme-dark .table-wrap td { background: #1E293B !important; border-bottom-color: #334155 !important; color: #CBD5E1 !important; }
+body.theme-dark .table-wrap tr:hover td { background: #334155 !important; }
+body.theme-dark .modal-body { background: #1E293B !important; }
+body.theme-dark .modal-footer,
+body.theme-dark .modal-header { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark input:not([type=checkbox]):not([type=radio]),
+body.theme-dark select,
+body.theme-dark textarea { background: #111827 !important; border-color: #334155 !important; color: #F1F5F9 !important; }
+body.theme-dark .btn-cancel,
+body.theme-dark .btn-secondary { background: #1E293B !important; border-color: #475569 !important; color: #CBD5E1 !important; }
+body.theme-dark .form-card-title { background: #111827 !important; border-bottom-color: #334155 !important; }
+body.theme-dark .spotlight-box { background: #1E293B !important; }
+body.theme-dark .header-datetime { background: #111827 !important; border-color: #334155 !important; }
+body.theme-dark .sidebar-brand { background: #111827 !important; }
 /* ══════════════════════════════════════════════════════════════════════════ */
