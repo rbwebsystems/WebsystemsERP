@@ -8897,3 +8897,558 @@ body.theme-dark .pill.returned, body.theme-dark .pill.cancelled {
   background: #1E293B !important; color: #64748B !important; border-color: #334155 !important;
 }
 /* ══════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ENTERPRISE LIGHT PRO — PHASE 3: PREMIUM WORKSPACE SYSTEM
+   Layout · Card-Header · Pager-Footer · erp-* design system · Badges
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   1. PAGE LAYOUT — sections fill viewport, scroll within
+   ───────────────────────────────────────────────────────────────────────── */
+html main {
+  flex: 1 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: var(--el-bg) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+html .section { display: none !important; }
+html .section.active {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 20px 22px 24px !important;
+  background: var(--el-bg) !important;
+  gap: 0 !important;
+  min-height: 0 !important;
+}
+html .section.active > * { flex-shrink: 0 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   2. CONTENT HEADER — unified white card (title row + filter row)
+   ───────────────────────────────────────────────────────────────────────── */
+html .content-header,
+html .erp-page-header {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  margin-bottom: 14px !important;
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Title row */
+html .content-header h1,
+html .erp-page-header h1 {
+  padding: 13px 18px !important;
+  border-bottom: 1px solid var(--el-border) !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: var(--el-text) !important;
+  letter-spacing: -.02em !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Title-only (no filter row): remove bottom border from h1 */
+html .content-header:not(:has(.header-actions)):not(:has(.erp-toolbar)) h1,
+html .erp-page-header:not(:has(.erp-toolbar)) h1 {
+  border-bottom: none !important;
+  padding: 14px 18px !important;
+}
+
+/* Report sub-page: div wrapper (back-btn + h1) = title row */
+html .content-header > div:first-child:not(.header-actions):not(.erp-toolbar):not(.stats-grid):not(.erp-kpi-grid) {
+  padding: 11px 18px !important;
+  border-bottom: 1px solid var(--el-border) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+html .content-header > div:first-child:not(.header-actions):not(.erp-toolbar):not(.stats-grid):not(.erp-kpi-grid) h1 {
+  padding: 0 !important;
+  border-bottom: none !important;
+  font-size: 1rem !important;
+}
+
+/* header-actions INSIDE content-header = strip own card appearance */
+html .content-header > .header-actions,
+html .erp-page-header > .erp-toolbar {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   3. TABLE CARD + PAGER AS UNIFIED COMPONENT
+   ───────────────────────────────────────────────────────────────────────── */
+/* Card directly before a pager: merge visually */
+html .card:has(+ .pager),
+html .card:has(+ .erp-pagination) {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+html .card + .pager,
+html .card + .erp-pagination {
+  border-top: 1px solid var(--el-border) !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  margin-top: 0 !important;
+  box-shadow: 0 2px 6px rgba(15,23,42,.05) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   4. PAGER — premium pagination component
+   ───────────────────────────────────────────────────────────────────────── */
+html .pager,
+html .erp-pagination {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 14px !important;
+  flex-shrink: 0 !important;
+}
+html .btn-pager {
+  height: 30px !important;
+  padding: 0 14px !important;
+  border-radius: var(--el-radius-sm) !important;
+  font-size: .78rem !important;
+  font-weight: 600 !important;
+  border: 1px solid var(--el-border-2) !important;
+  background: var(--el-surface) !important;
+  color: var(--el-text2) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background .1s, border-color .1s, color .1s !important;
+  letter-spacing: .01em !important;
+}
+html .btn-pager:hover {
+  background: var(--el-primary-bg) !important;
+  border-color: var(--el-primary-bd) !important;
+  color: var(--el-primary) !important;
+}
+html .btn-pager:disabled { opacity: .4 !important; cursor: default !important; }
+html .pager-info {
+  font-size: .78rem !important;
+  color: var(--el-muted) !important;
+  flex: 1 !important;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html .pager-size-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+html .select-tiny {
+  height: 30px !important;
+  border-radius: var(--el-radius-sm) !important;
+  border: 1px solid var(--el-border-2) !important;
+  background: var(--el-bg) !important;
+  color: var(--el-text2) !important;
+  font-size: .78rem !important;
+  padding: 0 8px !important;
+  cursor: pointer !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   5. SELECT-SMALL — uniform 34px height in toolbars
+   ───────────────────────────────────────────────────────────────────────── */
+html .select-small {
+  height: 34px !important;
+  border-radius: var(--el-radius-sm) !important;
+  border: 1px solid var(--el-border-2) !important;
+  background: var(--el-bg) !important;
+  color: var(--el-text2) !important;
+  font-size: .82rem !important;
+  padding: 0 10px !important;
+  min-width: 100px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: border-color .12s !important;
+}
+html .select-small:focus {
+  border-color: var(--el-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   6. ERP-* CLASS DEFINITIONS (full design system aliases)
+   ───────────────────────────────────────────────────────────────────────── */
+html .erp-page           { display: flex !important; flex-direction: column !important; }
+html .erp-toolbar        { background: var(--el-surface) !important; border: 1px solid var(--el-border) !important; border-radius: var(--el-radius-md) !important; padding: 10px 14px !important; display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; box-shadow: var(--el-shadow-xs) !important; margin-bottom: 14px !important; }
+html .erp-table-card     { background: var(--el-surface) !important; border: 1px solid var(--el-border) !important; border-radius: var(--el-radius-md) !important; box-shadow: var(--el-shadow-xs) !important; overflow: hidden !important; padding: 0 !important; margin-bottom: 0 !important; }
+html .erp-table          { width: 100% !important; border-collapse: collapse !important; font-size: .84rem !important; }
+html .erp-kpi-grid       { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; gap: 14px !important; margin-bottom: 14px !important; }
+html .erp-kpi-card       { background: var(--el-surface) !important; border: 1px solid var(--el-border) !important; border-radius: var(--el-radius-md) !important; box-shadow: var(--el-shadow-xs) !important; padding: 18px 20px 16px !important; transition: box-shadow .15s, transform .12s !important; }
+html .erp-kpi-card:hover { box-shadow: 0 4px 18px rgba(15,23,42,.1) !important; transform: translateY(-2px) !important; }
+html .erp-empty          { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 52px 24px !important; gap: 10px !important; }
+
+/* erp-toolbar inside erp-page-header: no own card */
+html .erp-page-header > .erp-toolbar {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   7. BADGE SYSTEM — full set
+   ───────────────────────────────────────────────────────────────────────── */
+html .badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  border-radius: 5px !important;
+  font-size: .69rem !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  letter-spacing: .03em !important;
+  border: 1px solid transparent !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+html .badge-success { background: #F0FDF4 !important; color: #16A34A !important; border-color: #BBF7D0 !important; }
+html .badge-warning { background: #FFFBEB !important; color: #D97706 !important; border-color: #FDE68A !important; }
+html .badge-danger  { background: #FEF2F2 !important; color: #DC2626 !important; border-color: #FECACA !important; }
+html .badge-info    { background: #EFF6FF !important; color: #2563EB !important; border-color: #BFDBFE !important; }
+html .badge-gray    { background: #F1F5F9 !important; color: #64748B !important; border-color: #E2E8F0 !important; }
+html .badge-purple  { background: #F5F3FF !important; color: #7C3AED !important; border-color: #DDD6FE !important; }
+/* Pill aliases */
+html .pill.paid, html .badge.paid         { background: #F0FDF4 !important; color: #16A34A !important; border-color: #BBF7D0 !important; }
+html .pill.partial, html .badge.partial   { background: #FFFBEB !important; color: #D97706 !important; border-color: #FDE68A !important; }
+html .pill.unpaid, html .badge.unpaid     { background: #FEF2F2 !important; color: #DC2626 !important; border-color: #FECACA !important; }
+html .pill.active, html .badge.active     { background: #F0FDF4 !important; color: #16A34A !important; border-color: #BBF7D0 !important; }
+html .pill.inactive, html .badge.inactive { background: #FEF2F2 !important; color: #DC2626 !important; border-color: #FECACA !important; }
+html .pill.returned, html .badge.returned { background: #F1F5F9 !important; color: #64748B !important; border-color: #E2E8F0 !important; }
+html .pill.cancelled                      { background: #F1F5F9 !important; color: #64748B !important; border-color: #E2E8F0 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   8. REPORT MENU — premium grid cards
+   ───────────────────────────────────────────────────────────────────────── */
+html .rep-menu-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)) !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  margin-top: 4px !important;
+}
+html .rep-menu-card {
+  background: var(--el-surface) !important;
+  border: 1px solid var(--el-border) !important;
+  border-radius: var(--el-radius-md) !important;
+  padding: 22px 16px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none !important;
+  color: var(--el-text2) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  transition: box-shadow .14s, border-color .14s, transform .1s !important;
+  cursor: pointer !important;
+}
+html .rep-menu-card:hover {
+  box-shadow: 0 6px 20px rgba(37,99,235,.12) !important;
+  border-color: var(--el-primary-bd) !important;
+  transform: translateY(-3px) !important;
+}
+html .rep-menu-card i {
+  font-size: 1.3rem !important;
+  color: var(--el-primary) !important;
+  background: var(--el-primary-bg) !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background .14s, color .14s !important;
+}
+html .rep-menu-card:hover i {
+  background: var(--el-primary) !important;
+  color: #fff !important;
+}
+html .rep-menu-card span {
+  font-size: .79rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  color: var(--el-text2) !important;
+  line-height: 1.35 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   9. STAT CARDS GRID (both .stats-grid and .grid-5)
+   ───────────────────────────────────────────────────────────────────────── */
+html .stats-grid,
+html .erp-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)) !important;
+  gap: 14px !important;
+  margin-bottom: 14px !important;
+}
+html .grid-5 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 14px !important;
+}
+html .dash-stats-row,
+html .dash-charts {
+  margin-bottom: 14px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   10. TABLE OVERRIDES — card > table (comprehensive)
+   ───────────────────────────────────────────────────────────────────────── */
+html .card { margin-bottom: 14px !important; }
+html .card:has(> table),
+html .erp-table-card {
+  padding: 0 !important;
+  overflow: hidden !important;
+  margin-bottom: 0 !important;
+}
+/* Table scroll wrapper: allow horizontal scroll */
+html .card:has(> table) > table {
+  display: block !important;
+  overflow-x: auto !important;
+  min-width: 100% !important;
+  width: 100% !important;
+}
+/* Preserve table layout */
+html .card > table thead,
+html .card > table tbody,
+html .card > table tfoot {
+  display: table !important;
+  width: 100% !important;
+  table-layout: auto !important;
+}
+/* thead sticky */
+html .card > table thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+}
+/* Consistent th */
+html .card > table th {
+  background: #F8FAFC !important;
+  color: #64748B !important;
+  font-size: .69rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  padding: 10px 14px !important;
+  border-bottom: 2px solid #E5EAF0 !important;
+  white-space: nowrap !important;
+  border-right: 1px solid #F1F5F9 !important;
+}
+html .card > table th:last-child { border-right: none !important; }
+/* Consistent td */
+html .card > table td {
+  padding: 10px 14px !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  color: #334155 !important;
+  font-size: .84rem !important;
+  vertical-align: middle !important;
+  background: #FFFFFF !important;
+  transition: background .06s !important;
+}
+html .card > table tbody tr:last-child td { border-bottom: none !important; }
+html .card > table tbody tr:hover td { background: #F8FAFC !important; }
+/* Total row */
+html .card > table tr.total-row td {
+  background: #EFF6FF !important;
+  color: #1D4ED8 !important;
+  font-weight: 700 !important;
+  border-top: 2px solid #BFDBFE !important;
+  border-bottom: none !important;
+}
+/* Returned/cancelled row */
+html .card > table tr.returned-row td,
+html .card > table tr.cancelled-row td {
+  background: #FAFAFA !important;
+  color: #94A3B8 !important;
+  text-decoration: line-through !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   11. EMPTY STATE (from emptyRow JS function)
+   ───────────────────────────────────────────────────────────────────────── */
+html .empty-state,
+html .erp-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 54px 20px !important;
+  gap: 10px !important;
+  text-align: center !important;
+}
+html .empty-state-icon,
+html .erp-empty-icon {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 50% !important;
+  background: #F8FAFC !important;
+  border: 1px solid #E5EAF0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.3rem !important;
+  color: #94A3B8 !important;
+  margin-bottom: 2px !important;
+}
+html .empty-state-title,
+html .erp-empty-title {
+  font-size: .92rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+}
+html .empty-state-sub,
+html .erp-empty-sub {
+  font-size: .78rem !important;
+  color: #94A3B8 !important;
+  margin-top: -4px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   12. AMOUNT / DIRECTION INDICATORS
+   ───────────────────────────────────────────────────────────────────────── */
+html td.right, html th.right, html .text-right { text-align: right !important; }
+html td.center, html th.center, html .text-center { text-align: center !important; }
+html .amt-in  { color: #16A34A !important; font-weight: 700 !important; font-variant-numeric: tabular-nums !important; }
+html .amt-out { color: #DC2626 !important; font-weight: 700 !important; font-variant-numeric: tabular-nums !important; }
+html td strong { font-weight: 700 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   13. FORM CARD in settings/forms
+   ───────────────────────────────────────────────────────────────────────── */
+html .form-stack { display: flex !important; flex-direction: column !important; gap: 14px !important; }
+html .form-card {
+  background: #FFFFFF !important;
+  border: 1px solid #E5EAF0 !important;
+  border-radius: var(--el-radius-md) !important;
+  box-shadow: var(--el-shadow-xs) !important;
+  overflow: hidden !important;
+}
+html .form-card-title {
+  background: #F8FAFC !important;
+  color: #64748B !important;
+  border-bottom: 1px solid #E5EAF0 !important;
+  font-size: .68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+  padding: 9px 16px !important;
+}
+html .form-card .grid-2 { padding: 16px !important; gap: 14px !important; }
+html .f-group label { font-size: .76rem !important; font-weight: 600 !important; color: #475569 !important; margin-bottom: 5px !important; display: block !important; }
+html .f-group input, html .f-group select, html .f-group textarea {
+  width: 100% !important;
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 7px !important;
+  padding: 8px 12px !important;
+  font-size: .855rem !important;
+  color: #0F172A !important;
+  transition: border-color .12s, box-shadow .12s !important;
+}
+html .f-group input:focus, html .f-group select:focus, html .f-group textarea:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+  outline: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   14. INFO BLOCK (inside tools, etc.)
+   ───────────────────────────────────────────────────────────────────────── */
+html .info-block {
+  padding: 14px 18px !important;
+  background: #F8FAFC !important;
+}
+html .info-row {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  font-size: .84rem !important;
+  padding: 6px 0 !important;
+}
+html .info-label {
+  font-weight: 700 !important;
+  color: #475569 !important;
+  min-width: 100px !important;
+  flex-shrink: 0 !important;
+  font-size: .78rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+html .info-value { color: #334155 !important; font-size: .85rem !important; line-height: 1.5 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   15. MUTED TEXT & MISC
+   ───────────────────────────────────────────────────────────────────────── */
+html .muted { color: #64748B !important; font-size: .84rem !important; }
+html .card-title { font-size: .9rem !important; font-weight: 700 !important; color: #0F172A !important; margin: 0 0 10px !important; }
+html .users-intro { color: #64748B !important; font-size: .84rem !important; margin-bottom: 14px !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   16. DARK MODE — Phase 3 additions
+   ───────────────────────────────────────────────────────────────────────── */
+body.theme-dark .content-header,
+body.theme-dark .erp-page-header {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+body.theme-dark .content-header h1,
+body.theme-dark .erp-page-header h1 { color: #F1F5F9 !important; border-bottom-color: #334155 !important; }
+body.theme-dark .pager,
+body.theme-dark .erp-pagination { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .btn-pager { background: #1E293B !important; border-color: #475569 !important; color: #CBD5E1 !important; }
+body.theme-dark .btn-pager:hover { background: rgba(37,99,235,.2) !important; border-color: #3B82F6 !important; color: #93C5FD !important; }
+body.theme-dark .select-tiny, body.theme-dark .select-small { background: #111827 !important; border-color: #334155 !important; color: #E2E8F0 !important; }
+body.theme-dark .card > table th { background: #111827 !important; border-bottom-color: #334155 !important; border-right-color: #334155 !important; color: #64748B !important; }
+body.theme-dark .card > table td { background: #1E293B !important; border-bottom-color: #334155 !important; color: #CBD5E1 !important; }
+body.theme-dark .card > table tbody tr:hover td { background: #334155 !important; }
+body.theme-dark .card > table tr.total-row td { background: rgba(37,99,235,.15) !important; color: #93C5FD !important; border-top-color: #3B82F6 !important; }
+body.theme-dark .empty-state-icon { background: #111827 !important; border-color: #334155 !important; color: #475569 !important; }
+body.theme-dark .empty-state-title { color: #CBD5E1 !important; }
+body.theme-dark .empty-state-sub { color: #475569 !important; }
+body.theme-dark .rep-menu-card { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .rep-menu-card i { background: rgba(37,99,235,.2) !important; }
+body.theme-dark .rep-menu-card:hover i { background: var(--el-primary) !important; color: #fff !important; }
+body.theme-dark .form-card { background: #1E293B !important; border-color: #334155 !important; }
+body.theme-dark .form-card-title { background: #111827 !important; border-color: #334155 !important; }
+body.theme-dark .form-card .grid-2 .f-group input,
+body.theme-dark .form-card .grid-2 .f-group select,
+body.theme-dark .form-card .grid-2 .f-group textarea { background: #111827 !important; border-color: #334155 !important; color: #F1F5F9 !important; }
+body.theme-dark .badge-success { background: rgba(22,163,74,.15) !important; border-color: rgba(22,163,74,.35) !important; }
+body.theme-dark .badge-warning { background: rgba(217,119,6,.15)  !important; border-color: rgba(217,119,6,.35)  !important; }
+body.theme-dark .badge-danger  { background: rgba(220,38,38,.15)  !important; border-color: rgba(220,38,38,.35)  !important; }
+body.theme-dark .badge-info    { background: rgba(37,99,235,.15)  !important; border-color: rgba(37,99,235,.35)  !important; }
+body.theme-dark .badge-gray    { background: rgba(100,116,139,.15) !important; border-color: rgba(100,116,139,.3) !important; }
+/* ══════════════════════════════════════════════════════════════════════════ */
