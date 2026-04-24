@@ -5876,6 +5876,7 @@ function purchRemaining(p) {
 }
 
 function saleRemaining(s) {
+  if (s && s.returnedAt) return 0;
   return Math.max(0, n(s.amount) - n(s.paidTotal));
 }
 
