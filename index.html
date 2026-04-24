@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='30' fill='%2310b981'/%3E%3Cpath d='M28 92V28H62 C79 28 90 37 90 52 C90 64 83 73 70 76 L91 92H72L54 78H43V92H28ZM43 65H60 C69 65 75 60 75 53 C75 45 69 41 60 41H43V65Z' fill='white'/%3E%3Cpath d='M66 28 C86 28 97 38 97 52 C97 61 92 68 83 72 C93 75 100 83 100 94 C100 110 87 120 66 120' fill='none' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'/%3E%3Ccircle cx='88' cy='26' r='5' fill='white'/%3E%3Ccircle cx='104' cy='38' r='5' fill='white'/%3E%3Cline x1='88' y1='26' x2='104' y2='38' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -51,19 +51,19 @@
     <nav>
       <button type="button" class="nav-link active" data-sec="dash" data-tip="Dashboard"><i class="fas fa-gauge"></i><span class="nav-text">Dashboard</span></button>
       <button type="button" class="nav-link" data-sec="cash" data-tip="Kassa"><i class="fas fa-coins"></i><span class="nav-text">Kassa</span></button>
-      <div class="nav-sep nav-group-label">Kommersiya</div>
+      <div class="nav-sep"></div>
       <button type="button" class="nav-link" data-sec="sales" data-tip="Satışlar"><i class="fas fa-receipt"></i><span class="nav-text">Satışlar</span></button>
       <button type="button" class="nav-link" data-sec="purch" data-tip="Alışlar"><i class="fas fa-cart-flatbed"></i><span class="nav-text">Alışlar</span></button>
       <button type="button" class="nav-link" data-sec="stock" data-tip="Anbar"><i class="fas fa-warehouse"></i><span class="nav-text">Anbar</span></button>
-      <div class="nav-sep nav-group-label">Müştərilər</div>
+      <div class="nav-sep"></div>
       <button type="button" class="nav-link" data-sec="cust" data-tip="Müştərilər"><i class="fas fa-users"></i><span class="nav-text">Müştərilər</span></button>
       <button type="button" class="nav-link" data-sec="supp" data-tip="Təchizatçılar"><i class="fas fa-truck"></i><span class="nav-text">Təchizatçı</span></button>
       <button type="button" class="nav-link" data-sec="prod" data-tip="Məhsullar"><i class="fas fa-box-open"></i><span class="nav-text">Məhsullar</span></button>
-      <div class="nav-sep nav-group-label">Maliyyə</div>
+      <div class="nav-sep"></div>
       <button type="button" class="nav-link" data-sec="debts" data-tip="Borclar"><i class="fas fa-file-invoice-dollar"></i><span class="nav-text">Borclar</span></button>
       <button type="button" class="nav-link" data-sec="staff" data-tip="Əməkdaşlar"><i class="fas fa-id-badge"></i><span class="nav-text">Əməkdaşlar</span></button>
       <button type="button" class="nav-link" data-sec="reports" data-tip="Hesabatlar"><i class="fas fa-chart-bar"></i><span class="nav-text">Hesabatlar</span></button>
-      <div class="nav-sep nav-group-label">İdarəetmə</div>
+      <div class="nav-sep"></div>
       <button type="button" class="nav-link admin-only" data-sec="users" data-tip="İstifadəçi icazələri"><i class="fas fa-user-shield"></i><span class="nav-text">İcazələr</span></button>
       <button type="button" class="nav-link admin-only" data-sec="audit" data-tip="Audit"><i class="fas fa-shield-halved"></i><span class="nav-text">Audit</span></button>
       <button type="button" class="nav-link admin-only" data-sec="trash" data-tip="Səbət"><i class="fas fa-trash-can"></i><span class="nav-text">Səbət</span></button>
@@ -125,25 +125,25 @@
     <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
 
   <main>
-    <div id="dash" class="section erp-page">
-      <div class="content-header erp-page-header"><h1>Nəzarət paneli</h1></div>
+    <div id="dash" class="section">
+      <div class="content-header"><h1>Nəzarət paneli</h1></div>
 
       <!-- Row 1: Key balances -->
-      <div class="stats-grid erp-kpi-grid">
-        <div class="card stat-card erp-kpi-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
-        <div class="card stat-card erp-kpi-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
-        <div class="card stat-card erp-kpi-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card"><small>Ümumi balans (AZN)</small><h2 id="st-cash">0.00</h2></div>
+      <div class="stats-grid">
+        <div class="card stat-card"><small>Müştəri</small><h2 id="st-cust">0</h2></div>
+        <div class="card stat-card"><small>Anbarda</small><h2 id="st-stock">0</h2></div>
+        <div class="card stat-card"><small>Debitor borc (AZN)</small><h2 id="st-debts">0.00</h2></div>
+        <div class="card stat-card"><small>Kreditor borc (AZN)</small><h2 id="st-creditor">0.00</h2></div>
+        <div class="card stat-card"><small>Ümumi balans (AZN)</small><h2 id="st-cash">0.00</h2></div>
       </div>
 
       <!-- Row 2: Bu ay / bu gün KPIs -->
-      <div class="stats-grid erp-kpi-grid" style="margin-top:12px">
-        <div class="card stat-card erp-kpi-card" style="border-top:3px solid var(--accent)"><small>Bu ay satış (AZN)</small><h2 id="st-month-sales">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card" style="border-top:3px solid #e63946"><small>Bu ay alış (AZN)</small><h2 id="st-month-purch">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card" style="border-top:3px solid #2a9d8f"><small>Bu ay xərc (AZN)</small><h2 id="st-month-exp">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card" style="border-top:3px solid #f4a261"><small>Gecikmiş kredit sayı</small><h2 id="st-overdue-cnt">0</h2></div>
-        <div class="card stat-card erp-kpi-card" style="border-top:3px solid #8ecae6"><small>Bu gün satış (AZN)</small><h2 id="st-today-sales">0.00</h2></div>
+      <div class="stats-grid" style="margin-top:12px">
+        <div class="card stat-card" style="border-top:3px solid var(--accent)"><small>Bu ay satış (AZN)</small><h2 id="st-month-sales">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #e63946"><small>Bu ay alış (AZN)</small><h2 id="st-month-purch">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #2a9d8f"><small>Bu ay xərc (AZN)</small><h2 id="st-month-exp">0.00</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #f4a261"><small>Gecikmiş kredit sayı</small><h2 id="st-overdue-cnt">0</h2></div>
+        <div class="card stat-card" style="border-top:3px solid #8ecae6"><small>Bu gün satış (AZN)</small><h2 id="st-today-sales">0.00</h2></div>
       </div>
 
       <div class="dash-charts">
@@ -210,10 +210,10 @@
       </div>
     </div>
 
-    <div id="cust" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="cust" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_cust">Müştərilər</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="date-range">
             <input type="date" id="custFrom" onchange="renderAll()">
             <span>—</span>
@@ -236,10 +236,10 @@
       </div>
     </div>
 
-    <div id="supp" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="supp" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_supp">Təchizatçılar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="date-range">
             <input type="date" id="suppFrom" onchange="renderAll()">
             <span>—</span>
@@ -262,10 +262,10 @@
       </div>
     </div>
 
-    <div id="prod" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="prod" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_prod">Məhsullar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="date-range">
             <input type="date" id="prodFrom" onchange="renderAll()">
             <span>—</span>
@@ -288,10 +288,10 @@
       </div>
     </div>
 
-    <div id="purch" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="purch" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_purch">Alışlar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <select id="purchStatus" class="select-small" onchange="renderAll()">
             <option value="active" selected>Aktiv</option>
             <option value="returned">Qaytarılanlar</option>
@@ -318,7 +318,7 @@
           <tfoot id="tblPurchFoot"></tfoot>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('purch')">Prev</button>
         <span id="purchPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('purch')">Next</button>
@@ -332,10 +332,10 @@
       </div>
     </div>
 
-    <div id="stock" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="stock" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_stock">Anbar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <select id="stockStatus" class="select-small" onchange="renderAll()">
             <option value="all">Hamısı</option>
             <option value="stock" selected>Anbardadır</option>
@@ -368,7 +368,7 @@
           <tfoot id="tblStockFoot"></tfoot>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('stock')">Prev</button>
         <span id="stockPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('stock')">Next</button>
@@ -382,10 +382,10 @@
       </div>
     </div>
 
-    <div id="sales" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="sales" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_sales">Satışlar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <select id="salesStatus" class="select-small" onchange="renderAll()">
             <option value="active" selected>Aktiv</option>
             <option value="returned">Qaytarılanlar</option>
@@ -412,7 +412,7 @@
           <tfoot id="tblSalesFoot"></tfoot>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('sales')">Prev</button>
         <span id="salesPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('sales')">Next</button>
@@ -426,10 +426,10 @@
       </div>
     </div>
 
-    <div id="staff" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="staff" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_staff">Əməkdaşlar</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="date-range">
             <input type="date" id="staffFrom" onchange="renderAll()">
             <span>—</span>
@@ -452,10 +452,10 @@
       </div>
     </div>
 
-    <div id="debts" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="debts" class="section">
+      <div class="content-header">
         <h1 data-i18n="page_debts_deb">Borclar</h1>
-        <div class="header-actions debt-header-actions erp-toolbar">
+        <div class="header-actions debt-header-actions">
           <div class="filter-field">
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
@@ -500,7 +500,7 @@
           <tbody id="tblDebts"></tbody>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('debts')">Prev</button>
         <span id="debtsPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('debts')">Next</button>
@@ -515,10 +515,10 @@
       </div>
     </div>
 
-    <div id="overdue" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="overdue" class="section">
+      <div class="content-header">
         <h1 data-i18n="page_debts_loans">Borclar - Kreditlər</h1>
-        <div class="header-actions debt-header-actions erp-toolbar">
+        <div class="header-actions debt-header-actions">
           <div class="filter-field">
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
@@ -564,10 +564,10 @@
       </div>
     </div>
 
-    <div id="creditor" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="creditor" class="section">
+      <div class="content-header">
         <h1 data-i18n="page_debts_cred">Borclar - Kreditor</h1>
-        <div class="header-actions debt-header-actions erp-toolbar">
+        <div class="header-actions debt-header-actions">
           <div class="filter-field">
             <label data-i18n="lbl_debt_type">Borc növü</label>
             <select class="select-small debt-type-select" onchange="onDebtTypeChange(this)" data-i18n-title="lbl_debt_type" title="Borc növü">
@@ -613,7 +613,7 @@
           <tbody id="tblCreditor"></tbody>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('cred')">Prev</button>
         <span id="credPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('cred')">Next</button>
@@ -628,10 +628,10 @@
       </div>
     </div>
 
-    <div id="cash" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="cash" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_cash">Kassa</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <select id="cashAccount" class="select-small" onchange="renderAll()"></select>
           <select id="cashType" class="select-small" onchange="renderAll()">
             <option value="all" selected>Hamısı</option>
@@ -656,11 +656,11 @@
         </div>
       </div>
 
-      <div class="stats-grid erp-kpi-grid">
-        <div class="card stat-card erp-kpi-card"><small data-i18n="cash_stat_in">Mədaxil</small><h2 id="cashIn">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card"><small data-i18n="cash_stat_out">Məxaric</small><h2 id="cashOut">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card"><small data-i18n="cash_stat_bal">Ümumi balans</small><h2 id="cashBal">0.00</h2></div>
-        <div class="card stat-card erp-kpi-card"><small data-i18n="cash_stat_adv">Qaytarma avansı</small><h2 id="cashAdv">0.00</h2></div>
+      <div class="stats-grid">
+        <div class="card stat-card"><small data-i18n="cash_stat_in">Mədaxil</small><h2 id="cashIn">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_out">Məxaric</small><h2 id="cashOut">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_bal">Ümumi balans</small><h2 id="cashBal">0.00</h2></div>
+        <div class="card stat-card"><small data-i18n="cash_stat_adv">Qaytarma avansı</small><h2 id="cashAdv">0.00</h2></div>
       </div>
 
       <div class="card" style="margin-top:18px;">
@@ -669,7 +669,7 @@
           <tbody id="tblCash"></tbody>
         </table>
       </div>
-      <div class="pager erp-pagination">
+      <div class="pager">
         <button type="button" class="btn-pager" onclick="pagePrev('cash')">Prev</button>
         <span id="cashPageInfo" class="pager-info"></span>
         <button type="button" class="btn-pager" onclick="pageNext('cash')">Next</button>
@@ -683,10 +683,10 @@
       </div>
     </div>
 
-    <div id="companies" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="companies" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_companies">Şirkətlər</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <select id="coFilterStatus" onchange="renderAll()" title="Status filtri" style="max-width:110px;">
             <option value="all">Hamısı</option>
             <option value="active">Aktiv</option>
@@ -724,10 +724,10 @@
       </div>
     </div>
 
-    <div id="users" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="users" class="section">
+      <div class="content-header">
         <h1>İstifadəçi icazələri</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <button class="btn-main dev-only" type="button" onclick="openUser()" style="display:none"><i class="fas fa-user-plus"></i> Yeni istifadəçi</button>
         </div>
       </div>
@@ -740,10 +740,10 @@
       </div>
     </div>
 
-    <div id="audit" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="audit" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_audit">Audit</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="date-range">
             <input type="date" id="auditFrom" onchange="renderAll()">
             <span>—</span>
@@ -764,10 +764,10 @@
       </div>
     </div>
 
-    <div id="trash" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="trash" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_trash">Səbət</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <div class="search-container">
             <input type="text" data-i18n-placeholder="ph_search" placeholder="Axtar..." onkeyup="filterTable('tblTrash', this.value)">
             <button class="search-btn" type="button"><i class="fas fa-search"></i></button>
@@ -783,8 +783,8 @@
       </div>
     </div>
 
-    <div id="settings" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="settings" class="section">
+      <div class="content-header">
         <h1><i class="fas fa-gear"></i> Ayarlar</h1>
       </div>
       <div class="form-stack" style="max-width:680px">
@@ -832,10 +832,10 @@
       </div>
     </div>
 
-    <div id="tools" class="section erp-page">
-      <div class="content-header erp-page-header">
+    <div id="tools" class="section">
+      <div class="content-header">
         <h1 data-i18n="nav_tools">Alətlər</h1>
-        <div class="header-actions erp-toolbar">
+        <div class="header-actions">
           <button class="btn-cancel dev-only" type="button" onclick="exportCompany()"><i class="fas fa-file-export"></i><span data-i18n="btn_export"> Export</span></button>
           <label class="btn-cancel dev-only" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
             <i class="fas fa-file-import"></i><span data-i18n="btn_import"> Import</span>
@@ -862,7 +862,7 @@
       </div>
     </div>
 
-    <div id="reports" class="section erp-page">
+    <div id="reports" class="section">
       <!-- Hidden inputs kept for JS compatibility -->
       <select id="repView" style="display:none" onchange="renderAll()">
         <option value="" selected></option>
@@ -893,7 +893,7 @@
 
       <!-- Report menu (shown when no sub-view active) -->
       <div id="repMenu">
-        <div class="content-header erp-page-header">
+        <div class="content-header">
           <h1>Hesabatlar</h1>
         </div>
         <div class="rep-menu-grid">
@@ -978,12 +978,12 @@
 
       <!-- Sub-report content (shown when a view is active) -->
       <div id="repContent" style="display:none">
-        <div class="content-header erp-page-header">
+        <div class="content-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
             <button type="button" class="btn-back" onclick="setRepView('')" style="flex-shrink:0"><i class="fas fa-chevron-left"></i></button>
             <h1 id="repContentTitle" style="margin:0">Hesabat</h1>
           </div>
-          <div class="header-actions erp-toolbar">
+          <div class="header-actions">
             <input type="month" id="repMonthVis" class="select-small" onchange="syncRepFilters()" placeholder="Ay">
             <div class="date-range">
               <input type="date" id="repFromVis" onchange="syncRepFilters()">
@@ -996,11 +996,11 @@
         <!-- Satış hesabatı -->
         <div id="repSec-sales" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Satış cəmi</small><h2 id="rv-salesTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ödənilən</small><h2 id="rv-salesPaid">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Maya dəyəri</small><h2 id="rv-salesCogs">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Mənfəət/Zərər</small><h2 id="rv-salesPL">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Satış sayı</small><h2 id="rv-salesCount">0</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-salesTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-salesPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Maya dəyəri</small><h2 id="rv-salesCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="rv-salesPL">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-salesCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1013,10 +1013,10 @@
         <!-- Alış hesabatı -->
         <div id="repSec-purch" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Alış cəmi</small><h2 id="rv-purchTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ödənilən</small><h2 id="rv-purchPaid">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qalıq borc</small><h2 id="rv-purchRem">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Alış sayı</small><h2 id="rv-purchCount">0</h2></div>
+            <div class="card stat-card"><small>Alış cəmi</small><h2 id="rv-purchTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-purchPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-purchRem">0.00</h2></div>
+            <div class="card stat-card"><small>Alış sayı</small><h2 id="rv-purchCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1029,10 +1029,10 @@
         <!-- Əmək haqqı hesabatı -->
         <div id="repSec-staff" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Cəmi əməkhaqqı</small><h2 id="rv-staffTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Baza maaş cəmi</small><h2 id="rv-staffBase">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Komissiya cəmi</small><h2 id="rv-staffComm">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Satış cəmi</small><h2 id="rv-staffSales">0.00</h2></div>
+            <div class="card stat-card"><small>Cəmi əməkhaqqı</small><h2 id="rv-staffTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Baza maaş cəmi</small><h2 id="rv-staffBase">0.00</h2></div>
+            <div class="card stat-card"><small>Komissiya cəmi</small><h2 id="rv-staffComm">0.00</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-staffSales">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1045,8 +1045,8 @@
         <!-- Xərc hesabatı -->
         <div id="repSec-expense" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Xərc cəmi</small><h2 id="rv-expTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Xərc sayı</small><h2 id="rv-expCount">0</h2></div>
+            <div class="card stat-card"><small>Xərc cəmi</small><h2 id="rv-expTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc sayı</small><h2 id="rv-expCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1059,9 +1059,9 @@
         <!-- Anbar hesabatı -->
         <div id="repSec-stock" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Anbardakı miqdar</small><h2 id="rv-stockQty">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Cəmi maya dəyəri</small><h2 id="rv-stockVal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Məhsul növü sayı</small><h2 id="rv-stockItems">0</h2></div>
+            <div class="card stat-card"><small>Anbardakı miqdar</small><h2 id="rv-stockQty">0</h2></div>
+            <div class="card stat-card"><small>Cəmi maya dəyəri</small><h2 id="rv-stockVal">0.00</h2></div>
+            <div class="card stat-card"><small>Məhsul növü sayı</small><h2 id="rv-stockItems">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1074,11 +1074,11 @@
         <!-- Mənfəət/Zərər hesabatı -->
         <div id="repSec-pl" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Satış cəmi</small><h2 id="rv-plSales">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Maya dəyəri</small><h2 id="rv-plCogs">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Xərc</small><h2 id="rv-plExp">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Əməkhaqqı</small><h2 id="rv-plPayroll">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Mənfəət/Zərər</small><h2 id="rv-plNet">0.00</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-plSales">0.00</h2></div>
+            <div class="card stat-card"><small>Maya dəyəri</small><h2 id="rv-plCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc</small><h2 id="rv-plExp">0.00</h2></div>
+            <div class="card stat-card"><small>Əməkhaqqı</small><h2 id="rv-plPayroll">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət/Zərər</small><h2 id="rv-plNet">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1091,10 +1091,10 @@
         <!-- Kassa hesabatı -->
         <div id="repSec-cash" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Mədaxil</small><h2 id="rv-cashIn">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Məxaric</small><h2 id="rv-cashOut">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Saldo</small><h2 id="rv-cashNet">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Əməliyyat sayı</small><h2 id="rv-cashCount">0</h2></div>
+            <div class="card stat-card"><small>Mədaxil</small><h2 id="rv-cashIn">0.00</h2></div>
+            <div class="card stat-card"><small>Məxaric</small><h2 id="rv-cashOut">0.00</h2></div>
+            <div class="card stat-card"><small>Saldo</small><h2 id="rv-cashNet">0.00</h2></div>
+            <div class="card stat-card"><small>Əməliyyat sayı</small><h2 id="rv-cashCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1107,10 +1107,10 @@
         <!-- Müştəri hesabatı -->
         <div id="repSec-customer" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Müştəri sayı</small><h2 id="rv-custCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ümumi satış</small><h2 id="rv-custSales">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ödənilən</small><h2 id="rv-custPaid">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qalıq borc</small><h2 id="rv-custRem">0.00</h2></div>
+            <div class="card stat-card"><small>Müştəri sayı</small><h2 id="rv-custCount">0</h2></div>
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-custSales">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-custPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-custRem">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1123,8 +1123,8 @@
         <!-- Satış növü üzrə -->
         <div id="repSec-saletype" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Ümumi satış</small><h2 id="rv-stTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Satış sayı</small><h2 id="rv-stCount">0</h2></div>
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-stTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-stCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1137,10 +1137,10 @@
         <!-- Məhsul satış hesabatı -->
         <div id="repSec-product" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Məhsul növü sayı</small><h2 id="rv-prodCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Satış cəmi</small><h2 id="rv-prodSales">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Maya cəmi</small><h2 id="rv-prodCogs">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Mənfəət</small><h2 id="rv-prodPL">0.00</h2></div>
+            <div class="card stat-card"><small>Məhsul növü sayı</small><h2 id="rv-prodCount">0</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-prodSales">0.00</h2></div>
+            <div class="card stat-card"><small>Maya cəmi</small><h2 id="rv-prodCogs">0.00</h2></div>
+            <div class="card stat-card"><small>Mənfəət</small><h2 id="rv-prodPL">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1153,11 +1153,11 @@
         <!-- Debitor yaşlanma -->
         <div id="repSec-aging" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Ümumi borc</small><h2 id="rv-agingTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>0–30 gün</small><h2 id="rv-aging30">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>31–60 gün</small><h2 id="rv-aging60">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>61–90 gün</small><h2 id="rv-aging90">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>90+ gün</small><h2 id="rv-aging90p">0.00</h2></div>
+            <div class="card stat-card"><small>Ümumi borc</small><h2 id="rv-agingTotal">0.00</h2></div>
+            <div class="card stat-card"><small>0–30 gün</small><h2 id="rv-aging30">0.00</h2></div>
+            <div class="card stat-card"><small>31–60 gün</small><h2 id="rv-aging60">0.00</h2></div>
+            <div class="card stat-card"><small>61–90 gün</small><h2 id="rv-aging90">0.00</h2></div>
+            <div class="card stat-card"><small>90+ gün</small><h2 id="rv-aging90p">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1170,11 +1170,11 @@
         <!-- Kredit portfeli -->
         <div id="repSec-credits" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Aktiv kredit</small><h2 id="rv-crCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Cəmi məbləğ</small><h2 id="rv-crTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ödənilən</small><h2 id="rv-crPaid">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qalıq borc</small><h2 id="rv-crRem">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Gecikmiş</small><h2 id="rv-crOverdue">0.00</h2></div>
+            <div class="card stat-card"><small>Aktiv kredit</small><h2 id="rv-crCount">0</h2></div>
+            <div class="card stat-card"><small>Cəmi məbləğ</small><h2 id="rv-crTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-crPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-crRem">0.00</h2></div>
+            <div class="card stat-card"><small>Gecikmiş</small><h2 id="rv-crOverdue">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1187,10 +1187,10 @@
         <!-- Kreditor (Təchizatçı) hesabatı -->
         <div id="repSec-creditor" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Təchizatçı sayı</small><h2 id="rv-credCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ümumi alış</small><h2 id="rv-credTotal">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Ödənilən</small><h2 id="rv-credPaid">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qalıq borc</small><h2 id="rv-credRem">0.00</h2></div>
+            <div class="card stat-card"><small>Təchizatçı sayı</small><h2 id="rv-credCount">0</h2></div>
+            <div class="card stat-card"><small>Ümumi alış</small><h2 id="rv-credTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Ödənilən</small><h2 id="rv-credPaid">0.00</h2></div>
+            <div class="card stat-card"><small>Qalıq borc</small><h2 id="rv-credRem">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1208,9 +1208,9 @@
             </select>
           </div>
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Giriş</small><h2 id="rv-accIn">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Çıxış</small><h2 id="rv-accOut">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Saldo</small><h2 id="rv-accNet">0.00</h2></div>
+            <div class="card stat-card"><small>Giriş</small><h2 id="rv-accIn">0.00</h2></div>
+            <div class="card stat-card"><small>Çıxış</small><h2 id="rv-accOut">0.00</h2></div>
+            <div class="card stat-card"><small>Saldo</small><h2 id="rv-accNet">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1223,11 +1223,11 @@
         <!-- Günlük hesabat -->
         <div id="repSec-daily" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Satış cəmi</small><h2 id="rv-dailySales">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Daxil olan</small><h2 id="rv-dailyIn">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Xərc</small><h2 id="rv-dailyExp">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qaytarma</small><h2 id="rv-dailyRefund">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Gün sayı</small><h2 id="rv-dailyDays">0</h2></div>
+            <div class="card stat-card"><small>Satış cəmi</small><h2 id="rv-dailySales">0.00</h2></div>
+            <div class="card stat-card"><small>Daxil olan</small><h2 id="rv-dailyIn">0.00</h2></div>
+            <div class="card stat-card"><small>Xərc</small><h2 id="rv-dailyExp">0.00</h2></div>
+            <div class="card stat-card"><small>Qaytarma</small><h2 id="rv-dailyRefund">0.00</h2></div>
+            <div class="card stat-card"><small>Gün sayı</small><h2 id="rv-dailyDays">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1240,8 +1240,8 @@
         <!-- Geri qaytarma hesabatı -->
         <div id="repSec-returns" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Qaytarma sayı</small><h2 id="rv-retCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Qaytarılan məbləğ</small><h2 id="rv-retTotal">0.00</h2></div>
+            <div class="card stat-card"><small>Qaytarma sayı</small><h2 id="rv-retCount">0</h2></div>
+            <div class="card stat-card"><small>Qaytarılan məbləğ</small><h2 id="rv-retTotal">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1259,9 +1259,9 @@
             </select>
           </div>
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Ümumi satış</small><h2 id="rv-spSales">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Satış sayı</small><h2 id="rv-spCount">0</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Komissiya</small><h2 id="rv-spComm">0.00</h2></div>
+            <div class="card stat-card"><small>Ümumi satış</small><h2 id="rv-spSales">0.00</h2></div>
+            <div class="card stat-card"><small>Satış sayı</small><h2 id="rv-spCount">0</h2></div>
+            <div class="card stat-card"><small>Komissiya</small><h2 id="rv-spComm">0.00</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1274,10 +1274,10 @@
         <!-- Ödəniş hesabatı -->
         <div id="repSec-payments" style="display:none">
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Daxil olan (satış)</small><h2 id="rv-payIn">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Çıxan (alış)</small><h2 id="rv-payOut">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Xalis ödəniş</small><h2 id="rv-payNet">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Əməliyyat sayı</small><h2 id="rv-payCount">0</h2></div>
+            <div class="card stat-card"><small>Daxil olan (satış)</small><h2 id="rv-payIn">0.00</h2></div>
+            <div class="card stat-card"><small>Çıxan (alış)</small><h2 id="rv-payOut">0.00</h2></div>
+            <div class="card stat-card"><small>Xalis ödəniş</small><h2 id="rv-payNet">0.00</h2></div>
+            <div class="card stat-card"><small>Əməliyyat sayı</small><h2 id="rv-payCount">0</h2></div>
           </div>
           <div class="card">
             <table>
@@ -1294,12 +1294,12 @@
             <button class="btn-main" type="button" onclick="openFounderForm(null)"><i class="fas fa-plus"></i> Təsisçi əlavə et</button>
           </div>
           <div class="grid-5" style="margin-bottom:16px">
-            <div class="card stat-card erp-kpi-card"><small>Brüt mənfəət — Kassa metodu</small><h2 id="rv-fndIn">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Brüt mənfəət — Tahakkuk metodu</small><h2 id="rv-fndIn2">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Cəmi çəkilən (məxaric)</small><h2 id="rv-fndOut">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Cəmi qoyulan (sərmayə)</small><h2 id="rv-fndExpShare">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Xalis xeyir — Kassa (mənfəət − xərc)</small><h2 id="rv-fndNet">0.00</h2></div>
-            <div class="card stat-card erp-kpi-card"><small>Təsisçi sayı</small><h2 id="rv-fndCount">0</h2></div>
+            <div class="card stat-card"><small>Brüt mənfəət — Kassa metodu</small><h2 id="rv-fndIn">0.00</h2></div>
+            <div class="card stat-card"><small>Brüt mənfəət — Tahakkuk metodu</small><h2 id="rv-fndIn2">0.00</h2></div>
+            <div class="card stat-card"><small>Cəmi çəkilən (məxaric)</small><h2 id="rv-fndOut">0.00</h2></div>
+            <div class="card stat-card"><small>Cəmi qoyulan (sərmayə)</small><h2 id="rv-fndExpShare">0.00</h2></div>
+            <div class="card stat-card"><small>Xalis xeyir — Kassa (mənfəət − xərc)</small><h2 id="rv-fndNet">0.00</h2></div>
+            <div class="card stat-card"><small>Təsisçi sayı</small><h2 id="rv-fndCount">0</h2></div>
           </div>
 
           <h3 style="margin:0 0 8px;font-size:.95rem">&#x1F4B5; Kassa metodu — yalnız faktiki ödənişlər əsasında</h3>

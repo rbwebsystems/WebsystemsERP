@@ -4938,7 +4938,6 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "erp-light", name: "Enterprise Light Pro", accent: "#2563EB", accentHover: "#1D4ED8", accentLight: "#EFF6FF", sidebarLight: "#FFFFFF", sidebarDark: "#1E293B" },
   { id: "teal", name: "Navy Teal (sistem)", accent: "#1a4754", accentHover: "#16404f", accentLight: "#e8f4f8", sidebarLight: "#1a4754", sidebarDark: "#0a1929" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
@@ -4948,9 +4947,9 @@ const SKINS = [
 
 function getSkinId() {
   try {
-    return String(localStorage.getItem(SKIN_KEY) || "erp-light").trim() || "erp-light";
+    return String(localStorage.getItem(SKIN_KEY) || "teal").trim() || "teal";
   } catch {
-    return "erp-light";
+    return "teal";
   }
 }
 
@@ -4963,14 +4962,10 @@ function applySkin() {
   root.style.setProperty("--accent-hover", skin.accentHover);
   root.style.setProperty("--accent-light", skin.accentLight);
   root.style.setProperty("--sidebar-solid", isDark ? skin.sidebarDark : skin.sidebarLight);
-  // Apply layout skin class to body
-  const allSkinClasses = SKINS.map((s) => `skin-${s.id}`);
-  document.body.classList.remove(...allSkinClasses);
-  document.body.classList.add(`skin-${id}`);
 }
 
 function setSkin(id) {
-  const sid = SKINS.some((s) => s.id === id) ? id : "erp-light";
+  const sid = SKINS.some((s) => s.id === id) ? id : "teal";
   try {
     localStorage.setItem(SKIN_KEY, sid);
   } catch {}
@@ -18283,13 +18278,6 @@ function getLoginCompanyFromUrl() {
 
 async function init() {
   _pl.init();
-  // Force enterprise light as default — clear any legacy skin from localStorage
-  try {
-    const saved = localStorage.getItem(SKIN_KEY);
-    if (!saved || !SKINS.some(s => s.id === saved)) {
-      localStorage.setItem(SKIN_KEY, "erp-light");
-    }
-  } catch {}
   applyTheme();
   if (!isOnline()) {
     _pl.hide();
