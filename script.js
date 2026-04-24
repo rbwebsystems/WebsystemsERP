@@ -4938,7 +4938,7 @@ const SKIN_KEY = "bakfon_skin";
 const SIDEBAR_COLLAPSED_KEY = "bakfon_sidebar_collapsed";
 
 const SKINS = [
-  { id: "teal", name: "Navy Teal (sistem)", accent: "#1a4754", accentHover: "#16404f", accentLight: "#e8f4f8", sidebarLight: "#1a4754", sidebarDark: "#0a1929" },
+  { id: "bank-navy", name: "Banking Navy (sistem)", accent: "#1E3A8A", accentHover: "#1E40AF", accentLight: "#EEF2FA", sidebarLight: "#0B1B4B", sidebarDark: "#0A1225" },
   { id: "blue", name: "Ocean Blue", accent: "#2563eb", accentHover: "#1d4ed8", accentLight: "#dbeafe", sidebarLight: "#1e40af", sidebarDark: "#0b1220" },
   { id: "violet", name: "Violet", accent: "#7c3aed", accentHover: "#6d28d9", accentLight: "#ede9fe", sidebarLight: "#5b21b6", sidebarDark: "#14102a" },
   { id: "slate", name: "Slate", accent: "#334155", accentHover: "#1e293b", accentLight: "#e2e8f0", sidebarLight: "#1e293b", sidebarDark: "#0b1220" },
@@ -4947,9 +4947,12 @@ const SKINS = [
 
 function getSkinId() {
   try {
-    return String(localStorage.getItem(SKIN_KEY) || "teal").trim() || "teal";
+    const saved = String(localStorage.getItem(SKIN_KEY) || "").trim();
+    // Migrate any legacy skin to new default
+    if (!saved || !SKINS.some(s => s.id === saved)) return "bank-navy";
+    return saved;
   } catch {
-    return "teal";
+    return "bank-navy";
   }
 }
 
@@ -4965,7 +4968,7 @@ function applySkin() {
 }
 
 function setSkin(id) {
-  const sid = SKINS.some((s) => s.id === id) ? id : "teal";
+  const sid = SKINS.some((s) => s.id === id) ? id : "bank-navy";
   try {
     localStorage.setItem(SKIN_KEY, sid);
   } catch {}
