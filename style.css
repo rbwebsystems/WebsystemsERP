@@ -7893,8 +7893,8 @@ body.sidebar-collapsed .nav-link { justify-content: center !important; padding: 
 body.sidebar-collapsed .nav-link.active { border-left-color: var(--el-primary) !important; }
 body.sidebar-collapsed .nav-link .nav-text { display: none !important; }
 body.sidebar-collapsed .nav-link i { width: 18px !important; }
-body.sidebar-collapsed .sidebar-brand-name,
-body.sidebar-collapsed .sidebar-collapse-btn { display: none !important; }
+body.sidebar-collapsed .sidebar-brand-name { display: none !important; }
+body.sidebar-collapsed .sidebar-collapse-btn { display: flex !important; transform: rotate(180deg) !important; }
 body.sidebar-collapsed .sidebar-brand { justify-content: center !important; padding: 0 !important; }
 body.sidebar-collapsed .nav-group-label,
 body.sidebar-collapsed .nav-sep.nav-group-label { display: none !important; }
