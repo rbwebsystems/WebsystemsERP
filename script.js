@@ -1,4 +1,4 @@
-// Bakfon ERP - LocalStorage və ya Firestore (realtime)
+// RBSoft ERP - LocalStorage və ya Firestore (realtime)
 document.title = "RBSoft ERP";
 
 const BASE_STORAGE_KEY = "bakfon_erp_v1";
@@ -2011,7 +2011,7 @@ function renderReports() {
         const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
         return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
       }
-      const p = (db.purch || []).find((x) => itemKeyFromPurch(x) === s.itemKey);
+      const p = findPurchForSale(s);
       return a + (p ? n(p.amount) : 0);
     }, 0);
     setText("rv-salesTotal", money(salesTotal) + " AZN");
@@ -2196,7 +2196,7 @@ function renderReports() {
         const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
         return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
       }
-      const p = (db.purch || []).find((x) => itemKeyFromPurch(x) === s.itemKey);
+      const p = findPurchForSale(s);
       return a + (p ? n(p.amount) : 0);
     }, 0);
     const calcPayroll = (salesList) => {
@@ -2361,7 +2361,7 @@ function renderReports() {
         const p = (db.purch||[]).find((x) => String(x.uid) === String(s.bulkPurchUid));
         o.cogs += p ? (n(p.amount)/Math.max(1,Math.floor(n(p.qty||1))))*Math.max(1,Math.floor(n(s.qty||1))) : 0;
       } else {
-        const p = (db.purch||[]).find((x) => itemKeyFromPurch(x) === s.itemKey);
+        const p = findPurchForSale(s);
         o.cogs += p ? n(p.amount) : 0;
       }
     }
@@ -2732,7 +2732,7 @@ function renderReports() {
         const unit = purch ? n(purch.amount) / Math.max(1, Math.floor(n(purch.qty||1))) : 0;
         return a + unit * Math.max(1, Math.floor(n(s.qty||1)));
       }
-      const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
+      const p = findPurchForSale(s);
       return a + (p ? n(p.amount) : 0);
     }, 0);
     const grossProfitAccrual = accrualSaleRev - accrualCogs;
@@ -5842,8 +5842,67 @@ function itemKeyFromPurch(p) {
   return `FALLBACK:${p.uid}`;
 }
 
-function soldKeySet() {
-  return new Set(db.sales.filter((s) => !s.returnedAt).map((s) => s.itemKey).filter(Boolean));
+function sameKeySerialPurchs(key) {
+  return (db.purch || [])
+    .filter((p) => !p.returnedAt && itemKeyFromPurch(p) === key)
+    .slice()
+    .sort((a, b) => Number(a.uid) - Number(b.uid) || String(a.date || "").localeCompare(String(b.date || "")));
+}
+
+function legacySerialSalesByKey(key) {
+  return (db.sales || [])
+    .filter((s) => !s.returnedAt && !s.purchUid && !s.bulkPurchUid && s.itemKey === key)
+    .slice()
+    .sort((a, b) => Number(a.uid) - Number(b.uid) || String(a.date || "").localeCompare(String(b.date || "")));
+}
+
+function serialPurchSaleMap() {
+  const map = new Map();
+  const sales = (db.sales || []).filter((s) => !s.returnedAt);
+  for (const s of sales) {
+    if (s.purchUid) map.set(String(s.purchUid), s);
+  }
+  const keys = new Set();
+  for (const s of sales) {
+    if (!s.purchUid && !s.bulkPurchUid && s.itemKey && !String(s.itemKey).startsWith("FIFO:")) keys.add(s.itemKey);
+  }
+  for (const key of keys) {
+    const legacySales = legacySerialSalesByKey(key);
+    if (!legacySales.length) continue;
+    const unclaimed = sameKeySerialPurchs(key).filter((p) => !map.has(String(p.uid)));
+    for (let i = 0; i < Math.min(legacySales.length, unclaimed.length); i++) {
+      map.set(String(unclaimed[i].uid), legacySales[i]);
+    }
+  }
+  return map;
+}
+
+function findSaleForPurch(p) {
+  if (!p) return null;
+  return serialPurchSaleMap().get(String(p.uid)) || null;
+}
+
+function findPurchForSale(s) {
+  if (!s) return null;
+  if (s.bulkPurchUid) return db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid)) || null;
+  if (s.purchUid) return db.purch.find((x) => String(x.uid) === String(s.purchUid)) || null;
+  if (Array.isArray(s.bulkAllocations) && s.bulkAllocations.length) {
+    return db.purch.find((x) => String(x.uid) === String(s.bulkAllocations[0].purchUid)) || null;
+  }
+  if (s.itemKey) {
+    for (const [purchUid, sale] of serialPurchSaleMap()) {
+      if (sale === s || String(sale.uid) === String(s.uid)) {
+        return db.purch.find((x) => String(x.uid) === purchUid) || null;
+      }
+    }
+    return db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey) || null;
+  }
+  return null;
+}
+
+function isSerialPurchSold(p) {
+  if (!p || p.returnedAt) return false;
+  return !!findSaleForPurch(p);
 }
 
 function purchIsBulk(p) {
@@ -5869,14 +5928,14 @@ function bulkSoldQty(purchUid) {
 
 function purchRemainingQty(p) {
   if (p && p.returnedAt) return 0;
-  if (!purchIsBulk(p)) return soldKeySet().has(itemKeyFromPurch(p)) ? 0 : 1;
+  if (!purchIsBulk(p)) return isSerialPurchSold(p) ? 0 : 1;
   const total = Math.max(0, Math.floor(n(p.qty || 0)));
   const sold = bulkSoldQty(p.uid);
   return Math.max(0, total - sold);
 }
 
 function canDeletePurchase(p) {
-  if (!purchIsBulk(p)) return !soldKeySet().has(itemKeyFromPurch(p));
+  if (!purchIsBulk(p)) return !isSerialPurchSold(p);
   return bulkSoldQty(p.uid) <= 0.000001;
 }
 
@@ -8773,7 +8832,6 @@ function openSale(idx = null) {
   const isEdit = idx !== null;
   const current = isEdit ? db.sales[idx] : null;
 
-  const sold = soldKeySet();
   const stockItems = db.purch
     .map((p) => {
       const type = purchIsBulk(p) ? "bulk" : "serial";
@@ -8785,7 +8843,7 @@ function openSale(idx = null) {
       if (isEdit && current) {
         if (x.type === "bulk" && String(current.bulkPurchUid || "") === String(x.p.uid)) return true;
         if (x.type === "bulk" && Array.isArray(current.bulkAllocations) && current.bulkAllocations.some((a) => String(a.purchUid) === String(x.p.uid))) return true;
-        if (x.type === "serial" && current.itemKey === x.key) return true;
+        if (x.type === "serial" && (String(current.purchUid || "") === String(x.p.uid) || (!current.purchUid && current.itemKey === x.key))) return true;
       }
       return x.rem > 0;
     });
@@ -9031,7 +9089,7 @@ function openSale(idx = null) {
       currentItemValue = `fifo:${token}`;
       if (byId("f_s_qty")) byId("f_s_qty").value = String(current.qty || 1);
     } else {
-      const purch = db.purch.find((p) => itemKeyFromPurch(p) === current.itemKey);
+      const purch = findPurchForSale(current);
       if (purch) currentItemValue = `serial:${purch.uid}`;
     }
     renderSaleItemOptions("", currentItemValue);
@@ -9304,7 +9362,6 @@ async function saveSale(e, idx) {
       }
     }
 
-    const sold = soldKeySet();
     const usedByPurch = {};
     const created = [];
     const isTaksit = saleType === "post" && !!byId("f_s_taksit")?.checked;
@@ -9373,8 +9430,8 @@ async function saveSale(e, idx) {
         purch = db.purch.find((p) => String(p.uid) === tokenOrUid);
         if (!purch) return alert("Məhsul tapılmadı.");
         key = itemKeyFromPurch(purch);
-        if (sold.has(key)) return alert("Bu mal artıq satılıb.");
-        sold.add(key);
+        if (purchRemainingQty(purch) <= 0) return alert("Bu mal artıq satılıb.");
+        usedByPurch[purch.uid] = 1;
       }
 
       const samplePurch = purch || (bulkAllocations && bulkAllocations.length ? db.purch.find((p) => String(p.uid) === String(bulkAllocations[0].purchUid)) : null);
@@ -9395,6 +9452,7 @@ async function saveSale(e, idx) {
         qty,
         bulkPurchUid,
         bulkAllocations,
+        purchUid: kind === "serial" ? String(purch.uid) : undefined,
         imei1: samplePurch ? (samplePurch.imei1 || "") : "",
         imei2: samplePurch ? (samplePurch.imei2 || "") : "",
         seria: samplePurch ? (samplePurch.seria || "") : "",
@@ -9509,7 +9567,6 @@ async function saveSale(e, idx) {
   if (kind !== "fifo" && !purch) return;
 
   const key = kind === "fifo" ? `FIFO:${String(purchUid || "")}` : itemKeyFromPurch(purch);
-  const sold = soldKeySet();
   let qty = 1;
   let bulkPurchUid = null;
   let bulkAllocations = null;
@@ -9548,8 +9605,10 @@ async function saveSale(e, idx) {
       if (left <= 0) break;
     }
   } else {
-    if (!isEdit && sold.has(key)) return alert("Bu mal artıq satılıb.");
-    if (isEdit && db.sales[idx] && db.sales[idx].itemKey !== key && sold.has(key)) return alert("Bu mal artıq satılıb.");
+    const editPurchUid = isEdit ? String(db.sales[idx]?.purchUid || "") : "";
+    if (!isEdit && purchRemainingQty(purch) <= 0) return alert("Bu mal artıq satılıb.");
+    if (isEdit && editPurchUid && editPurchUid !== String(purch.uid) && purchRemainingQty(purch) <= 0) return alert("Bu mal artıq satılıb.");
+    if (isEdit && !editPurchUid && db.sales[idx] && db.sales[idx].itemKey !== key && purchRemainingQty(purch) <= 0) return alert("Bu mal artıq satılıb.");
   }
 
   const saleType = val("f_s_type");
@@ -9607,6 +9666,7 @@ async function saveSale(e, idx) {
     qty,
     bulkPurchUid,
     bulkAllocations,
+    purchUid: kind === "serial" ? String(purch.uid) : (isEdit ? (db.sales[idx]?.purchUid || undefined) : undefined),
     imei1: samplePurch ? (samplePurch.imei1 || "") : "",
     imei2: samplePurch ? (samplePurch.imei2 || "") : "",
     seria: samplePurch ? (samplePurch.seria || "") : "",
@@ -9710,7 +9770,7 @@ async function saveSale(e, idx) {
       const editEmpId = base.employeeId;
       const editEmpName = base.employeeName;
       const editCredit = base.credit ? { ...base.credit } : undefined;
-      const soldSet = soldKeySet();
+      const soldSet = new Set();
       for (const it of editDraft) {
         const itKind = it.kind;
         const itPurchUidStr = String(it.purchUid || "");
@@ -9749,8 +9809,8 @@ async function saveSale(e, idx) {
             if (itQty > avail) { alert(`"${itPurch.name}" üçün anbarda kifayət qədər say yoxdur.`); continue; }
           } else {
             itKey = itemKeyFromPurch(itPurch);
-            if (soldSet.has(itKey)) { alert(`"${itPurch.name}" artıq satılıb.`); continue; }
-            soldSet.add(itKey);
+            if (purchRemainingQty(itPurch) <= 0 || soldSet.has(String(itPurch.uid))) { alert(`"${itPurch.name}" artıq satılıb.`); continue; }
+            soldSet.add(String(itPurch.uid));
           }
         }
         const itNewUid = genId(db.sales, 1);
@@ -14701,7 +14761,7 @@ function buildMelumatHtml(q) {
     const unitPurch = purchIsBulk(p) ? (n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1)))) : n(p.amount);
     const hay = `${inv} ${p.supp} ${p.name} ${p.imei1} ${p.imei2} ${p.seria} ${p.code} ${p.amount} ${money(p.amount)} ${money(unitPurch)}`.toLowerCase();
     if (!hay.includes(qq)) return;
-    const key = itemKeyFromPurch(p);
+    const key = `PURCH:${p.uid}`;
     if (shownKeys.has(key)) return;
     shownKeys.add(key);
 
@@ -14736,7 +14796,7 @@ function buildMelumatHtml(q) {
           }).join("")
         : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
     } else {
-      const s = (db.sales || []).find((s) => !s.returnedAt && s.itemKey === key);
+      const s = findSaleForPurch(p);
       const saleStaffName = s ? operationActorName(s, s.employeeName || getStaffName(s.employeeId)) : "-";
       saleHtml = s
         ? (() => {
@@ -14779,10 +14839,11 @@ function buildMelumatHtml(q) {
     const unitSale = Math.max(1, Math.floor(n(s.qty || 1))) > 1 ? (n(s.amount) / Math.max(1, Math.floor(n(s.qty || 1)))) : n(s.amount);
     const hay = `${inv} ${s.customerName} ${s.productName} ${s.imei1} ${s.imei2} ${s.seria} ${s.code} ${s.amount} ${money(s.amount)} ${money(unitSale)}`.toLowerCase();
     if (!hay.includes(qq)) return;
-    const key = s.itemKey || (s.bulkPurchUid ? `BULK:${s.bulkPurchUid}` : null);
+    const key = s.purchUid ? `PURCH:${s.purchUid}` : (s.bulkPurchUid ? `BULK:${s.bulkPurchUid}` : (s.itemKey ? `SALE:${s.uid}` : null));
     if (key && shownKeys.has(key)) return;
-    const p = key ? (s.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(s.bulkPurchUid)) : db.purch.find((x) => itemKeyFromPurch(x) === key)) : null;
-    if (p) shownKeys.add(key || key);
+    const p = findPurchForSale(s);
+    if (p) shownKeys.add(`PURCH:${p.uid}`);
+    else if (key) shownKeys.add(key);
     const name = p ? (p.name || "-") : (s.productName || "-");
     const code = p ? (p.code || "-") : (s.code || "-");
     const imei1 = p ? (p.imei1 || "-") : (s.imei1 || "-");
@@ -16172,7 +16233,6 @@ function renderAll() {
   refreshHeaderBar();
   renderSidebarUser();
   startHeaderClock();
-  const sold = soldKeySet();
   // Render only the currently visible section — avoids rebuilding ~15 tables
   // on every onSnapshot/save event. Each section is re-rendered when the user
   // navigates to it (goSecWithLoad → renderAll) so data is always fresh.
@@ -16467,7 +16527,7 @@ function renderAll() {
       const rem = Math.max(0, totalAmt - totalPaid);
       const invNo = s.invNo || invFallback("sales", s.uid);
       const searchText = group.map(({ s: gs, idx: gi }) => {
-        const p = gs.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(gs.bulkPurchUid)) : (gs.itemKey ? db.purch.find((x) => itemKeyFromPurch(x) === gs.itemKey) : null);
+        const p = gs.bulkPurchUid ? db.purch.find((x) => String(x.uid) === String(gs.bulkPurchUid)) : findPurchForSale(gs);
         return [gs.uid, invNo, gs.date, gs.customerName, gs.customerId, gs.productName, gs.code, gs.qty, gs.saleType, operationActorName(gs, gs.employeeName), gs.employeeId, gs.imei1, gs.imei2, gs.seria, gs.amount, gs.paidTotal, p?.invNo, p?.code, p?.imei1, p?.imei2, p?.seria].filter(x => x != null && String(x).trim() !== "").join(" ");
       }).join(" ");
       return `
@@ -17204,7 +17264,7 @@ function renderAll() {
         const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
         return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
       }
-      const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
+      const p = findPurchForSale(s);
       return a + (p ? n(p.amount) : 0);
     }, 0);
     const exp = db.cash
@@ -17350,7 +17410,7 @@ function renderAll() {
                   const unit = p ? n(p.amount) / Math.max(1, Math.floor(n(p.qty || 1))) : 0;
                   return a + unit * Math.max(1, Math.floor(n(s.qty || 1)));
                 }
-                const p = db.purch.find((x) => itemKeyFromPurch(x) === s.itemKey);
+                const p = findPurchForSale(s);
                 return a + (p ? n(p.amount) : 0);
               }, 0);
               const expM = db.cash
@@ -18300,7 +18360,7 @@ async function init() {
     _pl.hide();
     hideLoading();
     toast("Yüklənmə vaxtı keçdi. Yeniləyin və ya interneti yoxlayın.", "err", 5000);
-    console.warn("Bakfon ERP: init timeout");
+    console.warn("RBSoft ERP: init timeout");
   }, 12000);
 
   try {
@@ -18348,7 +18408,7 @@ async function init() {
       _pl.hide();
       hideLoading();
       toast("Başlatma xətası: " + (e && e.message ? e.message : "Yeniləyin."), "err", 5000);
-      console.error("Bakfon ERP init xətası:", e);
+      console.error("RBSoft ERP init xətası:", e);
       showOfflineBlock(true);
     }
   }
