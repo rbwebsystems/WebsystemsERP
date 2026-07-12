@@ -1475,10 +1475,16 @@ function saveCompanyDB(onDone) {
       softLoadingBegin(true, ERP_BUSY_AZ.save);
       ref
         .set(data)
-        .catch((e) => console.warn("Firestore company yazma xətası:", e))
+        .then(() => {
+          finish();
+        })
+        .catch((e) => {
+          console.warn("Firestore company yazma xətası:", e);
+          toast("⚠️ Məlumat saxlanılmadı! İnternet bağlantısını yoxlayın və təkrar cəhd edin.", "err", 6000);
+          finish();
+        })
         .finally(() => {
           softLoadingEnd();
-          finish();
         });
       return;
     }
@@ -14466,6 +14472,7 @@ function saveReturnSale(e, idx) {
   s.returnNote = note || "";
   logEvent("return", "sales", { uid: s.uid, invNo: s.invNo || invFallback("sales", s.uid), refund });
   saveDB();
+  toast("Satış qaytarıldı. Məhsul anbara qayıtdı.", "ok", 3000);
   openSaleInfo(idx);
 }
 
@@ -14796,25 +14803,46 @@ function buildMelumatHtml(q) {
           }).join("")
         : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
     } else {
-      const s = findSaleForPurch(p);
-      const saleStaffName = s ? operationActorName(s, s.employeeName || getStaffName(s.employeeId)) : "-";
-      saleHtml = s
-        ? (() => {
-            const inv = s.invNo || invFallback("sales", s.uid);
-            const rem = saleRemaining(s);
-            const st = debtStatus(n(s.amount), rem);
-            return `
+      // For serial/IMEI items show ALL sales history (active + returned)
+      const itemKey = itemKeyFromPurch(p);
+      const allSalesForPurch = (db.sales || []).filter((s) => {
+        if (s.purchUid && String(s.purchUid) === String(p.uid)) return true;
+        if (!s.purchUid && !s.bulkPurchUid && s.itemKey === itemKey) return true;
+        return false;
+      }).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+      const remQtyNow = purchRemainingQty(p);
+      const anbarStatus = p.returnedAt ? "QAYTARILIB (alış)" :
+        (remQtyNow <= 0 ? "SATILIB" : "ANBARDA");
+      const anbarColor = p.returnedAt ? "#6b7280" : (remQtyNow <= 0 ? "#dc2626" : "#16a34a");
+
+      if (allSalesForPurch.length === 0) {
+        saleHtml = "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
+      } else {
+        saleHtml = allSalesForPurch.map((s, sHistIdx) => {
+          const sIdx = db.sales.indexOf(s);
+          const inv = s.invNo || invFallback("sales", s.uid);
+          const rem = saleRemaining(s);
+          const st = debtStatus(n(s.amount), rem);
+          const saleStaffName = operationActorName(s, s.employeeName || getStaffName(s.employeeId));
+          const isRet = !!s.returnedAt;
+          return `
+            <div style="border-top:1px solid var(--border-color);margin-top:8px;padding-top:8px;">
+              <div class="info-row"><div class="info-label">Satış #${sHistIdx + 1} statusu</div><div class="info-value"><strong style="color:${isRet ? "#16a34a" : "#dc2626"}">${isRet ? "✔ QAYTARILDI" : "⚠ AKTİV SATIŞ"}</strong>${isRet ? ` (${fmtDT(s.returnedAt)})` : ""}</div></div>
               <div class="info-row"><div class="info-label">Satış qaimə №</div><div class="info-value">${escapeHtml(inv)}</div></div>
               <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(s.customerName || "-")}</div></div>
-              <div class="info-row"><div class="info-label">Tarix</div><div class="info-value">${fmtDT(s.date)}</div></div>
+              <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(s.date)}</div></div>
               <div class="info-row"><div class="info-label">Növ</div><div class="info-value">${escapeHtml(saleTypeLabel(s.saleType))}</div></div>
               <div class="info-row"><div class="info-label">Satış məbləğ</div><div class="info-value">${money(s.amount)} AZN</div></div>
               <div class="info-row"><div class="info-label">Ödəniş statusu</div><div class="info-value">${escapeHtml(debtLabel(st))}</div></div>
               ${rem > 0.000001 ? `<div class="info-row"><div class="info-label">Qalıq borc</div><div class="info-value">${money(rem)} AZN</div></div>` : ""}
               <div class="info-row"><div class="info-label">Satış edən</div><div class="info-value">${escapeHtml(saleStaffName)}</div></div>
-            `;
-          })()
-        : "<div class=\"info-row\"><div class=\"info-label\">Satış</div><div class=\"info-value\">Satılmayıb</div></div>";
+              ${!isRet && userCanRefund("sales") && sIdx >= 0 ? `<div style="margin-top:6px;"><button class="btn-cancel" type="button" onclick="closeMdl();openReturnSale(${sIdx})">Bu satışı qaytar</button></div>` : ""}
+            </div>
+          `;
+        }).join("");
+      }
+      saleHtml = `<div class="info-row"><div class="info-label">Anbar statusu</div><div class="info-value"><strong style="color:${anbarColor}">${anbarStatus}</strong></div></div>` + saleHtml;
     }
 
     blocks.push(`
