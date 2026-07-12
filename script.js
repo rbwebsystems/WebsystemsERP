@@ -14980,7 +14980,7 @@ function runGlobalSearch() {
 }
 
 function openAdminRepair() {
-  if (!isAdmin() && !isDeveloper()) return alert("Admin icazəsi tələb olunur.");
+  if (!meta?.session) return showLoginOverlay(true);
   openModal(`
     <h2>🔧 Anbar Bərpa Aləti</h2>
     <p class="muted" style="margin:0 0 12px;">Məhsulu adına, müştəriyə, IMEI-yə, qaimə nömrəsinə və ya məbləğə görə tapın və anbar statusunu düzəldin.</p>
@@ -15089,7 +15089,7 @@ function runAdminRepairSearch() {
 }
 
 function adminForceReturnSale(idx) {
-  if (!isAdmin() && !isDeveloper()) return alert("Admin icazəsi tələb olunur.");
+  if (!userCanRefund()) return alert("Qaytarma icazəsi yoxdur.");
   const s = db.sales[idx];
   if (!s) return alert("Satış tapılmadı.");
   if (s.returnedAt) return alert("Bu satış artıq qaytarılıb.");
