@@ -14979,6 +14979,130 @@ function runGlobalSearch() {
   melumatEl.innerHTML = buildMelumatHtml(q);
 }
 
+function openAdminRepair() {
+  if (!isAdmin() && !isDeveloper()) return alert("Admin icazəsi tələb olunur.");
+  openModal(`
+    <h2>🔧 Anbar Bərpa Aləti</h2>
+    <p class="muted" style="margin:0 0 12px;">Məhsulu adına, müştəriyə, IMEI-yə, qaimə nömrəsinə və ya məbləğə görə tapın və anbar statusunu düzəldin.</p>
+    <div class="form-card" style="margin-bottom:12px;">
+      <div class="form-card-title">Axtarış meyarları</div>
+      <div class="grid-2" style="gap:8px;">
+        <div class="f-group"><label>Məhsul adı (hissəsi)</label><input id="ar_name" placeholder="iPhone, Samsung..."></div>
+        <div class="f-group"><label>Müştəri adı (hissəsi)</label><input id="ar_cust" placeholder="Müştəri adı..."></div>
+        <div class="f-group"><label>Qaimə nömrəsi</label><input id="ar_inv" placeholder="QN-001..."></div>
+        <div class="f-group"><label>IMEI / Seriya (hissəsi)</label><input id="ar_imei" placeholder="354710..."></div>
+        <div class="f-group"><label>Məbləğ (AZN)</label><input type="number" id="ar_amt" placeholder="0.00" step="0.01"></div>
+        <div class="f-group"><label>Göstər</label>
+          <select id="ar_filter">
+            <option value="sold">Yalnız SATILIB (aktiv satışlar)</option>
+            <option value="returned">Yalnız QAYTARILMIŞ satışlar</option>
+            <option value="all">Hamısı</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn-main" type="button" onclick="runAdminRepairSearch()">Axtar</button>
+      </div>
+    </div>
+    <div id="ar_results" style="max-height:400px;overflow-y:auto;"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" onclick="closeMdl()">Bağla</button>
+    </div>
+  `);
+}
+
+function runAdminRepairSearch() {
+  const nameQ  = (byId("ar_name")?.value  || "").trim().toLowerCase();
+  const custQ  = (byId("ar_cust")?.value  || "").trim().toLowerCase();
+  const invQ   = (byId("ar_inv")?.value   || "").trim().toLowerCase();
+  const imeiQ  = (byId("ar_imei")?.value  || "").trim().toLowerCase();
+  const amtQ   = parseFloat(byId("ar_amt")?.value || "");
+  const filter = byId("ar_filter")?.value || "sold";
+
+  if (!nameQ && !custQ && !invQ && !imeiQ && isNaN(amtQ)) {
+    byId("ar_results").innerHTML = "<p class='muted'>Ən azı bir meyar daxil edin.</p>";
+    return;
+  }
+
+  const results = (db.sales || []).map((s, idx) => ({ s, idx })).filter(({ s }) => {
+    const isRet = !!s.returnedAt;
+    if (filter === "sold"     && isRet)  return false;
+    if (filter === "returned" && !isRet) return false;
+    const p = findPurchForSale(s);
+    const hay = [
+      s.productName, s.customerName, s.invNo, s.code,
+      s.imei1, s.imei2, s.seria,
+      p ? p.name : "", p ? p.imei1 : "", p ? p.imei2 : "", p ? p.seria : "", p ? p.code : "",
+      String(s.amount || ""), invFallback("sales", s.uid),
+    ].join(" ").toLowerCase();
+    if (nameQ && !(hay.includes(nameQ))) return false;
+    if (custQ && !String(s.customerName || "").toLowerCase().includes(custQ)) return false;
+    if (invQ  && !String(s.invNo || invFallback("sales", s.uid)).toLowerCase().includes(invQ)) return false;
+    if (imeiQ) {
+      const imeiHay = [s.imei1, s.imei2, s.seria, p?.imei1, p?.imei2, p?.seria].join(" ").toLowerCase();
+      if (!imeiHay.includes(imeiQ)) return false;
+    }
+    if (!isNaN(amtQ) && Math.abs(n(s.amount) - amtQ) > 0.01) return false;
+    return true;
+  });
+
+  if (!results.length) {
+    byId("ar_results").innerHTML = "<p class='muted' style='padding:16px;'>Heç bir nəticə tapılmadı. Meyarları dəyişin.</p>";
+    return;
+  }
+
+  byId("ar_results").innerHTML = results.slice(0, 50).map(({ s, idx }) => {
+    const p = findPurchForSale(s);
+    const inv = s.invNo || invFallback("sales", s.uid);
+    const isRet = !!s.returnedAt;
+    const pIdx = p ? db.purch.indexOf(p) : -1;
+    const imei1 = s.imei1 || p?.imei1 || "-";
+    const imei2 = s.imei2 || p?.imei2 || "-";
+    const seria = s.seria || p?.seria || "-";
+    return `
+      <div class="info-block" style="margin-bottom:10px;padding:12px;border:1px solid var(--border-color);border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div>
+            <strong>${escapeHtml(s.productName || "-")}</strong>
+            <span class="status-badge ${isRet ? "badge-returned" : "badge-sold"}" style="margin-left:8px;">${isRet ? "QAYTARILDI" : "AKTİV SATIŞ"}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-cancel" onclick="closeMdl();openSaleInfo(${idx})" type="button">Satış info</button>
+            ${pIdx >= 0 ? `<button class="btn-cancel" onclick="closeMdl();openPurchInfo(${pIdx})" type="button">Alış info</button>` : ""}
+            ${!isRet && userCanRefund("sales") ? `<button class="btn-main" onclick="adminForceReturnSale(${idx})" type="button">✔ Anbara qaytar (qaytarma et)</button>` : ""}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:.85rem;">
+          <div><span class="muted">Qaimə:</span> ${escapeHtml(inv)}</div>
+          <div><span class="muted">Müştəri:</span> ${escapeHtml(s.customerName || "-")}</div>
+          <div><span class="muted">Tarix:</span> ${fmtDT(s.date)}</div>
+          <div><span class="muted">Məbləğ:</span> ${money(s.amount)} AZN</div>
+          <div><span class="muted">IMEI 1:</span> ${escapeHtml(imei1)}</div>
+          <div><span class="muted">IMEI 2:</span> ${escapeHtml(imei2)}</div>
+          <div><span class="muted">Seriya:</span> ${escapeHtml(seria)}</div>
+          ${isRet ? `<div><span class="muted">Qaytarılma tarixi:</span> ${fmtDT(s.returnedAt)}</div>` : ""}
+          ${s.returnNote ? `<div style="grid-column:span 2;"><span class="muted">Qeyd:</span> ${escapeHtml(s.returnNote)}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("") + (results.length > 50 ? `<p class="muted">+${results.length - 50} daha çox nəticə var. Meyarları darlayın.</p>` : "");
+}
+
+function adminForceReturnSale(idx) {
+  if (!isAdmin() && !isDeveloper()) return alert("Admin icazəsi tələb olunur.");
+  const s = db.sales[idx];
+  if (!s) return alert("Satış tapılmadı.");
+  if (s.returnedAt) return alert("Bu satış artıq qaytarılıb.");
+  if (!confirm(`"${s.productName || "Məhsul"}" — ${s.customerName || "-"} müştərisi üçün bu satışı QAYTARILMIŞ kimi işarələyək?\n\nQaimə: ${s.invNo || invFallback("sales", s.uid)}\nMəbləğ: ${money(s.amount)} AZN\n\nBu əməliyyat məhsulu anbara qaytaracaq.`)) return;
+  const dateNow = new Date().toISOString().slice(0, 16);
+  s.returnedAt = dateNow;
+  s.returnNote = "Admin bərpası ilə qaytarıldı";
+  logEvent("return", "sales", { uid: s.uid, invNo: s.invNo || invFallback("sales", s.uid), admin: true });
+  saveDB();
+  toast("Satış qaytarıldı — məhsul anbara qayıtdı.", "ok", 4000);
+  runAdminRepairSearch();
+}
+
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
@@ -18089,6 +18213,9 @@ Object.assign(window, {
   openAuditDetails,
   openGlobalSearch,
   runGlobalSearch,
+  openAdminRepair,
+  runAdminRepairSearch,
+  adminForceReturnSale,
   openSpotlight,
   closeSpotlight,
   closeSpotlightIfOutside,
