@@ -489,7 +489,7 @@ async function syncCompanyUsersToIsolatedPath(companyId, allUsers) {
  * Cari şifrə serverda yoxlanılır; uğurlu olduqda hash yazılır.
  */
 export const changeUserPassword = onCall(
-  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
+  { region: "europe-west1", cors: [/rbsoft\.az$/, /rbwebsystems\.github\.io$/, /localhost/] },
   async (request) => {
     const { uid, companyId, currentPassword, newPassword } = request.data || {};
     if (!uid || !companyId || !currentPassword || !newPassword) {
@@ -574,7 +574,7 @@ export const changeUserPassword = onCall(
 
 /** ERP giriş: developer və tenant ayrı axınlar; developer tenant token yalnız allowImpersonation ilə. */
 export const issueAuthToken = onCall(
-  { region: "europe-west1", cors: [/rbsoft\.az$/, /localhost/] },
+  { region: "europe-west1", cors: [/rbsoft\.az$/, /rbwebsystems\.github\.io$/, /localhost/] },
   async (request) => {
     const { username, password, companyId: companyIdFromClient, allowImpersonation } = request.data || {};
     const hint = String(companyIdFromClient ?? "").trim();
