@@ -6080,6 +6080,53 @@ function representativeKreditSaleUid(siblings) {
   return arr[0]?.uid;
 }
 
+/**
+ * Satış zaminini yeni satış modeli üzrə tapır və köhnə məlumatlarla uyğunluğu saxlayır.
+ * Çoxsətirli qaimələrdə zamin sətirlərdən hər hansı birində ola bilər.
+ */
+function resolveSaleGuarantor(salesOrSale, customer = null) {
+  const sales = (Array.isArray(salesOrSale) ? salesOrSale : [salesOrSale]).filter(Boolean);
+  const saleWithId = sales.find((s) => String(s.guarantorId || "").trim());
+  const saleWithName = sales.find((s) => String(s.guarantorName || "").trim());
+  const resolvedCustomer = customer || (() => {
+    const customerId = sales.find((s) => s.customerId != null)?.customerId;
+    return customerId == null
+      ? null
+      : (db.cust || []).find((c) => String(c.uid) === String(customerId)) || null;
+  })();
+  const guarantorId = String(saleWithId?.guarantorId || resolvedCustomer?.zam || "").trim();
+  const person = guarantorId
+    ? (db.cust || []).find((c) => String(c.uid) === guarantorId) || null
+    : null;
+  const snapshotName = String(saleWithId?.guarantorName || saleWithName?.guarantorName || "").trim();
+  const name = person
+    ? `${person.sur || ""} ${person.name || ""} ${person.father || ""}`.trim()
+    : snapshotName;
+  return {
+    id: guarantorId,
+    person,
+    name,
+    label: name ? `${name}${guarantorId ? ` (${guarantorId})` : ""}` : "",
+  };
+}
+
+function resolveCustomerGuarantors(customer) {
+  if (!customer) return [];
+  const infos = (db.sales || [])
+    .filter((s) => String(s.customerId) === String(customer.uid))
+    .filter((s) => s.guarantorId || s.guarantorName)
+    .map((s) => resolveSaleGuarantor(s, { zam: "" }));
+  if (customer.zam) infos.push(resolveSaleGuarantor([], customer));
+  const seen = new Set();
+  return infos.filter((info) => {
+    if (!info.name) return false;
+    const key = info.id ? `id:${info.id}` : `name:${info.name.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function runCreditRoundingMigration() {
   ensureAuditTrash();
   if (!db.settings) db.settings = defaultDB().settings;
@@ -7608,17 +7655,9 @@ function toggleSaleInitialPayment() {
 function openCustInfo(idx) {
   const c = db.cust[idx];
   if (!c) return;
-  // Guarantors from sales (new model) + fallback to c.zam (old model)
-  const saleGuarantorIds = [...new Set(
-    (db.sales || [])
-      .filter((s) => String(s.customerId) === String(c.uid) && s.guarantorId)
-      .map((s) => String(s.guarantorId))
-  )];
-  const legacyGid = c.zam && !saleGuarantorIds.includes(String(c.zam)) ? String(c.zam) : null;
-  const allGids = legacyGid ? [...saleGuarantorIds, legacyGid] : saleGuarantorIds;
-  const guarantors = allGids.map((gid) => db.cust.find((x) => String(x.uid) === gid)).filter(Boolean);
+  const guarantors = resolveCustomerGuarantors(c);
   const guarantorText = guarantors.length
-    ? guarantors.map((g) => escapeHtml(`${g.sur} ${g.name} (${g.uid})`)).join(", ")
+    ? guarantors.map((g) => escapeHtml(g.label)).join(", ")
     : "-";
   openModal(`
     <h2>Müştəri məlumatı</h2>
@@ -8837,6 +8876,14 @@ function openSale(idx = null) {
   if (idx !== null && !userCanEdit()) return alert("Redaktə icazəsi yoxdur.");
   const isEdit = idx !== null;
   const current = isEdit ? db.sales[idx] : null;
+  const currentInvoiceSales = current?.invNo
+    ? (db.sales || []).filter(
+        (s) =>
+          String(s.invNo || "") === String(current.invNo || "") &&
+          String(s.customerId || "") === String(current.customerId || "")
+      )
+    : (current ? [current] : []);
+  const currentGuarantor = isEdit ? resolveSaleGuarantor(currentInvoiceSales) : null;
 
   const stockItems = db.purch
     .map((p) => {
@@ -9127,9 +9174,9 @@ function openSale(idx = null) {
         byId("f_pay_initial").checked = true;
       }
     }
-    if (current?.guarantorId) {
+    if (currentGuarantor?.id) {
       const gSel = byId("f_s_guarantorId");
-      if (gSel) gSel.value = String(current.guarantorId);
+      if (gSel) gSel.value = String(currentGuarantor.id);
     }
   } else {
     byId("f_s_type").value = "nagd";
@@ -9728,8 +9775,21 @@ async function saveSale(e, idx) {
     }
   }
 
-  if (isEdit) db.sales[idx] = base;
-  else db.sales.push(base);
+  if (isEdit) {
+    db.sales[idx] = base;
+    // Zamin qaiməyə aiddir: çoxməhsullu qaimənin bütün mövcud sətirlərini eynilə yenilə.
+    (db.sales || []).forEach((row) => {
+      if (
+        row === base ||
+        String(row.invNo || "") !== String(base.invNo || "") ||
+        String(row.customerId || "") !== String(base.customerId || "")
+      ) return;
+      if (base.guarantorId) row.guarantorId = base.guarantorId;
+      else delete row.guarantorId;
+      if (base.guarantorName) row.guarantorName = base.guarantorName;
+      else delete row.guarantorName;
+    });
+  } else db.sales.push(base);
   logEvent(isNew ? "create" : "update", "sales", { uid: base.uid, invNo: base.invNo });
 
   sendTelegram(
@@ -9844,6 +9904,8 @@ async function saveSale(e, idx) {
           payments: [],
           saleNote: "",
           credit: editCredit,
+          guarantorId: base.guarantorId || undefined,
+          guarantorName: base.guarantorName || undefined,
         };
         db.sales.push(itNew);
         logEvent("create", "sales", { uid: itNew.uid, invNo: editInvNo });
@@ -10041,13 +10103,12 @@ function openSaleInfo(idx) {
   const s = db.sales[idx];
   if (!s) return;
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId));
-  const gid = s.guarantorId || (cust?.zam || "");
-  const guarantor = gid ? db.cust.find((c) => String(c.uid) === String(gid)) : null;
 
   // Gather all items with same invNo (multi-product invoice grouping)
   const siblings = s.invNo
     ? db.sales.map((x, i) => ({ s: x, idx: i })).filter(x => x.s.invNo === s.invNo)
     : [{ s, idx }];
+  const guarantorInfo = resolveSaleGuarantor(siblings.map((x) => x.s), cust);
   const isMulti = siblings.length > 1;
 
   const totalAmount = siblings.reduce((a, x) => a + n(x.s.amount), 0);
@@ -10145,7 +10206,7 @@ function openSaleInfo(idx) {
           <div class="f-group"><label>Satış növü</label><div class="f-static">${escapeHtml({ nagd: "Nağd", post: "Post", post_taksit: "Post Taksit", topdan: "Topdan", korporativ: "Korporativ", kredit: "Kredit", kocurme: "Köçürmə" }[String(s.saleType || "").toLowerCase()] || String(s.saleType || "").toUpperCase())}${s.taksitTerm ? ` (${s.taksitTerm} ay)` : ""}</div></div>
           <div class="f-group"><label>Müştəri</label><div class="f-static">${escapeHtml(s.customerName)} (${s.customerId})</div></div>
           <div class="f-group"><label>Əməkdaş</label><div class="f-static">${escapeHtml(operationActorName(s, s.employeeName || "-"))}</div></div>
-          <div class="f-group"><label>Zamin</label><div class="f-static">${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name} (${guarantor.uid})`) : "-"}</div></div>
+          <div class="f-group"><label>Zamin</label><div class="f-static">${escapeHtml(guarantorInfo.label || "-")}</div></div>
           <div class="f-group"><label>Qeyd</label><div class="f-static">${escapeHtml(s.note || "-")}</div></div>
         </div>
       </div>
@@ -10611,7 +10672,8 @@ function printCreditDoc(idx, type) {
   const totalDownRaw = sch.down;
 
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
-  const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
+  const guarantorInfo = resolveSaleGuarantor(siblings, cust);
+  const guarantor = guarantorInfo.person;
   const st = db.settings || {};
 
   const today = fmtDT(new Date().toISOString()).split(" ")[0];
@@ -10628,7 +10690,7 @@ function printCreditDoc(idx, type) {
   const custPh   = escapeHtml(cust.ph1      || "-");
   const custAddr = escapeHtml(cust.addr     || "-");
 
-  const zamFull  = guarantor ? escapeHtml(`${guarantor.sur||""} ${guarantor.name||""} ${guarantor.father||""}`.trim()) : "-";
+  const zamFull  = escapeHtml(guarantorInfo.name || "-");
   const zamFin   = guarantor ? escapeHtml(guarantor.fin      || "-") : "-";
   const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : "-";
   const zamPh    = guarantor ? escapeHtml(guarantor.ph1      || "-") : "-";
@@ -14491,7 +14553,8 @@ function printSaleContract(idx) {
   const monthlyAgg      = termMonthsAgg > 0 ? remAfterDownAgg / termMonthsAgg : 0;
 
   const cust = db.cust.find((c) => String(c.uid) === String(s.customerId)) || {};
-  const guarantor = cust.zam ? (db.cust.find((c) => String(c.uid) === String(cust.zam)) || null) : null;
+  const guarantorInfo = resolveSaleGuarantor(siblings, cust);
+  const guarantor = guarantorInfo.person;
   const st = db.settings || {};
 
   const today = fmtDT(new Date().toISOString()).split(" ")[0];
@@ -14517,7 +14580,7 @@ function printSaleContract(idx) {
   const custPh   = escapeHtml(cust.ph1      || "-");
   const custAddr = escapeHtml(cust.addr     || "-");
 
-  const zamFull  = guarantor ? escapeHtml(`${guarantor.sur||""} ${guarantor.name||""} ${guarantor.father||""}`.trim()) : null;
+  const zamFull  = guarantorInfo.name ? escapeHtml(guarantorInfo.name) : null;
   const zamFin   = guarantor ? escapeHtml(guarantor.fin || "-") : null;
   const zamSer   = guarantor ? escapeHtml(guarantor.seriaNum || "-") : null;
   const zamPh    = guarantor ? escapeHtml(guarantor.ph1 || "-") : null;
@@ -14919,7 +14982,7 @@ function buildMelumatHtml(q) {
   db.cust.forEach((c) => {
     const hay = `${pad4(c.uid)} ${c.sur} ${c.name} ${c.father} ${c.ph1} ${c.ph2} ${c.ph3} ${c.fin} ${c.seriaNum} ${c.work} ${c.addr}`.toLowerCase();
     if (!hay.includes(qq)) return;
-    const guarantor = c.zam ? db.cust.find((x) => String(x.uid) === String(c.zam)) : null;
+    const guarantorText = resolveCustomerGuarantors(c).map((g) => g.label).join(", ") || "-";
     blocks.push(`
       <div class="info-block melumat-block" style="margin-bottom:16px;">
         <div class="info-row"><div class="info-label">ID</div><div class="info-value">${c.uid}</div></div>
@@ -14931,7 +14994,7 @@ function buildMelumatHtml(q) {
         <div class="info-row"><div class="info-label">FİN</div><div class="info-value">${escapeHtml(c.fin || "-")}</div></div>
         <div class="info-row"><div class="info-label">Seriya №</div><div class="info-value">${escapeHtml(c.seriaNum || "-")}</div></div>
         <div class="info-row"><div class="info-label">Ünvan</div><div class="info-value">${escapeHtml(c.addr || "-")}</div></div>
-        <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${guarantor ? escapeHtml(`${guarantor.sur || ""} ${guarantor.name || ""} (${guarantor.uid})`) : "-"}</div></div>
+        <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantorText)}</div></div>
       </div>
     `);
   });
@@ -15900,7 +15963,7 @@ function openOverdueInfo(saleUid) {
   const repUid = representativeKreditSaleUid(siblings) || rep.uid;
   const cid = String(rep.customerId || "");
   const cust = (db.cust || []).find((c) => String(c.uid) === cid) || null;
-  const guarantor = cust?.zam ? (db.cust || []).find((x) => String(x.uid) === String(cust.zam)) : null;
+  const guarantorInfo = resolveSaleGuarantor(siblings, cust);
   const custName = rep.customerName || cid;
   const today = new Date();
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -16000,7 +16063,7 @@ function openOverdueInfo(saleUid) {
     <div class="info-block">
       <div class="info-row"><div class="info-label">Müştəri</div><div class="info-value">${escapeHtml(custName)}${cust && cust.fin ? ` <span style="color:var(--text-muted);font-size:.85em">(FIN: ${escapeHtml(cust.fin)})</span>` : ""}</div></div>
       ${cust && cust.ph1 ? `<div class="info-row"><div class="info-label">Əlaqə</div><div class="info-value">${escapeHtml(cust.ph1)}${cust.ph2?" / "+escapeHtml(cust.ph2):""}</div></div>` : ""}
-      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-")}</div></div>
+      <div class="info-row"><div class="info-label">Zamin</div><div class="info-value">${escapeHtml(guarantorInfo.name || "-")}</div></div>
       <div class="info-row"><div class="info-label">Qaimə</div><div class="info-value">${escapeHtml(inv)}</div></div>
       ${prodBlockOv}
       <div class="info-row"><div class="info-label">Satış tarixi</div><div class="info-value">${fmtDT(rep.date)}</div></div>
@@ -16399,7 +16462,7 @@ function renderAll() {
     .sort((a, b) => String(a.c.createdAt || a.c.date || "").localeCompare(String(b.c.createdAt || b.c.date || "")) * -1);
   byId("tblCust").innerHTML = custList
     .map(({ c, idx }, i) => {
-      const guarantor = c.zam ? db.cust.find((x) => String(x.uid) === String(c.zam)) : null;
+      const guarantorText = resolveCustomerGuarantors(c).map((g) => g.name).join(", ") || "-";
       const canE = userCanEdit();
       const canD = userCanDelete("cust");
       return `
@@ -16410,7 +16473,7 @@ function renderAll() {
         <td>${escapeHtml(c.ph1)}</td>
         <td>${escapeHtml(c.fin)}</td>
         <td>${escapeHtml(c.seriaNum)}</td>
-        <td>${guarantor ? escapeHtml(`${guarantor.sur} ${guarantor.name}`) : "-"}</td>
+        <td>${escapeHtml(guarantorText)}</td>
         <td class="tbl-actions">
           <a class="icon-btn info" href="${erpOpHref("cust", "custInfo", idx)}" onclick="openCustInfo(${idx});return false;" title="Info"><i class="fas fa-circle-info"></i></a>
           ${canE ? `<a class="icon-btn edit" href="${erpOpHref("cust", "custEdit", idx)}" onclick="openCust(${idx});return false;" title="Edit"><i class="fas fa-pen"></i></a>` : ""}
@@ -16865,10 +16928,10 @@ function renderAll() {
         const sched = buildCreditScheduleAggregated(siblings, kreditInvoiceScheduleDateISO(siblings));
         const inv = repSale.invNo || invFallback("sales", repSale.uid);
         const cust = (db.cust || []).find((c) => String(c.uid) === String(repSale.customerId)) || null;
-        const guarantor = cust?.zam ? (db.cust || []).find((g) => String(g.uid) === String(cust.zam)) : null;
+        const guarantorInfo = resolveSaleGuarantor(siblings, cust);
         const custFull = cust ? `${cust.sur || ""} ${cust.name || ""} ${cust.father || ""}`.trim() : (repSale.customerName || "-");
         const custPhone = String(cust?.ph1 || cust?.ph2 || cust?.ph3 || "-");
-        const zam = guarantor ? `${guarantor.sur || ""} ${guarantor.name || ""} ${guarantor.father || ""}`.trim() : "-";
+        const zam = guarantorInfo.name || "-";
         const saleKey = String(representativeKreditSaleUid(siblings));
         const invoiceRemaining = siblings.reduce((a, x) => a + saleRemaining(x), 0);
         if (invoiceRemaining <= 0.000001) return;
@@ -19444,4 +19507,3 @@ function initLang() {
   const sel = byId("langSelect");
   if (sel) sel.value = saved;
 }
-
